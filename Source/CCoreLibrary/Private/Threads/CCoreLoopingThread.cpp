@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "CCoreLoopingThread.h"
+#include "Threads/CCoreLoopingThread.h"
 
 
 bool FCCoreLoopingThread::Init()

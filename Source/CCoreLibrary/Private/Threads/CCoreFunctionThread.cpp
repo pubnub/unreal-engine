@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "CCoreFunctionThread.h"
+#include "Threads/CCoreFunctionThread.h"
 
 
 bool FCCoreFunctionThread::Init()
