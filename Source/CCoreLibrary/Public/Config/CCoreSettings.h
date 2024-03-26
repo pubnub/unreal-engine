@@ -1,0 +1,22 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "Engine/DeveloperSettings.h"
+#include "CCoreSettings.generated.h"
+
+UCLASS(Config=CCoreSDK, meta=(DisplayName="C-Core SDK"))
+class CCORELIBRARY_API UCCoreSettings : public UDeveloperSettings
+{
+	GENERATED_BODY()
+
+public:
+	UCCoreSettings();
+
+	UPROPERTY(Config, EditAnywhere)
+	FString PublishKey = "default";
+	UPROPERTY(Config, EditAnywhere)
+	FString SubscribeKey = "default";
+	UPROPERTY(Config, EditAnywhere)
+	FString SecretKey = "";
+};
