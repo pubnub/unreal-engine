@@ -1,3 +1,0 @@
-[submodule "Source/ThirdParty/sdk/public"]
-	path = Source/ThirdParty/sdk/public
-	url = https://github.com/pubnub/c-core.git
