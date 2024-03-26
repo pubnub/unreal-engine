@@ -4,8 +4,6 @@
 
 #include "CoreMinimal.h"
 
-class UCCoreSubsystemAsync;
-
 /**
  * 
  */
