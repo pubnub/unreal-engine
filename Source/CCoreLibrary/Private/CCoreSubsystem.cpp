@@ -50,6 +50,17 @@ void UCCoreSubsystem::DeinitCCore()
 	});
 }
 
+void UCCoreSubsystem::SetUserID(FString UserID)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, UserID]
+	{
+		SetUserID_priv(UserID);
+	});
+}
+
 void UCCoreSubsystem::LoadPluginSettings()
 {
 	//Save all settings
@@ -64,6 +75,10 @@ void UCCoreSubsystem::LoadPluginSettings()
 	SecretKey[54] = '\0';
 }
 
+
+
+/* PRIV FUNCTIONS */
+
 void UCCoreSubsystem::InitCCore_priv()
 {
 	if(IsInitialized)
@@ -76,7 +91,6 @@ void UCCoreSubsystem::InitCCore_priv()
 	pubnub_init(ctx_sub, PublishKey, SubscribeKey);
 
 	IsInitialized = true;
-	UE_LOG(LogTemp, Warning, TEXT("Context initialized"));
 }
 
 void UCCoreSubsystem::DeinitCCore_priv()
@@ -97,5 +111,13 @@ void UCCoreSubsystem::DeinitCCore_priv()
 		ctx_sub = nullptr;
 	}
 	IsInitialized = false;
-	UE_LOG(LogTemp, Warning, TEXT("Context Deinitialized"));
+}
+
+void UCCoreSubsystem::SetUserID_priv(FString UserID)
+{
+	if(!IsInitialized)
+	{return;}
+
+	pubnub_set_user_id(ctx_pub, TCHAR_TO_ANSI(*UserID));
+	pubnub_set_user_id(ctx_sub, TCHAR_TO_ANSI(*UserID));
 }

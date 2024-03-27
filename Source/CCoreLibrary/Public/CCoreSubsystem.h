@@ -21,12 +21,20 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+#pragma region BLUEPRINT EXPOSED
+	
+	/* BLUEPRINT EXPOSED FUNCTIONS */
 
 	UFUNCTION(BlueprintCallable, Category = "CCore")
 	void InitCCore();
 	
 	UFUNCTION(BlueprintCallable, Category = "CCore")
 	void DeinitCCore();
+
+	UFUNCTION(BlueprintCallable, Category = "CCore")
+	void SetUserID(FString UserID);
+
+#pragma endregion
 	
 private:
 
@@ -41,6 +49,7 @@ private:
 	pubnub_t *ctx_sub = nullptr;
 
 #pragma region PLUGIN SETTINGS
+	
 	/* PLUGIN SETTINGS */
 	
 	TObjectPtr<UCCoreSettings> CCoreSettings = nullptr;
@@ -57,4 +66,5 @@ private:
 
 	void InitCCore_priv();
 	void DeinitCCore_priv();
+	void SetUserID_priv(FString UserID);
 };

@@ -41,6 +41,7 @@ public class PubNubModule : ModuleRules
 
 		var SDKPath = Path.Combine(new string[] { ModuleDirectory, ".." });
 		
+		//TODO: Read library location depending on platform
 		string BuildLocation = "Lib/win64";
 		
 
