@@ -20,7 +20,7 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Keys")
 	FString SecretKey = "";
 
-	//Should C-Core initialize automatically. If set to false,Initialize() has to be called manually before using other C-Core functionalities.
+	//Should C-Core initialize automatically. If set to false, InitCCore() has to be called manually before using other C-Core functionalities.
 	UPROPERTY(Config, EditAnywhere)
 	bool InitializeAutomatically = true;
 };
