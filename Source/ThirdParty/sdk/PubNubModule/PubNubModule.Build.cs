@@ -41,17 +41,17 @@ public class PubNubModule : ModuleRules
 
 		var SDKPath = Path.Combine(new string[] { ModuleDirectory, ".." });
 		
-		string BuildLocation = "lib/win64";
+		string BuildLocation = "Lib/win64";
 		
 
 		PublicAdditionalLibraries.Add(Path.Combine(SDKPath, BuildLocation, binary));
 		PublicIncludePaths.AddRange(
 			new string[] {
 				SDKPath,
-				Path.Combine(SDKPath, "public"),
-				Path.Combine(SDKPath, "public/core"),
-				Path.Combine(SDKPath, "public/lib"),
-				Path.Combine(SDKPath, "public", PlatformLib)
+				Path.Combine(SDKPath, "Include"),
+				Path.Combine(SDKPath, "Include/core"),
+				Path.Combine(SDKPath, "Include/Lib"),
+				Path.Combine(SDKPath, "Include", PlatformLib)
 			}
 		);
         PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public"));
