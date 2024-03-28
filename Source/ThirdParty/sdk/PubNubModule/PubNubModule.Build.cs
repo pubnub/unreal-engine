@@ -6,7 +6,7 @@ using UnrealBuildTool;
 
 public class PubNubModule : ModuleRules
 {
-    private bool OpenSsl = false;
+    private bool OpenSsl = true;
     private bool StaticLink = true;
 
     public PubNubModule(ReadOnlyTargetRules Target) : base(Target)

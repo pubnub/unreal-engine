@@ -159,7 +159,7 @@
 
 /** If true (!=0), enable support for message encryption/decryption */
 #ifndef PUBNUB_CRYPTO_API 
-#define PUBNUB_CRYPTO_API 1
+#define PUBNUB_CRYPTO_API 0
 #endif
 
 

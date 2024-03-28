@@ -55,11 +55,7 @@ static size_t estimated_enc_buffer_size(size_t n) {
 }
 
 static size_t estimated_dec_buffer_size(size_t n) {
-    // In most cases formula (n + 1) is enough to 
-    // handle the amount of decrypted bytes.
-    // Addition AES_BLOCK_SIZE just to be sure if message
-    // contains very specific padding. 
-    return n + AES_BLOCK_SIZE + 1; 
+    return n + 1; // for the terminating array
 }
 
 static int legacy_encrypt(
