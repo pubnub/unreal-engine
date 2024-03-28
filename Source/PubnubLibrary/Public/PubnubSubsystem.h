@@ -4,15 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "PubNub.h"
-#include "CCoreSubsystem.generated.h"
+#include "PubnubSubsystem.generated.h"
 
 
-class UCCoreSettings;
-class FCCoreFunctionThread;
-class FCCoreLoopingThread;
+class UPubnubSettings;
+class FPubnubFunctionThread;
+class FPubnubLoopingThread;
 
 UCLASS()
-class CCORELIBRARY_API UCCoreSubsystem : public UGameInstanceSubsystem
+class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	
@@ -25,13 +25,13 @@ public:
 	
 	/* BLUEPRINT EXPOSED FUNCTIONS */
 
-	UFUNCTION(BlueprintCallable, Category = "CCore")
-	void InitCCore();
+	UFUNCTION(BlueprintCallable, Category = "Pubnub")
+	void InitPubnub();
 	
-	UFUNCTION(BlueprintCallable, Category = "CCore")
-	void DeinitCCore();
+	UFUNCTION(BlueprintCallable, Category = "Pubnub")
+	void DeinitPubnub();
 
-	UFUNCTION(BlueprintCallable, Category = "CCore")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub")
 	void SetUserID(FString UserID);
 
 #pragma endregion
@@ -41,8 +41,8 @@ private:
 	bool IsInitialized = false;
 
 	//New threads to call all C-Core functions asynchronously
-	TObjectPtr<FCCoreFunctionThread> PublishThread = nullptr;
-	TObjectPtr<FCCoreLoopingThread> SubscribeThread = nullptr;
+	TObjectPtr<FPubnubFunctionThread> PublishThread = nullptr;
+	TObjectPtr<FPubnubLoopingThread> SubscribeThread = nullptr;
 
 	//Pubnub contexts for publishing data and subscribing to channels
 	pubnub_t *ctx_pub = nullptr;
@@ -52,7 +52,7 @@ private:
 	
 	/* PLUGIN SETTINGS */
 	
-	TObjectPtr<UCCoreSettings> CCoreSettings = nullptr;
+	TObjectPtr<UPubnubSettings> PubnubSettings = nullptr;
 	
 	//Containers for keys stored from settings
 	char PublishKey[43];
@@ -64,7 +64,7 @@ private:
 #pragma endregion 
 
 
-	void InitCCore_priv();
-	void DeinitCCore_priv();
+	void InitPubnub_priv();
+	void DeinitPubnub_priv();
 	void SetUserID_priv(FString UserID);
 };

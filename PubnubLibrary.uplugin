@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "1.0",
-	"FriendlyName": "CCoreLibrary",
+	"FriendlyName": "PubnubLibrary",
 	"Description": "",
 	"Category": "Other",
 	"CreatedBy": "",
@@ -16,7 +16,7 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "CCoreLibrary",
+			"Name": "PubnubLibrary",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}

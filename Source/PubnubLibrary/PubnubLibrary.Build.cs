@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class CCoreLibrary : ModuleRules
+public class PubnubLibrary : ModuleRules
 {
-	public CCoreLibrary(ReadOnlyTargetRules Target) : base(Target)
+	public PubnubLibrary(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		

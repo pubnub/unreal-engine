@@ -7,15 +7,15 @@
 /**
  * 
  */
-class CCORELIBRARY_API FCCoreLoopingThread : FRunnable
+class PUBNUBLIBRARY_API FPubnubLoopingThread : FRunnable
 {
 public:
 	
-	FCCoreLoopingThread()
+	FPubnubLoopingThread()
 	{
-		Thread = FRunnableThread::Create(this, TEXT("CCoreThread"));
+		Thread = FRunnableThread::Create(this, TEXT("PubnubThread"));
 	};
-	~FCCoreLoopingThread()
+	~FPubnubLoopingThread()
 	{
 		if(Thread)
 		{
@@ -37,7 +37,7 @@ public:
 	void ClearLoopingFunctions();
 
 private:
-	TArray<TFunction<void()>> CCoreAsyncLoopingFunctionsBuffer;
-	TArray<TFunction<void()>> CCoreAsyncLoopingFunctions;
+	TArray<TFunction<void()>> PubnubAsyncLoopingFunctionsBuffer;
+	TArray<TFunction<void()>> PubnubAsyncLoopingFunctions;
 };
 

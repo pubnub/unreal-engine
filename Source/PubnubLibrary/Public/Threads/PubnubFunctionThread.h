@@ -7,15 +7,15 @@
 /**
  * 
  */
-class CCORELIBRARY_API FCCoreFunctionThread : FRunnable
+class PUBNUBLIBRARY_API FPubnubFunctionThread : FRunnable
 {
 public:
 	
-	FCCoreFunctionThread()
+	FPubnubFunctionThread()
 	{
-		Thread = FRunnableThread::Create(this, TEXT("CCoreThread"));
+		Thread = FRunnableThread::Create(this, TEXT("PubnubThread"));
 	};
-	~FCCoreFunctionThread()
+	~FPubnubFunctionThread()
 	{
 		if(Thread)
 		{
@@ -35,7 +35,7 @@ public:
 	void AddFunctionToQueue(TFunction<void()> InFunction);
 
 private:
-	TArray<TFunction<void()>> CCoreAsyncFunctionsBuffer;
-	TArray<TFunction<void()>> CCoreAsyncFunctionsQueue;
+	TArray<TFunction<void()>> PubnubAsyncFunctionsBuffer;
+	TArray<TFunction<void()>> PubnubAsyncFunctionsQueue;
 };
 

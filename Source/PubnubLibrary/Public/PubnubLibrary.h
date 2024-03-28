@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FCCoreLibraryModule : public IModuleInterface
+class FPubnubLibraryModule : public IModuleInterface
 {
 public:
 

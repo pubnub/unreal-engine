@@ -3,15 +3,15 @@
 #pragma once
 
 #include "Engine/DeveloperSettings.h"
-#include "CCoreSettings.generated.h"
+#include "PubnubSettings.generated.h"
 
-UCLASS(Config=CCoreSDK, meta=(DisplayName="C-Core SDK"))
-class CCORELIBRARY_API UCCoreSettings : public UDeveloperSettings
+UCLASS(Config=PubnubSDK, meta=(DisplayName="C-Core SDK"))
+class PUBNUBLIBRARY_API UPubnubSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	UCCoreSettings();
+	UPubnubSettings();
 
 	UPROPERTY(Config, EditAnywhere, Category = "Keys")
 	FString PublishKey = "default";
@@ -20,7 +20,7 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Keys")
 	FString SecretKey = "";
 
-	//Should C-Core initialize automatically. If set to false, InitCCore() has to be called manually before using other C-Core functionalities.
+	//Should Pubnub initialize automatically. If set to false, InitPubnub() has to be called manually before using other Pubnub functionalities.
 	UPROPERTY(Config, EditAnywhere)
 	bool InitializeAutomatically = true;
 };

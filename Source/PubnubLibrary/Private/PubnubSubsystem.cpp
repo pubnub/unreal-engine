@@ -1,56 +1,56 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "CCoreSubsystem.h"
-#include "Config/CCoreSettings.h"
-#include "Threads/CCoreFunctionThread.h"
-#include "Threads/CCoreLoopingThread.h"
+#include "PubnubSubsystem.h"
+#include "Config/PubnubSettings.h"
+#include "Threads/PubnubFunctionThread.h"
+#include "Threads/PubnubLoopingThread.h"
 
 
-void UCCoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
 	//Create new threads - separate for subscribe and all other operations
-	PublishThread = new FCCoreFunctionThread;
-	SubscribeThread = new FCCoreLoopingThread;
+	PublishThread = new FPubnubFunctionThread;
+	SubscribeThread = new FPubnubLoopingThread;
 
 	//Load all settings from plugin config
 	LoadPluginSettings();
-	if(CCoreSettings->InitializeAutomatically)
+	if(PubnubSettings->InitializeAutomatically)
 	{
-		InitCCore();
+		InitPubnub();
 	}
 }
 
-void UCCoreSubsystem::Deinitialize()
+void UPubnubSubsystem::Deinitialize()
 {
-	DeinitCCore_priv();
+	DeinitPubnub_priv();
 	Super::Deinitialize();
 }
 
-void UCCoreSubsystem::InitCCore()
+void UPubnubSubsystem::InitPubnub()
 {
 	if(!PublishThread)
 	{return;}
 
 	PublishThread->AddFunctionToQueue( [this]
 	{
-		InitCCore_priv();
+		InitPubnub_priv();
 	});
 }
 
-void UCCoreSubsystem::DeinitCCore()
+void UPubnubSubsystem::DeinitPubnub()
 {
 	if(!PublishThread)
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this]
 	{
-		DeinitCCore_priv();
+		DeinitPubnub_priv();
 	});
 }
 
-void UCCoreSubsystem::SetUserID(FString UserID)
+void UPubnubSubsystem::SetUserID(FString UserID)
 {
 	if(!PublishThread)
 	{return;}
@@ -61,15 +61,15 @@ void UCCoreSubsystem::SetUserID(FString UserID)
 	});
 }
 
-void UCCoreSubsystem::LoadPluginSettings()
+void UPubnubSubsystem::LoadPluginSettings()
 {
 	//Save all settings
-	CCoreSettings = GetMutableDefault<UCCoreSettings>();
+	PubnubSettings = GetMutableDefault<UPubnubSettings>();
 	
 	//Copy memory for chars containing keys
-	memcpy_s(PublishKey, 42, TCHAR_TO_ANSI(*CCoreSettings->PublishKey), 42);
-	memcpy_s(SubscribeKey,42,  TCHAR_TO_ANSI(*CCoreSettings->SubscribeKey), 42);
-	memcpy_s(SecretKey,54,  TCHAR_TO_ANSI(*CCoreSettings->SecretKey), 54);
+	memcpy_s(PublishKey, 42, TCHAR_TO_ANSI(*PubnubSettings->PublishKey), 42);
+	memcpy_s(SubscribeKey,42,  TCHAR_TO_ANSI(*PubnubSettings->SubscribeKey), 42);
+	memcpy_s(SecretKey,54,  TCHAR_TO_ANSI(*PubnubSettings->SecretKey), 54);
 	PublishKey[42] = '\0';
 	SubscribeKey[42] = '\0';
 	SecretKey[54] = '\0';
@@ -79,7 +79,7 @@ void UCCoreSubsystem::LoadPluginSettings()
 
 /* PRIV FUNCTIONS */
 
-void UCCoreSubsystem::InitCCore_priv()
+void UPubnubSubsystem::InitPubnub_priv()
 {
 	if(IsInitialized)
 	{return;}
@@ -93,7 +93,7 @@ void UCCoreSubsystem::InitCCore_priv()
 	IsInitialized = true;
 }
 
-void UCCoreSubsystem::DeinitCCore_priv()
+void UPubnubSubsystem::DeinitPubnub_priv()
 {
 	if(!IsInitialized)
 	{return;}
@@ -113,7 +113,7 @@ void UCCoreSubsystem::DeinitCCore_priv()
 	IsInitialized = false;
 }
 
-void UCCoreSubsystem::SetUserID_priv(FString UserID)
+void UPubnubSubsystem::SetUserID_priv(FString UserID)
 {
 	if(!IsInitialized)
 	{return;}
