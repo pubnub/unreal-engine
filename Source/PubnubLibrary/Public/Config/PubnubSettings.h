@@ -14,9 +14,9 @@ public:
 	UPubnubSettings();
 
 	UPROPERTY(Config, EditAnywhere, Category = "Keys")
-	FString PublishKey = "default";
+	FString PublishKey = "";
 	UPROPERTY(Config, EditAnywhere, Category = "Keys")
-	FString SubscribeKey = "default";
+	FString SubscribeKey = "";
 	UPROPERTY(Config, EditAnywhere, Category = "Keys")
 	FString SecretKey = "";
 
