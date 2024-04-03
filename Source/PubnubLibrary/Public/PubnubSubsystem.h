@@ -72,6 +72,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "CCore|Publish")
 	void PublishMessage(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
+	UFUNCTION(BlueprintCallable, Category = "CCore|Subscribe")
+	void SubscribeToChannel(FString ChannelName);
+
+	UFUNCTION(BlueprintCallable, Category = "CCore|Subscribe")
+	void SubscribeToGroup(FString GroupName);
 
 #pragma endregion
 	
@@ -84,6 +89,16 @@ private:
 	//Pubnub contexts for publishing data and subscribing to channels
 	pubnub_t *ctx_pub = nullptr;
 	pubnub_t *ctx_sub = nullptr;
+
+	TArray<FString> SubscribedChannels;
+	TArray<FString> SubscribedGroups;
+	
+	//Publish to the first subscribed channel to unlock subscribe context
+	void SystemPublish();
+
+	//Register to PubnubLoopingThread function to check in loop for messages from subscribed channels and groups
+	void StartPubnubSubscribeLoop();
+
 
 #pragma region PLUGIN SETTINGS
 	
@@ -118,6 +133,8 @@ private:
 	void SetUserID_priv(FString UserID);
 	void SetSecretKey_priv();
 	void PublishMessage_priv(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	void SubscribeToChannel_priv(FString ChannelName);
+	void SubscribeToGroup_priv(FString GroupName);
 
 #pragma endregion 
 };

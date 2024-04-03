@@ -84,7 +84,48 @@ void UPubnubSubsystem::PublishMessage(FString ChannelName, FString Message, FPub
 	});
 }
 
+void UPubnubSubsystem::SubscribeToChannel(FString ChannelName)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, ChannelName]
+	{
+		SubscribeToChannel_priv(ChannelName);
+	});
+}
 
+void UPubnubSubsystem::SubscribeToGroup(FString GroupName)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, GroupName]
+	{
+		SubscribeToGroup_priv(GroupName);
+	});
+}
+
+
+void UPubnubSubsystem::SystemPublish()
+{
+	if(SubscribedChannels.IsEmpty())
+	{return;}
+
+	//TODO: this will not unlock context if user is subscribed only to groups, but not to any channels. This issue needs to be addressed.
+	PublishMessage(SubscribedChannels[0], "{\"system\":\"subscribe unlock message\"}");
+}
+
+void UPubnubSubsystem::StartPubnubSubscribeLoop()
+{
+	if(!SubscribeThread)
+	{return;}
+
+	SubscribeThread->AddLoopingFunction([this]
+	{
+		
+	});
+}
 
 void UPubnubSubsystem::LoadPluginSettings()
 {
@@ -207,6 +248,9 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
+	if(ChannelName.IsEmpty() || Message.IsEmpty())
+	{return;}
+
 	//TODO: move this to a separate function (needs a way to store global *char from FString)
 
 	//Set all options from PublishSettings
@@ -225,4 +269,54 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 	PublishOptions.method = (pubnub_method)(uint8)PublishSettings.PublishMethod;
 	
 	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message), PublishOptions);
+}
+
+void UPubnubSubsystem::SubscribeToChannel_priv(FString ChannelName)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty())
+	{return;}
+
+	if(SubscribedChannels.Contains(ChannelName))
+	{return;}
+
+	//Check if Pubnub was already subscribed to a channel or a group.
+	bool WasCheckingMessages = !SubscribedChannels.IsEmpty() || !SubscribedGroups.IsEmpty();
+	
+	SubscribedChannels.Add(ChannelName);
+	
+	if(WasCheckingMessages)
+	{
+		StartPubnubSubscribeLoop();
+	}
+
+	//System publish to unlock subscribe context and start listening for this new channel
+	SystemPublish();
+}
+
+void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(GroupName.IsEmpty())
+	{return;}
+
+	if(SubscribedGroups.Contains(GroupName))
+	{return;}
+
+	//Check if Pubnub was already subscribed to a channel or a group.
+	bool WasCheckingMessages = !SubscribedChannels.IsEmpty() || !SubscribedGroups.IsEmpty();
+	
+	SubscribedGroups.Add(GroupName);
+
+	if(WasCheckingMessages)
+	{
+		StartPubnubSubscribeLoop();
+	}
+
+	//System publish to unlock subscribe context and start listening for this new group
+	SystemPublish();
 }
