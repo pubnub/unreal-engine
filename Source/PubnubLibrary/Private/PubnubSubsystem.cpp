@@ -61,6 +61,30 @@ void UPubnubSubsystem::SetUserID(FString UserID)
 	});
 }
 
+void UPubnubSubsystem::SetSecretKey()
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this]
+	{
+		SetSecretKey_priv();
+	});
+}
+
+void UPubnubSubsystem::PublishMessage(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, ChannelName, Message, PublishSettings]
+	{
+		PublishMessage_priv(ChannelName, Message, PublishSettings);
+	});
+}
+
+
+
 void UPubnubSubsystem::LoadPluginSettings()
 {
 	//Save all settings
@@ -75,6 +99,27 @@ void UPubnubSubsystem::LoadPluginSettings()
 	SecretKey[54] = '\0';
 }
 
+//This functions is a wrapper to IsInitialized bool, so it can print error if user is trying to do anything before initializing Pubnub correctly
+bool UPubnubSubsystem::CheckIsPubnubInitialized()
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Pubnub is not initialized. Aborting operation"));
+	}
+	
+	return IsInitialized;
+}
+
+//This functions is a wrapper to IsUserIDSet bool, so it can print error if user is trying to do anything before setting user ID correctly
+bool UPubnubSubsystem::CheckIsUserIDSet()
+{
+	if(!IsUserIDSet)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Pubnub user ID is not set. Aborting operation"));
+	}
+	
+	return IsUserIDSet;
+}
 
 
 /* PRIV FUNCTIONS */
@@ -115,9 +160,45 @@ void UPubnubSubsystem::DeinitPubnub_priv()
 
 void UPubnubSubsystem::SetUserID_priv(FString UserID)
 {
-	if(!IsInitialized)
+	if(!CheckIsPubnubInitialized())
 	{return;}
 
 	pubnub_set_user_id(ctx_pub, TCHAR_TO_ANSI(*UserID));
 	pubnub_set_user_id(ctx_sub, TCHAR_TO_ANSI(*UserID));
+
+	IsUserIDSet = true;
+}
+
+void UPubnubSubsystem::SetSecretKey_priv()
+{
+	if(!CheckIsPubnubInitialized())
+	{return;}
+
+	pubnub_set_secret_key(ctx_pub, SecretKey);
+	pubnub_set_secret_key(ctx_sub, SecretKey);
+}
+
+void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	//TODO: move this to a separate function (needs a way to store global *char from FString)
+
+	//Set all options from PublishSettings
+	pubnub_publish_options PublishOptions = pubnub_publish_defopts();
+	PublishOptions.store = PublishSettings.StoreInHistory;
+	PublishOptions.replicate = PublishSettings.Replicate;
+	
+	if(!PublishSettings.MetaData.IsEmpty())
+	{
+		auto CharConverter = StringCast<ANSICHAR>(*PublishSettings.MetaData);
+		const char* MetaDataChar = CharConverter.Get();
+		PublishOptions.meta = MetaDataChar;
+	}
+
+	//Convert UE enum to pubnub_method enum
+	PublishOptions.method = (pubnub_method)(uint8)PublishSettings.PublishMethod;
+	
+	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message), PublishOptions);
 }
