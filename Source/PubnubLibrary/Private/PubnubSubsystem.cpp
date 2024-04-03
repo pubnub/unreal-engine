@@ -5,6 +5,7 @@
 #include "Threads/PubnubFunctionThread.h"
 #include "Threads/PubnubLoopingThread.h"
 
+DEFINE_LOG_CATEGORY_STATIC(PubnubLog, Log, All)
 
 void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -104,7 +105,7 @@ bool UPubnubSubsystem::CheckIsPubnubInitialized()
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Pubnub is not initialized. Aborting operation"));
+		UE_LOG(PubnubLog, Error, TEXT("Pubnub is not initialized. Aborting operation"));
 	}
 	
 	return IsInitialized;
@@ -115,7 +116,7 @@ bool UPubnubSubsystem::CheckIsUserIDSet()
 {
 	if(!IsUserIDSet)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Pubnub user ID is not set. Aborting operation"));
+		UE_LOG(PubnubLog, Error, TEXT("Pubnub user ID is not set. Aborting operation"));
 	}
 	
 	return IsUserIDSet;
@@ -128,12 +129,29 @@ void UPubnubSubsystem::InitPubnub_priv()
 {
 	if(IsInitialized)
 	{return;}
+
+	//TODO::Not only check if keys are empty, but also make sure they are valid
+	//Make sure that keys are filled
+	if(std::strlen(PublishKey) == 0 )
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Publish key is empty, can't initialize Pubnub"));
+	}
+
+	if(std::strlen(SubscribeKey) == 0 )
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Subscribe key is empty, can't initialize Pubnub"));
+	}
 	
 	ctx_pub = pubnub_alloc();
 	ctx_sub = pubnub_alloc();
 
 	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
 	pubnub_init(ctx_sub, PublishKey, SubscribeKey);
+
+	if(PubnubSettings->SetSecretKetAutomatically)
+	{
+		SetSecretKey();
+	}
 
 	IsInitialized = true;
 }
@@ -173,6 +191,12 @@ void UPubnubSubsystem::SetSecretKey_priv()
 {
 	if(!CheckIsPubnubInitialized())
 	{return;}
+
+	if(std::strlen(SecretKey) == 0)
+	{
+		UE_LOG(PubnubLog, Warning, TEXT("Can't set Secret Key. Secret Key is empty."));
+		return;
+	}
 
 	pubnub_set_secret_key(ctx_pub, SecretKey);
 	pubnub_set_secret_key(ctx_sub, SecretKey);

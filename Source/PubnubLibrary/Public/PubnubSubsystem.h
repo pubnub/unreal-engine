@@ -63,6 +63,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
 	void SetSecretKey();
 
+	/**
+	 * Publish message in Json format to a specified channel
+	 * @param ChannelName Channel to publish message to. Can't be empty.
+	 * @param Message Message to publish. Has to be in Json format.
+	 * @param PublishSettings Optional advanced publish settings
+	 */
 	UFUNCTION(BlueprintCallable, Category = "CCore|Publish")
 	void PublishMessage(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
