@@ -37,6 +37,10 @@ struct FPubnubPublishSettings
 };
 
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
+
+
+
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
 {
@@ -46,6 +50,14 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+
+#pragma region DELEGATE VARIABLES
+	
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Subscribe")
+	FOnMessageReceived OnMessageReceived;
+
+#pragma endregion
+
 
 #pragma region BLUEPRINT EXPOSED
 	
@@ -99,6 +111,9 @@ private:
 	//Register to PubnubLoopingThread function to check in loop for messages from subscribed channels and groups
 	void StartPubnubSubscribeLoop();
 
+	//Useful for subscribing into multiple channels/groups. Returns Strings in format String1,String2,...
+	FString StringArrayToCommaSeparated(TArray<FString> StringArray);
+
 
 #pragma region PLUGIN SETTINGS
 	
@@ -136,6 +151,7 @@ private:
 	void SubscribeToChannel_priv(FString ChannelName);
 	void SubscribeToGroup_priv(FString GroupName);
 
-#pragma endregion 
+#pragma endregion
+	
 };
 

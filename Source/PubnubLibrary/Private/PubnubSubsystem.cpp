@@ -106,7 +106,6 @@ void UPubnubSubsystem::SubscribeToGroup(FString GroupName)
 	});
 }
 
-
 void UPubnubSubsystem::SystemPublish()
 {
 	if(SubscribedChannels.IsEmpty())
@@ -123,15 +122,71 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 
 	SubscribeThread->AddLoopingFunction([this]
 	{
-		
+		if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
+		{return;}
+
+		//Subscribe to channels - this is blocking function
+		pubnub_subscribe(ctx_sub, TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedChannels)), TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedGroups)));
+
+		//TODO: Make sure it works and maybe come up with more sophisticated check
+		//If this happens after closing program just return
+		if(!this)
+		{return;}
+
+		//Check for subscribe result
+		pubnub_res SubscribeResult = pubnub_await(ctx_sub);
+		if (SubscribeResult != PNR_OK)
+		{
+			FString ErrorCode(pubnub_res_2_string(SubscribeResult));
+			UE_LOG(PubnubLog, Error, TEXT("Failed to subscribe, error: %s"), *ErrorCode);
+			{return;}
+		}
+
+		//At this stage we received messages, so read them and get channel from where they were sent
+		const char* MessageChar = pubnub_get(ctx_sub);
+		const char* ChannelChar = pubnub_get_channel(ctx_sub);
+		while(MessageChar != NULL)
+		{
+			FString Message(MessageChar);
+			FString Channel(ChannelChar);
+
+			//Broadcast callback with message content
+			//Message needs to be called back on Game Thread
+			AsyncTask(ENamedThreads::GameThread, [this, Message, Channel]()
+			{
+				OnMessageReceived.Broadcast(Message, Channel);
+			});
+				
+			MessageChar = pubnub_get(ctx_sub);
+			ChannelChar = pubnub_get_channel(ctx_sub);
+		}
 	});
+}
+
+FString UPubnubSubsystem::StringArrayToCommaSeparated(TArray<FString> StringArray)
+{
+	FString CommaSeparatedString;
+	for(FString StringElement : SubscribedChannels)
+	{
+		if(CommaSeparatedString.IsEmpty())
+		{
+			CommaSeparatedString.Append(StringElement);
+		}
+		else
+		{
+			CommaSeparatedString.Append(",");
+			CommaSeparatedString.Append(StringElement);
+		}
+	}
+	return CommaSeparatedString;
 }
 
 void UPubnubSubsystem::LoadPluginSettings()
 {
 	//Save all settings
 	PubnubSettings = GetMutableDefault<UPubnubSettings>();
-	
+
+	//TODO: Make something better for reading keys - at least check size instead of hard-coding it.
 	//Copy memory for chars containing keys
 	memcpy_s(PublishKey, 42, TCHAR_TO_ANSI(*PubnubSettings->PublishKey), 42);
 	memcpy_s(SubscribeKey,42,  TCHAR_TO_ANSI(*PubnubSettings->SubscribeKey), 42);
