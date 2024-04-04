@@ -81,14 +81,23 @@ public:
 	 * @param Message Message to publish. Has to be in Json format.
 	 * @param PublishSettings Optional advanced publish settings
 	 */
-	UFUNCTION(BlueprintCallable, Category = "CCore|Publish")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish")
 	void PublishMessage(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
-	UFUNCTION(BlueprintCallable, Category = "CCore|Subscribe")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
 	void SubscribeToChannel(FString ChannelName);
 
-	UFUNCTION(BlueprintCallable, Category = "CCore|Subscribe")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
 	void SubscribeToGroup(FString GroupName);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	void UnsubscribeFromChannel(FString ChannelName);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	void UnsubscribeFromGroup(FString GroupName);
+	
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	void UnsubscribeFromAll();
 
 #pragma endregion
 	
@@ -150,6 +159,9 @@ private:
 	void PublishMessage_priv(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void SubscribeToChannel_priv(FString ChannelName);
 	void SubscribeToGroup_priv(FString GroupName);
+	void UnsubscribeFromChannel_priv(FString ChannelName);
+	void UnsubscribeFromGroup_priv(FString GroupName);
+	void UnsubscribeFromAll_priv();
 
 #pragma endregion
 	

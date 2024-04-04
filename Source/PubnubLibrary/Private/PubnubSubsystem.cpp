@@ -106,6 +106,39 @@ void UPubnubSubsystem::SubscribeToGroup(FString GroupName)
 	});
 }
 
+void UPubnubSubsystem::UnsubscribeFromChannel(FString ChannelName)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, ChannelName]
+	{
+		UnsubscribeFromChannel_priv(ChannelName);
+	});
+}
+
+void UPubnubSubsystem::UnsubscribeFromGroup(FString GroupName)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, GroupName]
+	{
+		UnsubscribeFromGroup_priv(GroupName);
+	});
+}
+
+void UPubnubSubsystem::UnsubscribeFromAll()
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this]
+	{
+		UnsubscribeFromAll_priv();
+	});
+}
+
 void UPubnubSubsystem::SystemPublish()
 {
 	if(SubscribedChannels.IsEmpty())
@@ -125,6 +158,7 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 		if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
 		{return;}
 
+		UE_LOG(PubnubLog, Warning, TEXT("Pubnub subscribe"));
 		//Subscribe to channels - this is blocking function
 		pubnub_subscribe(ctx_sub, TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedChannels)), TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedGroups)));
 
@@ -324,6 +358,12 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 	PublishOptions.method = (pubnub_method)(uint8)PublishSettings.PublishMethod;
 	
 	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message), PublishOptions);
+	pubnub_res PublishResult = pubnub_await(ctx_pub);
+
+	if(PublishResult != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Publish failed. Error code: %d"), PublishResult);
+	}
 }
 
 void UPubnubSubsystem::SubscribeToChannel_priv(FString ChannelName)
@@ -342,7 +382,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString ChannelName)
 	
 	SubscribedChannels.Add(ChannelName);
 	
-	if(WasCheckingMessages)
+	if(!WasCheckingMessages)
 	{
 		StartPubnubSubscribeLoop();
 	}
@@ -374,4 +414,29 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName)
 
 	//System publish to unlock subscribe context and start listening for this new group
 	SystemPublish();
+}
+
+void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString ChannelName)
+{
+	//make sure user was subscribed to that channel
+	if(SubscribedChannels.Remove(ChannelName) == 0)
+	{return;}
+
+	pubnub_leave(ctx_pub, TCHAR_TO_ANSI(*ChannelName), NULL);
+}
+
+void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
+{
+	//make sure user was subscribed to that channel
+	if(SubscribedGroups.Remove(GroupName) == 0)
+	{return;}
+
+	pubnub_leave(ctx_pub, NULL, TCHAR_TO_ANSI(*GroupName));
+}
+
+void UPubnubSubsystem::UnsubscribeFromAll_priv()
+{
+	pubnub_leave(ctx_sub, NULL, NULL);
+	SubscribedChannels.Empty();
+	SubscribedGroups.Empty();
 }
