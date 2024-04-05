@@ -273,7 +273,7 @@ FString UPubnubSubsystem::GetLastChannelResponse(pubnub_t* context)
 	}
 	else
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to get last channel response"));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to get last channel response. Error code: %d"), PubnubResponse);
 	}
 	return Response;
 }
