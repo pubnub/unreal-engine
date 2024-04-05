@@ -183,6 +183,61 @@ void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup)
 	});
 }
 
+void UPubnubSubsystem::HereNow(FString ChannelName, FOnHereNowResponse HereNowResponse, FPubnubHereNowSettings HereNowSettings)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, HereNowResponse, HereNowSettings]
+	{
+		HereNow_priv(ChannelName, HereNowResponse, HereNowSettings);
+	});
+}
+
+void UPubnubSubsystem::WhereNow(FString UserID, FOnWhereNowResponse WhereNowResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UserID, WhereNowResponse]
+	{
+		WhereNow_priv(UserID, WhereNowResponse);
+	});
+}
+
+void UPubnubSubsystem::SetState(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, StateJson, SetStateSettings]
+	{
+		SetState_priv(ChannelName, StateJson, SetStateSettings);
+	});
+}
+
+void UPubnubSubsystem::GetState(FString ChannelName, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup, UserID, OnGetStateResponse]
+	{
+		GetState_priv(ChannelName, ChannelGroup, UserID, OnGetStateResponse);
+	});
+}
+
+void UPubnubSubsystem::Heartbeat(FString ChannelName, FString ChannelGroup)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
+	{
+		Heartbeat_priv(ChannelName, ChannelGroup);
+	});
+}
+
 void UPubnubSubsystem::SystemPublish()
 {
 	if(SubscribedChannels.IsEmpty())
@@ -257,6 +312,25 @@ FString UPubnubSubsystem::StringArrayToCommaSeparated(TArray<FString> StringArra
 		}
 	}
 	return CommaSeparatedString;
+}
+
+FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
+{
+	FString Response;
+	
+	if(!context)
+	{return Response;}
+	
+	pubnub_res PubnubResponse = pubnub_await(context);
+	if (PNR_OK == PubnubResponse) {
+		
+		Response = pubnub_get(context);
+	}
+	else
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to get last response. Error code: %d"), PubnubResponse);
+	}
+	return Response;
 }
 
 FString UPubnubSubsystem::GetLastChannelResponse(pubnub_t* context)
@@ -415,17 +489,16 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 	if(ChannelName.IsEmpty() || Message.IsEmpty())
 	{return;}
 
-	//TODO: move this to a separate function (needs a way to store global *char from FString)
-
 	//Set all options from PublishSettings
 	pubnub_publish_options PublishOptions = pubnub_publish_defopts();
 	PublishOptions.store = PublishSettings.StoreInHistory;
 	PublishOptions.replicate = PublishSettings.Replicate;
 	
+	auto CharConverter = StringCast<ANSICHAR>(*PublishSettings.MetaData);
+	const char* MetaDataChar = CharConverter.Get();
+	
 	if(!PublishSettings.MetaData.IsEmpty())
 	{
-		auto CharConverter = StringCast<ANSICHAR>(*PublishSettings.MetaData);
-		const char* MetaDataChar = CharConverter.Get();
 		PublishOptions.meta = MetaDataChar;
 	}
 
@@ -575,8 +648,13 @@ void UPubnubSubsystem::ListChannelsFromGroup_priv(FString ChannelGroup,
 	pubnub_list_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
 	FString JsonResponse = GetLastChannelResponse(ctx_pub);
 
-	//Broadcast bound delegate with JsonResponse
-	OnListChannelsResponse.ExecuteIfBound(JsonResponse);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnListChannelsResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnListChannelsResponse.ExecuteIfBound(JsonResponse);
+	});
 }
 
 void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
@@ -588,4 +666,118 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
 	{return;}
 
 	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
+}
+
+void UPubnubSubsystem::HereNow_priv(FString ChannelName, FOnHereNowResponse HereNowResponse, FPubnubHereNowSettings HereNowSettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty())
+	{return;}
+
+	//Set all options from HereNowSettings
+	pubnub_here_now_options HereNowOptions = pubnub_here_now_defopts();
+	HereNowOptions.disable_uuids = HereNowSettings.DisableUUID;
+	HereNowOptions.state = HereNowSettings.State;
+
+	auto CharConverter = StringCast<ANSICHAR>(*HereNowSettings.ChannelGroup);
+	const char* ChannelNameChar = CharConverter.Get();
+	if(!HereNowSettings.ChannelGroup.IsEmpty())
+	{
+		HereNowOptions.channel_group = ChannelNameChar;
+	}
+	
+	pubnub_here_now_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), HereNowOptions);
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, HereNowResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		HereNowResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::WhereNow_priv(FString UserID, FOnWhereNowResponse WhereNowResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(UserID.IsEmpty())
+	{return;}
+
+	pubnub_where_now(ctx_pub, TCHAR_TO_ANSI(*UserID));
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, WhereNowResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		WhereNowResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty() || StateJson.IsEmpty())
+	{return;}
+
+	pubnub_set_state_options SetStateOptions = pubnub_set_state_defopts();
+
+	auto CharConverter = StringCast<ANSICHAR>(*SetStateSettings.ChannelGroup);
+	const char* ChannelGroupChar = CharConverter.Get();
+	if(!SetStateSettings.ChannelGroup.IsEmpty())
+	{
+		SetStateOptions.channel_group = ChannelGroupChar;
+	}
+	auto UserIDCharConverter = StringCast<ANSICHAR>(*SetStateSettings.UserID);
+	const char* UserIDChar = UserIDCharConverter.Get();
+	if(!SetStateSettings.UserID.IsEmpty())
+	{
+		SetStateOptions.user_id = UserIDChar;
+	}
+
+	SetStateOptions.heartbeat = SetStateSettings.HeartBeat;
+
+	pubnub_set_state_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*StateJson), SetStateOptions);
+
+	//TODO: waiting for response takes time. Maybe it would be useful to expose a bool like "WaitForResponse". So if set to false we would skip further part of this function
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if (PNR_OK != PubnubResponse) {
+		UE_LOG(PubnubLog, Error, TEXT("Failed to set state. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty() && ChannelGroup.IsEmpty())
+	{return;}
+
+	pubnub_state_get(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup), TCHAR_TO_ANSI(*UserID));
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetStateResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetStateResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::Heartbeat_priv(FString ChannelName, FString ChannelGroup)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty() && ChannelGroup.IsEmpty())
+	{return;}
+
+	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
 }

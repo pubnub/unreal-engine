@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "PubNub.h"
+#include "PubnubStructLibrary.h"
+#include "PubnubEnumLibrary.h"
 #include "PubnubSubsystem.generated.h"
 
 
@@ -11,34 +13,11 @@ class UPubnubSettings;
 class FPubnubFunctionThread;
 class FPubnubLoopingThread;
 
-UENUM(BlueprintType)
-enum class EPubnubPublishMethod : uint8
-{
-	pubnubSendViaGET,
-	pubnubSendViaPOST,
-	pubnubUsePATCH,
-	pubnubSendViaPOSTwithGZIP,
-	pubnubUsePATCHwithGZIP,
-	pubnubUseDELETE
-};
-
-
-USTRUCT(BlueprintType)
-struct FPubnubPublishSettings
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool StoreInHistory = true;
-	//TODO: CipherKey is deprecated, decide what to do (hide variable or mark is as deprecated)
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) FString CipherKey = "";
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Replicate = true;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) FString MetaData = "";
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) EPubnubPublishMethod PublishMethod = EPubnubPublishMethod::pubnubSendViaGET;
-};
-
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnListChannelsFromGroupResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHereNowResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnWhereNowResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetStateResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -50,17 +29,9 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-
-#pragma region DELEGATE VARIABLES
 	
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnMessageReceived OnMessageReceived;
-
-	UPROPERTY()
-	FOnListChannelsFromGroupResponse OnListChannelsFromGroupResponse;
-
-#pragma endregion
-
 
 #pragma region BLUEPRINT EXPOSED
 	
@@ -115,6 +86,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channels")
 	void RemoveChannelGroup(FString ChannelGroup);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void HereNow(FString ChannelName, FOnHereNowResponse HereNowResponse, FPubnubHereNowSettings HereNowSettings = FPubnubHereNowSettings());
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void WhereNow(FString UserID, FOnWhereNowResponse WhereNowResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void SetState(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void GetState(FString ChannelName, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void Heartbeat(FString ChannelName, FString ChannelGroup);
+
 #pragma endregion
 	
 private:
@@ -142,6 +128,9 @@ private:
 	//Useful for subscribing into multiple channels/groups. Returns Strings in format String1,String2,...
 	FString StringArrayToCommaSeparated(TArray<FString> StringArray);
 
+	//Returns FString from the pubnub_get response
+	FString GetLastResponse(pubnub_t* context);
+	
 	//Returns FString from the pubnub_get_channel response
 	FString GetLastChannelResponse(pubnub_t* context);
 
@@ -189,6 +178,11 @@ private:
 	void RemoveChannelFromGroup_priv(FString ChannelName, FString ChannelGroup);
 	void ListChannelsFromGroup_priv(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
 	void RemoveChannelGroup_priv(FString ChannelGroup);
+	void HereNow_priv(FString ChannelName, FOnHereNowResponse HereNowResponse, FPubnubHereNowSettings HereNowSettings = FPubnubHereNowSettings());
+	void WhereNow_priv(FString UserID, FOnWhereNowResponse WhereNowResponse);
+	void SetState_priv(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+	void GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse);
+	void Heartbeat_priv(FString ChannelName, FString ChannelGroup);
 
 #pragma endregion
 	
