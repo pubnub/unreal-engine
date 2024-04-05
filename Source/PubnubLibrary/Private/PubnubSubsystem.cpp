@@ -728,6 +728,7 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 
 	pubnub_set_state_options SetStateOptions = pubnub_set_state_defopts();
 
+	//Set all options from SetStateSettings
 	auto CharConverter = StringCast<ANSICHAR>(*SetStateSettings.ChannelGroup);
 	const char* ChannelGroupChar = CharConverter.Get();
 	if(!SetStateSettings.ChannelGroup.IsEmpty())
