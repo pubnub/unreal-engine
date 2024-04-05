@@ -139,6 +139,50 @@ void UPubnubSubsystem::UnsubscribeFromAll()
 	});
 }
 
+void UPubnubSubsystem::AddChannelToGroup(FString ChannelName, FString ChannelGroup)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
+	{
+		AddChannelToGroup_priv(ChannelName, ChannelGroup);
+	});
+}
+
+void UPubnubSubsystem::RemoveChannelFromGroup(FString ChannelName, FString ChannelGroup)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
+	{
+		RemoveChannelFromGroup_priv(ChannelName, ChannelGroup);
+	});
+}
+
+void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, ChannelGroup, OnListChannelsResponse]
+	{
+		ListChannelsFromGroup_priv(ChannelGroup, OnListChannelsResponse);
+	});
+}
+
+void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup)
+{
+	if(!PublishThread)
+	{return;}
+	
+	PublishThread->AddFunctionToQueue( [this, ChannelGroup]
+	{
+		RemoveChannelGroup_priv(ChannelGroup);
+	});
+}
+
 void UPubnubSubsystem::SystemPublish()
 {
 	if(SubscribedChannels.IsEmpty())
@@ -213,6 +257,25 @@ FString UPubnubSubsystem::StringArrayToCommaSeparated(TArray<FString> StringArra
 		}
 	}
 	return CommaSeparatedString;
+}
+
+FString UPubnubSubsystem::GetLastChannelResponse(pubnub_t* context)
+{
+	FString Response;
+	
+	if(!context)
+	{return Response;}
+	
+	pubnub_res PubnubResponse = pubnub_await(context);
+	if (PNR_OK == PubnubResponse) {
+		
+		Response = pubnub_get_channel(context);
+	}
+	else
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to get last channel response. Error code: %d"), PubnubResponse);
+	}
+	return Response;
 }
 
 void UPubnubSubsystem::LoadPluginSettings()
@@ -430,6 +493,9 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString ChannelName)
 {
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+	
 	//make sure user was subscribed to that channel
 	if(SubscribedChannels.Remove(ChannelName) == 0)
 	{return;}
@@ -439,6 +505,9 @@ void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString ChannelName)
 
 void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
 {
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+	
 	//make sure user was subscribed to that channel
 	if(SubscribedGroups.Remove(GroupName) == 0)
 	{return;}
@@ -448,6 +517,9 @@ void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromAll_priv()
 {
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+	
 	//TODO: Find out how to unsubscribe from all channels correctly
 	for(FString Channel : SubscribedChannels)
 	{
@@ -467,4 +539,53 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 	SubscribedGroups.Empty();
 	
 	SubscribeThread->ClearLoopingFunctions();
+}
+
+void UPubnubSubsystem::AddChannelToGroup_priv(FString ChannelName, FString ChannelGroup)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty() || ChannelGroup.IsEmpty())
+	{return;}
+
+	pubnub_add_channel_to_group(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
+}
+
+void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString ChannelName, FString ChannelGroup)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty() || ChannelGroup.IsEmpty())
+	{return;}
+
+	pubnub_remove_channel_from_group(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
+}
+
+void UPubnubSubsystem::ListChannelsFromGroup_priv(FString ChannelGroup,
+	FOnListChannelsFromGroupResponse OnListChannelsResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelGroup.IsEmpty())
+	{return;}
+
+	pubnub_list_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
+	FString JsonResponse = GetLastChannelResponse(ctx_pub);
+
+	//Broadcast bound delegate with JsonResponse
+	OnListChannelsResponse.ExecuteIfBound(JsonResponse);
+}
+
+void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelGroup.IsEmpty())
+	{return;}
+
+	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
 }
