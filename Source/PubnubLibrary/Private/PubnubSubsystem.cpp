@@ -291,7 +291,8 @@ void UPubnubSubsystem::DeinitPubnub_priv()
 	if(!IsInitialized)
 	{return;}
 
-	//Add Unsubscribe from all channels here
+	//Unsubscribe from all channels so this user will not be visible for others anymore
+	UnsubscribeFromAll();
 	
 	if(ctx_pub)
 	{
@@ -436,7 +437,23 @@ void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromAll_priv()
 {
-	pubnub_leave(ctx_sub, NULL, NULL);
+	//TODO: Find out how to unsubscribe from all channels correctly
+	for(FString Channel : SubscribedChannels)
+	{
+		pubnub_leave(ctx_pub, TCHAR_TO_ANSI(*Channel), NULL);
+		pubnub_await(ctx_pub);
+	}
+
+	for(FString Group : SubscribedGroups)
+	{
+		pubnub_leave(ctx_pub, NULL, TCHAR_TO_ANSI(*Group));
+		pubnub_await(ctx_pub);
+	}
+	
+	pubnub_cancel(ctx_pub);
+
 	SubscribedChannels.Empty();
 	SubscribedGroups.Empty();
+	
+	SubscribeThread->ClearLoopingFunctions();
 }
