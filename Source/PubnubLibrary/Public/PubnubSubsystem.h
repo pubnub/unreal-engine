@@ -38,7 +38,7 @@ struct FPubnubPublishSettings
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
-
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnListChannelsFromGroupResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -53,8 +53,11 @@ public:
 
 #pragma region DELEGATE VARIABLES
 	
-	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Subscribe")
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnMessageReceived OnMessageReceived;
+
+	UPROPERTY()
+	FOnListChannelsFromGroupResponse OnListChannelsFromGroupResponse;
 
 #pragma endregion
 
@@ -100,6 +103,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
 	void UnsubscribeFromAll();
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channels")
+	void AddChannelToGroup(FString ChannelName, FString ChannelGroup);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channels")
+	void RemoveChannelFromGroup(FString ChannelName, FString ChannelGroup);
+	
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channels")
+	void ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channels")
+	void RemoveChannelGroup(FString ChannelGroup);
+
 #pragma endregion
 	
 private:
@@ -123,6 +138,9 @@ private:
 
 	//Useful for subscribing into multiple channels/groups. Returns Strings in format String1,String2,...
 	FString StringArrayToCommaSeparated(TArray<FString> StringArray);
+
+	//Returns FString from the pubnub_get_channel response
+	FString GetLastChannelResponse(pubnub_t* context);
 
 
 #pragma region PLUGIN SETTINGS
@@ -164,6 +182,10 @@ private:
 	void UnsubscribeFromChannel_priv(FString ChannelName);
 	void UnsubscribeFromGroup_priv(FString GroupName);
 	void UnsubscribeFromAll_priv();
+	void AddChannelToGroup_priv(FString ChannelName, FString ChannelGroup);
+	void RemoveChannelFromGroup_priv(FString ChannelName, FString ChannelGroup);
+	void ListChannelsFromGroup_priv(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
+	void RemoveChannelGroup_priv(FString ChannelGroup);
 
 #pragma endregion
 	
