@@ -31,7 +31,7 @@ void UPubnubSubsystem::Deinitialize()
 
 void UPubnubSubsystem::InitPubnub()
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 
 	PublishThread->AddFunctionToQueue( [this]
@@ -42,7 +42,7 @@ void UPubnubSubsystem::InitPubnub()
 
 void UPubnubSubsystem::DeinitPubnub()
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this]
@@ -53,7 +53,7 @@ void UPubnubSubsystem::DeinitPubnub()
 
 void UPubnubSubsystem::SetUserID(FString UserID)
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this, UserID]
@@ -64,7 +64,7 @@ void UPubnubSubsystem::SetUserID(FString UserID)
 
 void UPubnubSubsystem::SetSecretKey()
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this]
@@ -75,7 +75,7 @@ void UPubnubSubsystem::SetSecretKey()
 
 void UPubnubSubsystem::PublishMessage(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings)
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this, ChannelName, Message, PublishSettings]
@@ -86,7 +86,7 @@ void UPubnubSubsystem::PublishMessage(FString ChannelName, FString Message, FPub
 
 void UPubnubSubsystem::SubscribeToChannel(FString ChannelName)
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this, ChannelName]
@@ -97,7 +97,7 @@ void UPubnubSubsystem::SubscribeToChannel(FString ChannelName)
 
 void UPubnubSubsystem::SubscribeToGroup(FString GroupName)
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this, GroupName]
@@ -108,7 +108,7 @@ void UPubnubSubsystem::SubscribeToGroup(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromChannel(FString ChannelName)
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this, ChannelName]
@@ -119,7 +119,7 @@ void UPubnubSubsystem::UnsubscribeFromChannel(FString ChannelName)
 
 void UPubnubSubsystem::UnsubscribeFromGroup(FString GroupName)
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this, GroupName]
@@ -130,7 +130,7 @@ void UPubnubSubsystem::UnsubscribeFromGroup(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromAll()
 {
-	if(!PublishThread)
+	if(!CheckPublishThreadValidity())
 	{return;}
 	
 	PublishThread->AddFunctionToQueue( [this]
@@ -250,6 +250,17 @@ bool UPubnubSubsystem::CheckIsUserIDSet()
 	}
 	
 	return IsUserIDSet;
+}
+
+bool UPubnubSubsystem::CheckPublishThreadValidity()
+{
+	if(!PublishThread)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("PublishThread is invalid. Aborting operation"));
+		return false;
+	}
+	
+	return true;
 }
 
 
