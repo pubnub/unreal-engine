@@ -62,7 +62,8 @@ public:
 #pragma region BLUEPRINT EXPOSED
 	
 	/* BLUEPRINT EXPOSED FUNCTIONS */
-
+	//These functions don't have actual logic, they just call corresponding private functions on Pubnub threads
+	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
 	void InitPubnub();
 	
@@ -150,7 +151,7 @@ private:
 #pragma region PRIVATE FUNCTIONS
 
 	/* PRIVATE FUNCTIONS */
-	//These functions shouldn't be used directly by the SDK users. They are called from "BLUEPRINT EXPOSED" functions on PubNub threads.
+	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 	
 	void InitPubnub_priv();
 	void DeinitPubnub_priv();
