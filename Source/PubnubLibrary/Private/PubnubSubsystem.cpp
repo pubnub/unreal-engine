@@ -31,7 +31,7 @@ void UPubnubSubsystem::Deinitialize()
 
 void UPubnubSubsystem::InitPubnub()
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 
 	QuickActionThread->AddFunctionToQueue( [this]
@@ -42,7 +42,7 @@ void UPubnubSubsystem::InitPubnub()
 
 void UPubnubSubsystem::DeinitPubnub()
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this]
@@ -53,7 +53,7 @@ void UPubnubSubsystem::DeinitPubnub()
 
 void UPubnubSubsystem::SetUserID(FString UserID)
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, UserID]
@@ -64,7 +64,7 @@ void UPubnubSubsystem::SetUserID(FString UserID)
 
 void UPubnubSubsystem::SetSecretKey()
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this]
@@ -75,7 +75,7 @@ void UPubnubSubsystem::SetSecretKey()
 
 void UPubnubSubsystem::PublishMessage(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings)
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Message, PublishSettings]
@@ -86,7 +86,7 @@ void UPubnubSubsystem::PublishMessage(FString ChannelName, FString Message, FPub
 
 void UPubnubSubsystem::SubscribeToChannel(FString ChannelName)
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName]
@@ -97,7 +97,7 @@ void UPubnubSubsystem::SubscribeToChannel(FString ChannelName)
 
 void UPubnubSubsystem::SubscribeToGroup(FString GroupName)
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, GroupName]
@@ -108,7 +108,7 @@ void UPubnubSubsystem::SubscribeToGroup(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromChannel(FString ChannelName)
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName]
@@ -119,7 +119,7 @@ void UPubnubSubsystem::UnsubscribeFromChannel(FString ChannelName)
 
 void UPubnubSubsystem::UnsubscribeFromGroup(FString GroupName)
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, GroupName]
@@ -130,7 +130,7 @@ void UPubnubSubsystem::UnsubscribeFromGroup(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromAll()
 {
-	if(!CheckPublishThreadValidity())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this]
@@ -141,7 +141,7 @@ void UPubnubSubsystem::UnsubscribeFromAll()
 
 void UPubnubSubsystem::AddChannelToGroup(FString ChannelName, FString ChannelGroup)
 {
-	if(!QuickActionThread)
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
@@ -152,7 +152,7 @@ void UPubnubSubsystem::AddChannelToGroup(FString ChannelName, FString ChannelGro
 
 void UPubnubSubsystem::RemoveChannelFromGroup(FString ChannelName, FString ChannelGroup)
 {
-	if(!QuickActionThread)
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
@@ -163,7 +163,7 @@ void UPubnubSubsystem::RemoveChannelFromGroup(FString ChannelName, FString Chann
 
 void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
 {
-	if(!QuickActionThread)
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, OnListChannelsResponse]
@@ -174,7 +174,7 @@ void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChanne
 
 void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup)
 {
-	if(!QuickActionThread)
+	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup]
@@ -315,7 +315,7 @@ bool UPubnubSubsystem::CheckIsUserIDSet()
 	return IsUserIDSet;
 }
 
-bool UPubnubSubsystem::CheckPublishThreadValidity()
+bool UPubnubSubsystem::CheckQuickActionThreadValidity()
 {
 	if(!QuickActionThread)
 	{

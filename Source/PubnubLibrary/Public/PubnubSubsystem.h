@@ -167,7 +167,7 @@ private:
 	bool IsUserIDSet = false;
 	bool CheckIsPubnubInitialized();
 	bool CheckIsUserIDSet();
-	bool CheckPublishThreadValidity();
+	bool CheckQuickActionThreadValidity();
 
 
 #pragma region PRIVATE FUNCTIONS
