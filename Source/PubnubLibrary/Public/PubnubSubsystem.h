@@ -120,8 +120,11 @@ public:
 private:
 
 	//New threads to call all C-Core functions asynchronously
-	TObjectPtr<FPubnubFunctionThread> PublishThread = nullptr;
-	TObjectPtr<FPubnubLoopingThread> SubscribeThread = nullptr;
+	
+	//Thread for quick operations, generally everything except subscribe
+	TObjectPtr<FPubnubFunctionThread> QuickActionThread = nullptr;
+	//Thread for long operations that need to be called in a loop, mostly for subcribe
+	TObjectPtr<FPubnubLoopingThread> LongpollThread = nullptr;
 
 	//Pubnub contexts for publishing data and subscribing to channels
 	pubnub_t *ctx_pub = nullptr;

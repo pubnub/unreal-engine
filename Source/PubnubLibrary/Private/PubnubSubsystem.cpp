@@ -12,8 +12,8 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	//Create new threads - separate for subscribe and all other operations
-	PublishThread = new FPubnubFunctionThread;
-	SubscribeThread = new FPubnubLoopingThread;
+	QuickActionThread = new FPubnubFunctionThread;
+	LongpollThread = new FPubnubLoopingThread;
 
 	//Load all settings from plugin config
 	LoadPluginSettings();
@@ -34,7 +34,7 @@ void UPubnubSubsystem::InitPubnub()
 	if(!CheckPublishThreadValidity())
 	{return;}
 
-	PublishThread->AddFunctionToQueue( [this]
+	QuickActionThread->AddFunctionToQueue( [this]
 	{
 		InitPubnub_priv();
 	});
@@ -45,7 +45,7 @@ void UPubnubSubsystem::DeinitPubnub()
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this]
+	QuickActionThread->AddFunctionToQueue( [this]
 	{
 		DeinitPubnub_priv();
 	});
@@ -56,7 +56,7 @@ void UPubnubSubsystem::SetUserID(FString UserID)
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, UserID]
+	QuickActionThread->AddFunctionToQueue( [this, UserID]
 	{
 		SetUserID_priv(UserID);
 	});
@@ -67,7 +67,7 @@ void UPubnubSubsystem::SetSecretKey()
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this]
+	QuickActionThread->AddFunctionToQueue( [this]
 	{
 		SetSecretKey_priv();
 	});
@@ -78,7 +78,7 @@ void UPubnubSubsystem::PublishMessage(FString ChannelName, FString Message, FPub
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, ChannelName, Message, PublishSettings]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Message, PublishSettings]
 	{
 		PublishMessage_priv(ChannelName, Message, PublishSettings);
 	});
@@ -89,7 +89,7 @@ void UPubnubSubsystem::SubscribeToChannel(FString ChannelName)
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, ChannelName]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName]
 	{
 		SubscribeToChannel_priv(ChannelName);
 	});
@@ -100,7 +100,7 @@ void UPubnubSubsystem::SubscribeToGroup(FString GroupName)
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, GroupName]
+	QuickActionThread->AddFunctionToQueue( [this, GroupName]
 	{
 		SubscribeToGroup_priv(GroupName);
 	});
@@ -111,7 +111,7 @@ void UPubnubSubsystem::UnsubscribeFromChannel(FString ChannelName)
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, ChannelName]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName]
 	{
 		UnsubscribeFromChannel_priv(ChannelName);
 	});
@@ -122,7 +122,7 @@ void UPubnubSubsystem::UnsubscribeFromGroup(FString GroupName)
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, GroupName]
+	QuickActionThread->AddFunctionToQueue( [this, GroupName]
 	{
 		UnsubscribeFromGroup_priv(GroupName);
 	});
@@ -133,7 +133,7 @@ void UPubnubSubsystem::UnsubscribeFromAll()
 	if(!CheckPublishThreadValidity())
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this]
+	QuickActionThread->AddFunctionToQueue( [this]
 	{
 		UnsubscribeFromAll_priv();
 	});
@@ -141,10 +141,10 @@ void UPubnubSubsystem::UnsubscribeFromAll()
 
 void UPubnubSubsystem::AddChannelToGroup(FString ChannelName, FString ChannelGroup)
 {
-	if(!PublishThread)
+	if(!QuickActionThread)
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
 	{
 		AddChannelToGroup_priv(ChannelName, ChannelGroup);
 	});
@@ -152,10 +152,10 @@ void UPubnubSubsystem::AddChannelToGroup(FString ChannelName, FString ChannelGro
 
 void UPubnubSubsystem::RemoveChannelFromGroup(FString ChannelName, FString ChannelGroup)
 {
-	if(!PublishThread)
+	if(!QuickActionThread)
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
 	{
 		RemoveChannelFromGroup_priv(ChannelName, ChannelGroup);
 	});
@@ -163,10 +163,10 @@ void UPubnubSubsystem::RemoveChannelFromGroup(FString ChannelName, FString Chann
 
 void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
 {
-	if(!PublishThread)
+	if(!QuickActionThread)
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, ChannelGroup, OnListChannelsResponse]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, OnListChannelsResponse]
 	{
 		ListChannelsFromGroup_priv(ChannelGroup, OnListChannelsResponse);
 	});
@@ -174,10 +174,10 @@ void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChanne
 
 void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup)
 {
-	if(!PublishThread)
+	if(!QuickActionThread)
 	{return;}
 	
-	PublishThread->AddFunctionToQueue( [this, ChannelGroup]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup]
 	{
 		RemoveChannelGroup_priv(ChannelGroup);
 	});
@@ -194,10 +194,10 @@ void UPubnubSubsystem::SystemPublish()
 
 void UPubnubSubsystem::StartPubnubSubscribeLoop()
 {
-	if(!SubscribeThread)
+	if(!LongpollThread)
 	{return;}
 
-	SubscribeThread->AddLoopingFunction([this]
+	LongpollThread->AddLoopingFunction([this]
 	{
 		if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
 		{return;}
@@ -317,7 +317,7 @@ bool UPubnubSubsystem::CheckIsUserIDSet()
 
 bool UPubnubSubsystem::CheckPublishThreadValidity()
 {
-	if(!PublishThread)
+	if(!QuickActionThread)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("PublishThread is invalid. Aborting operation"));
 		return false;
@@ -538,7 +538,7 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 	SubscribedChannels.Empty();
 	SubscribedGroups.Empty();
 	
-	SubscribeThread->ClearLoopingFunctions();
+	LongpollThread->ClearLoopingFunctions();
 }
 
 void UPubnubSubsystem::AddChannelToGroup_priv(FString ChannelName, FString ChannelGroup)
