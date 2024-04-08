@@ -18,6 +18,7 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnListChannelsFromGroupResponse, FString, Jso
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHereNowResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnWhereNowResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetStateResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGrantTokenResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -59,6 +60,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish")
 	void PublishMessage(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish")
+	void Signal(FString ChannelName, FString Message);
+	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
 	void SubscribeToChannel(FString ChannelName);
 
@@ -100,6 +104,18 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void Heartbeat(FString ChannelName, FString ChannelGroup);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
+	void GrantToken(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
+	void RevokeToken(FString Token);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
+	void ParseToken(FString Token);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
+	void SetAuthToken(FString Token);
 
 #pragma endregion
 	
@@ -183,8 +199,12 @@ private:
 	void SetState_priv(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	void GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse);
 	void Heartbeat_priv(FString ChannelName, FString ChannelGroup);
+	void Signal_priv(FString ChannelName, FString Message);
+	void GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse);
+	void RevokeToken_priv(FString Token);
+	void ParseToken_priv(FString Token);
+	void SetAuthToken_priv(FString Token);
 
 #pragma endregion
 	
 };
-

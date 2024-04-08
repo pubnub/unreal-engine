@@ -84,6 +84,17 @@ void UPubnubSubsystem::PublishMessage(FString ChannelName, FString Message, FPub
 	});
 }
 
+void UPubnubSubsystem::Signal(FString ChannelName, FString Message)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Message]
+	{
+		PublishMessage_priv(ChannelName, Message);
+	});
+}
+
 void UPubnubSubsystem::SubscribeToChannel(FString ChannelName)
 {
 	if(!CheckQuickActionThreadValidity())
@@ -235,6 +246,50 @@ void UPubnubSubsystem::Heartbeat(FString ChannelName, FString ChannelGroup)
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ChannelGroup]
 	{
 		Heartbeat_priv(ChannelName, ChannelGroup);
+	});
+}
+
+void UPubnubSubsystem::GrantToken(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, TTLMinutes, AuthorizedUUID, OnGrantTokenResponse]
+	{
+		GrantToken_priv(TTLMinutes, AuthorizedUUID, OnGrantTokenResponse);
+	});
+}
+
+void UPubnubSubsystem::RevokeToken(FString Token)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Token]
+	{
+		RevokeToken_priv(Token);
+	});
+}
+
+void UPubnubSubsystem::ParseToken(FString Token)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Token]
+	{
+		ParseToken_priv(Token);
+	});
+}
+
+void UPubnubSubsystem::SetAuthToken(FString Token)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Token]
+	{
+		SetAuthToken_priv(Token);
 	});
 }
 
@@ -782,3 +837,80 @@ void UPubnubSubsystem::Heartbeat_priv(FString ChannelName, FString ChannelGroup)
 
 	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
 }
+
+void UPubnubSubsystem::Signal_priv(FString ChannelName, FString Message)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty() || Message.IsEmpty())
+	{return;}
+
+	pubnub_signal(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message));
+}
+
+void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse)
+{
+	
+	//Format all data for Grant Token
+	struct pam_permission ChPerm;
+	ChPerm.read = true;
+	int PermMyChannel = pubnub_get_grant_bit_mask_value(ChPerm);
+	char PermObj[2000];
+	char* AuthorUuid = "my_authorized_uuid";
+	sprintf_s(PermObj,"{\"ttl\":%d, \"uuid\":\"%s\", \"permissions\":{\"resources\":{\"channels\":{ \"my_channel\":%d }, \"groups\":{}, \"users\":{ }, \"spaces\":{}}, \"patterns\":{\"channels\":{}, \"groups\":{}, \"users\":{}, \"spaces\":{}},\"meta\":{}}}", TTLMinutes, TCHAR_TO_ANSI(*AuthorizedUUID), PermMyChannel);
+
+	pubnub_grant_token(ctx_pub, PermObj);
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Grant Token. Error code: %d"), PubnubResponse);
+		return;
+	}
+
+	pubnub_chamebl_t grant_token_resp = pubnub_get_grant_token(ctx_pub);
+	FString JsonResponse(grant_token_resp.ptr);
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGrantTokenResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGrantTokenResponse.ExecuteIfBound(JsonResponse);
+	});
+	
+}
+
+void UPubnubSubsystem::RevokeToken_priv(FString Token)
+{
+	pubnub_revoke_token(ctx_pub, TCHAR_TO_ANSI(*Token));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Revoke Token. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::ParseToken_priv(FString Token)
+{
+	pubnub_parse_token(ctx_pub, TCHAR_TO_ANSI(*Token));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Parse Token. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::SetAuthToken_priv(FString Token)
+{
+	pubnub_set_auth_token(ctx_pub, TCHAR_TO_ANSI(*Token));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Auth Token. Error code: %d"), PubnubResponse);
+	}
+}
+
