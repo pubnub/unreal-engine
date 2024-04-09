@@ -569,6 +569,17 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 	}
 }
 
+void UPubnubSubsystem::Signal_priv(FString ChannelName, FString Message)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty() || Message.IsEmpty())
+	{return;}
+
+	pubnub_signal(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message));
+}
+
 void UPubnubSubsystem::SubscribeToChannel_priv(FString ChannelName)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
@@ -836,17 +847,6 @@ void UPubnubSubsystem::Heartbeat_priv(FString ChannelName, FString ChannelGroup)
 	{return;}
 
 	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
-}
-
-void UPubnubSubsystem::Signal_priv(FString ChannelName, FString Message)
-{
-	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
-	{return;}
-
-	if(ChannelName.IsEmpty() || Message.IsEmpty())
-	{return;}
-
-	pubnub_signal(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message));
 }
 
 void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse)

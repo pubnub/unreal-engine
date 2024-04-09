@@ -185,6 +185,7 @@ private:
 	void SetUserID_priv(FString UserID);
 	void SetSecretKey_priv();
 	void PublishMessage_priv(FString ChannelName, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	void Signal_priv(FString ChannelName, FString Message);
 	void SubscribeToChannel_priv(FString ChannelName);
 	void SubscribeToGroup_priv(FString GroupName);
 	void UnsubscribeFromChannel_priv(FString ChannelName);
@@ -199,7 +200,6 @@ private:
 	void SetState_priv(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	void GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse);
 	void Heartbeat_priv(FString ChannelName, FString ChannelGroup);
-	void Signal_priv(FString ChannelName, FString Message);
 	void GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token);
 	void ParseToken_priv(FString Token);
