@@ -19,6 +19,8 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHereNowResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnWhereNowResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetStateResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGrantTokenResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHistoryResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnMessageCountsResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -117,6 +119,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
 	void SetAuthToken(FString Token);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
+	void History(FString ChannelName, FOnHistoryResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings = FPubnubHistorySettings());
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
+	void MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse);
+
 #pragma endregion
 	
 private:
@@ -204,7 +212,10 @@ private:
 	void RevokeToken_priv(FString Token);
 	void ParseToken_priv(FString Token);
 	void SetAuthToken_priv(FString Token);
+	void History_priv(FString ChannelName, FOnHistoryResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings = FPubnubHistorySettings());
+	void MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse);
 
 #pragma endregion
 	
 };
+

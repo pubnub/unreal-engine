@@ -12,4 +12,3 @@ enum class EPubnubPublishMethod : uint8
 	pubnubUsePATCHwithGZIP,
 	pubnubUseDELETE
 };
-
