@@ -325,6 +325,28 @@ void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, F
 	
 }
 
+void UPubnubSubsystem::PerformanceTest(FString Message)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Message]
+	{
+		FString Channel = "my_channel";
+		FDateTime Time = FDateTime::Now();
+		UE_LOG(LogTemp, Warning, TEXT("Before publish. S: %d, ms: %d"), Time.GetSecond(), Time.GetMillisecond());
+		pubnub_publish(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message));
+		Time = FDateTime::Now();
+		UE_LOG(LogTemp, Warning, TEXT("After publish. S: %d, ms: %d"), Time.GetSecond(), Time.GetMillisecond());
+
+		pubnub_await(ctx_pub);
+		Time = FDateTime::Now();
+		UE_LOG(LogTemp, Warning, TEXT("After await S: %d, ms: %d"), Time.GetSecond(), Time.GetMillisecond());
+	});
+	
+
+}
+
 void UPubnubSubsystem::SystemPublish()
 {
 	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
@@ -634,7 +656,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString ChannelName)
 	}
 
 	//System publish to unlock subscribe context and start listening for this new channel
-	SystemPublish();
+	//SystemPublish();
 }
 
 void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName)

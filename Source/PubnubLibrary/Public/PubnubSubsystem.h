@@ -125,6 +125,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
 	void MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse);
 
+	UFUNCTION(BlueprintCallable)
+	void PerformanceTest(FString Message);
+
 #pragma endregion
 	
 private:
