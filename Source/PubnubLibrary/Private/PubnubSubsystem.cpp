@@ -25,8 +25,17 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UPubnubSubsystem::Deinitialize()
 {
-	DeinitPubnub_priv();
+	DeinitPubnub();
 	Super::Deinitialize();
+	
+	if(QuickActionThread)
+	{
+		QuickActionThread->Stop();
+	}
+	if(LongpollThread)
+	{
+		LongpollThread->Stop();
+	}
 }
 
 void UPubnubSubsystem::InitPubnub()
@@ -293,9 +302,32 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 	});
 }
 
+void UPubnubSubsystem::History(FString ChannelName, FOnHistoryResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, OnHistoryResponse, HistorySettings]
+	{
+		History_priv(ChannelName, OnHistoryResponse, HistorySettings);
+	});
+}
+
+void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, TimeStamp, OnMessageCountsResponse]
+	{
+		MessageCounts_priv(ChannelName, TimeStamp, OnMessageCountsResponse);
+	});
+	
+}
+
 void UPubnubSubsystem::SystemPublish()
 {
-	if(SubscribedChannels.IsEmpty())
+	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
 	{return;}
 
 	//TODO: this will not unlock context if user is subscribed only to groups, but not to any channels. This issue needs to be addressed.
@@ -658,24 +690,28 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
+
+	//Cache and clear all groups and channels
+	TArray<FString> SubscribedChannelsCached = SubscribedChannels;
+	TArray<FString> SubscribedGroupsCached = SubscribedGroups;
+	SubscribedChannels.Empty();
+	SubscribedGroups.Empty();
+	
+	pubnub_cancel(ctx_pub);
+	pubnub_await(ctx_pub);
 	
 	//TODO: Find out how to unsubscribe from all channels correctly
-	for(FString Channel : SubscribedChannels)
+	for(FString Channel : SubscribedChannelsCached)
 	{
 		pubnub_leave(ctx_pub, TCHAR_TO_ANSI(*Channel), NULL);
 		pubnub_await(ctx_pub);
 	}
 
-	for(FString Group : SubscribedGroups)
+	for(FString Group : SubscribedGroupsCached)
 	{
 		pubnub_leave(ctx_pub, NULL, TCHAR_TO_ANSI(*Group));
 		pubnub_await(ctx_pub);
 	}
-	
-	pubnub_cancel(ctx_pub);
-
-	SubscribedChannels.Empty();
-	SubscribedGroups.Empty();
 	
 	LongpollThread->ClearLoopingFunctions();
 }
@@ -851,6 +887,8 @@ void UPubnubSubsystem::Heartbeat_priv(FString ChannelName, FString ChannelGroup)
 
 void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse)
 {
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
 	
 	//Format all data for Grant Token
 	struct pam_permission ChPerm;
@@ -883,6 +921,12 @@ void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, F
 
 void UPubnubSubsystem::RevokeToken_priv(FString Token)
 {
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(Token.IsEmpty())
+	{return;}
+	
 	pubnub_revoke_token(ctx_pub, TCHAR_TO_ANSI(*Token));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -894,6 +938,12 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token)
 
 void UPubnubSubsystem::ParseToken_priv(FString Token)
 {
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(Token.IsEmpty())
+	{return;}
+	
 	pubnub_parse_token(ctx_pub, TCHAR_TO_ANSI(*Token));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -905,6 +955,12 @@ void UPubnubSubsystem::ParseToken_priv(FString Token)
 
 void UPubnubSubsystem::SetAuthToken_priv(FString Token)
 {
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(Token.IsEmpty())
+	{return;}
+	
 	pubnub_set_auth_token(ctx_pub, TCHAR_TO_ANSI(*Token));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -912,5 +968,67 @@ void UPubnubSubsystem::SetAuthToken_priv(FString Token)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Auth Token. Error code: %d"), PubnubResponse);
 	}
+}
+
+void UPubnubSubsystem::History_priv(FString ChannelName, FOnHistoryResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty())
+	{return;}
+
+	//Set all options from HistorySettings
+	pubnub_history_options HistoryOptions = pubnub_history_defopts();
+	HistoryOptions.string_token = HistorySettings.StringToken;
+	HistoryOptions.count = HistorySettings.Count;
+	HistoryOptions.reverse = HistorySettings.Reverse;
+	HistoryOptions.include_token = HistorySettings.IncludeToken;
+	HistoryOptions.include_meta = HistorySettings.IncludeMeta;
+
+	auto StartCharConverter = StringCast<ANSICHAR>(*HistorySettings.Start);
+	const char* StartChar = StartCharConverter.Get();
+	if(!HistorySettings.Start.IsEmpty())
+	{
+		HistoryOptions.start = StartChar;
+	}
+
+	auto EndCharConverter = StringCast<ANSICHAR>(*HistorySettings.End);
+	const char* EndChar = EndCharConverter.Get();
+	if(!HistorySettings.End.IsEmpty())
+	{
+		HistoryOptions.end = EndChar;
+	}
+	
+	pubnub_history_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), HistoryOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnHistoryResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnHistoryResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(ChannelName.IsEmpty())
+	{return;}
+	FString UnixTimeStamp = FString::FromInt(TimeStamp.ToUnixTimestamp());
+	
+	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*UnixTimeStamp));
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnMessageCountsResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnMessageCountsResponse.ExecuteIfBound(JsonResponse);
+	});
 }
 

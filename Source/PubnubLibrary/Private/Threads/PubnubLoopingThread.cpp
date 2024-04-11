@@ -28,7 +28,6 @@ uint32 FPubnubLoopingThread::Run()
 			//Run all functions from queue
 			for(int i = 0; i <  PubnubAsyncLoopingFunctions.Num(); i++)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Run Pubnub Async looping function"));
 				PubnubAsyncLoopingFunctions[i]();
 			}
 		}
