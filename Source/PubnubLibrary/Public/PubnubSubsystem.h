@@ -21,6 +21,7 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetStateResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGrantTokenResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHistoryResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnMessageCountsResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetAllUUIDMetadataResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -125,6 +126,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
 	void MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void SetUUIDMetadata(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
+
 #pragma endregion
 	
 private:
@@ -214,6 +221,8 @@ private:
 	void SetAuthToken_priv(FString Token);
 	void History_priv(FString ChannelName, FOnHistoryResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings = FPubnubHistorySettings());
 	void MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse);
+	void GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse);
+	void SetUUIDMetadata_priv(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
 
 #pragma endregion
 	

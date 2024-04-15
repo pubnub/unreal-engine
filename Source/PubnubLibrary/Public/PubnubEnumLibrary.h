@@ -12,3 +12,11 @@ enum class EPubnubPublishMethod : uint8
 	pubnubUsePATCHwithGZIP,
 	pubnubUseDELETE
 };
+
+UENUM(BlueprintType)
+enum class EPubnubTribool : uint8
+{
+	PbccFalse,
+	PbccTrue,
+	PbccNotSet
+};

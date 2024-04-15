@@ -325,6 +325,28 @@ void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, F
 	
 }
 
+void UPubnubSubsystem::GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Include, Limit, Start, End, Count, OnGetAllUUIDMetadataResponse]
+	{
+		GetAllUUIDMetadata_priv(Include, Limit, Start, End, Count, OnGetAllUUIDMetadataResponse);
+	});
+}
+
+void UPubnubSubsystem::SetUUIDMetadata(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, Include, UUIDMetadataObj]
+	{
+		SetUUIDMetadata_priv(UUIDMetadataID, Include, UUIDMetadataObj);
+	});
+}
+
 void UPubnubSubsystem::SystemPublish()
 {
 	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
@@ -1030,5 +1052,37 @@ void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeSta
 		//Broadcast bound delegate with JsonResponse
 		OnMessageCountsResponse.ExecuteIfBound(JsonResponse);
 	});
+}
+
+void UPubnubSubsystem::GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
+	pubnub_getall_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllUUIDMetadataResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetAllUUIDMetadataResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataObj));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Auth Token. Error code: %d"), PubnubResponse);
+	}
 }
 
