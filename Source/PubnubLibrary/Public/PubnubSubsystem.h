@@ -25,6 +25,8 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetAllUUIDMetadataResponse, FString, JsonRe
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetUUIDMetadataResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetAllChannelMetadataResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetChannelMetadataResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetMembershipResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetMembersResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -153,6 +155,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void RemoveChannelMetadata(FString ChannelMetadataID);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetMemberships(FString UUIDMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetMembershipResponse OnGetMembershipResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void SetMemberships(FString UUIDMetadataID, FString Include, FString SetObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void RemoveMemberships(FString UUIDMetadataID, FString Include, FString RemoveObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetMembers(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetMembersResponse OnGetMembersResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void AddMembers(FString ChannelMetadataID, FString Include, FString AddObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void SetMembers(FString ChannelMetadataID, FString Include, FString SetObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void RemoveMembers(FString ChannelMetadataID, FString Include, FString RemoveObj);
+
 #pragma endregion
 	
 private:
@@ -250,6 +273,13 @@ private:
 	void SetChannelMetadata_priv(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj);
 	void GetChannelMetadata_priv(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse);
 	void RemoveChannelMetadata_priv(FString ChannelMetadataID);
+	void GetMemberships_priv(FString UUIDMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetMembershipResponse OnGetMembershipResponse);
+	void SetMemberships_priv(FString UUIDMetadataID, FString Include, FString SetObj);
+	void RemoveMemberships_priv(FString UUIDMetadataID, FString Include, FString RemoveObj);
+	void GetMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetMembersResponse OnGetMembersResponse);
+	void AddMembers_priv(FString ChannelMetadataID, FString Include, FString AddObj);
+	void SetMembers_priv(FString ChannelMetadataID, FString Include, FString SetObj);
+	void RemoveMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj);
 
 #pragma endregion
 	

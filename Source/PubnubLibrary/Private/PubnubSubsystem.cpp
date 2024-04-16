@@ -382,16 +382,115 @@ void UPubnubSubsystem::GetAllChannelMetadata(FString Include, int Limit, FString
 
 void UPubnubSubsystem::SetChannelMetadata(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj)
 {
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, ChannelMetadataObj]
+	{
+		SetChannelMetadata_priv(ChannelMetadataID, Include, ChannelMetadataObj);
+	});
 }
 
 void UPubnubSubsystem::GetChannelMetadata(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse)
 {
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Include, ChannelMetadataID, OnGetChannelMetadataResponse]
+	{
+		GetChannelMetadata_priv(Include, ChannelMetadataID, OnGetChannelMetadataResponse);
+	});
 }
 
 void UPubnubSubsystem::RemoveChannelMetadata(FString ChannelMetadataID)
 {
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID]
+	{
+		RemoveChannelMetadata_priv(ChannelMetadataID);
+	});
 }
 
+void UPubnubSubsystem::GetMemberships(FString UUIDMetadataID, FString Include, int Limit, FString Start, FString End,
+	EPubnubTribool Count, FOnGetMembershipResponse OnGetMembershipResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, Include, Limit, Start, End, Count, OnGetMembershipResponse]
+	{
+		GetMemberships_priv(UUIDMetadataID, Include, Limit, Start, End, Count, OnGetMembershipResponse);
+	});
+}
+
+void UPubnubSubsystem::SetMemberships(FString UUIDMetadataID, FString Include, FString SetObj)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, Include, SetObj]
+	{
+		SetMemberships_priv(UUIDMetadataID, Include, SetObj);
+	});
+}
+
+void UPubnubSubsystem::RemoveMemberships(FString UUIDMetadataID, FString Include, FString RemoveObj)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, Include, RemoveObj]
+	{
+		RemoveMemberships_priv(UUIDMetadataID, Include, RemoveObj);
+	});
+}
+
+void UPubnubSubsystem::GetMembers(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End,
+	EPubnubTribool Count, FOnGetMembersResponse OnGetMembersResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, Limit, Start, End, Count, OnGetMembersResponse]
+	{
+		GetMembers_priv(ChannelMetadataID, Include, Limit, Start, End, Count, OnGetMembersResponse);
+	});
+}
+
+void UPubnubSubsystem::AddMembers(FString ChannelMetadataID, FString Include, FString AddObj)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, AddObj]
+	{
+		AddMembers_priv(ChannelMetadataID, Include, AddObj);
+	});
+}
+
+void UPubnubSubsystem::SetMembers(FString ChannelMetadataID, FString Include, FString SetObj)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, SetObj]
+	{
+		SetMembers_priv(ChannelMetadataID, Include, SetObj);
+	});
+}
+
+void UPubnubSubsystem::RemoveMembers(FString ChannelMetadataID, FString Include, FString RemoveObj)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, RemoveObj]
+	{
+		RemoveMembers_priv(ChannelMetadataID, Include, RemoveObj);
+	});
+}
 
 void UPubnubSubsystem::SystemPublish()
 {
@@ -1223,6 +1322,114 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString ChannelMetadataID)
 	if(PubnubResponse != PNR_OK)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove Channel Metadata. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FString Include, int Limit, FString Start,
+	FString End, EPubnubTribool Count, FOnGetMembershipResponse OnGetMembershipResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
+	pubnub_get_memberships(ctx_pub,TCHAR_TO_ANSI(*UUIDMetadataID),  TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembershipResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetMembershipResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString Include, FString SetObj)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_set_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Memberships. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString Include, FString RemoveObj)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_remove_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove Memberships. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::GetMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start,
+	FString End, EPubnubTribool Count, FOnGetMembersResponse OnGetMembersResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
+	pubnub_get_members(ctx_pub,TCHAR_TO_ANSI(*ChannelMetadataID),  TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembersResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetMembersResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::AddMembers_priv(FString ChannelMetadataID, FString Include, FString AddObj)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_add_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*AddObj));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Add Members. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::SetMembers_priv(FString ChannelMetadataID, FString Include, FString SetObj)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_set_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Members. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::RemoveMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_remove_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove Members. Error code: %d"), PubnubResponse);
 	}
 }
 
