@@ -22,6 +22,9 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGrantTokenResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHistoryResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnMessageCountsResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetAllUUIDMetadataResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetUUIDMetadataResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetAllChannelMetadataResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetChannelMetadataResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -132,6 +135,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void SetUUIDMetadata(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetUUIDMetadata(FString Include, FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void RemoveUUIDMetadata(FString UUIDMetadataID);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetAllChannelMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void SetChannelMetadata(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetChannelMetadata(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void RemoveChannelMetadata(FString ChannelMetadataID);
+
 #pragma endregion
 	
 private:
@@ -223,6 +244,12 @@ private:
 	void MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse);
 	void GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse);
 	void SetUUIDMetadata_priv(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
+	void GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse);
+	void RemoveUUIDMetadata_priv(FString UUIDMetadataID);
+	void GetAllChannelMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse);
+	void SetChannelMetadata_priv(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj);
+	void GetChannelMetadata_priv(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse);
+	void RemoveChannelMetadata_priv(FString ChannelMetadataID);
 
 #pragma endregion
 	

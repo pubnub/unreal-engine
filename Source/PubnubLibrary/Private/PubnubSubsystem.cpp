@@ -347,6 +347,52 @@ void UPubnubSubsystem::SetUUIDMetadata(FString UUIDMetadataID, FString Include, 
 	});
 }
 
+void UPubnubSubsystem::GetUUIDMetadata(FString Include, FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Include, UUIDMetadataID, OnGetUUIDMetadataResponse]
+	{
+		GetUUIDMetadata_priv(Include, UUIDMetadataID, OnGetUUIDMetadataResponse);
+	});
+}
+
+void UPubnubSubsystem::RemoveUUIDMetadata(FString UUIDMetadataID)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID]
+	{
+		RemoveUUIDMetadata_priv(UUIDMetadataID);
+	});
+}
+
+void UPubnubSubsystem::GetAllChannelMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Include, Limit, Start, End, Count, OnGetAllChannelMetadataResponse]
+	{
+		GetAllChannelMetadata_priv(Include, Limit, Start, End, Count, OnGetAllChannelMetadataResponse);
+	});
+}
+
+void UPubnubSubsystem::SetChannelMetadata(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj)
+{
+}
+
+void UPubnubSubsystem::GetChannelMetadata(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse)
+{
+}
+
+void UPubnubSubsystem::RemoveChannelMetadata(FString ChannelMetadataID)
+{
+}
+
+
 void UPubnubSubsystem::SystemPublish()
 {
 	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
@@ -1082,7 +1128,101 @@ void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString Incl
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Auth Token. Error code: %d"), PubnubResponse);
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Set UUID Metadata. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_get_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataID));
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetUUIDMetadataResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetUUIDMetadataResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::RemoveUUIDMetadata_priv(FString UUIDMetadataID)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_remove_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove UUID Metadata. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::GetAllChannelMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
+	pubnub_getall_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllChannelMetadataResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetAllChannelMetadataResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_set_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*ChannelMetadataObj));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Channel Metadata. Error code: %d"), PubnubResponse);
+	}
+}
+
+void UPubnubSubsystem::GetChannelMetadata_priv(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_get_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*ChannelMetadataID));
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetChannelMetadataResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetChannelMetadataResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::RemoveChannelMetadata_priv(FString ChannelMetadataID)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_remove_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove Channel Metadata. Error code: %d"), PubnubResponse);
 	}
 }
 
