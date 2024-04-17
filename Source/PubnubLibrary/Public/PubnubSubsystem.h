@@ -21,6 +21,12 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetStateResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGrantTokenResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHistoryResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnMessageCountsResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetAllUUIDMetadataResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetUUIDMetadataResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetAllChannelMetadataResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetChannelMetadataResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetMembershipResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetMembersResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -125,6 +131,51 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
 	void MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void SetUUIDMetadata(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetUUIDMetadata(FString Include, FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void RemoveUUIDMetadata(FString UUIDMetadataID);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetAllChannelMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void SetChannelMetadata(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetChannelMetadata(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void RemoveChannelMetadata(FString ChannelMetadataID);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetMemberships(FString UUIDMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetMembershipResponse OnGetMembershipResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void SetMemberships(FString UUIDMetadataID, FString Include, FString SetObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void RemoveMemberships(FString UUIDMetadataID, FString Include, FString RemoveObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void GetMembers(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetMembersResponse OnGetMembersResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void AddMembers(FString ChannelMetadataID, FString Include, FString AddObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void SetMembers(FString ChannelMetadataID, FString Include, FString SetObj);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
+	void RemoveMembers(FString ChannelMetadataID, FString Include, FString RemoveObj);
+
 #pragma endregion
 	
 private:
@@ -214,6 +265,21 @@ private:
 	void SetAuthToken_priv(FString Token);
 	void History_priv(FString ChannelName, FOnHistoryResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings = FPubnubHistorySettings());
 	void MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse);
+	void GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse);
+	void SetUUIDMetadata_priv(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
+	void GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse);
+	void RemoveUUIDMetadata_priv(FString UUIDMetadataID);
+	void GetAllChannelMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse);
+	void SetChannelMetadata_priv(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj);
+	void GetChannelMetadata_priv(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse);
+	void RemoveChannelMetadata_priv(FString ChannelMetadataID);
+	void GetMemberships_priv(FString UUIDMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetMembershipResponse OnGetMembershipResponse);
+	void SetMemberships_priv(FString UUIDMetadataID, FString Include, FString SetObj);
+	void RemoveMemberships_priv(FString UUIDMetadataID, FString Include, FString RemoveObj);
+	void GetMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetMembersResponse OnGetMembersResponse);
+	void AddMembers_priv(FString ChannelMetadataID, FString Include, FString AddObj);
+	void SetMembers_priv(FString ChannelMetadataID, FString Include, FString SetObj);
+	void RemoveMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj);
 
 #pragma endregion
 	
