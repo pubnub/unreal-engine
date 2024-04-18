@@ -14,7 +14,7 @@ class FPubnubFunctionThread;
 class FPubnubLoopingThread;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPubnubError, FString, ErrorMessage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnListChannelsFromGroupResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHereNowResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnWhereNowResponse, FString, JsonResponse);
@@ -217,7 +217,7 @@ private:
 	//Every Error function prints error to the Log and Broadcasts OnPubnubError delegate
 	
 	//Default error for most use cases
-	void PubnubError(FString ErrorMessage);
+	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
 	//Error when the response was not OK
 	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
 	//Error during publishing a message
@@ -246,6 +246,7 @@ private:
 	bool CheckIsPubnubInitialized();
 	bool CheckIsUserIDSet();
 	bool CheckQuickActionThreadValidity();
+	bool CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName);
 
 
 #pragma region PRIVATE FUNCTIONS

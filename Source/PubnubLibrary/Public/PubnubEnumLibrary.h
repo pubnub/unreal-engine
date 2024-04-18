@@ -20,3 +20,10 @@ enum class EPubnubTribool : uint8
 	PbccTrue,
 	PbccNotSet
 };
+
+UENUM(BlueprintType)
+enum class EPubnubErrorType : uint8
+{
+	PET_Error,
+	PET_Warning
+};

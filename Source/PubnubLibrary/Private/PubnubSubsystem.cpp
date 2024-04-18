@@ -603,11 +603,19 @@ FString UPubnubSubsystem::GetLastChannelResponse(pubnub_t* context)
 	return Response;
 }
 
-void UPubnubSubsystem::PubnubError(FString ErrorMessage)
+void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType)
 {
 	//Log and broadcast error message
-	UE_LOG(PubnubLog, Error, TEXT("%s"), *ErrorMessage);
-	OnPubnubError.Broadcast(ErrorMessage);
+	if(ErrorType == EPubnubErrorType::PET_Error)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("%s"), *ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(PubnubLog, Warning, TEXT("%s"), *ErrorMessage);
+	}
+	
+	OnPubnubError.Broadcast(ErrorMessage, ErrorType);
 }
 
 void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage)
@@ -618,7 +626,7 @@ void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString Er
 
 	//Log and broadcast error
 	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
-	OnPubnubError.Broadcast(FinalErrorMessage);
+	OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
 }
 
 void UPubnubSubsystem::PubnubPublishError()
@@ -634,7 +642,7 @@ void UPubnubSubsystem::PubnubPublishError()
 
 	//Log and broadcast error
 	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
-	OnPubnubError.Broadcast(FinalErrorMessage);
+	OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
 }
 
 void UPubnubSubsystem::LoadPluginSettings()
@@ -683,6 +691,18 @@ bool UPubnubSubsystem::CheckQuickActionThreadValidity()
 	}
 	
 	return true;
+}
+
+bool UPubnubSubsystem::CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName)
+{
+	if(Field.IsEmpty())
+	{
+		FString ErrorMessage = FString::Printf(TEXT("Warning: Can't use %s function. %s field shouldn't be empty."), *FunctionName, *FieldName);
+		PubnubError(ErrorMessage, EPubnubErrorType::PET_Warning);
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -771,7 +791,7 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelName.IsEmpty() || Message.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "PublishMessage") || CheckIsFieldEmpty(Message, "Message", "PublishMessage"))
 	{return;}
 
 	//Set all options from PublishSettings
@@ -804,7 +824,7 @@ void UPubnubSubsystem::Signal_priv(FString ChannelName, FString Message)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelName.IsEmpty() || Message.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "Signal") || CheckIsFieldEmpty(Message, "Message", "Signal"))
 	{return;}
 
 	pubnub_signal(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message));
@@ -815,7 +835,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString ChannelName)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelName.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "SubscribeToChannel"))
 	{return;}
 
 	if(SubscribedChannels.Contains(ChannelName))
@@ -840,7 +860,7 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(GroupName.IsEmpty())
+	if(CheckIsFieldEmpty(GroupName, "GroupName", "SubscribeToGroup"))
 	{return;}
 
 	if(SubscribedGroups.Contains(GroupName))
@@ -919,9 +939,9 @@ void UPubnubSubsystem::AddChannelToGroup_priv(FString ChannelName, FString Chann
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelName.IsEmpty() || ChannelGroup.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "AddChannelToGroup") || CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "AddChannelToGroup"))
 	{return;}
-
+	
 	pubnub_add_channel_to_group(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
 }
 
@@ -929,8 +949,8 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString ChannelName, FString 
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
-
-	if(ChannelName.IsEmpty() || ChannelGroup.IsEmpty())
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "RemoveChannelFromGroup") || CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "RemoveChannelFromGroup"))
 	{return;}
 
 	pubnub_remove_channel_from_group(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
@@ -942,7 +962,7 @@ void UPubnubSubsystem::ListChannelsFromGroup_priv(FString ChannelGroup,
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelGroup.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "ListChannelsFromGroup"))
 	{return;}
 
 	pubnub_list_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
@@ -962,7 +982,7 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelGroup.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "RemoveChannelGroup"))
 	{return;}
 
 	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
@@ -972,8 +992,8 @@ void UPubnubSubsystem::HereNow_priv(FString ChannelName, FOnHereNowResponse Here
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
-
-	if(ChannelName.IsEmpty())
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "HereNow"))
 	{return;}
 
 	//Set all options from HereNowSettings
@@ -1004,7 +1024,7 @@ void UPubnubSubsystem::WhereNow_priv(FString UserID, FOnWhereNowResponse WhereNo
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(UserID.IsEmpty())
+	if(CheckIsFieldEmpty(UserID, "UserID", "WhereNow"))
 	{return;}
 
 	pubnub_where_now(ctx_pub, TCHAR_TO_ANSI(*UserID));
@@ -1023,7 +1043,7 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelName.IsEmpty() || StateJson.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "SetState") || CheckIsFieldEmpty(StateJson, "StateJson", "SetState"))
 	{return;}
 
 	pubnub_set_state_options SetStateOptions = pubnub_set_state_defopts();
@@ -1059,7 +1079,10 @@ void UPubnubSubsystem::GetState_priv(FString ChannelName, FString ChannelGroup, 
 	{return;}
 
 	if(ChannelName.IsEmpty() && ChannelGroup.IsEmpty())
-	{return;}
+	{
+		PubnubError("Warning: Can't use GetState function. At least one of: ChannelGroup, ChannelName can't be empty", EPubnubErrorType::PET_Warning);
+		return;
+	}
 
 	pubnub_state_get(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup), TCHAR_TO_ANSI(*UserID));
 	FString JsonResponse = GetLastResponse(ctx_pub);
@@ -1078,7 +1101,10 @@ void UPubnubSubsystem::Heartbeat_priv(FString ChannelName, FString ChannelGroup)
 	{return;}
 
 	if(ChannelName.IsEmpty() && ChannelGroup.IsEmpty())
-	{return;}
+	{
+		PubnubError("Warning: Can't use Heartbeat function. At least one of: ChannelGroup, ChannelName can't be empty", EPubnubErrorType::PET_Warning);
+		return;
+	}
 
 	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
 }
@@ -1122,7 +1148,7 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(Token.IsEmpty())
+	if(CheckIsFieldEmpty(Token, "Token", "RevokeToken"))
 	{return;}
 	
 	pubnub_revoke_token(ctx_pub, TCHAR_TO_ANSI(*Token));
@@ -1139,7 +1165,7 @@ void UPubnubSubsystem::ParseToken_priv(FString Token)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(Token.IsEmpty())
+	if(CheckIsFieldEmpty(Token, "Token", "ParseToken"))
 	{return;}
 	
 	pubnub_parse_token(ctx_pub, TCHAR_TO_ANSI(*Token));
@@ -1156,7 +1182,7 @@ void UPubnubSubsystem::SetAuthToken_priv(FString Token)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(Token.IsEmpty())
+	if(CheckIsFieldEmpty(Token, "Token", "SetAuthToken"))
 	{return;}
 	
 	pubnub_set_auth_token(ctx_pub, TCHAR_TO_ANSI(*Token));
@@ -1173,7 +1199,7 @@ void UPubnubSubsystem::History_priv(FString ChannelName, FOnHistoryResponse OnHi
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelName.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "History"))
 	{return;}
 
 	//Set all options from HistorySettings
@@ -1215,8 +1241,9 @@ void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeSta
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelName.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "MessageCounts"))
 	{return;}
+	
 	FString UnixTimeStamp = FString::FromInt(TimeStamp.ToUnixTimestamp());
 	
 	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*UnixTimeStamp));
@@ -1253,7 +1280,7 @@ void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString Incl
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(UUIDMetadataObj.IsEmpty() || UUIDMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "SetUUIDMetadata") || CheckIsFieldEmpty(UUIDMetadataObj, "UUIDMetadataObj", "SetUUIDMetadata"))
 	{return;}
 
 	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataObj));
@@ -1270,7 +1297,7 @@ void UPubnubSubsystem::GetUUIDMetadata_priv(FString Include, FString UUIDMetadat
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(UUIDMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetUUIDMetadata"))
 	{return;}
 
 	pubnub_get_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataID));
@@ -1290,7 +1317,7 @@ void UPubnubSubsystem::RemoveUUIDMetadata_priv(FString UUIDMetadataID)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(UUIDMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "RemoveUUIDMetadata"))
 	{return;}
 	
 	pubnub_remove_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID));
@@ -1306,7 +1333,6 @@ void UPubnubSubsystem::GetAllChannelMetadata_priv(FString Include, int Limit, FS
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
-	
 
 	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
 	pubnub_getall_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
@@ -1326,9 +1352,9 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FStrin
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelMetadataObj.IsEmpty() || ChannelMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "SetChannelMetadata") || CheckIsFieldEmpty(ChannelMetadataObj, "ChannelMetadataObj", "SetChannelMetadata"))
 	{return;}
-
+	
 	pubnub_set_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*ChannelMetadataObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -1343,7 +1369,7 @@ void UPubnubSubsystem::GetChannelMetadata_priv(FString Include, FString ChannelM
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 	
-	if(ChannelMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "GetChannelMetadata"))
 	{return;}
 
 	pubnub_get_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*ChannelMetadataID));
@@ -1363,7 +1389,7 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString ChannelMetadataID)
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "RemoveChannelMetadata"))
 	{return;}
 
 	pubnub_remove_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID));
@@ -1381,7 +1407,7 @@ void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FString Inclu
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(UUIDMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetMemberships"))
 	{return;}
 	
 	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
@@ -1402,7 +1428,7 @@ void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString Inclu
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(SetObj.IsEmpty() || UUIDMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "SetMemberships") || CheckIsFieldEmpty(SetObj, "SetObj", "SetMemberships"))
 	{return;}
 
 	pubnub_set_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
@@ -1419,7 +1445,7 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString In
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(RemoveObj.IsEmpty() || UUIDMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "RemoveMemberships") || CheckIsFieldEmpty(RemoveObj, "RemoveObj", "RemoveMemberships"))
 	{return;}
 
 	pubnub_remove_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
@@ -1437,7 +1463,7 @@ void UPubnubSubsystem::GetMembers_priv(FString ChannelMetadataID, FString Includ
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(ChannelMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelMetadataID, "UUIDMetadataID", "GetMembers"))
 	{return;}
 
 	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
@@ -1458,7 +1484,7 @@ void UPubnubSubsystem::AddMembers_priv(FString ChannelMetadataID, FString Includ
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(AddObj.IsEmpty() || ChannelMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "AddMembers") || CheckIsFieldEmpty(AddObj, "AddObj", "AddMembers"))
 	{return;}
 
 	pubnub_add_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*AddObj));
@@ -1475,7 +1501,7 @@ void UPubnubSubsystem::SetMembers_priv(FString ChannelMetadataID, FString Includ
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(SetObj.IsEmpty() || ChannelMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "SetMembers") || CheckIsFieldEmpty(SetObj, "SetObj", "SetMembers"))
 	{return;}
 
 	pubnub_set_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
@@ -1492,7 +1518,7 @@ void UPubnubSubsystem::RemoveMembers_priv(FString ChannelMetadataID, FString Inc
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 
-	if(RemoveObj.IsEmpty() || ChannelMetadataID.IsEmpty())
+	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "RemoveMembers") || CheckIsFieldEmpty(RemoveObj, "RemoveObj", "RemoveMembers"))
 	{return;}
 
 	pubnub_remove_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
