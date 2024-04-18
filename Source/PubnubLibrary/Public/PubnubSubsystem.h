@@ -14,6 +14,7 @@ class FPubnubFunctionThread;
 class FPubnubLoopingThread;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPubnubError, FString, ErrorMessage);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnListChannelsFromGroupResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHereNowResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnWhereNowResponse, FString, JsonResponse);
@@ -41,6 +42,9 @@ public:
 	
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnMessageReceived OnMessageReceived;
+
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	FOnPubnubError OnPubnubError;
 
 #pragma region BLUEPRINT EXPOSED
 	
@@ -208,6 +212,16 @@ private:
 	
 	//Returns FString from the pubnub_get_channel response
 	FString GetLastChannelResponse(pubnub_t* context);
+
+	/* ERROR FUNCTIONS */
+	//Every Error function prints error to the Log and Broadcasts OnPubnubError delegate
+	
+	//Default error for most use cases
+	void PubnubError(FString ErrorMessage);
+	//Error when the response was not OK
+	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
+	//Error during publishing a message
+	void PubnubPublishError();
 
 
 #pragma region PLUGIN SETTINGS

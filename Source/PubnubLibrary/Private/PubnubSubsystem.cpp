@@ -510,22 +510,19 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 	{
 		if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
 		{return;}
-
-		UE_LOG(PubnubLog, Warning, TEXT("Pubnub subscribe"));
+		
 		//Subscribe to channels - this is blocking function
 		pubnub_subscribe(ctx_sub, TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedChannels)), TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedGroups)));
-
-		//TODO: Make sure it works and maybe come up with more sophisticated check
-		//If this happens after closing program just return
-		if(!this)
+		
+		//If context was released on deinitializing subsystem it should just return
+		if(!IsInitialized)
 		{return;}
 
 		//Check for subscribe result
 		pubnub_res SubscribeResult = pubnub_await(ctx_sub);
 		if (SubscribeResult != PNR_OK)
 		{
-			FString ErrorCode(pubnub_res_2_string(SubscribeResult));
-			UE_LOG(PubnubLog, Error, TEXT("Failed to subscribe, error: %s"), *ErrorCode);
+			PubnubResponseError(SubscribeResult, "Failed to subscribe to channel.");
 			{return;}
 		}
 
@@ -582,7 +579,7 @@ FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
 	}
 	else
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to get last response. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to get last response.");
 	}
 	return Response;
 }
@@ -601,9 +598,43 @@ FString UPubnubSubsystem::GetLastChannelResponse(pubnub_t* context)
 	}
 	else
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to get last channel response. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to get last channel response.");
 	}
 	return Response;
+}
+
+void UPubnubSubsystem::PubnubError(FString ErrorMessage)
+{
+	//Log and broadcast error message
+	UE_LOG(PubnubLog, Error, TEXT("%s"), *ErrorMessage);
+	OnPubnubError.Broadcast(ErrorMessage);
+}
+
+void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage)
+{
+	//Convert all error data into single string
+	FString ResponseString(pubnub_res_2_string(PubnubResponse));
+	FString FinalErrorMessage = FString::Printf(TEXT("%s Error: %s"), *ErrorMessage, *ResponseString);
+
+	//Log and broadcast error
+	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
+	OnPubnubError.Broadcast(FinalErrorMessage);
+}
+
+void UPubnubSubsystem::PubnubPublishError()
+{
+	FString FinalErrorMessage;
+	if(ctx_pub == nullptr)
+	{
+		FinalErrorMessage = "Can't publish message. Publish context is invalid";
+	}
+	
+	FString PublishError(pubnub_last_publish_result(ctx_pub));
+	FinalErrorMessage = FString::Printf(TEXT("Publish message failed. Error: %s."), *PublishError);
+
+	//Log and broadcast error
+	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
+	OnPubnubError.Broadcast(FinalErrorMessage);
 }
 
 void UPubnubSubsystem::LoadPluginSettings()
@@ -626,7 +657,7 @@ bool UPubnubSubsystem::CheckIsPubnubInitialized()
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Pubnub is not initialized. Aborting operation"));
+		PubnubError("Pubnub is not initialized. Aborting operation");
 	}
 	
 	return IsInitialized;
@@ -637,7 +668,7 @@ bool UPubnubSubsystem::CheckIsUserIDSet()
 {
 	if(!IsUserIDSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Pubnub user ID is not set. Aborting operation"));
+		PubnubError("Pubnub user ID is not set. Aborting operation");
 	}
 	
 	return IsUserIDSet;
@@ -647,7 +678,7 @@ bool UPubnubSubsystem::CheckQuickActionThreadValidity()
 {
 	if(!QuickActionThread)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("PublishThread is invalid. Aborting operation"));
+		PubnubError("PublishThread is invalid. Aborting operation");
 		return false;
 	}
 	
@@ -666,12 +697,12 @@ void UPubnubSubsystem::InitPubnub_priv()
 	//Make sure that keys are filled
 	if(std::strlen(PublishKey) == 0 )
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Publish key is empty, can't initialize Pubnub"));
+		PubnubError("Publish key is empty, can't initialize Pubnub");
 	}
 
 	if(std::strlen(SubscribeKey) == 0 )
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Subscribe key is empty, can't initialize Pubnub"));
+		PubnubError("Subscribe key is empty, can't initialize Pubnub");
 	}
 	
 	ctx_pub = pubnub_alloc();
@@ -727,7 +758,7 @@ void UPubnubSubsystem::SetSecretKey_priv()
 
 	if(std::strlen(SecretKey) == 0)
 	{
-		UE_LOG(PubnubLog, Warning, TEXT("Can't set Secret Key. Secret Key is empty."));
+		PubnubError("Can't set Secret Key. Secret Key is empty.");
 		return;
 	}
 
@@ -764,7 +795,7 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 
 	if(PublishResult != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Publish failed. Error code: %d"), PublishResult);
+		PubnubPublishError();
 	}
 }
 
@@ -857,16 +888,16 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
-
+	
+	SystemPublish();
+	
 	//Cache and clear all groups and channels
 	TArray<FString> SubscribedChannelsCached = SubscribedChannels;
 	TArray<FString> SubscribedGroupsCached = SubscribedGroups;
 	SubscribedChannels.Empty();
 	SubscribedGroups.Empty();
 	
-	pubnub_cancel(ctx_pub);
 	pubnub_await(ctx_pub);
-	
 	//TODO: Find out how to unsubscribe from all channels correctly
 	for(FString Channel : SubscribedChannelsCached)
 	{
@@ -1018,7 +1049,7 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 	//TODO: waiting for response takes time. Maybe it would be useful to expose a bool like "WaitForResponse". So if set to false we would skip further part of this function
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if (PNR_OK != PubnubResponse) {
-		UE_LOG(PubnubLog, Error, TEXT("Failed to set state. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to set state.");
 	}
 }
 
@@ -1070,7 +1101,7 @@ void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, F
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Grant Token. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Grant Token.");
 		return;
 	}
 
@@ -1099,7 +1130,7 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token)
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Revoke Token. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Revoke Token.");
 	}
 }
 
@@ -1116,7 +1147,7 @@ void UPubnubSubsystem::ParseToken_priv(FString Token)
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Parse Token. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Parse Token.");
 	}
 }
 
@@ -1133,7 +1164,7 @@ void UPubnubSubsystem::SetAuthToken_priv(FString Token)
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Auth Token. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Set Auth Token.");
 	}
 }
 
@@ -1230,7 +1261,7 @@ void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString Incl
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Set UUID Metadata. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Set UUID Metadata.");
 	}
 }
 
@@ -1267,7 +1298,7 @@ void UPubnubSubsystem::RemoveUUIDMetadata_priv(FString UUIDMetadataID)
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove UUID Metadata. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Remove UUID Metadata.");
 	}
 }
 
@@ -1303,7 +1334,7 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FStrin
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Channel Metadata. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Set Channel Metadata.");
 	}
 }
 
@@ -1340,7 +1371,7 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString ChannelMetadataID)
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove Channel Metadata. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Remove Channel Metadata.");
 	}
 }
 
@@ -1379,7 +1410,7 @@ void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString Inclu
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Memberships. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Set Memberships.");
 	}
 }
 
@@ -1396,7 +1427,7 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString In
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove Memberships. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Remove Memberships.");
 	}
 }
 
@@ -1435,7 +1466,7 @@ void UPubnubSubsystem::AddMembers_priv(FString ChannelMetadataID, FString Includ
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Add Members. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Add Members.");
 	}
 }
 
@@ -1452,7 +1483,7 @@ void UPubnubSubsystem::SetMembers_priv(FString ChannelMetadataID, FString Includ
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Set Members. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Set Members.");
 	}
 }
 
@@ -1469,7 +1500,7 @@ void UPubnubSubsystem::RemoveMembers_priv(FString ChannelMetadataID, FString Inc
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to Remove Members. Error code: %d"), PubnubResponse);
+		PubnubResponseError(PubnubResponse, "Failed to Remove Members.");
 	}
 }
 
