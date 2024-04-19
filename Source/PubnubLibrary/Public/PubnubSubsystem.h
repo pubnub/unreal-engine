@@ -232,11 +232,13 @@ private:
 	/* PLUGIN SETTINGS */
 	
 	TObjectPtr<UPubnubSettings> PubnubSettings = nullptr;
-	
+
 	//Containers for keys stored from settings
-	char PublishKey[43];
-	char SubscribeKey[43];
-	char SecretKey[55];
+	static const int PublishKeySize = 42;
+	static const int SecretKeySize = 54;
+	char PublishKey[PublishKeySize + 1];
+	char SubscribeKey[PublishKeySize + 1];
+	char SecretKey[SecretKeySize + 1];
 	
 	void LoadPluginSettings();
 

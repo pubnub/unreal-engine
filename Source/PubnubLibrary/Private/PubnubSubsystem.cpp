@@ -649,15 +649,14 @@ void UPubnubSubsystem::LoadPluginSettings()
 {
 	//Save all settings
 	PubnubSettings = GetMutableDefault<UPubnubSettings>();
-
-	//TODO: Make something better for reading keys - at least check size instead of hard-coding it.
+	
 	//Copy memory for chars containing keys
-	memcpy_s(PublishKey, 42, TCHAR_TO_ANSI(*PubnubSettings->PublishKey), 42);
-	memcpy_s(SubscribeKey,42,  TCHAR_TO_ANSI(*PubnubSettings->SubscribeKey), 42);
-	memcpy_s(SecretKey,54,  TCHAR_TO_ANSI(*PubnubSettings->SecretKey), 54);
-	PublishKey[42] = '\0';
-	SubscribeKey[42] = '\0';
-	SecretKey[54] = '\0';
+	FMemory::Memcpy(PublishKey, TCHAR_TO_ANSI(*PubnubSettings->PublishKey), PublishKeySize);
+	FMemory::Memcpy(SubscribeKey, TCHAR_TO_ANSI(*PubnubSettings->SubscribeKey), PublishKeySize);
+	FMemory::Memcpy(SecretKey, TCHAR_TO_ANSI(*PubnubSettings->SecretKey), SecretKeySize);
+	PublishKey[PublishKeySize] = '\0';
+	SubscribeKey[PublishKeySize] = '\0';
+	SecretKey[SecretKeySize] = '\0';
 }
 
 //This functions is a wrapper to IsInitialized bool, so it can print error if user is trying to do anything before initializing Pubnub correctly
@@ -712,8 +711,7 @@ void UPubnubSubsystem::InitPubnub_priv()
 {
 	if(IsInitialized)
 	{return;}
-
-	//TODO::Not only check if keys are empty, but also make sure they are valid
+	
 	//Make sure that keys are filled
 	if(std::strlen(PublishKey) == 0 )
 	{
