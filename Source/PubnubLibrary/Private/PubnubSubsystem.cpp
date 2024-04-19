@@ -793,24 +793,17 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "PublishMessage") || CheckIsFieldEmpty(Message, "Message", "PublishMessage"))
 	{return;}
-
-	//Set all options from PublishSettings
-	pubnub_publish_options PublishOptions = pubnub_publish_defopts();
-	PublishOptions.store = PublishSettings.StoreInHistory;
-	PublishOptions.replicate = PublishSettings.Replicate;
 	
+	//Convert all UE PublishSettings to Pubnub PublishOptions
+	
+	//Converted char needs to live in function scope, so we need to create it here
+	pubnub_publish_options PubnubOptions;
 	auto CharConverter = StringCast<ANSICHAR>(*PublishSettings.MetaData);
-	const char* MetaDataChar = CharConverter.Get();
-	
-	if(!PublishSettings.MetaData.IsEmpty())
-	{
-		PublishOptions.meta = MetaDataChar;
-	}
+	PubnubOptions.meta = CharConverter.Get();
 
-	//Convert UE enum to pubnub_method enum
-	PublishOptions.method = (pubnub_method)(uint8)PublishSettings.PublishMethod;
+	PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
 	
-	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message), PublishOptions);
+	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Message), PubnubOptions);
 	pubnub_res PublishResult = pubnub_await(ctx_pub);
 
 	if(PublishResult != PNR_OK)
@@ -997,16 +990,13 @@ void UPubnubSubsystem::HereNow_priv(FString ChannelName, FOnHereNowResponse Here
 	{return;}
 
 	//Set all options from HereNowSettings
-	pubnub_here_now_options HereNowOptions = pubnub_here_now_defopts();
-	HereNowOptions.disable_uuids = HereNowSettings.DisableUUID;
-	HereNowOptions.state = HereNowSettings.State;
-
+	
+	//Converted char needs to live in function scope, so we need to create it here
+	pubnub_here_now_options HereNowOptions;
 	auto CharConverter = StringCast<ANSICHAR>(*HereNowSettings.ChannelGroup);
-	const char* ChannelNameChar = CharConverter.Get();
-	if(!HereNowSettings.ChannelGroup.IsEmpty())
-	{
-		HereNowOptions.channel_group = ChannelNameChar;
-	}
+	HereNowOptions.channel_group = CharConverter.Get();
+	
+	HereNowUESettingsToPubnubHereNowOptions(HereNowSettings, HereNowOptions);
 	
 	pubnub_here_now_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), HereNowOptions);
 	FString JsonResponse = GetLastResponse(ctx_pub);
@@ -1045,28 +1035,20 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "SetState") || CheckIsFieldEmpty(StateJson, "StateJson", "SetState"))
 	{return;}
-
-	pubnub_set_state_options SetStateOptions = pubnub_set_state_defopts();
-
+	
 	//Set all options from SetStateSettings
+
+	//Converted char needs to live in function scope, so we need to create it here
+	pubnub_set_state_options SetStateOptions;
 	auto CharConverter = StringCast<ANSICHAR>(*SetStateSettings.ChannelGroup);
-	const char* ChannelGroupChar = CharConverter.Get();
-	if(!SetStateSettings.ChannelGroup.IsEmpty())
-	{
-		SetStateOptions.channel_group = ChannelGroupChar;
-	}
+	SetStateOptions.channel_group = CharConverter.Get();
 	auto UserIDCharConverter = StringCast<ANSICHAR>(*SetStateSettings.UserID);
-	const char* UserIDChar = UserIDCharConverter.Get();
-	if(!SetStateSettings.UserID.IsEmpty())
-	{
-		SetStateOptions.user_id = UserIDChar;
-	}
+	SetStateOptions.user_id = UserIDCharConverter.Get();
 
-	SetStateOptions.heartbeat = SetStateSettings.HeartBeat;
-
+	SetStateUESettingsToPubnubSetStateOptions(SetStateSettings, SetStateOptions);
+	
 	pubnub_set_state_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*StateJson), SetStateOptions);
-
-	//TODO: waiting for response takes time. Maybe it would be useful to expose a bool like "WaitForResponse". So if set to false we would skip further part of this function
+	
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if (PNR_OK != PubnubResponse) {
 		PubnubResponseError(PubnubResponse, "Failed to set state.");
@@ -1203,26 +1185,15 @@ void UPubnubSubsystem::History_priv(FString ChannelName, FOnHistoryResponse OnHi
 	{return;}
 
 	//Set all options from HistorySettings
-	pubnub_history_options HistoryOptions = pubnub_history_defopts();
-	HistoryOptions.string_token = HistorySettings.StringToken;
-	HistoryOptions.count = HistorySettings.Count;
-	HistoryOptions.reverse = HistorySettings.Reverse;
-	HistoryOptions.include_token = HistorySettings.IncludeToken;
-	HistoryOptions.include_meta = HistorySettings.IncludeMeta;
 
+	//Converted char needs to live in function scope, so we need to create it here
+	pubnub_history_options HistoryOptions;
 	auto StartCharConverter = StringCast<ANSICHAR>(*HistorySettings.Start);
-	const char* StartChar = StartCharConverter.Get();
-	if(!HistorySettings.Start.IsEmpty())
-	{
-		HistoryOptions.start = StartChar;
-	}
-
+	HistoryOptions.start = StartCharConverter.Get();
 	auto EndCharConverter = StringCast<ANSICHAR>(*HistorySettings.End);
-	const char* EndChar = EndCharConverter.Get();
-	if(!HistorySettings.End.IsEmpty())
-	{
-		HistoryOptions.end = EndChar;
-	}
+	HistoryOptions.end = EndCharConverter.Get();
+
+	HistoryUESettingsToPubnubHistoryOptions(HistorySettings,HistoryOptions);
 	
 	pubnub_history_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), HistoryOptions);
 
@@ -1528,5 +1499,39 @@ void UPubnubSubsystem::RemoveMembers_priv(FString ChannelMetadataID, FString Inc
 	{
 		PubnubResponseError(PubnubResponse, "Failed to Remove Members.");
 	}
+}
+
+void UPubnubSubsystem::PublishUESettingsToPubnubPublishOptions(FPubnubPublishSettings &PublishSettings, pubnub_publish_options& PubnubPublishOptions)
+{
+	PubnubPublishOptions.store = PublishSettings.StoreInHistory;
+	PubnubPublishOptions.replicate = PublishSettings.Replicate;
+	PubnubPublishOptions.cipher_key = NULL;
+	PublishSettings.MetaData.IsEmpty() ? PubnubPublishOptions.meta = NULL : nullptr;
+	PubnubPublishOptions.method = (pubnub_method)(uint8)PublishSettings.PublishMethod;
+}
+
+void UPubnubSubsystem::HereNowUESettingsToPubnubHereNowOptions(FPubnubHereNowSettings& HereNowSettings, pubnub_here_now_options& PubnubHereNowOptions)
+{
+	PubnubHereNowOptions.disable_uuids = HereNowSettings.DisableUUID;
+	PubnubHereNowOptions.state = HereNowSettings.State;
+	HereNowSettings.ChannelGroup.IsEmpty() ? PubnubHereNowOptions.channel_group = NULL : nullptr;
+}
+
+void UPubnubSubsystem::SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings& SetStateSettings, pubnub_set_state_options& PubnubSetStateOptions)
+{
+	SetStateSettings.ChannelGroup.IsEmpty() ? PubnubSetStateOptions.channel_group = NULL : nullptr;
+	SetStateSettings.UserID.IsEmpty() ? PubnubSetStateOptions.user_id = NULL : nullptr;
+	PubnubSetStateOptions.heartbeat = SetStateSettings.HeartBeat;
+}
+
+void UPubnubSubsystem::HistoryUESettingsToPubnubHistoryOptions(FPubnubHistorySettings& HistorySettings, pubnub_history_options& PubnubHistoryOptions)
+{
+	PubnubHistoryOptions.string_token = HistorySettings.StringToken;
+	PubnubHistoryOptions.count = HistorySettings.Count;
+	PubnubHistoryOptions.reverse = HistorySettings.Reverse;
+	PubnubHistoryOptions.include_token = HistorySettings.IncludeToken;
+	PubnubHistoryOptions.include_meta = HistorySettings.IncludeMeta;
+	HistorySettings.Start.IsEmpty() ? PubnubHistoryOptions.start = NULL : nullptr;
+	HistorySettings.End.IsEmpty() ? PubnubHistoryOptions.end = NULL : nullptr;
 }
 

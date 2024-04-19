@@ -213,6 +213,8 @@ private:
 	//Returns FString from the pubnub_get_channel response
 	FString GetLastChannelResponse(pubnub_t* context);
 
+#pragma region ERROR FUNCTIONS
+	
 	/* ERROR FUNCTIONS */
 	//Every Error function prints error to the Log and Broadcasts OnPubnubError delegate
 	
@@ -223,6 +225,7 @@ private:
 	//Error during publishing a message
 	void PubnubPublishError();
 
+#pragma endregion
 
 #pragma region PLUGIN SETTINGS
 	
@@ -297,6 +300,12 @@ private:
 	void RemoveMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj);
 
 #pragma endregion
+
+	/* STRUCT CONVERTERS */
 	
+	void PublishUESettingsToPubnubPublishOptions(FPubnubPublishSettings &PublishSettings, pubnub_publish_options &PubnubPublishOptions);
+	void HereNowUESettingsToPubnubHereNowOptions(FPubnubHereNowSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
+	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
+	void HistoryUESettingsToPubnubHistoryOptions(FPubnubHistorySettings &HistorySettings, pubnub_history_options &PubnubHistoryOptions);
 };
 
