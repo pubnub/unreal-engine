@@ -8,10 +8,12 @@
 #include "PubnubEnumLibrary.h"
 #include "PubnubSubsystem.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(PubnubLog, Log, All);
 
 class UPubnubSettings;
 class FPubnubFunctionThread;
 class FPubnubLoopingThread;
+class UPubnubChatSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
@@ -28,6 +30,10 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetAllChannelMetadataResponse, FString, Jso
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetChannelMetadataResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetMembershipResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetMembersResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHistoryWithMessageActionsResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHistoryWithMAContinueResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetMessageActionsResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetMessageActionsContinueResponse, FString, JsonResponse);
 
 
 UCLASS()
@@ -45,6 +51,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnPubnubError OnPubnubError;
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Pubnub|Systems")
+	UPubnubChatSystem* ChatSystem;
 
 #pragma region BLUEPRINT EXPOSED
 	
@@ -180,7 +189,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void RemoveMembers(FString ChannelMetadataID, FString Include, FString RemoveObj);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
+	void AddMessageAction(FString ChannelName, FString MessageTimeToken, EPubnubActionType ActionType,  FString Value);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
+	void HistoryWithMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnHistoryWithMessageActionsResponse OnHistoryWithMessageActionsResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
+	void HistoryWithMessageActionsContinue(FOnHistoryWithMAContinueResponse OnHistoryWithMAContinueResponse);
+	
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
+	void GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
+	void GetMessageActionsContinue(FOnGetMessageActionsContinueResponse OnGetMessageActionsContinueResponse);
+
 #pragma endregion
+
+	bool CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName);
 	
 private:
 
@@ -199,7 +225,7 @@ private:
 	TArray<FString> SubscribedGroups;
 	
 	//Publish to the first subscribed channel to unlock subscribe context
-	void SystemPublish();
+	void SystemPublish(FString ChannelOpt = "");
 
 	//Register to PubnubLoopingThread function to check in loop for messages from subscribed channels and groups
 	void StartPubnubSubscribeLoop();
@@ -251,8 +277,6 @@ private:
 	bool CheckIsPubnubInitialized();
 	bool CheckIsUserIDSet();
 	bool CheckQuickActionThreadValidity();
-	bool CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName);
-
 
 #pragma region PRIVATE FUNCTIONS
 
@@ -300,6 +324,11 @@ private:
 	void AddMembers_priv(FString ChannelMetadataID, FString Include, FString AddObj);
 	void SetMembers_priv(FString ChannelMetadataID, FString Include, FString SetObj);
 	void RemoveMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj);
+	void AddMessageAction_priv(FString ChannelName, FString MessageTimeToken, EPubnubActionType ActionType,  FString Value);
+	void HistoryWithMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnHistoryWithMessageActionsResponse OnHistoryWithMessageActionsResponse);
+	void HistoryWithMessageActionsContinue_priv(FOnHistoryWithMAContinueResponse OnHistoryWithMAContinueResponse);
+	void GetMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
+	void GetMessageActionsContinue_priv(FOnGetMessageActionsContinueResponse OnGetMessageActionsContinueResponse);
 
 #pragma endregion
 

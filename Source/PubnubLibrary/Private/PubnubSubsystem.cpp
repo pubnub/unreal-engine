@@ -1,11 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "PubnubSubsystem.h"
+
+#include "ITimedDataInput.h"
+#include "PubnubChatSystem.h"
 #include "Config/PubnubSettings.h"
 #include "Threads/PubnubFunctionThread.h"
 #include "Threads/PubnubLoopingThread.h"
 
-DEFINE_LOG_CATEGORY_STATIC(PubnubLog, Log, All)
+DEFINE_LOG_CATEGORY(PubnubLog)
 
 void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -492,13 +495,74 @@ void UPubnubSubsystem::RemoveMembers(FString ChannelMetadataID, FString Include,
 	});
 }
 
-void UPubnubSubsystem::SystemPublish()
+void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTimeToken, EPubnubActionType ActionType,  FString Value)
 {
-	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
+	if(!CheckQuickActionThreadValidity())
 	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, MessageTimeToken, ActionType, Value]
+	{
+		AddMessageAction_priv(ChannelName, MessageTimeToken, ActionType, Value);
+	});
+}
+
+void UPubnubSubsystem::HistoryWithMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnHistoryWithMessageActionsResponse OnHistoryWithMessageActionsResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Start, End, SizeLimit, OnHistoryWithMessageActionsResponse]
+	{
+		HistoryWithMessageActions_priv(ChannelName, Start, End, SizeLimit, OnHistoryWithMessageActionsResponse);
+	});
+}
+
+void UPubnubSubsystem::HistoryWithMessageActionsContinue(FOnHistoryWithMAContinueResponse OnHistoryWithMAContinueResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, OnHistoryWithMAContinueResponse]
+	{
+		HistoryWithMessageActionsContinue_priv(OnHistoryWithMAContinueResponse);
+	});
+}
+
+void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Start, End, SizeLimit, OnGetMessageActionsResponse]
+	{
+		GetMessageActions_priv(ChannelName, Start, End, SizeLimit, OnGetMessageActionsResponse);
+	});
+}
+
+void UPubnubSubsystem::GetMessageActionsContinue(FOnGetMessageActionsContinueResponse OnGetMessageActionsContinueResponse)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, OnGetMessageActionsContinueResponse]
+	{
+		GetMessageActionsContinue_priv(OnGetMessageActionsContinueResponse);
+	});
+}
+
+void UPubnubSubsystem::SystemPublish(FString ChannelOpt)
+{
+	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty() && ChannelOpt.IsEmpty())
+	{return;}
+	
+	FPubnubPublishSettings PublishSettings;
+	PublishSettings.StoreInHistory = false;
+
+	FString PublishChannel;
+	ChannelOpt.IsEmpty() ? PublishChannel = SubscribedChannels[0] : PublishChannel = ChannelOpt;
 
 	//TODO: this will not unlock context if user is subscribed only to groups, but not to any channels. This issue needs to be addressed.
-	PublishMessage(SubscribedChannels[0], "{\"system\":\"subscribe unlock message\"}");
+	PublishMessage(PublishChannel, "{\"system\":\"subscribe unlock message\"}", PublishSettings);
 }
 
 void UPubnubSubsystem::StartPubnubSubscribeLoop()
@@ -622,7 +686,7 @@ void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString Er
 {
 	//Convert all error data into single string
 	FString ResponseString(pubnub_res_2_string(PubnubResponse));
-	FString FinalErrorMessage = FString::Printf(TEXT("%s Error: %s"), *ErrorMessage, *ResponseString);
+	FString FinalErrorMessage = FString::Printf(TEXT("%s Error: %s."), *ErrorMessage, *ResponseString);
 
 	//Log and broadcast error
 	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
@@ -734,6 +798,10 @@ void UPubnubSubsystem::InitPubnub_priv()
 		SetSecretKey();
 	}
 
+	//Initialize Chat System
+	ChatSystem = NewObject<UPubnubChatSystem>();
+	ChatSystem->InitChatSystem(this);
+
 	IsInitialized = true;
 }
 
@@ -755,6 +823,11 @@ void UPubnubSubsystem::DeinitPubnub_priv()
 		pubnub_free(ctx_sub);
 		ctx_sub = nullptr;
 	}
+
+	//Clear Chat System
+	ChatSystem->DeinitChatSystem();
+	ChatSystem = nullptr;
+	
 	IsInitialized = false;
 }
 
@@ -899,8 +972,12 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
-	
-	SystemPublish();
+
+	FString ChannelForSystemPublish;
+	if(SubscribedChannels.Num() >= 1)
+	{
+		ChannelForSystemPublish = SubscribedChannels[0];
+	}
 	
 	//Cache and clear all groups and channels
 	TArray<FString> SubscribedChannelsCached = SubscribedChannels;
@@ -908,7 +985,6 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 	SubscribedChannels.Empty();
 	SubscribedGroups.Empty();
 	
-	pubnub_await(ctx_pub);
 	//TODO: Find out how to unsubscribe from all channels correctly
 	for(FString Channel : SubscribedChannelsCached)
 	{
@@ -923,6 +999,8 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 	}
 	
 	LongpollThread->ClearLoopingFunctions();
+	
+	SystemPublish(ChannelForSystemPublish);
 }
 
 void UPubnubSubsystem::AddChannelToGroup_priv(FString ChannelName, FString ChannelGroup)
@@ -1112,6 +1190,12 @@ void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, F
 	}
 
 	pubnub_chamebl_t grant_token_resp = pubnub_get_grant_token(ctx_pub);
+	if(!grant_token_resp.ptr)
+	{
+		PubnubError("Failed to get Grant Token - pointer to token is invalid.");
+		return;
+	}
+	
 	FString JsonResponse(grant_token_resp.ptr);
 	
 	//Delegate needs to be executed back on Game Thread
@@ -1320,7 +1404,7 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FStrin
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
-
+	
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "SetChannelMetadata") || CheckIsFieldEmpty(ChannelMetadataObj, "ChannelMetadataObj", "SetChannelMetadata"))
 	{return;}
 	
@@ -1497,6 +1581,106 @@ void UPubnubSubsystem::RemoveMembers_priv(FString ChannelMetadataID, FString Inc
 	{
 		PubnubResponseError(PubnubResponse, "Failed to Remove Members.");
 	}
+}
+
+void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString MessageTimeToken, EPubnubActionType ActionType,  FString Value)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "AddMessageAction") || CheckIsFieldEmpty(MessageTimeToken, "MessageTimeToken", "AddMessageAction"))
+	{return;}
+
+	pubnub_action_type PubnubActionType = (pubnub_action_type)(uint8)ActionType;
+	pubnub_add_message_action(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*MessageTimeToken), PubnubActionType,  TCHAR_TO_ANSI(*Value));
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if(PubnubResponse != PNR_OK)
+	{
+		PubnubResponseError(PubnubResponse, "Failed to Add Message Action.");
+	}
+	pubnub_chamebl_t AddMessageActionResponse = pubnub_get_message_action_timetoken(ctx_pub);
+
+	if(!AddMessageActionResponse.ptr)
+	{
+		return;
+	}
+	FString JsonResponse(AddMessageActionResponse.ptr);
+	UE_LOG(PubnubLog, Warning, TEXT("AddMessageAction response: %s"), *JsonResponse);
+}
+
+void UPubnubSubsystem::HistoryWithMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnHistoryWithMessageActionsResponse OnHistoryWithMessageActionsResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "HistoryWithMessageActions"))
+	{return;}
+	
+	pubnub_history_with_message_actions(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), SizeLimit);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnHistoryWithMessageActionsResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnHistoryWithMessageActionsResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::HistoryWithMessageActionsContinue_priv(FOnHistoryWithMAContinueResponse OnHistoryWithMAContinueResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_history_with_message_actions_more(ctx_pub);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnHistoryWithMAContinueResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnHistoryWithMAContinueResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::GetMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "HistoryWithMessageActions"))
+	{return;}
+
+	pubnub_get_message_actions(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), SizeLimit);
+	
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetMessageActionsResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetMessageActionsResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::GetMessageActionsContinue_priv(FOnGetMessageActionsContinueResponse OnGetMessageActionsContinueResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	pubnub_get_message_actions_more(ctx_pub);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetMessageActionsContinueResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetMessageActionsContinueResponse.ExecuteIfBound(JsonResponse);
+	});
 }
 
 void UPubnubSubsystem::PublishUESettingsToPubnubPublishOptions(FPubnubPublishSettings &PublishSettings, pubnub_publish_options& PubnubPublishOptions)
