@@ -8,6 +8,7 @@
 #include "PubnubChatSystem.generated.h"
 
 class UPubnubSubsystem;
+class UPubnubChatChannel;
 
 UENUM(BlueprintType)
 enum class EPubnubChatEventType : uint8
@@ -32,8 +33,9 @@ public:
 	void DeinitChatSystem();
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
-	void CreatePublicConversation(FString ChannelName, FString ChannelData);
+	UPubnubChatChannel* CreatePublicConversation(FString ChannelName, FString ChannelData);
 
+	//To Delete
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
 	void ConnectToChannel(FString ChannelName);
 	
@@ -58,6 +60,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|ChatSystem|Helpers")
 	FString GetStringFromChatEventType(EPubnubChatEventType ChatEventType);
+
+
+	void SubscribeToChannel(FString ChannelID);
 	
 private:
 	UPROPERTY()

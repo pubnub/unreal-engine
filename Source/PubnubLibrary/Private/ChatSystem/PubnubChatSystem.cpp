@@ -1,23 +1,29 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ChatSystem/PubnubChatSystem.h"
-
+#include "ChatSystem/PubnubChatChannel.h"
 #include "PubnubSubsystem.h"
 
 
-void UPubnubChatSystem::CreatePublicConversation(FString ChannelName, FString ChannelData)
+UPubnubChatChannel* UPubnubChatSystem::CreatePublicConversation(FString ChannelName, FString ChannelData)
 {
 	if(!CheckIsChatInitialized())
-	{return;}
+	{return nullptr;}
 	
 	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelName, "ChannelName", "CreateChannel"))
-	{return;}
+	{return nullptr;}
 	
 	PubnubSubsystem->SetChannelMetadata(ChannelName, "", ChannelData.IsEmpty() ? "{}" : ChannelData);
+
+	UPubnubChatChannel* ChannelObject = NewObject<UPubnubChatChannel>(this);
+	ChannelObject->Initialize(this, ChannelName, ChannelData);
+	
+	return ChannelObject;
 }
 
 void UPubnubChatSystem::ConnectToChannel(FString ChannelName)
 {
+	
 	if(!CheckIsChatInitialized())
 	{return;}
 	
@@ -120,6 +126,17 @@ FString UPubnubChatSystem::GetStringFromChatEventType(EPubnubChatEventType ChatE
 		return "moderation";
 	}
 	return "custom";
+}
+
+void UPubnubChatSystem::SubscribeToChannel(FString ChannelID)
+{
+	if(!CheckIsChatInitialized())
+	{return;}
+	
+	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelID, "ChannelID", "SubscribeToChannel"))
+	{return;}
+
+	PubnubSubsystem->SubscribeToChannel(ChannelID);
 }
 
 void UPubnubChatSystem::EmitChatEvent(EPubnubChatEventType EventType, FString ChannelName, FString Payload)
