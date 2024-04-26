@@ -32,10 +32,10 @@ public:
 	void DeinitChatSystem();
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
-	void CreateChannel(FString ChannelName, FString ChannelData);
+	void CreatePublicConversation(FString ChannelName, FString ChannelData);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
-	void JoinChannel(FString ChannelName);
+	void ConnectToChannel(FString ChannelName);
 	
 	/**
 	 * Send a chat message to given channel.

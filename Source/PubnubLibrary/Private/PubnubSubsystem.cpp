@@ -3,7 +3,7 @@
 #include "PubnubSubsystem.h"
 
 #include "ITimedDataInput.h"
-#include "PubnubChatSystem.h"
+#include "ChatSystem/PubnubChatSystem.h"
 #include "Config/PubnubSettings.h"
 #include "Threads/PubnubFunctionThread.h"
 #include "Threads/PubnubLoopingThread.h"

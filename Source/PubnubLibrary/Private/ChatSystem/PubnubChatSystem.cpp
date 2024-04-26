@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "PubnubChatSystem.h"
+#include "ChatSystem/PubnubChatSystem.h"
 
 #include "PubnubSubsystem.h"
 
 
-void UPubnubChatSystem::CreateChannel(FString ChannelName, FString ChannelData)
+void UPubnubChatSystem::CreatePublicConversation(FString ChannelName, FString ChannelData)
 {
 	if(!CheckIsChatInitialized())
 	{return;}
@@ -16,7 +16,7 @@ void UPubnubChatSystem::CreateChannel(FString ChannelName, FString ChannelData)
 	PubnubSubsystem->SetChannelMetadata(ChannelName, "", ChannelData.IsEmpty() ? "{}" : ChannelData);
 }
 
-void UPubnubChatSystem::JoinChannel(FString ChannelName)
+void UPubnubChatSystem::ConnectToChannel(FString ChannelName)
 {
 	if(!CheckIsChatInitialized())
 	{return;}
