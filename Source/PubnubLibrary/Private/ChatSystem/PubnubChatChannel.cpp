@@ -14,6 +14,7 @@ void UPubnubChatChannel::Initialize(UPubnubChatSystem* InChatSystem, FString InC
 	ChannelID = InChannelID;
 	ChannelData = InChannelData;
 	IsInitialized = true;
+
 }
 
 void UPubnubChatChannel::Connect()
@@ -29,7 +30,7 @@ void UPubnubChatChannel::Disconnect()
 void UPubnubChatChannel::Join(FString AdditionalParams)
 {
 	//Format all data into the correct Response Json
-	FString IncludeString = "{\"totalCount\": true, \"customFields\": true, \"channelFields\": true, \"customChannelFields\": true}";
+	FString IncludeString = "totalCount,customFields,channelFields,customChannelFields";
 	FString CustomParameterString;
 	AdditionalParams.IsEmpty() ? CustomParameterString="{}" : CustomParameterString = AdditionalParams;
 	FString SetObjectString = FString::Printf(TEXT("[{\"channel\": {\"id\": \"%s\"}, \"custom\": %s}]"), *ChannelID, *AdditionalParams);

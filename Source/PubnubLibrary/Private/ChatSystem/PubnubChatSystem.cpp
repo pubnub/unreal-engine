@@ -47,6 +47,47 @@ void UPubnubChatSystem::DeleteChannel(FString ChannelID)
 	PubnubSubsystem->RemoveChannelMetadata(ChannelID);
 }
 
+UPubnubChatUser* UPubnubChatSystem::CreateUser(FString UserID, FPubnubChatUserData AdditionalUserData)
+{
+	if(!CheckIsChatInitialized())
+	{return nullptr;}
+	
+	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "UserID", "CreateUser"))
+	{return nullptr;}
+
+	//If this user already exists, just return it
+	if(ChatUser)
+	{
+		return ChatUser;
+	}
+	
+	//Create User object and initialize it with all data
+	ChatUser = NewObject<UPubnubChatUser>(this);
+	ChatUser->Initialize(this, UserID, AdditionalUserData);
+	
+	return ChatUser;
+}
+
+UPubnubChatUser* UPubnubChatSystem::UpdateUser(FString UserID, FPubnubChatUserData AdditionalUserData)
+{
+	if(!CheckIsChatInitialized())
+	{return nullptr;}
+	
+	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "UserID", "UpdateUser"))
+	{return nullptr;}
+
+	//If this user already exists just Update data and return it
+	if(ChatUser)
+	{
+		ChatUser->UpdateUser(UserID, AdditionalUserData);
+		return ChatUser;
+	}
+
+	//If such user doesn't exists create it with new data
+	ChatUser = CreateUser(UserID, AdditionalUserData);
+	return ChatUser;
+}
+
 void UPubnubChatSystem::SendChatMessage(FString ChannelName, FString Message, EPubnubChatMessageType MessageType, FString MetaData)
 {
 	if(!CheckIsChatInitialized())

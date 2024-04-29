@@ -6,6 +6,7 @@
 #include "PubnubStructLibrary.h"
 #include "PubnubEnumLibrary.h"
 #include "PubnubSubsystem.h"
+#include "ChatSystem/PubnubChatUser.h"
 #include "PubnubChatSystem.generated.h"
 
 class UPubnubChatChannel;
@@ -34,7 +35,7 @@ public:
 	void InitChatSystem(UPubnubSubsystem* PubnubSubsystemRef);
 	void DeinitChatSystem();
 
-	/* Channels */
+	/* CHANNELS */
 	
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
 	UPubnubChatChannel* CreatePublicConversation(FString ChannelName, FString ChannelData);
@@ -44,6 +45,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
 	void DeleteChannel(FString ChannelID);
+
+	/* USERS */
+
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Users")
+	UPubnubChatUser* CreateUser(FString UserID, FPubnubChatUserData AdditionalUserData);
+
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Users")
+	UPubnubChatUser* UpdateUser(FString UserID, FPubnubChatUserData AdditionalUserData);
 
 
 	/* Messages */
@@ -69,8 +78,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|ChatSystem|Helpers")
 	FString GetStringFromChatEventType(EPubnubChatEventType ChatEventType);
-
-
+	
 	void SubscribeToChannel(FString ChannelID);
 	void UnsubscribeFromChannel(FString ChannelID);
 	UPubnubSubsystem* GetPubnubSubsystem();
@@ -84,6 +92,8 @@ private:
 	bool IsInitialized;
 	bool CheckIsChatInitialized();
 
+	UPubnubChatUser* ChatUser = nullptr;
+	
 	UPROPERTY()
 	FOnGetChannelResponse GetChannelResponse;
 	
@@ -91,7 +101,7 @@ private:
 	void OnGetChannelResponseReceived(FString JsonResponse);
 	
 	FString ChatMessageToPublishString(FString Message, EPubnubChatMessageType MessageType);
-
+	
 	inline static const FString InternalModerationPrefix = "PUBNUB_INTERNAL_MODERATION_";
 
 	static FString BoolToPrintString(bool Value)
