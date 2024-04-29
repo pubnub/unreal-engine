@@ -2,6 +2,7 @@
 
 #include "ChatSystem/PubnubChatSystem.h"
 #include "ChatSystem/PubnubChatChannel.h"
+#include "FunctionLibraries/PubnubUtilities.h"
 
 
 UPubnubChatChannel* UPubnubChatSystem::CreatePublicConversation(FString ChannelName, FString ChannelData)
@@ -192,11 +193,7 @@ FString UPubnubChatSystem::ChatMessageToPublishString(FString Message, EPubnubCh
 	MessageJsonObject->SetStringField("text", Message);
 
 	//Convert constructed Json to FString
-	FString FinalJsonString;
-	TSharedRef< TJsonWriter<> > JsonWriter = TJsonWriterFactory<>::Create(&FinalJsonString);
-	FJsonSerializer::Serialize(MessageJsonObject.ToSharedRef(), JsonWriter);
-
-	return FinalJsonString;
+	return UPubnubUtilities::JsonObjectToString(MessageJsonObject);
 }
 
 //This functions is a wrapper to IsInitialized bool, so it can print error if user is trying to do anything before initializing Pubnub correctly
@@ -216,10 +213,10 @@ void UPubnubChatSystem::OnGetChannelResponseReceived(FString JsonResponse)
 	{
 		GetChannelResponse.ExecuteIfBound(nullptr);
 	}
+	
 	//Convert response to Json
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonResponse);
-	if(!FJsonSerializer::Deserialize(JsonReader, JsonObject))
+	if(!UPubnubUtilities::StringToJsonObject(JsonResponse, JsonObject))
 	{
 		UE_LOG(PubnubLog, Error, TEXT("OnGetChannelResponseReceived - String to Json convertion failed"));
 		GetChannelResponse.ExecuteIfBound(nullptr);
@@ -227,10 +224,9 @@ void UPubnubChatSystem::OnGetChannelResponseReceived(FString JsonResponse)
 
 	//Create new Json object just with "data" field.
 	TSharedPtr<FJsonObject> JsonDataField = JsonObject->GetObjectField("data");
+
 	//Conver "data" field to string
-	FString DataString;
-	TSharedRef< TJsonWriter<> > JsonWriter = TJsonWriterFactory<>::Create(&DataString);
-	FJsonSerializer::Serialize(JsonDataField.ToSharedRef(), JsonWriter);
+	FString DataString = UPubnubUtilities::JsonObjectToString(JsonDataField);
 	
 	UPubnubChatChannel* ChannelObject = NewObject<UPubnubChatChannel>(this);
 	ChannelObject->Initialize(this, JsonDataField->GetStringField("id"), DataString);
