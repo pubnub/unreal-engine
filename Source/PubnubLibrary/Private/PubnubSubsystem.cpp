@@ -184,7 +184,7 @@ void UPubnubSubsystem::RemoveChannelFromGroup(FString ChannelName, FString Chann
 	});
 }
 
-void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
+void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -206,7 +206,7 @@ void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup)
 	});
 }
 
-void UPubnubSubsystem::HereNow(FString ChannelName, FOnHereNowResponse HereNowResponse, FPubnubHereNowSettings HereNowSettings)
+void UPubnubSubsystem::HereNow(FString ChannelName, FOnPubnubResponse HereNowResponse, FPubnubHereNowSettings HereNowSettings)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -217,7 +217,7 @@ void UPubnubSubsystem::HereNow(FString ChannelName, FOnHereNowResponse HereNowRe
 	});
 }
 
-void UPubnubSubsystem::WhereNow(FString UserID, FOnWhereNowResponse WhereNowResponse)
+void UPubnubSubsystem::WhereNow(FString UserID, FOnPubnubResponse WhereNowResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -239,7 +239,7 @@ void UPubnubSubsystem::SetState(FString ChannelName, FString StateJson, FPubnubS
 	});
 }
 
-void UPubnubSubsystem::GetState(FString ChannelName, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse)
+void UPubnubSubsystem::GetState(FString ChannelName, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -261,7 +261,7 @@ void UPubnubSubsystem::Heartbeat(FString ChannelName, FString ChannelGroup)
 	});
 }
 
-void UPubnubSubsystem::GrantToken(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken(int TTLMinutes, FString AuthorizedUUID, FOnPubnubResponse OnGrantTokenResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -305,7 +305,7 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 	});
 }
 
-void UPubnubSubsystem::History(FString ChannelName, FOnHistoryResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings)
+void UPubnubSubsystem::History(FString ChannelName, FOnPubnubResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -316,7 +316,7 @@ void UPubnubSubsystem::History(FString ChannelName, FOnHistoryResponse OnHistory
 	});
 }
 
-void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnPubnubResponse OnMessageCountsResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -328,7 +328,7 @@ void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, F
 	
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse)
+void UPubnubSubsystem::GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -350,7 +350,7 @@ void UPubnubSubsystem::SetUUIDMetadata(FString UUIDMetadataID, FString Include, 
 	});
 }
 
-void UPubnubSubsystem::GetUUIDMetadata(FString Include, FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse)
+void UPubnubSubsystem::GetUUIDMetadata(FString Include, FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -372,7 +372,7 @@ void UPubnubSubsystem::RemoveUUIDMetadata(FString UUIDMetadataID)
 	});
 }
 
-void UPubnubSubsystem::GetAllChannelMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse)
+void UPubnubSubsystem::GetAllChannelMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllChannelMetadataResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -394,7 +394,7 @@ void UPubnubSubsystem::SetChannelMetadata(FString ChannelMetadataID, FString Inc
 	});
 }
 
-void UPubnubSubsystem::GetChannelMetadata(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse)
+void UPubnubSubsystem::GetChannelMetadata(FString Include, FString ChannelMetadataID, FOnPubnubResponse OnGetChannelMetadataResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -417,7 +417,7 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString ChannelMetadataID)
 }
 
 void UPubnubSubsystem::GetMemberships(FString UUIDMetadataID, FString Include, int Limit, FString Start, FString End,
-	EPubnubTribool Count, FOnGetMembershipResponse OnGetMembershipResponse)
+	EPubnubTribool Count, FOnPubnubResponse OnGetMembershipResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -451,7 +451,7 @@ void UPubnubSubsystem::RemoveMemberships(FString UUIDMetadataID, FString Include
 }
 
 void UPubnubSubsystem::GetMembers(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End,
-	EPubnubTribool Count, FOnGetMembersResponse OnGetMembersResponse)
+	EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -506,7 +506,7 @@ void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTime
 	});
 }
 
-void UPubnubSubsystem::HistoryWithMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnHistoryWithMessageActionsResponse OnHistoryWithMessageActionsResponse)
+void UPubnubSubsystem::HistoryWithMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -517,7 +517,7 @@ void UPubnubSubsystem::HistoryWithMessageActions(FString ChannelName, FString St
 	});
 }
 
-void UPubnubSubsystem::HistoryWithMessageActionsContinue(FOnHistoryWithMAContinueResponse OnHistoryWithMAContinueResponse)
+void UPubnubSubsystem::HistoryWithMessageActionsContinue(FOnPubnubResponse OnHistoryWithMAContinueResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -528,7 +528,7 @@ void UPubnubSubsystem::HistoryWithMessageActionsContinue(FOnHistoryWithMAContinu
 	});
 }
 
-void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
+void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -539,7 +539,7 @@ void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FSt
 	});
 }
 
-void UPubnubSubsystem::GetMessageActionsContinue(FOnGetMessageActionsContinueResponse OnGetMessageActionsContinueResponse)
+void UPubnubSubsystem::GetMessageActionsContinue(FOnPubnubResponse OnGetMessageActionsContinueResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -1026,7 +1026,7 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString ChannelName, FString 
 }
 
 void UPubnubSubsystem::ListChannelsFromGroup_priv(FString ChannelGroup,
-	FOnListChannelsFromGroupResponse OnListChannelsResponse)
+	FOnPubnubResponse OnListChannelsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1057,7 +1057,7 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
 	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
 }
 
-void UPubnubSubsystem::HereNow_priv(FString ChannelName, FOnHereNowResponse HereNowResponse, FPubnubHereNowSettings HereNowSettings)
+void UPubnubSubsystem::HereNow_priv(FString ChannelName, FOnPubnubResponse HereNowResponse, FPubnubHereNowSettings HereNowSettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1085,7 +1085,7 @@ void UPubnubSubsystem::HereNow_priv(FString ChannelName, FOnHereNowResponse Here
 	});
 }
 
-void UPubnubSubsystem::WhereNow_priv(FString UserID, FOnWhereNowResponse WhereNowResponse)
+void UPubnubSubsystem::WhereNow_priv(FString UserID, FOnPubnubResponse WhereNowResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1131,7 +1131,7 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 	}
 }
 
-void UPubnubSubsystem::GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse)
+void UPubnubSubsystem::GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1167,7 +1167,7 @@ void UPubnubSubsystem::Heartbeat_priv(FString ChannelName, FString ChannelGroup)
 	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
 }
 
-void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnGrantTokenResponse OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnPubnubResponse OnGrantTokenResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1258,7 +1258,7 @@ void UPubnubSubsystem::SetAuthToken_priv(FString Token)
 	}
 }
 
-void UPubnubSubsystem::History_priv(FString ChannelName, FOnHistoryResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings)
+void UPubnubSubsystem::History_priv(FString ChannelName, FOnPubnubResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1289,7 +1289,7 @@ void UPubnubSubsystem::History_priv(FString ChannelName, FOnHistoryResponse OnHi
 	});
 }
 
-void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnMessageCountsResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnPubnubResponse OnMessageCountsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1310,7 +1310,7 @@ void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeSta
 	});
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse)
+void UPubnubSubsystem::GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1345,7 +1345,7 @@ void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString Incl
 	}
 }
 
-void UPubnubSubsystem::GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse)
+void UPubnubSubsystem::GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1382,7 +1382,7 @@ void UPubnubSubsystem::RemoveUUIDMetadata_priv(FString UUIDMetadataID)
 	}
 }
 
-void UPubnubSubsystem::GetAllChannelMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse)
+void UPubnubSubsystem::GetAllChannelMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllChannelMetadataResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1417,7 +1417,7 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FStrin
 	}
 }
 
-void UPubnubSubsystem::GetChannelMetadata_priv(FString Include, FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse)
+void UPubnubSubsystem::GetChannelMetadata_priv(FString Include, FString ChannelMetadataID, FOnPubnubResponse OnGetChannelMetadataResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1455,7 +1455,7 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString ChannelMetadataID)
 }
 
 void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FString Include, int Limit, FString Start,
-	FString End, EPubnubTribool Count, FOnGetMembershipResponse OnGetMembershipResponse)
+	FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembershipResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1511,7 +1511,7 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString In
 }
 
 void UPubnubSubsystem::GetMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start,
-	FString End, EPubnubTribool Count, FOnGetMembersResponse OnGetMembersResponse)
+	FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1609,7 +1609,7 @@ void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString Messag
 	UE_LOG(PubnubLog, Warning, TEXT("AddMessageAction response: %s"), *JsonResponse);
 }
 
-void UPubnubSubsystem::HistoryWithMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnHistoryWithMessageActionsResponse OnHistoryWithMessageActionsResponse)
+void UPubnubSubsystem::HistoryWithMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1629,7 +1629,7 @@ void UPubnubSubsystem::HistoryWithMessageActions_priv(FString ChannelName, FStri
 	});
 }
 
-void UPubnubSubsystem::HistoryWithMessageActionsContinue_priv(FOnHistoryWithMAContinueResponse OnHistoryWithMAContinueResponse)
+void UPubnubSubsystem::HistoryWithMessageActionsContinue_priv(FOnPubnubResponse OnHistoryWithMAContinueResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1646,7 +1646,7 @@ void UPubnubSubsystem::HistoryWithMessageActionsContinue_priv(FOnHistoryWithMACo
 	});
 }
 
-void UPubnubSubsystem::GetMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
+void UPubnubSubsystem::GetMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1666,7 +1666,7 @@ void UPubnubSubsystem::GetMessageActions_priv(FString ChannelName, FString Start
 	});
 }
 
-void UPubnubSubsystem::GetMessageActionsContinue_priv(FOnGetMessageActionsContinueResponse OnGetMessageActionsContinueResponse)
+void UPubnubSubsystem::GetMessageActionsContinue_priv(FOnPubnubResponse OnGetMessageActionsContinueResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}

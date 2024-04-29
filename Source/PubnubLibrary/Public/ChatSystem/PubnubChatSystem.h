@@ -5,9 +5,9 @@
 #include "CoreMinimal.h"
 #include "PubnubStructLibrary.h"
 #include "PubnubEnumLibrary.h"
+#include "PubnubSubsystem.h"
 #include "PubnubChatSystem.generated.h"
 
-class UPubnubSubsystem;
 class UPubnubChatChannel;
 
 UENUM(BlueprintType)
@@ -22,6 +22,8 @@ enum class EPubnubChatEventType : uint8
 	PCET_Moderation			UMETA(DisplayName="Moderation")
 };
 
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetChannelResponse, UPubnubChatChannel*, Channel);
+
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubChatSystem : public UObject
 {
@@ -32,8 +34,13 @@ public:
 	void InitChatSystem(UPubnubSubsystem* PubnubSubsystemRef);
 	void DeinitChatSystem();
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
+	/* Channels */
+	
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
 	UPubnubChatChannel* CreatePublicConversation(FString ChannelName, FString ChannelData);
+
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
+	void GetChannel(FString ChannelID, FOnGetChannelResponse OnGetChannelResponse);
 
 	//To Delete
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
@@ -73,6 +80,12 @@ private:
 	bool IsInitialized;
 	bool CheckIsChatInitialized();
 
+	UPROPERTY()
+	FOnGetChannelResponse GetChannelResponse;
+	
+	UFUNCTION()
+	void OnGetChannelResponseReceived(FString JsonResponse);
+	
 	FString ChatMessageToPublishString(FString Message, EPubnubChatMessageType MessageType);
 
 	inline static const FString InternalModerationPrefix = "PUBNUB_INTERNAL_MODERATION_";
