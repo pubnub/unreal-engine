@@ -53,6 +53,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Users")
 	void SetUserID(FString UserID);
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|Users")
+	FString GetUserID();
+
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
 	void SetSecretKey();
 

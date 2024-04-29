@@ -42,9 +42,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
 	void GetChannel(FString ChannelID, FOnGetChannelResponse OnGetChannelResponse);
 
-	//To Delete
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
-	void ConnectToChannel(FString ChannelName);
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
+	void DeleteChannel(FString ChannelID);
+
+
+	/* Messages */
 	
 	/**
 	 * Send a chat message to given channel.
@@ -70,6 +72,8 @@ public:
 
 
 	void SubscribeToChannel(FString ChannelID);
+	void UnsubscribeFromChannel(FString ChannelID);
+	UPubnubSubsystem* GetPubnubSubsystem();
 	
 private:
 	UPROPERTY()

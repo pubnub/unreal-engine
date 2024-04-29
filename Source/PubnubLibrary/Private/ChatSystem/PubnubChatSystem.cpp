@@ -36,16 +36,15 @@ void UPubnubChatSystem::GetChannel(FString ChannelID, FOnGetChannelResponse OnGe
 	PubnubSubsystem->GetChannelMetadata("custom", ChannelID, FOnGetChannelMetadataResponse);
 }
 
-void UPubnubChatSystem::ConnectToChannel(FString ChannelName)
+void UPubnubChatSystem::DeleteChannel(FString ChannelID)
 {
-	
 	if(!CheckIsChatInitialized())
 	{return;}
 	
-	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelName, "ChannelName", "JoinChannel"))
+	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelID, "ChannelID", "DeleteChannel"))
 	{return;}
 
-	PubnubSubsystem->SubscribeToChannel(ChannelName);
+	PubnubSubsystem->RemoveChannelMetadata(ChannelID);
 }
 
 void UPubnubChatSystem::SendChatMessage(FString ChannelName, FString Message, EPubnubChatMessageType MessageType, FString MetaData)
@@ -152,6 +151,22 @@ void UPubnubChatSystem::SubscribeToChannel(FString ChannelID)
 	{return;}
 
 	PubnubSubsystem->SubscribeToChannel(ChannelID);
+}
+
+void UPubnubChatSystem::UnsubscribeFromChannel(FString ChannelID)
+{
+	if(!CheckIsChatInitialized())
+	{return;}
+	
+	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelID, "ChannelID", "UnsubscribeFromChannel"))
+	{return;}
+
+	PubnubSubsystem->UnsubscribeFromChannel(ChannelID);
+}
+
+UPubnubSubsystem* UPubnubChatSystem::GetPubnubSubsystem()
+{
+	return PubnubSubsystem;
 }
 
 void UPubnubChatSystem::EmitChatEvent(EPubnubChatEventType EventType, FString ChannelName, FString Payload)

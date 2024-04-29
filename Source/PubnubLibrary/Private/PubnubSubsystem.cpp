@@ -74,6 +74,18 @@ void UPubnubSubsystem::SetUserID(FString UserID)
 	});
 }
 
+FString UPubnubSubsystem::GetUserID()
+{
+	const char* UserIDChar = pubnub_user_id_get(ctx_pub);
+	if(UserIDChar)
+	{
+		FString UserIDString(UserIDChar);
+		return UserIDString;
+	}
+	else
+	{return "";}
+}
+
 void UPubnubSubsystem::SetSecretKey()
 {
 	if(!CheckQuickActionThreadValidity())
@@ -948,12 +960,20 @@ void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString ChannelName)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
+
+	FString ChannelForSystemPublish;
+	if(SubscribedChannels.Num() >= 1)
+	{
+		ChannelForSystemPublish = SubscribedChannels[0];
+	}
 	
 	//make sure user was subscribed to that channel
 	if(SubscribedChannels.Remove(ChannelName) == 0)
 	{return;}
 
 	pubnub_leave(ctx_pub, TCHAR_TO_ANSI(*ChannelName), NULL);
+
+	SystemPublish(ChannelForSystemPublish);
 }
 
 void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
