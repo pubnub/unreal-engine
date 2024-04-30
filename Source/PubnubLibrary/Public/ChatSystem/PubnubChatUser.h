@@ -45,6 +45,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "User")
 	void Update(FPubnubChatUserData InAdditionalUserData);
 
+	UFUNCTION(BlueprintCallable, Category = "User")
+	void Delete();
+
 private:
 	bool IsInitialized = false;
 	UPubnubChatSystem* ChatSystem = nullptr;

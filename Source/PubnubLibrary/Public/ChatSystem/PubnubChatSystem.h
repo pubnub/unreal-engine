@@ -55,11 +55,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Users")
 	UPubnubChatUser* CreateUser(FString UserID, FPubnubChatUserData AdditionalUserData);
 
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
+	void GetUser(FString UserID, FOnGetUserResponse OnGetUserResponse);
+
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Users")
 	UPubnubChatUser* UpdateUser(FString UserID, FPubnubChatUserData AdditionalUserData);
 
-	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
-	void GetUser(FString UserID, FOnGetUserResponse OnGetUserResponse);
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Users")
+	void DeleteUser(FString UserID);
 
 
 	/* Messages */

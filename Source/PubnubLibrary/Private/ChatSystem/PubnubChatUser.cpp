@@ -26,11 +26,23 @@ void UPubnubChatUser::InitializeWithJsonData(UPubnubChatSystem* InChatSystem, FS
 
 void UPubnubChatUser::Update(FPubnubChatUserData InAdditionalUserData)
 {
+	if(!IsInitialized)
+	{return;}
+	
 	UserData = InAdditionalUserData;
 	
 	TSharedPtr<FJsonObject> MetadataJsonObject = MakeShareable(new FJsonObject);
 	AddUserDataToJson(MetadataJsonObject, UserID, InAdditionalUserData);
 	PubnubSubsystem->SetUUIDMetadata(UserID, "", UPubnubUtilities::JsonObjectToString(MetadataJsonObject));
+}
+
+void UPubnubChatUser::Delete()
+{
+	if(!IsInitialized)
+	{return;}
+
+	ChatSystem->DeleteUser(UserID);
+	IsInitialized = false;
 }
 
 void UPubnubChatUser::AddUserDataToJson(TSharedPtr<FJsonObject>& MetadataJsonObject, FString InUserID, FPubnubChatUserData InAdditionalUserData)

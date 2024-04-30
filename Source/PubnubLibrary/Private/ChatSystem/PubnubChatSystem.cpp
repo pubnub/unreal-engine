@@ -79,6 +79,21 @@ UPubnubChatUser* UPubnubChatSystem::CreateUser(FString UserID, FPubnubChatUserDa
 	return ChatUser;
 }
 
+void UPubnubChatSystem::GetUser(FString UserID, FOnGetUserResponse OnGetUserResponse)
+{
+	if(!CheckIsChatInitialized())
+	{return;}
+	
+	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "UserID", "GetUser"))
+	{return;}
+
+	GetUserResponse = OnGetUserResponse;
+	
+	FOnPubnubResponse OnGetUserMetadataResponse;
+	OnGetUserMetadataResponse.BindDynamic(this, &UPubnubChatSystem::OnGetUserResponseReceived);
+	PubnubSubsystem->GetUUIDMetadata("custom", UserID, OnGetUserMetadataResponse);
+}
+
 UPubnubChatUser* UPubnubChatSystem::UpdateUser(FString UserID, FPubnubChatUserData AdditionalUserData)
 {
 	if(!CheckIsChatInitialized())
@@ -102,19 +117,15 @@ UPubnubChatUser* UPubnubChatSystem::UpdateUser(FString UserID, FPubnubChatUserDa
 	return ChatUser;
 }
 
-void UPubnubChatSystem::GetUser(FString UserID, FOnGetUserResponse OnGetUserResponse)
+void UPubnubChatSystem::DeleteUser(FString UserID)
 {
 	if(!CheckIsChatInitialized())
 	{return;}
 	
-	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "UserID", "GetUser"))
+	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "ChannelID", "DeleteUser"))
 	{return;}
 
-	GetUserResponse = OnGetUserResponse;
-	
-	FOnPubnubResponse OnGetUserMetadataResponse;
-	OnGetUserMetadataResponse.BindDynamic(this, &UPubnubChatSystem::OnGetUserResponseReceived);
-	PubnubSubsystem->GetUUIDMetadata("custom", UserID, OnGetUserMetadataResponse);
+	PubnubSubsystem->RemoveUUIDMetadata(UserID);
 }
 
 void UPubnubChatSystem::SendChatMessage(FString ChannelName, FString Message, EPubnubChatMessageType MessageType, FString MetaData)

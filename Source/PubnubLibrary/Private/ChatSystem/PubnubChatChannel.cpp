@@ -28,16 +28,25 @@ void UPubnubChatChannel::InitializeWithJsonData(UPubnubChatSystem* InChatSystem,
 
 void UPubnubChatChannel::Connect()
 {
+	if(!IsInitialized)
+	{return;}
+	
 	ChatSystem->SubscribeToChannel(ChannelID);
 }
 
 void UPubnubChatChannel::Disconnect()
 {
+	if(!IsInitialized)
+	{return;}
+	
 	ChatSystem->UnsubscribeFromChannel(ChannelID);
 }
 
 void UPubnubChatChannel::Join(FString AdditionalParams)
 {
+	if(!IsInitialized)
+	{return;}
+	
 	//Format all data into the correct Response Json
 	FString IncludeString = "totalCount,customFields,channelFields,customChannelFields";
 	FString CustomParameterString;
@@ -51,6 +60,9 @@ void UPubnubChatChannel::Join(FString AdditionalParams)
 
 void UPubnubChatChannel::Leave()
 {
+	if(!IsInitialized)
+	{return;}
+	
 	FString RemoveObjectString = FString::Printf(TEXT("[{\"channel\": {\"id\": \"%s\"}}]"), *ChannelID);
 	FString UserID = PubnubSubsystem->GetUserID();
 	PubnubSubsystem->RemoveMemberships(UserID, "", RemoveObjectString);
@@ -59,11 +71,18 @@ void UPubnubChatChannel::Leave()
 
 void UPubnubChatChannel::Delete()
 {
+	if(!IsInitialized)
+	{return;}
+	
 	ChatSystem->DeleteChannel(ChannelID);
+	IsInitialized = false;
 }
 
 void UPubnubChatChannel::Update(FPubnubChatChannelData InAdditionalChannelData)
 {
+	if(!IsInitialized)
+	{return;}
+	
 	ChannelData = InAdditionalChannelData;
 	
 	TSharedPtr<FJsonObject> MetadataJsonObject = MakeShareable(new FJsonObject);
