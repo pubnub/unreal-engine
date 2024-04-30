@@ -45,6 +45,14 @@ void UPubnubChatUser::Delete()
 	IsInitialized = false;
 }
 
+void UPubnubChatUser::SetRestrictions(FString ChannelID, bool BanUser, bool MuteUser, FString Reason)
+{
+	if(!IsInitialized)
+	{return;}
+
+	ChatSystem->SetRestrictions(UserID, ChannelID, BanUser, MuteUser, Reason);
+}
+
 void UPubnubChatUser::AddUserDataToJson(TSharedPtr<FJsonObject>& MetadataJsonObject, FString InUserID, FPubnubChatUserData InAdditionalUserData)
 {
 	MetadataJsonObject->SetStringField("id", InUserID);

@@ -90,6 +90,14 @@ void UPubnubChatChannel::Update(FPubnubChatChannelData InAdditionalChannelData)
 	PubnubSubsystem->SetChannelMetadata(ChannelID, "", UPubnubUtilities::JsonObjectToString(MetadataJsonObject));
 }
 
+void UPubnubChatChannel::SetRestrictions(FString UserID, bool BanUser, bool MuteUser, FString Reason)
+{
+	if(!IsInitialized)
+	{return;}
+
+	ChatSystem->SetRestrictions(UserID, ChannelID, BanUser, MuteUser, Reason);
+}
+
 void UPubnubChatChannel::AddChannelDataToJson(TSharedPtr<FJsonObject> &MetadataJsonObject, FString InChannelID, FPubnubChatChannelData InAdditionalChannelData)
 {
 	MetadataJsonObject->SetStringField("id", InChannelID);

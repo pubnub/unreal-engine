@@ -62,6 +62,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Channel")
 	void Update(FPubnubChatChannelData InAdditionalChannelData);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|User")
+	void SetRestrictions(FString UserID, bool BanUser, bool MuteUser, FString Reason = "");
+
 private:
 	bool IsInitialized = false;
 	UPubnubChatSystem* ChatSystem = nullptr;

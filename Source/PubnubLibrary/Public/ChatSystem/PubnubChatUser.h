@@ -48,6 +48,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "User")
 	void Delete();
 
+	UFUNCTION(BlueprintCallable, Category = "User")
+	void SetRestrictions(FString ChannelID, bool BanUser, bool MuteUser, FString Reason = "");
+
 private:
 	bool IsInitialized = false;
 	UPubnubChatSystem* ChatSystem = nullptr;

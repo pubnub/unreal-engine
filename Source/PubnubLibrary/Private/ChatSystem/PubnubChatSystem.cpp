@@ -128,6 +128,40 @@ void UPubnubChatSystem::DeleteUser(FString UserID)
 	PubnubSubsystem->RemoveUUIDMetadata(UserID);
 }
 
+void UPubnubChatSystem::SetRestrictions(FString UserID, FString ChannelID, bool BanUser, bool MuteUser, FString Reason)
+{
+	if(!CheckIsChatInitialized())
+	{return;}
+	
+	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "UserID", "SetRestrictions") || PubnubSubsystem->CheckIsFieldEmpty(ChannelID, "ChannelID", "SetRestrictions"))
+	{return;}
+
+	//Restrictions are held in new channel with ID: PUBNUB_INTERNAL_MODERATION_{ChannelName}
+	FString RestrictionsChannel = InternalModerationPrefix;
+	RestrictionsChannel.Append(ChannelID);
+
+	//Lift restrictions
+	if(!BanUser && !MuteUser)
+	{
+		FString RemoveMemberString = FString::Printf(TEXT("[{\"uuid\": {\"id\": \"%s\"}}]"), *UserID);
+		PubnubSubsystem->RemoveChannelMembers(RestrictionsChannel, "", RemoveMemberString);
+		FString EventPayloadString = FString::Printf(TEXT("{\"channelId\": \"%s\", \"restriction\": \"lifted\", \"reason\": \"%s\"}"), *RestrictionsChannel, *Reason);
+		EmitChatEvent(EPubnubChatEventType::PCET_Moderation, UserID, EventPayloadString);
+		return;
+	}
+
+	//Ban or mute the user
+	FString ParamsString = FString::Printf(TEXT("{\"ban\": %s, \"mute\": %s, \"reason\": \"%s\"}"), *BoolToPrintString(BanUser), *BoolToPrintString(MuteUser), *Reason);
+	FString SetMembersString = FString::Printf(TEXT("[{\"uuid\": {\"id\": \"%s\"}, \"custom\": %s}]"), *UserID, *ParamsString);
+	UE_LOG(PubnubLog, Warning, TEXT("Set members object: %s"), *SetMembersString);
+	PubnubSubsystem->SetChannelMembers(RestrictionsChannel, "", SetMembersString);
+	FString RestrictionText;
+	BanUser ? RestrictionText = "banned" : "muted";
+	FString EventPayloadString = FString::Printf(TEXT("{\"channelId\": \"%s\", \"restriction\": \"%s\", \"reason\": \"%s\"}"), *RestrictionsChannel, *RestrictionText, *Reason);
+	EmitChatEvent( EPubnubChatEventType::PCET_Moderation, UserID, EventPayloadString);
+	
+}
+
 void UPubnubChatSystem::SendChatMessage(FString ChannelName, FString Message, EPubnubChatMessageType MessageType, FString MetaData)
 {
 	if(!CheckIsChatInitialized())
@@ -165,40 +199,6 @@ void UPubnubChatSystem::DeleteMessage(FString ChannelName, FString MessageTimeTo
 	FString DeletedValue = "\"deleted\"";
 	
 	PubnubSubsystem->AddMessageAction(ChannelName, MessageTimeToken, EPubnubActionType::pbactypDeleted, DeletedValue);
-}
-
-void UPubnubChatSystem::SetRestrictions(FString UserID, FString ChannelName, bool BanUser, bool MuteUser, FString Reason)
-{
-	if(!CheckIsChatInitialized())
-	{return;}
-	
-	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "UserID", "SetRestrictions") || PubnubSubsystem->CheckIsFieldEmpty(ChannelName, "ChannelName", "SetRestrictions"))
-	{return;}
-
-	//Restrictions are held in new channel with ID: PUBNUB_INTERNAL_MODERATION_{ChannelName}
-	FString RestrictionsChannel = InternalModerationPrefix;
-	RestrictionsChannel.Append(ChannelName);
-
-	//Lift restrictions
-	if(!BanUser && !MuteUser)
-	{
-		FString RemoveMemberString = FString::Printf(TEXT("[{\"uuid\": {\"id\": \"%s\"}}]"), *UserID);
-		PubnubSubsystem->RemoveChannelMembers(RestrictionsChannel, "", RemoveMemberString);
-		FString EventPayloadString = FString::Printf(TEXT("{\"channelId\": \"%s\", \"restriction\": \"lifted\", \"reason\": \"%s\"}"), *RestrictionsChannel, *Reason);
-		EmitChatEvent(EPubnubChatEventType::PCET_Moderation, UserID, EventPayloadString);
-		return;
-	}
-
-	//Ban or mute the user
-	FString ParamsString = FString::Printf(TEXT("{\"ban\": %s, \"mute\": %s, \"reason\": \"%s\"}"), *BoolToPrintString(BanUser), *BoolToPrintString(MuteUser), *Reason);
-	FString SetMembersString = FString::Printf(TEXT("[{\"uuid\": {\"id\": \"%s\"}, \"custom\": %s}]"), *UserID, *ParamsString);
-	UE_LOG(PubnubLog, Warning, TEXT("Set members object: %s"), *SetMembersString);
-	PubnubSubsystem->SetChannelMembers(RestrictionsChannel, "", SetMembersString);
-	FString RestrictionText;
-	BanUser ? RestrictionText = "banned" : "muted";
-	FString EventPayloadString = FString::Printf(TEXT("{\"channelId\": \"%s\", \"restriction\": \"%s\", \"reason\": \"%s\"}"), *RestrictionsChannel, *RestrictionText, *Reason);
-	EmitChatEvent( EPubnubChatEventType::PCET_Moderation, UserID, EventPayloadString);
-	
 }
 
 FString UPubnubChatSystem::GetStringFromChatEventType(EPubnubChatEventType ChatEventType)

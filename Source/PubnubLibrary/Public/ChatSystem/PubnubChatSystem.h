@@ -64,6 +64,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Users")
 	void DeleteUser(FString UserID);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|User")
+	void SetRestrictions(FString UserID, FString ChannelID, bool BanUser, bool MuteUser, FString Reason = "");
+	
 
 	/* Messages */
 	
@@ -82,9 +85,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
 	void DeleteMessage(FString ChannelName, FString MessageTimeToken);
-
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
-	void SetRestrictions(FString UserID, FString ChannelName, bool BanUser, bool MuteUser, FString Reason = "");
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|ChatSystem|Helpers")
 	FString GetStringFromChatEventType(EPubnubChatEventType ChatEventType);
