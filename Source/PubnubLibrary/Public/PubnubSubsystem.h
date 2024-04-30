@@ -265,6 +265,8 @@ private:
 	bool CheckIsUserIDSet();
 	bool CheckQuickActionThreadValidity();
 
+	FString GetUserIDInternal();
+
 #pragma region PRIVATE FUNCTIONS
 
 	/* PRIVATE FUNCTIONS */

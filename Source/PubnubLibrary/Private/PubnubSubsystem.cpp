@@ -76,14 +76,7 @@ void UPubnubSubsystem::SetUserID(FString UserID)
 
 FString UPubnubSubsystem::GetUserID()
 {
-	const char* UserIDChar = pubnub_user_id_get(ctx_pub);
-	if(UserIDChar)
-	{
-		FString UserIDString(UserIDChar);
-		return UserIDString;
-	}
-	else
-	{return "";}
+	return GetUserIDInternal();
 }
 
 void UPubnubSubsystem::SetSecretKey()
@@ -766,6 +759,18 @@ bool UPubnubSubsystem::CheckQuickActionThreadValidity()
 	}
 	
 	return true;
+}
+
+FString UPubnubSubsystem::GetUserIDInternal()
+{
+	const char* UserIDChar = pubnub_user_id_get(ctx_pub);
+	if(UserIDChar)
+	{
+		FString UserIDString(UserIDChar);
+		return UserIDString;
+	}
+	else
+	{return "";}
 }
 
 bool UPubnubSubsystem::CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName)

@@ -10,18 +10,27 @@ void UPubnubChatUser::Initialize(UPubnubChatSystem* InChatSystem, FString InUser
 {
 	ChatSystem = InChatSystem;
 	PubnubSubsystem = InChatSystem->GetPubnubSubsystem();
-	UpdateUser(InUserID,InAdditionalUserData);
+	UserID = InUserID;
+	Update(InAdditionalUserData);
 	IsInitialized = true;
 }
 
-void UPubnubChatUser::UpdateUser(FString InUserID, FPubnubChatUserData InAdditionalUserData)
+void UPubnubChatUser::InitializeWithJsonData(UPubnubChatSystem* InChatSystem, FString InUserID, FString JsonData)
 {
+	ChatSystem = InChatSystem;
+	PubnubSubsystem = InChatSystem->GetPubnubSubsystem();
 	UserID = InUserID;
+	Update(UserDataFromJson(JsonData));
+	IsInitialized = true;
+}
+
+void UPubnubChatUser::Update(FPubnubChatUserData InAdditionalUserData)
+{
 	UserData = InAdditionalUserData;
 	
 	TSharedPtr<FJsonObject> MetadataJsonObject = MakeShareable(new FJsonObject);
-	AddUserDataToJson(MetadataJsonObject, InUserID, InAdditionalUserData);
-	PubnubSubsystem->SetUUIDMetadata(InUserID, "", UPubnubUtilities::JsonObjectToString(MetadataJsonObject));
+	AddUserDataToJson(MetadataJsonObject, UserID, InAdditionalUserData);
+	PubnubSubsystem->SetUUIDMetadata(UserID, "", UPubnubUtilities::JsonObjectToString(MetadataJsonObject));
 }
 
 void UPubnubChatUser::AddUserDataToJson(TSharedPtr<FJsonObject>& MetadataJsonObject, FString InUserID, FPubnubChatUserData InAdditionalUserData)
@@ -45,6 +54,44 @@ void UPubnubChatUser::AddUserDataToJson(TSharedPtr<FJsonObject>& MetadataJsonObj
 	}
 	if(!InAdditionalUserData.CustomDataJson.IsEmpty())
 	{
-		MetadataJsonObject->SetStringField("custom", InAdditionalUserData.CustomDataJson);
+		TSharedPtr<FJsonObject> CustomDataObject = MakeShareable(new FJsonObject);
+		if(UPubnubUtilities::StringToJsonObject(InAdditionalUserData.CustomDataJson, CustomDataObject))
+		{
+			MetadataJsonObject->SetObjectField("custom", CustomDataObject);
+		}
 	}
+	if(!InAdditionalUserData.Status.IsEmpty())
+	{
+		MetadataJsonObject->SetStringField("status", InAdditionalUserData.Status);
+	}
+	if(!InAdditionalUserData.Type.IsEmpty())
+	{
+		MetadataJsonObject->SetStringField("type", InAdditionalUserData.Type);
+	}
+}
+
+FPubnubChatUserData UPubnubChatUser::UserDataFromJson(FString JsonData)
+{
+	FPubnubChatUserData UserDataFromJson;
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	if(!UPubnubUtilities::StringToJsonObject(JsonData, JsonObject))
+	{
+		return UserDataFromJson;
+	}
+
+	JsonObject->TryGetStringField("name", UserDataFromJson.UserName);
+	JsonObject->TryGetStringField("externalId", UserDataFromJson.ExternalID);
+	JsonObject->TryGetStringField("profileUrl", UserDataFromJson.ProfileUrl);
+	JsonObject->TryGetStringField("email", UserDataFromJson.Email);
+	JsonObject->TryGetStringField("status", UserDataFromJson.Status);
+	JsonObject->TryGetStringField("type", UserDataFromJson.Type);
+	
+	const TSharedPtr<FJsonObject> *CustomJsonObjectPtr;
+	if(JsonObject->TryGetObjectField("custom", CustomJsonObjectPtr))
+	{
+		UserDataFromJson.CustomDataJson = UPubnubUtilities::JsonObjectToString(*CustomJsonObjectPtr);
+	}
+
+
+	return UserDataFromJson;
 }

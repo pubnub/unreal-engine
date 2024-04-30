@@ -1,22 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ChatSystem/PubnubChatSystem.h"
-#include "ChatSystem/PubnubChatChannel.h"
 #include "FunctionLibraries/PubnubUtilities.h"
 
 
-UPubnubChatChannel* UPubnubChatSystem::CreatePublicConversation(FString ChannelName, FString ChannelData)
+UPubnubChatChannel* UPubnubChatSystem::CreatePublicConversation(FString ChannelID, FPubnubChatChannelData AdditionalChannelData)
 {
 	if(!CheckIsChatInitialized())
 	{return nullptr;}
 	
-	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelName, "ChannelName", "CreateChannel"))
+	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelID, "ChannelName", "CreateChannel"))
 	{return nullptr;}
-	
-	PubnubSubsystem->SetChannelMetadata(ChannelName, "", ChannelData.IsEmpty() ? "{}" : ChannelData);
 
 	UPubnubChatChannel* ChannelObject = NewObject<UPubnubChatChannel>(this);
-	ChannelObject->Initialize(this, ChannelName, ChannelData);
+	ChannelObject->Initialize(this, ChannelID, AdditionalChannelData);
 	
 	return ChannelObject;
 }
@@ -31,9 +28,23 @@ void UPubnubChatSystem::GetChannel(FString ChannelID, FOnGetChannelResponse OnGe
 
 	GetChannelResponse = OnGetChannelResponse;
 	
-	FOnPubnubResponse FOnGetChannelMetadataResponse;
-	FOnGetChannelMetadataResponse.BindDynamic(this, &UPubnubChatSystem::OnGetChannelResponseReceived);
-	PubnubSubsystem->GetChannelMetadata("custom", ChannelID, FOnGetChannelMetadataResponse);
+	FOnPubnubResponse OnGetChannelMetadataResponse;
+	OnGetChannelMetadataResponse.BindDynamic(this, &UPubnubChatSystem::OnGetChannelResponseReceived);
+	PubnubSubsystem->GetChannelMetadata("custom", ChannelID, OnGetChannelMetadataResponse);
+}
+
+UPubnubChatChannel* UPubnubChatSystem::UpdateChannel(FString ChannelID, FPubnubChatChannelData AdditionalChannelData)
+{
+	if(!CheckIsChatInitialized())
+	{return nullptr;}
+	
+	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelID, "ChannelID", "UpdateChannel"))
+	{return nullptr;}
+
+	UPubnubChatChannel* ChannelObject = NewObject<UPubnubChatChannel>(this);
+	ChannelObject->Initialize(this, ChannelID, AdditionalChannelData);
+	
+	return ChannelObject;
 }
 
 void UPubnubChatSystem::DeleteChannel(FString ChannelID)
@@ -76,16 +87,34 @@ UPubnubChatUser* UPubnubChatSystem::UpdateUser(FString UserID, FPubnubChatUserDa
 	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "UserID", "UpdateUser"))
 	{return nullptr;}
 
-	//If this user already exists just Update data and return it
+	//If this user already exists and UserID matches just Update data and return it
 	if(ChatUser)
 	{
-		ChatUser->UpdateUser(UserID, AdditionalUserData);
-		return ChatUser;
+		if(UserID == ChatUser->UserID)
+		{
+			ChatUser->Update(AdditionalUserData);
+			return ChatUser;
+		}
 	}
 
 	//If such user doesn't exists create it with new data
 	ChatUser = CreateUser(UserID, AdditionalUserData);
 	return ChatUser;
+}
+
+void UPubnubChatSystem::GetUser(FString UserID, FOnGetUserResponse OnGetUserResponse)
+{
+	if(!CheckIsChatInitialized())
+	{return;}
+	
+	if(PubnubSubsystem->CheckIsFieldEmpty(UserID, "UserID", "GetUser"))
+	{return;}
+
+	GetUserResponse = OnGetUserResponse;
+	
+	FOnPubnubResponse OnGetUserMetadataResponse;
+	OnGetUserMetadataResponse.BindDynamic(this, &UPubnubChatSystem::OnGetUserResponseReceived);
+	PubnubSubsystem->GetUUIDMetadata("custom", UserID, OnGetUserMetadataResponse);
 }
 
 void UPubnubChatSystem::SendChatMessage(FString ChannelName, FString Message, EPubnubChatMessageType MessageType, FString MetaData)
@@ -285,7 +314,34 @@ void UPubnubChatSystem::OnGetChannelResponseReceived(FString JsonResponse)
 	FString DataString = UPubnubUtilities::JsonObjectToString(JsonDataField);
 	
 	UPubnubChatChannel* ChannelObject = NewObject<UPubnubChatChannel>(this);
-	ChannelObject->Initialize(this, JsonDataField->GetStringField("id"), DataString);
+	ChannelObject->InitializeWithJsonData(this, JsonDataField->GetStringField("id"), DataString);
 	
 	GetChannelResponse.ExecuteIfBound(ChannelObject);
+}
+
+void UPubnubChatSystem::OnGetUserResponseReceived(FString JsonResponse)
+{
+	if(JsonResponse.IsEmpty())
+	{
+		GetUserResponse.ExecuteIfBound(nullptr);
+	}
+	
+	//Convert response to Json
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	if(!UPubnubUtilities::StringToJsonObject(JsonResponse, JsonObject))
+	{
+		UE_LOG(PubnubLog, Error, TEXT("OnGetUserResponseReceived - String to Json convertion failed"));
+		GetUserResponse.ExecuteIfBound(nullptr);
+	}
+
+	//Create new Json object just with "data" field.
+	TSharedPtr<FJsonObject> JsonDataField = JsonObject->GetObjectField("data");
+
+	//Conver "data" field to string
+	FString DataString = UPubnubUtilities::JsonObjectToString(JsonDataField);
+
+	UPubnubChatUser* UserObject = NewObject<UPubnubChatUser>(this);
+	UserObject->InitializeWithJsonData(this, JsonDataField->GetStringField("id"), DataString);
+	
+	GetUserResponse.ExecuteIfBound(UserObject);
 }

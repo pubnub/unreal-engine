@@ -34,6 +34,7 @@ class PUBNUBLIBRARY_API UPubnubChatUser : public UObject
 	
 public:
 	void Initialize(UPubnubChatSystem* InChatSystem, FString InUserID, FPubnubChatUserData InAdditionalUserData);
+	void InitializeWithJsonData(UPubnubChatSystem* InChatSystem, FString InUserID, FString JsonData);
 
 	UPROPERTY(BlueprintReadOnly, VisibleDefaultsOnly, Category = "User")
 	FString UserID;
@@ -42,7 +43,7 @@ public:
 	FPubnubChatUserData UserData;
 
 	UFUNCTION(BlueprintCallable, Category = "User")
-	void UpdateUser(FString InUserID, FPubnubChatUserData InAdditionalUserData);
+	void Update(FPubnubChatUserData InAdditionalUserData);
 
 private:
 	bool IsInitialized = false;
@@ -50,5 +51,5 @@ private:
 	UPubnubSubsystem* PubnubSubsystem = nullptr;
 
 	void AddUserDataToJson(TSharedPtr<FJsonObject> &MetadataJsonObject, FString UserID, FPubnubChatUserData AdditionalUserData);
-	
+	FPubnubChatUserData UserDataFromJson(FString JsonData);
 };

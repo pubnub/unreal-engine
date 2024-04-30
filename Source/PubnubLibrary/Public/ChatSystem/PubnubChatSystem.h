@@ -7,9 +7,9 @@
 #include "PubnubEnumLibrary.h"
 #include "PubnubSubsystem.h"
 #include "ChatSystem/PubnubChatUser.h"
+#include "ChatSystem/PubnubChatChannel.h"
 #include "PubnubChatSystem.generated.h"
 
-class UPubnubChatChannel;
 
 UENUM(BlueprintType)
 enum class EPubnubChatEventType : uint8
@@ -24,6 +24,7 @@ enum class EPubnubChatEventType : uint8
 };
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetChannelResponse, UPubnubChatChannel*, Channel);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnGetUserResponse, UPubnubChatUser*, User);
 
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubChatSystem : public UObject
@@ -38,11 +39,14 @@ public:
 	/* CHANNELS */
 	
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
-	UPubnubChatChannel* CreatePublicConversation(FString ChannelName, FString ChannelData);
+	UPubnubChatChannel* CreatePublicConversation(FString ChannelID, FPubnubChatChannelData AdditionalChannelData);
 
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
 	void GetChannel(FString ChannelID, FOnGetChannelResponse OnGetChannelResponse);
 
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
+	UPubnubChatChannel* UpdateChannel(FString ChannelID, FPubnubChatChannelData AdditionalChannelData);
+	
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
 	void DeleteChannel(FString ChannelID);
 
@@ -53,6 +57,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Users")
 	UPubnubChatUser* UpdateUser(FString UserID, FPubnubChatUserData AdditionalUserData);
+
+	UFUNCTION(BlueprintCallable, Category = "ChatSystem|Channels")
+	void GetUser(FString UserID, FOnGetUserResponse OnGetUserResponse);
 
 
 	/* Messages */
@@ -97,8 +104,14 @@ private:
 	UPROPERTY()
 	FOnGetChannelResponse GetChannelResponse;
 	
+	UPROPERTY()
+	FOnGetUserResponse GetUserResponse;
+	
 	UFUNCTION()
 	void OnGetChannelResponseReceived(FString JsonResponse);
+
+	UFUNCTION()
+	void OnGetUserResponseReceived(FString JsonResponse);
 	
 	FString ChatMessageToPublishString(FString Message, EPubnubChatMessageType MessageType);
 	
