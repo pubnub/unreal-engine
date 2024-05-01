@@ -16,14 +16,31 @@ enum class EPubnubPublishMethod : uint8
 UENUM(BlueprintType)
 enum class EPubnubTribool : uint8
 {
-	PbccFalse,
-	PbccTrue,
-	PbccNotSet
+	pbccFalse,
+	pbccTrue,
+	pbccNotSet
+};
+
+UENUM(BlueprintType)
+enum class EPubnubActionType : uint8
+{
+	//Note in ChatSDK this is called "reactions". In C-Core this will be send as "reaction"
+    pbactypReaction,
+    pbactypReceipt,
+    pbactypCustom,
+	pbactypEdited,
+	pbactypDeleted
 };
 
 UENUM(BlueprintType)
 enum class EPubnubErrorType : uint8
 {
-	PET_Error,
-	PET_Warning
+	PET_Error		UMETA(DisplayName="Error"),
+	PET_Warning		UMETA(DisplayName="Warning")
+};
+
+UENUM(BlueprintType)
+enum class EPubnubChatMessageType : uint8
+{
+	PCMT_TEXT	UMETA(DisplayName="TEXT")
 };

@@ -24,7 +24,7 @@ struct FPubnubPublishSettings
 };
 
 USTRUCT(BlueprintType)
-struct FPubnubHereNowSettings
+struct FPubnubListUsersFromChannelSettings
 {
 	GENERATED_BODY()
 
