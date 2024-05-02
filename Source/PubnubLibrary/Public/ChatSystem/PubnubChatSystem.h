@@ -70,16 +70,6 @@ public:
 
 	/* Messages */
 	
-	/**
-	 * Send a chat message to given channel.
-	 * @param ChannelName Name of the channel to send message to
-	 * @param Message Content of the message (doesn't need to be in JSON format)
-	 * @param MessageType Type of the message - currently only 1 type is supported
-	 * @param MetaData Additional message Data - has to be in JSON format
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
-	void SendChatMessage(FString ChannelName, FString Message, EPubnubChatMessageType MessageType, FString MetaData);
-
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|ChatSystem")
 	void EditMessage(FString ChannelName, FString MessageTimeToken, FString EditedMessage);
 
@@ -115,8 +105,6 @@ private:
 
 	UFUNCTION()
 	void OnGetUserResponseReceived(FString JsonResponse);
-	
-	FString ChatMessageToPublishString(FString Message, EPubnubChatMessageType MessageType);
 	
 	inline static const FString InternalModerationPrefix = "PUBNUB_INTERNAL_MODERATION_";
 

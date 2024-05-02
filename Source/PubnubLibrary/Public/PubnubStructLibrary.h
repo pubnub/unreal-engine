@@ -73,3 +73,57 @@ struct FPubnubHistorySettings
 	//Pass true to receive a meta with each history message. Defaults to false.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool IncludeMeta = false;
 };
+
+USTRUCT(BlueprintType)
+struct FPubnubFetchHistorySettings
+{
+	GENERATED_BODY()
+	
+	/** The maximum number of messages to return per channel if multiple channels provided. 
+	 * Has to be between 1 and 25 messages. Default is 25.
+	 * If single channel is provided, maximum 100 messages. Default is 100.
+	 */
+	int MaxPerChannel = 0;
+	/** Direction of time traversal. Default is false, which means
+	* timeline is traversed newest to oldest. */
+	bool Reverse = false;
+	/** If provided (not NULL), lets you select a "start date", in
+	 * Timetoken format. If not provided, it will default to current
+	 * time. Page through results by providing a start OR end time
+	 * token. Retrieve a slice of the time line by providing both a
+	 * start AND end time token. Start is "exclusive" – that is, the
+	 * first item returned will be the one immediately after the start
+	 * Timetoken value. Default is NULL.
+	 */
+	FString Start = "";
+	/** If provided (not NULL), lets you select an "end date", in
+	 * Timetoken format. If not provided, it will provide up to the
+	 * number of messages defined in the "count" parameter. Page
+	 * through results by providing a start OR end time
+	 * token. Retrieve a slice of the time line by providing both a
+	 * start AND end time token. End is "inclusive" – that is, if a
+	 * message is associated exactly with the end Timetoken, it will
+	 * be included in the result. Default is NULL.
+	 */
+	FString End = "";
+	/** If true to recieve metadata with each history
+	 * message if any. If false, no metadata per message. Defaults to
+	 * false.
+	 */
+	bool IncludeMeta = false;
+	/** If true to recieve message type with each history
+	 * message. If false, no message type per message. Defaults to
+	 * false.
+	 */
+	bool IncludeMessageType = false;
+	/** If true to receive user_id with each history
+	 * message. If false, no user_id per message. Defaults to
+	 * false.
+	 */
+	bool IncludeUserID = false;
+	/** If true to recieve message actions with each history
+	 * message. If false, no message actions per message. Defaults to
+	 * false.
+	 */
+	bool IncludeMessageActions = false;
+};

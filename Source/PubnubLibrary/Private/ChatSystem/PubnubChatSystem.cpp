@@ -162,20 +162,6 @@ void UPubnubChatSystem::SetRestrictions(FString UserID, FString ChannelID, bool 
 	
 }
 
-void UPubnubChatSystem::SendChatMessage(FString ChannelName, FString Message, EPubnubChatMessageType MessageType, FString MetaData)
-{
-	if(!CheckIsChatInitialized())
-	{return;}
-	
-	if(PubnubSubsystem->CheckIsFieldEmpty(ChannelName, "ChannelName", "SendChatMessage") || PubnubSubsystem->CheckIsFieldEmpty(Message, "Message", "SendChatMessage"))
-	{return;}
-
-	FPubnubPublishSettings PublishSettings;
-	PublishSettings.MetaData = MetaData;
-	
-	PubnubSubsystem->PublishMessage(ChannelName, ChatMessageToPublishString(Message, MessageType), PublishSettings);
-}
-
 void UPubnubChatSystem::EditMessage(FString ChannelName, FString MessageTimeToken, FString EditedMessage)
 {
 	if(!CheckIsChatInitialized())
@@ -270,26 +256,6 @@ void UPubnubChatSystem::InitChatSystem(UPubnubSubsystem* PubnubSubsystemRef)
 void UPubnubChatSystem::DeinitChatSystem()
 {
 	IsInitialized = false;
-}
-
-FString UPubnubChatSystem::ChatMessageToPublishString(FString Message, EPubnubChatMessageType MessageType)
-{
-	TSharedPtr<FJsonObject> MessageJsonObject = MakeShareable(new FJsonObject);
-	
-	//Convert MessageType to FString (currently only 1 type is supported)
-	FString MessageTypeString;
-	switch (MessageType)
-	{
-	case EPubnubChatMessageType::PCMT_TEXT:
-		MessageTypeString = "text";
-		break;
-	}
-	
-	MessageJsonObject->SetStringField("type", MessageTypeString);
-	MessageJsonObject->SetStringField("text", Message);
-
-	//Convert constructed Json to FString
-	return UPubnubUtilities::JsonObjectToString(MessageJsonObject);
 }
 
 //This functions is a wrapper to IsInitialized bool, so it can print error if user is trying to do anything before initializing Pubnub correctly

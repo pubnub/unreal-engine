@@ -321,6 +321,17 @@ void UPubnubSubsystem::History(FString ChannelName, FOnPubnubResponse OnHistoryR
 	});
 }
 
+void UPubnubSubsystem::FetchHistory(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, OnFetchHistoryResponse, FetchHistorySettings]
+	{
+		FetchHistory_priv(ChannelName, OnFetchHistoryResponse, FetchHistorySettings);
+	});
+}
+
 void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnPubnubResponse OnMessageCountsResponse)
 {
 	if(!CheckQuickActionThreadValidity())
@@ -330,7 +341,6 @@ void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, F
 	{
 		MessageCounts_priv(ChannelName, TimeStamp, OnMessageCountsResponse);
 	});
-	
 }
 
 void UPubnubSubsystem::GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse)
@@ -1314,6 +1324,37 @@ void UPubnubSubsystem::History_priv(FString ChannelName, FOnPubnubResponse OnHis
 	});
 }
 
+void UPubnubSubsystem::FetchHistory_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "FetchHistory"))
+	{return;}
+
+	//Set all options from HistorySettings
+
+	//Converted char needs to live in function scope, so we need to create it here
+	pubnub_fetch_history_options FetchHistoryOptions;
+	auto StartCharConverter = StringCast<ANSICHAR>(*FetchHistorySettings.Start);
+	FetchHistoryOptions.start = StartCharConverter.Get();
+	auto EndCharConverter = StringCast<ANSICHAR>(*FetchHistorySettings.End);
+	FetchHistoryOptions.end = EndCharConverter.Get();
+
+	FetchHistoryUESettingsToPbFetchHistoryOptions(FetchHistorySettings, FetchHistoryOptions);
+	
+	pubnub_fetch_history(ctx_pub, TCHAR_TO_ANSI(*ChannelName), FetchHistoryOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnFetchHistoryResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnFetchHistoryResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
 void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnPubnubResponse OnMessageCountsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
@@ -1742,3 +1783,14 @@ void UPubnubSubsystem::HistoryUESettingsToPubnubHistoryOptions(FPubnubHistorySet
 	HistorySettings.End.IsEmpty() ? PubnubHistoryOptions.end = NULL : nullptr;
 }
 
+void UPubnubSubsystem::FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings& FetchHistorySettings, pubnub_fetch_history_options& PubnubFetchHistoryOptions)
+{
+	PubnubFetchHistoryOptions.max_per_channel = FetchHistorySettings.MaxPerChannel;
+	PubnubFetchHistoryOptions.reverse = FetchHistorySettings.Reverse;
+	PubnubFetchHistoryOptions.include_meta = FetchHistorySettings.IncludeMeta;
+	PubnubFetchHistoryOptions.include_message_type = FetchHistorySettings.IncludeMessageType;
+	PubnubFetchHistoryOptions.include_user_id = FetchHistorySettings.IncludeUserID;
+	PubnubFetchHistoryOptions.include_message_actions = FetchHistorySettings.IncludeMessageActions;
+	FetchHistorySettings.Start.IsEmpty() ? PubnubFetchHistoryOptions.start = NULL : nullptr;
+	FetchHistorySettings.End.IsEmpty() ? PubnubFetchHistoryOptions.end = NULL : nullptr;
+}

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PubnubEnumLibrary.h"
 #include "UObject/NoExportTypes.h"
 #include "PubnubChatChannel.generated.h"
 
@@ -62,14 +63,28 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Channel")
 	void Update(FPubnubChatChannelData InAdditionalChannelData);
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|User")
+	UFUNCTION(BlueprintCallable, Category = "Channel")
 	void SetRestrictions(FString UserID, bool BanUser, bool MuteUser, FString Reason = "");
+
+	/**
+	* Send a chat message to given channel.
+	* @param ChannelName Name of the channel to send message to
+	* @param Message Content of the message (doesn't need to be in JSON format)
+	* @param MessageType Type of the message - currently only 1 type is supported
+	* @param MetaData Additional message Data - has to be in JSON format
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Channel")
+	void SendText(FString Message, EPubnubChatMessageType MessageType, FString MetaData);
+
 
 private:
 	bool IsInitialized = false;
 	UPubnubChatSystem* ChatSystem = nullptr;
 	UPubnubSubsystem* PubnubSubsystem = nullptr;
 
+	FString ChatMessageToPublishString(FString Message, EPubnubChatMessageType MessageType);
+
 	void AddChannelDataToJson(TSharedPtr<FJsonObject> &MetadataJsonObject, FString InChannelID, FPubnubChatChannelData InAdditionalChannelData);
 	FPubnubChatChannelData ChannelDataFromJson(FString JsonData);
 };
+

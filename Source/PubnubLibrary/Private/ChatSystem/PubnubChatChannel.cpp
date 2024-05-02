@@ -98,6 +98,39 @@ void UPubnubChatChannel::SetRestrictions(FString UserID, bool BanUser, bool Mute
 	ChatSystem->SetRestrictions(UserID, ChannelID, BanUser, MuteUser, Reason);
 }
 
+void UPubnubChatChannel::SendText(FString Message, EPubnubChatMessageType MessageType,
+	FString MetaData)
+{
+	if(!IsInitialized)
+	{return;}
+
+	FPubnubPublishSettings PublishSettings;
+	PublishSettings.MetaData = MetaData;
+	
+	PubnubSubsystem->PublishMessage(ChannelID, ChatMessageToPublishString(Message, MessageType), PublishSettings);
+}
+
+FString UPubnubChatChannel::ChatMessageToPublishString(FString Message, EPubnubChatMessageType MessageType)
+{
+	TSharedPtr<FJsonObject> MessageJsonObject = MakeShareable(new FJsonObject);
+	
+	//Convert MessageType to FString (currently only 1 type is supported)
+	FString MessageTypeString;
+	switch (MessageType)
+	{
+	case EPubnubChatMessageType::PCMT_TEXT:
+		MessageTypeString = "text";
+		break;
+	}
+	
+	MessageJsonObject->SetStringField("type", MessageTypeString);
+	MessageJsonObject->SetStringField("text", Message);
+
+	//Convert constructed Json to FString
+	return UPubnubUtilities::JsonObjectToString(MessageJsonObject);
+}
+
+
 void UPubnubChatChannel::AddChannelDataToJson(TSharedPtr<FJsonObject> &MetadataJsonObject, FString InChannelID, FPubnubChatChannelData InAdditionalChannelData)
 {
 	MetadataJsonObject->SetStringField("id", InChannelID);
