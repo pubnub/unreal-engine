@@ -83,10 +83,10 @@ struct FPubnubFetchHistorySettings
 	 * Has to be between 1 and 25 messages. Default is 25.
 	 * If single channel is provided, maximum 100 messages. Default is 100.
 	 */
-	int MaxPerChannel = 0;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) int MaxPerChannel = 0;
 	/** Direction of time traversal. Default is false, which means
 	* timeline is traversed newest to oldest. */
-	bool Reverse = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Reverse = false;
 	/** If provided (not NULL), lets you select a "start date", in
 	 * Timetoken format. If not provided, it will default to current
 	 * time. Page through results by providing a start OR end time
@@ -95,7 +95,7 @@ struct FPubnubFetchHistorySettings
 	 * first item returned will be the one immediately after the start
 	 * Timetoken value. Default is NULL.
 	 */
-	FString Start = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) FString Start = "";
 	/** If provided (not NULL), lets you select an "end date", in
 	 * Timetoken format. If not provided, it will provide up to the
 	 * number of messages defined in the "count" parameter. Page
@@ -105,25 +105,25 @@ struct FPubnubFetchHistorySettings
 	 * message is associated exactly with the end Timetoken, it will
 	 * be included in the result. Default is NULL.
 	 */
-	FString End = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) FString End = "";
 	/** If true to recieve metadata with each history
 	 * message if any. If false, no metadata per message. Defaults to
 	 * false.
 	 */
-	bool IncludeMeta = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool IncludeMeta = false;
 	/** If true to recieve message type with each history
 	 * message. If false, no message type per message. Defaults to
 	 * false.
 	 */
-	bool IncludeMessageType = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool IncludeMessageType = false;
 	/** If true to receive user_id with each history
 	 * message. If false, no user_id per message. Defaults to
 	 * false.
 	 */
-	bool IncludeUserID = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool IncludeUserID = false;
 	/** If true to recieve message actions with each history
 	 * message. If false, no message actions per message. Defaults to
 	 * false.
 	 */
-	bool IncludeMessageActions = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool IncludeMessageActions = false;
 };
