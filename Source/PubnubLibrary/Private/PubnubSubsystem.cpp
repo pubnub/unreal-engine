@@ -677,7 +677,7 @@ void UPubnubSubsystem::SystemPublish(FString ChannelOpt)
 	ChannelOpt.IsEmpty() ? PublishChannel = SubscribedChannels[0] : PublishChannel = ChannelOpt;
 
 	//TODO: this will not unlock context if user is subscribed only to groups, but not to any channels. This issue needs to be addressed.
-	PublishMessage(PublishChannel, "{\"system\":\"subscribe unlock message\"}", PublishSettings);
+	PublishMessage(PublishChannel, SystemPublishMessage, PublishSettings);
 }
 
 void UPubnubSubsystem::StartPubnubSubscribeLoop()
@@ -713,13 +713,17 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 			FString Message(MessageChar);
 			FString Channel(ChannelChar);
 
-			//Broadcast callback with message content
-			//Message needs to be called back on Game Thread
-			AsyncTask(ENamedThreads::GameThread, [this, Message, Channel]()
+			//Skip system messages, we don't need to display them to user
+			if(Message != SystemPublishMessage)
 			{
+				//Broadcast callback with message content
+				//Message needs to be called back on Game Thread
+				AsyncTask(ENamedThreads::GameThread, [this, Message, Channel]()
+				{
 				OnMessageReceived.Broadcast(Message, Channel);
-			});
-				
+				});
+			}
+			
 			MessageChar = pubnub_get(ctx_sub);
 			ChannelChar = pubnub_get_channel(ctx_sub);
 		}
@@ -793,8 +797,14 @@ void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorT
 	{
 		UE_LOG(PubnubLog, Warning, TEXT("%s"), *ErrorMessage);
 	}
+
+	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
+	AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage, ErrorType]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnPubnubError.Broadcast(ErrorMessage, ErrorType);
+	});
 	
-	OnPubnubError.Broadcast(ErrorMessage, ErrorType);
 }
 
 void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage)
@@ -805,7 +815,13 @@ void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString Er
 
 	//Log and broadcast error
 	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
-	OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
+
+	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
+	AsyncTask(ENamedThreads::GameThread, [this, FinalErrorMessage]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);;
+	});
 }
 
 void UPubnubSubsystem::PubnubPublishError()
@@ -821,7 +837,13 @@ void UPubnubSubsystem::PubnubPublishError()
 
 	//Log and broadcast error
 	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
-	OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
+
+	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
+	AsyncTask(ENamedThreads::GameThread, [this, FinalErrorMessage]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);;
+	});
 }
 
 void UPubnubSubsystem::LoadPluginSettings()

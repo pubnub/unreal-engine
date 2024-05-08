@@ -199,6 +199,8 @@ public:
 	
 private:
 
+	inline static const FString SystemPublishMessage = "\"Pubnub system unlock message\"";
+	
 	//New threads to call all C-Core functions asynchronously
 	
 	//Thread for quick operations, generally everything except subscribe
