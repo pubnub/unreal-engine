@@ -1301,15 +1301,7 @@ void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubRespon
 
 	if(CheckIsFieldEmpty(PermissionObject, "PermissionObject", "GrantToken"))
 	{return;}
-	/*
-	//Format all data for Grant Token
-	struct pam_permission ChPerm;
-	ChPerm.read = true;
-	int PermMyChannel = pubnub_get_grant_bit_mask_value(ChPerm);
-	char PermObj[2000];
-	char* AuthorUuid = "my_authorized_uuid";
-	sprintf_s(PermObj,"{\"ttl\":%d, \"uuid\":\"%s\", \"permissions\":{\"resources\":{\"channels\":{ \"my_channel\":%d }, \"groups\":{}, \"users\":{ }, \"spaces\":{}}, \"patterns\":{\"channels\":{}, \"groups\":{}, \"users\":{}, \"spaces\":{}},\"meta\":{}}}", TTLMinutes, TCHAR_TO_ANSI(*AuthorizedUUID), PermMyChannel);
-*/
+	
 	pubnub_grant_token(ctx_pub, TCHAR_TO_ANSI(*PermissionObject));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
