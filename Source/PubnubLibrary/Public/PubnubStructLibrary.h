@@ -127,3 +127,57 @@ struct FPubnubFetchHistorySettings
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool IncludeMessageActions = false;
 };
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelPermissions
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Read = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Write = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Delete = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Get = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Update = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Manage = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Join = false;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelGroupPermissions
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Read = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Manage = false;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubUserPermissions
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Delete = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Get = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) bool Update = false;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGrantTokenStructure
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) int TTLMinutes;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) FString AuthorizedUUID;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FString> Channels;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FPubnubChannelPermissions> ChannelPermissions;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FString> ChannelGroups;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FString> UUIDs;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FPubnubUserPermissions> UUIDPermissions;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FString> ChannelPatterns;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FPubnubChannelPermissions> ChannelPatternPermissions;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FString> ChannelGroupPatterns;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FPubnubChannelGroupPermissions> ChannelGroupPatternPermissions;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FString> UUIDPatterns;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere) TArray<FPubnubUserPermissions> UUIDPatternPermissions;
+};

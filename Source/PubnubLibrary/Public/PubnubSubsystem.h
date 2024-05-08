@@ -114,7 +114,7 @@ public:
 	void Heartbeat(FString ChannelName, FString ChannelGroup);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
-	void GrantToken(int TTLMinutes, FString AuthorizedUUID, FOnPubnubResponse OnGrantTokenResponse);
+	void GrantToken(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
 	void RevokeToken(FString Token);
@@ -195,6 +195,9 @@ public:
 	void GetMessageActionsContinue(FOnPubnubResponse OnGetMessageActionsContinueResponse);
 
 #pragma endregion
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|AccessManager")
+	FString GrantTokenStructureToJsonString(FPubnubGrantTokenStructure TokenStructure, bool &success);
 
 	bool CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName);
 	
@@ -295,7 +298,7 @@ private:
 	void SetState_priv(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	void GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse);
 	void Heartbeat_priv(FString ChannelName, FString ChannelGroup);
-	void GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnPubnubResponse OnGrantTokenResponse);
+	void GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token);
 	void ParseToken_priv(FString Token);
 	void SetAuthToken_priv(FString Token);
@@ -332,5 +335,11 @@ private:
 	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
 	void HistoryUESettingsToPubnubHistoryOptions(FPubnubHistorySettings &HistorySettings, pubnub_history_options &PubnubHistoryOptions);
 	void FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
+
+	/* GRANT TOKEN HELPERS */
+
+	TSharedPtr<FJsonObject> AddChannelPermissionsToJson(TArray<FString> Channels, TArray<FPubnubChannelPermissions> ChannelPermissions);
+	TSharedPtr<FJsonObject> AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions);
+	TSharedPtr<FJsonObject> AddUUIDPermissionsToJson(TArray<FString> UUIDs, TArray<FPubnubUserPermissions> UUIDPermissions);
 };
 

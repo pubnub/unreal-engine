@@ -266,14 +266,14 @@ void UPubnubSubsystem::Heartbeat(FString ChannelName, FString ChannelGroup)
 	});
 }
 
-void UPubnubSubsystem::GrantToken(int TTLMinutes, FString AuthorizedUUID, FOnPubnubResponse OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, TTLMinutes, AuthorizedUUID, OnGrantTokenResponse]
+	QuickActionThread->AddFunctionToQueue( [this, PermissionObject, OnGrantTokenResponse]
 	{
-		GrantToken_priv(TTLMinutes, AuthorizedUUID, OnGrantTokenResponse);
+		GrantToken_priv(PermissionObject, OnGrantTokenResponse);
 	});
 }
 
@@ -563,6 +563,111 @@ void UPubnubSubsystem::GetMessageActionsContinue(FOnPubnubResponse OnGetMessageA
 	{
 		GetMessageActionsContinue_priv(OnGetMessageActionsContinueResponse);
 	});
+}
+
+FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStructure TokenStructure, bool &success)
+{
+	FString TokenJsonString;
+
+	//Make sure token data is provided in correct form. There must be the same amount of object and permissions or just one permission,
+	//then one permission is used for every object
+	
+	if(TokenStructure.Channels.Num() != TokenStructure.ChannelPermissions.Num() && TokenStructure.ChannelPermissions.Num() != 1)
+	{
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPermissions and Channels (or only 1 ChannelPermission).");
+		success = false;
+		return TokenJsonString;
+	}
+
+	if(TokenStructure.ChannelGroups.Num() != TokenStructure.ChannelGroupPermissions.Num() && TokenStructure.ChannelGroupPermissions.Num() != 1)
+	{
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPermissions and ChannelGroups (or only 1 ChannelGroupPermissions).");
+		success = false;
+		return TokenJsonString;
+	}
+
+	if(TokenStructure.UUIDs.Num() != TokenStructure.UUIDPermissions.Num() && TokenStructure.UUIDPermissions.Num() != 1)
+	{
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPermissions and UUIDs (or only 1 UserPermissions).");
+		success = false;
+		return TokenJsonString;
+	}
+
+	if(TokenStructure.ChannelPatterns.Num() != TokenStructure.ChannelPatternPermissions.Num() && TokenStructure.ChannelPatternPermissions.Num() != 1)
+	{
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPatternPermissions and ChannelsPatterns (or only 1 ChannelPatternPermissions).");
+		success = false;
+		return TokenJsonString;
+	}
+
+	if(TokenStructure.ChannelGroupPatterns.Num() != TokenStructure.ChannelGroupPatternPermissions.Num() && TokenStructure.ChannelGroupPatternPermissions.Num() != 1)
+	{
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPatternPermissions and ChannelGroupsPatterns (or only 1 ChannelGroupPatternPermissions).");
+		success = false;
+		return TokenJsonString;
+	}
+
+	if(TokenStructure.UUIDPatterns.Num() != TokenStructure.UUIDPatternPermissions.Num() && TokenStructure.UUIDPatternPermissions.Num() != 1)
+	{
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPatternPermissions and UUIDsPatterns (or only 1 UserPatternPermissions).");
+		success = false;
+		return TokenJsonString;
+	}
+	
+
+	//Create Json objects with channels, groups, uuids permissions and they patterns
+	TSharedPtr<FJsonObject> ChannelsJsonObject = AddChannelPermissionsToJson(TokenStructure.Channels, TokenStructure.ChannelPermissions);
+	TSharedPtr<FJsonObject> ChannelGroupsJsonObject = AddChannelGroupPermissionsToJson(TokenStructure.ChannelGroups, TokenStructure.ChannelGroupPermissions);
+	TSharedPtr<FJsonObject> UUIDsJsonObject = AddUUIDPermissionsToJson(TokenStructure.UUIDs, TokenStructure.UUIDPermissions);
+	TSharedPtr<FJsonObject> ChannelPatternsJsonObject = AddChannelPermissionsToJson(TokenStructure.ChannelPatterns, TokenStructure.ChannelPatternPermissions);
+	TSharedPtr<FJsonObject> ChannelGroupPatternsJsonObject = AddChannelGroupPermissionsToJson(TokenStructure.ChannelGroupPatterns, TokenStructure.ChannelGroupPatternPermissions);
+	TSharedPtr<FJsonObject> UUIDPatternsJsonObject = AddUUIDPermissionsToJson(TokenStructure.UUIDPatterns, TokenStructure.UUIDPatternPermissions);
+
+	//Add resources fields
+	TSharedPtr<FJsonObject> ResourcesJsonObject = MakeShareable(new FJsonObject);
+	if(TokenStructure.Channels.Num() > 0)
+	{
+		ResourcesJsonObject->SetObjectField("channels", ChannelsJsonObject);
+	}
+	if(TokenStructure.ChannelGroups.Num() > 0)
+	{
+		ResourcesJsonObject->SetObjectField("groups", ChannelGroupsJsonObject);
+	}
+	if(TokenStructure.UUIDs.Num() > 0)
+	{
+		ResourcesJsonObject->SetObjectField("uuids", UUIDsJsonObject);
+	}
+
+	//Add patterns fields
+	TSharedPtr<FJsonObject> PatternsJsonObject = MakeShareable(new FJsonObject);
+	if(TokenStructure.ChannelPatterns.Num() > 0)
+	{
+		PatternsJsonObject->SetObjectField("channels", ChannelPatternsJsonObject);
+	}
+	if(TokenStructure.ChannelGroupPatterns.Num() > 0)
+	{
+		PatternsJsonObject->SetObjectField("groups", ChannelGroupPatternsJsonObject);
+	}
+	if(TokenStructure.UUIDPatterns.Num() > 0)
+	{
+		PatternsJsonObject->SetObjectField("uuids", UUIDPatternsJsonObject);
+	}
+
+	TSharedPtr<FJsonObject> TokenStructureJsonObject = MakeShareable(new FJsonObject);
+	TokenStructureJsonObject->SetObjectField("resources", ResourcesJsonObject);
+	TokenStructureJsonObject->SetObjectField("patterns", PatternsJsonObject);
+
+	TSharedPtr<FJsonObject> PermissionsJsonObject = MakeShareable(new FJsonObject);
+	PermissionsJsonObject->SetNumberField("ttl", TokenStructure.TTLMinutes);
+	PermissionsJsonObject->SetStringField("authorized_uuid", TokenStructure.AuthorizedUUID);
+	PermissionsJsonObject->SetObjectField("permissions", TokenStructureJsonObject);
+
+	//Convert created Json to string
+	FString JsonString;
+	TSharedRef< TJsonWriter<> > JsonWriter = TJsonWriterFactory<>::Create(&JsonString);
+	FJsonSerializer::Serialize(PermissionsJsonObject.ToSharedRef(), JsonWriter);
+	
+	return JsonString;
 }
 
 void UPubnubSubsystem::SystemPublish(FString ChannelOpt)
@@ -1202,11 +1307,14 @@ void UPubnubSubsystem::Heartbeat_priv(FString ChannelName, FString ChannelGroup)
 	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
 }
 
-void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, FOnPubnubResponse OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
-	
+
+	if(CheckIsFieldEmpty(PermissionObject, "PermissionObject", "GrantToken"))
+	{return;}
+	/*
 	//Format all data for Grant Token
 	struct pam_permission ChPerm;
 	ChPerm.read = true;
@@ -1214,8 +1322,8 @@ void UPubnubSubsystem::GrantToken_priv(int TTLMinutes, FString AuthorizedUUID, F
 	char PermObj[2000];
 	char* AuthorUuid = "my_authorized_uuid";
 	sprintf_s(PermObj,"{\"ttl\":%d, \"uuid\":\"%s\", \"permissions\":{\"resources\":{\"channels\":{ \"my_channel\":%d }, \"groups\":{}, \"users\":{ }, \"spaces\":{}}, \"patterns\":{\"channels\":{}, \"groups\":{}, \"users\":{}, \"spaces\":{}},\"meta\":{}}}", TTLMinutes, TCHAR_TO_ANSI(*AuthorizedUUID), PermMyChannel);
-
-	pubnub_grant_token(ctx_pub, PermObj);
+*/
+	pubnub_grant_token(ctx_pub, TCHAR_TO_ANSI(*PermissionObject));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
@@ -1793,4 +1901,101 @@ void UPubnubSubsystem::FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetc
 	PubnubFetchHistoryOptions.include_message_actions = FetchHistorySettings.IncludeMessageActions;
 	FetchHistorySettings.Start.IsEmpty() ? PubnubFetchHistoryOptions.start = NULL : nullptr;
 	FetchHistorySettings.End.IsEmpty() ? PubnubFetchHistoryOptions.end = NULL : nullptr;
+}
+
+//This functions assumes that Channels and Permissions are already checked. It means that there is the same amount of permissions as channels or there is exactly one permission
+TSharedPtr<FJsonObject> UPubnubSubsystem::AddChannelPermissionsToJson(TArray<FString> Channels, TArray<FPubnubChannelPermissions> ChannelPermissions)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	bool UseOnePermission = ChannelPermissions.Num() == 1;
+
+	TArray<TSharedPtr<FJsonValue>> ObjectValues;
+	
+	for(int i = 0; i < Channels.Num(); i++)
+	{
+		if(Channels[i].IsEmpty())
+		{
+			continue;
+		}
+		
+		//For permissions use the first index if this is the only valid index or corresponding channel index
+		FPubnubChannelPermissions CurrentPermissions;
+		UseOnePermission ? CurrentPermissions = ChannelPermissions[0] : CurrentPermissions = ChannelPermissions[i];
+
+		//Create bit mask value from all permissions
+		struct pam_permission ChPerm;
+		ChPerm.read = CurrentPermissions.Read;
+		ChPerm.write = CurrentPermissions.Write;
+		ChPerm.del = CurrentPermissions.Delete;
+		ChPerm.get = CurrentPermissions.Get;
+		ChPerm.update = CurrentPermissions.Update;
+		ChPerm.manage = CurrentPermissions.Manage;
+		ChPerm.join = CurrentPermissions.Join;
+		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
+
+		JsonObject->SetNumberField(Channels[i], PermBitMask);
+	}
+	
+	return JsonObject;
+}
+
+TSharedPtr<FJsonObject> UPubnubSubsystem::AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	bool UseOnePermission = ChannelGroupPermissions.Num() == 1;
+
+	TArray<TSharedPtr<FJsonValue>> ObjectValues;
+	
+	for(int i = 0; i < ChannelGroups.Num(); i++)
+	{
+		if(ChannelGroups[i].IsEmpty())
+		{
+			continue;
+		}
+		
+		//For permissions use the first index if this is the only valid index or corresponding channel index
+		FPubnubChannelGroupPermissions CurrentPermissions;
+		UseOnePermission ? CurrentPermissions = ChannelGroupPermissions[0] : CurrentPermissions = ChannelGroupPermissions[i];
+
+		//Create bit mask value from all permissions
+		struct pam_permission ChPerm;
+		ChPerm.read = CurrentPermissions.Read;
+		ChPerm.manage = CurrentPermissions.Manage;
+		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
+
+		JsonObject->SetNumberField(ChannelGroups[i], PermBitMask);
+	}
+	
+	return JsonObject;
+}
+
+TSharedPtr<FJsonObject> UPubnubSubsystem::AddUUIDPermissionsToJson(TArray<FString> UUIDs, TArray<FPubnubUserPermissions> UUIDPermissions)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	bool UseOnePermission = UUIDPermissions.Num() == 1;
+
+	TArray<TSharedPtr<FJsonValue>> ObjectValues;
+	
+	for(int i = 0; i < UUIDs.Num(); i++)
+	{
+		if(UUIDs[i].IsEmpty())
+		{
+			continue;
+		}
+		
+		//For permissions use the first index if this is the only valid index or corresponding channel index
+		FPubnubUserPermissions CurrentPermissions;
+		UseOnePermission ? CurrentPermissions = UUIDPermissions[0] : CurrentPermissions = UUIDPermissions[i];
+
+		//Create bit mask value from all permissions
+		struct pam_permission ChPerm;
+		ChPerm.del = CurrentPermissions.Delete;
+		ChPerm.get = CurrentPermissions.Get;
+		ChPerm.update = CurrentPermissions.Update;
+		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
+
+		JsonObject->SetNumberField(UUIDs[i], PermBitMask);
+	}
+
+	return JsonObject;
 }
