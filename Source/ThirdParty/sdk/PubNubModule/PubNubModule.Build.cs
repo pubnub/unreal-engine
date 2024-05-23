@@ -22,21 +22,21 @@ public class PubNubModule : ModuleRules
 	        extention = StaticLink ? "lib" : "dll";
 	        PlatformLib = OpenSsl ? "openssl" : "windows";
 	        binary = $"pubnub.{extention}";
-            BuildLocation = "Lib/win64";
+            buildLocation = "Lib/win64";
         }
         else if(Target.Platform == UnrealTargetPlatform.Mac)
         {
 	        extention = StaticLink ? "a" : "dylib";
 	        PlatformLib = OpenSsl ? "openssl" : "posix";
 	        binary = $"libpubnub.{extention}";
-            BuildLocation = "Lib/MacOS";
+            buildLocation = "Lib/MacOS";
         }
         else
         {
 	        extention = StaticLink ? "a" : "so";
 	        PlatformLib = OpenSsl ? "openssl" : "posix";
 	        binary = $"libpubnub.{extention}";
-            BuildLocation = "Lib/Linux";
+            buildLocation = "Lib/Linux";
         }
 
         if (OpenSsl) {
@@ -45,7 +45,7 @@ public class PubNubModule : ModuleRules
 
 		var SDKPath = Path.Combine(new string[] { ModuleDirectory, ".." });
 		
-		PublicAdditionalLibraries.Add(Path.Combine(SDKPath, BuildLocation, binary));
+		PublicAdditionalLibraries.Add(Path.Combine(SDKPath, buildLocation, binary));
 		PublicIncludePaths.AddRange(
 			new string[] {
 				SDKPath,
