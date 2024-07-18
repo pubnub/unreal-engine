@@ -117,7 +117,7 @@ public:
 	void RevokeToken(FString Token);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
-	void ParseToken(FString Token);
+	void ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
 	void SetAuthToken(FString Token);
@@ -177,7 +177,7 @@ public:
 	void RemoveChannelMembers(FString ChannelMetadataID, FString Include, FString RemoveObj);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
-	void AddMessageAction(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value);
+	void AddMessageAction(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value, FOnPubnubResponse AddActionResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
 	void HistoryWithMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse);
@@ -302,7 +302,7 @@ private:
 	void Heartbeat_priv(FString ChannelName, FString ChannelGroup);
 	void GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token);
-	void ParseToken_priv(FString Token);
+	void ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse);
 	void SetAuthToken_priv(FString Token);
 	void History_priv(FString ChannelName, FOnPubnubResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings = FPubnubHistorySettings());
 	void FetchHistory_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
@@ -322,7 +322,7 @@ private:
 	void AddChannelMembers_priv(FString ChannelMetadataID, FString Include, FString AddObj);
 	void SetChannelMembers_priv(FString ChannelMetadataID, FString Include, FString SetObj);
 	void RemoveChannelMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj);
-	void AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value);
+	void AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value, FOnPubnubResponse AddActionResponse);
 	void RemoveMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionTimetoken);
 	void HistoryWithMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse);
 	void HistoryWithMessageActionsContinue_priv(FOnPubnubResponse OnHistoryWithMAContinueResponse);
