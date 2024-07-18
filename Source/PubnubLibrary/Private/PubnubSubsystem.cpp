@@ -287,14 +287,14 @@ void UPubnubSubsystem::RevokeToken(FString Token)
 	});
 }
 
-void UPubnubSubsystem::ParseToken(FString Token)
+void UPubnubSubsystem::ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Token]
+	QuickActionThread->AddFunctionToQueue( [this, Token, OnParseTokenResponse]
 	{
-		ParseToken_priv(Token);
+		ParseToken_priv(Token, OnParseTokenResponse);
 	});
 }
 
@@ -509,14 +509,14 @@ void UPubnubSubsystem::RemoveChannelMembers(FString ChannelMetadataID, FString I
 	});
 }
 
-void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value)
+void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value, FOnPubnubResponse AddActionResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelName, MessageTimetoken, ActionType, Value]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, MessageTimetoken, ActionType, Value, AddActionResponse]
 	{
-		AddMessageAction_priv(ChannelName, MessageTimetoken, ActionType, Value);
+		AddMessageAction_priv(ChannelName, MessageTimetoken, ActionType, Value, AddActionResponse);
 	});
 }
 
@@ -1382,7 +1382,7 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token)
 	}
 }
 
-void UPubnubSubsystem::ParseToken_priv(FString Token)
+void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1397,6 +1397,22 @@ void UPubnubSubsystem::ParseToken_priv(FString Token)
 	{
 		PubnubResponseError(PubnubResponse, "Failed to Parse Token.");
 	}
+
+	pubnub_chamebl_t grant_token_resp = pubnub_get_grant_token(ctx_pub);
+	if(!grant_token_resp.ptr)
+	{
+		PubnubError("Failed to get Parse Token - pointer to token is invalid.");
+		return;
+	}
+	
+	FString JsonResponse(grant_token_resp.ptr);
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnParseTokenResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnParseTokenResponse.ExecuteIfBound(JsonResponse);
+	});
 }
 
 void UPubnubSubsystem::SetAuthToken_priv(FString Token)
@@ -1772,7 +1788,7 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString ChannelMetadataID, FStr
 	}
 }
 
-void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value)
+void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value, FOnPubnubResponse AddActionResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1795,7 +1811,13 @@ void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString Messag
 		return;
 	}
 	FString JsonResponse(AddMessageActionResponse.ptr);
-	UE_LOG(PubnubLog, Warning, TEXT("AddMessageAction response: %s"), *JsonResponse);
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, AddActionResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		AddActionResponse.ExecuteIfBound(JsonResponse);
+	});
 }
 
 void UPubnubSubsystem::RemoveMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionTimetoken)
@@ -1817,7 +1839,7 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString ChannelName, FString Mes
 	pubnub_chamebl_t message_timetoken_chamebl;
 	message_timetoken_chamebl.ptr = message_timetoken_char;
 	message_timetoken_chamebl.size = MessageTimetoken.Len();
-
+	
 	// Allocate memory for action_timetoken_char and copy the content
 	char* action_timetoken_char = new char[ActionTimetoken.Len() + 1];
 	std::strcpy(action_timetoken_char, ActionTimetokenConverter.Get());
@@ -1825,10 +1847,6 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString ChannelName, FString Mes
 	pubnub_chamebl_t action_timetoken_chamebl;
 	action_timetoken_chamebl.ptr = action_timetoken_char;
 	action_timetoken_chamebl.size = ActionTimetoken.Len();
-	
-
-
-	
 	
 	pubnub_remove_message_action(ctx_pub, TCHAR_TO_ANSI(*ChannelName), message_timetoken_chamebl, action_timetoken_chamebl);
 
