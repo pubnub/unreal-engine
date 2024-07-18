@@ -509,14 +509,14 @@ void UPubnubSubsystem::RemoveChannelMembers(FString ChannelMetadataID, FString I
 	});
 }
 
-void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTimeToken, EPubnubActionType ActionType,  FString Value)
+void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelName, MessageTimeToken, ActionType, Value]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, MessageTimetoken, ActionType, Value]
 	{
-		AddMessageAction_priv(ChannelName, MessageTimeToken, ActionType, Value);
+		AddMessageAction_priv(ChannelName, MessageTimetoken, ActionType, Value);
 	});
 }
 
@@ -530,7 +530,7 @@ void UPubnubSubsystem::HistoryWithMessageActions(FString ChannelName, FString St
 		HistoryWithMessageActions_priv(ChannelName, Start, End, SizeLimit, OnHistoryWithMessageActionsResponse);
 	});
 }
-
+/* DISABLED 
 void UPubnubSubsystem::HistoryWithMessageActionsContinue(FOnPubnubResponse OnHistoryWithMAContinueResponse)
 {
 	if(!CheckQuickActionThreadValidity())
@@ -541,6 +541,7 @@ void UPubnubSubsystem::HistoryWithMessageActionsContinue(FOnPubnubResponse OnHis
 		HistoryWithMessageActionsContinue_priv(OnHistoryWithMAContinueResponse);
 	});
 }
+*/
 
 void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
 {
@@ -553,6 +554,18 @@ void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FSt
 	});
 }
 
+void UPubnubSubsystem::RemoveMessageAction(FString ChannelName, FString MessageTimetoken, FString ActionTimetoken)
+{
+	if(!CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, MessageTimetoken, ActionTimetoken]
+	{
+		RemoveMessageAction_priv(ChannelName, MessageTimetoken, ActionTimetoken);
+	});
+}
+
+/* DISABLED 
 void UPubnubSubsystem::GetMessageActionsContinue(FOnPubnubResponse OnGetMessageActionsContinueResponse)
 {
 	if(!CheckQuickActionThreadValidity())
@@ -563,6 +576,7 @@ void UPubnubSubsystem::GetMessageActionsContinue(FOnPubnubResponse OnGetMessageA
 		GetMessageActionsContinue_priv(OnGetMessageActionsContinueResponse);
 	});
 }
+*/
 
 FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStructure TokenStructure, bool &success)
 {
@@ -1758,16 +1772,16 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString ChannelMetadataID, FStr
 	}
 }
 
-void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString MessageTimeToken, EPubnubActionType ActionType,  FString Value)
+void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
 	
-	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "AddMessageAction") || CheckIsFieldEmpty(MessageTimeToken, "MessageTimeToken", "AddMessageAction"))
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "AddMessageAction") || CheckIsFieldEmpty(MessageTimetoken, "MessageTimetoken", "AddMessageAction"))
 	{return;}
 
 	pubnub_action_type PubnubActionType = (pubnub_action_type)(uint8)ActionType;
-	pubnub_add_message_action(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*MessageTimeToken), PubnubActionType,  TCHAR_TO_ANSI(*Value));
+	pubnub_add_message_action(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*MessageTimetoken), PubnubActionType,  TCHAR_TO_ANSI(*Value));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
@@ -1782,6 +1796,54 @@ void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString Messag
 	}
 	FString JsonResponse(AddMessageActionResponse.ptr);
 	UE_LOG(PubnubLog, Warning, TEXT("AddMessageAction response: %s"), *JsonResponse);
+}
+
+void UPubnubSubsystem::RemoveMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionTimetoken)
+{
+	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
+	{return;}
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "RemoveMessageAction") || CheckIsFieldEmpty(MessageTimetoken, "MessageTimetoken", "RemoveMessageAction")
+		|| CheckIsFieldEmpty(ActionTimetoken, "ActionTimetoken", "RemoveMessageAction"))
+	{return;}
+
+	auto MessageTimetokenConverter = StringCast<ANSICHAR>(*MessageTimetoken);
+	auto ActionTimetokenConverter = StringCast<ANSICHAR>(*ActionTimetoken);
+
+	// Allocate memory for message_timetoken_char and copy the content
+	char* message_timetoken_char = new char[MessageTimetoken.Len() + 1];
+	std::strcpy(message_timetoken_char, MessageTimetokenConverter.Get());
+
+	pubnub_chamebl_t message_timetoken_chamebl;
+	message_timetoken_chamebl.ptr = message_timetoken_char;
+	message_timetoken_chamebl.size = MessageTimetoken.Len();
+
+	// Allocate memory for action_timetoken_char and copy the content
+	char* action_timetoken_char = new char[ActionTimetoken.Len() + 1];
+	std::strcpy(action_timetoken_char, ActionTimetokenConverter.Get());
+
+	pubnub_chamebl_t action_timetoken_chamebl;
+	action_timetoken_chamebl.ptr = action_timetoken_char;
+	action_timetoken_chamebl.size = ActionTimetoken.Len();
+	
+
+
+	
+	
+	pubnub_remove_message_action(ctx_pub, TCHAR_TO_ANSI(*ChannelName), message_timetoken_chamebl, action_timetoken_chamebl);
+
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	if(PubnubResponse != PNR_OK)
+	{
+		PubnubResponseError(PubnubResponse, "Failed to Remove Message Action.");
+	}
+
+	// Clean up allocated memory
+	delete[] message_timetoken_char;
+	delete[] action_timetoken_char;
 }
 
 void UPubnubSubsystem::HistoryWithMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse)
