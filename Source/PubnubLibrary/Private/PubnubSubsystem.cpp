@@ -331,7 +331,7 @@ void UPubnubSubsystem::FetchHistory(FString ChannelName, FOnPubnubResponse OnFet
 	});
 }
 
-void UPubnubSubsystem::MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnPubnubResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts(FString ChannelName, FString TimeStamp, FOnPubnubIntResponse OnMessageCountsResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
@@ -1464,7 +1464,7 @@ void UPubnubSubsystem::FetchHistory_priv(FString ChannelName, FOnPubnubResponse 
 	});
 }
 
-void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnPubnubResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FString TimeStamp, FOnPubnubIntResponse OnMessageCountsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1472,16 +1472,16 @@ void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FDateTime TimeSta
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "MessageCounts"))
 	{return;}
 	
-	FString UnixTimeStamp = FString::FromInt(TimeStamp.ToUnixTimestamp());
-	
-	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*UnixTimeStamp));
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*TimeStamp));
+
+	int MessageCountsNumber = 0;
+	pubnub_get_message_counts(ctx_pub, TCHAR_TO_ANSI(*ChannelName), &MessageCountsNumber);
 
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnMessageCountsResponse, JsonResponse]()
+	AsyncTask(ENamedThreads::GameThread, [this, OnMessageCountsResponse, MessageCountsNumber]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		OnMessageCountsResponse.ExecuteIfBound(JsonResponse);
+		OnMessageCountsResponse.ExecuteIfBound(MessageCountsNumber);
 	});
 }
 

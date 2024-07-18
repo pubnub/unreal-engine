@@ -17,6 +17,7 @@ class FPubnubLoopingThread;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 
 
 UCLASS()
@@ -128,7 +129,7 @@ public:
 	void FetchHistory(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
-	void MessageCounts(FString ChannelName, FDateTime TimeStamp, FOnPubnubResponse OnMessageCountsResponse);
+	void MessageCounts(FString ChannelName, FString TimeStamp, FOnPubnubIntResponse OnMessageCountsResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse);
@@ -302,7 +303,7 @@ private:
 	void SetAuthToken_priv(FString Token);
 	void History_priv(FString ChannelName, FOnPubnubResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings = FPubnubHistorySettings());
 	void FetchHistory_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
-	void MessageCounts_priv(FString ChannelName, FDateTime TimeStamp, FOnPubnubResponse OnMessageCountsResponse);
+	void MessageCounts_priv(FString ChannelName, FString TimeStamp, FOnPubnubIntResponse OnMessageCountsResponse);
 	void GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse);
 	void SetUUIDMetadata_priv(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
 	void GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse);
