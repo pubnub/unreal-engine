@@ -129,7 +129,7 @@ public:
 	void FetchHistory(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
-	void MessageCounts(FString ChannelName, FString TimeStamp, FOnPubnubIntResponse OnMessageCountsResponse);
+	void MessageCounts(FString ChannelName, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse);
@@ -306,7 +306,7 @@ private:
 	void SetAuthToken_priv(FString Token);
 	void History_priv(FString ChannelName, FOnPubnubResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings = FPubnubHistorySettings());
 	void FetchHistory_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
-	void MessageCounts_priv(FString ChannelName, FString TimeStamp, FOnPubnubIntResponse OnMessageCountsResponse);
+	void MessageCounts_priv(FString ChannelName, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
 	void GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse);
 	void SetUUIDMetadata_priv(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
 	void GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse);

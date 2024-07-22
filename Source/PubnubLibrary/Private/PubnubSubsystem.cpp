@@ -331,14 +331,14 @@ void UPubnubSubsystem::FetchHistory(FString ChannelName, FOnPubnubResponse OnFet
 	});
 }
 
-void UPubnubSubsystem::MessageCounts(FString ChannelName, FString TimeStamp, FOnPubnubIntResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts(FString ChannelName, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelName, TimeStamp, OnMessageCountsResponse]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Timetoken, OnMessageCountsResponse]
 	{
-		MessageCounts_priv(ChannelName, TimeStamp, OnMessageCountsResponse);
+		MessageCounts_priv(ChannelName, Timetoken, OnMessageCountsResponse);
 	});
 }
 
@@ -1494,7 +1494,7 @@ void UPubnubSubsystem::FetchHistory_priv(FString ChannelName, FOnPubnubResponse 
 	});
 }
 
-void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FString TimeStamp, FOnPubnubIntResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1502,7 +1502,7 @@ void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FString TimeStamp
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "MessageCounts"))
 	{return;}
 	
-	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*TimeStamp));
+	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Timetoken));
 
 	int MessageCountsNumber = 0;
 	pubnub_get_message_counts(ctx_pub, TCHAR_TO_ANSI(*ChannelName), &MessageCountsNumber);
