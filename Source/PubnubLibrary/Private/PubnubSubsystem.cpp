@@ -28,7 +28,9 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UPubnubSubsystem::Deinitialize()
 {
 	DeinitPubnub();
-	Super::Deinitialize();
+
+	//Give some time for C-Core to clean up correctly
+	FPlatformProcess::Sleep(0.5);
 	
 	if(QuickActionThread)
 	{
@@ -38,6 +40,9 @@ void UPubnubSubsystem::Deinitialize()
 	{
 		LongpollThread->Stop();
 	}
+
+	Super::Deinitialize();
+	
 }
 
 void UPubnubSubsystem::InitPubnub()
