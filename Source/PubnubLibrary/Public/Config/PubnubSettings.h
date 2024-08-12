@@ -5,7 +5,7 @@
 #include "Engine/DeveloperSettings.h"
 #include "PubnubSettings.generated.h"
 
-UCLASS(Config=PubnubSDK, meta=(DisplayName="Pubnub SDK"))
+UCLASS(Config = Engine, defaultconfig, meta=(DisplayName="Pubnub SDK"))
 class PUBNUBLIBRARY_API UPubnubSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
