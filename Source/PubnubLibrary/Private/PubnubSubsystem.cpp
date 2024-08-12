@@ -724,6 +724,10 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 			{return;}
 		}
 
+		//Check once again, as subsystem could be deinitialized during await
+		if(!IsInitialized)
+		{return;}
+
 		//At this stage we received messages, so read them and get channel from where they were sent
 		const char* MessageChar = pubnub_get(ctx_sub);
 		const char* ChannelChar = pubnub_get_channel(ctx_sub);
@@ -977,6 +981,8 @@ void UPubnubSubsystem::DeinitPubnub_priv()
 	//Unsubscribe from all channels so this user will not be visible for others anymore
 	UnsubscribeFromAll();
 	
+	IsInitialized = false;
+	
 	if(ctx_pub)
 	{
 		pubnub_free(ctx_pub);
@@ -988,7 +994,6 @@ void UPubnubSubsystem::DeinitPubnub_priv()
 		ctx_sub = nullptr;
 	}
 	
-	IsInitialized = false;
 }
 
 void UPubnubSubsystem::SetUserID_priv(FString UserID)
