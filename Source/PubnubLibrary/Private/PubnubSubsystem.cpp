@@ -961,7 +961,7 @@ void UPubnubSubsystem::InitPubnub_priv()
 	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
 	pubnub_init(ctx_sub, PublishKey, SubscribeKey);
 
-	if(PubnubSettings->SetSecretKetAutomatically)
+	if(PubnubSettings->SetSecretKeyAutomatically)
 	{
 		SetSecretKey();
 	}
