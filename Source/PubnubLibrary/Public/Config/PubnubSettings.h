@@ -26,5 +26,5 @@ public:
 
 	//Should Secret Key be used automatically (secret key gives host permissions to the user). If set to false, SetSecretKey needs to be called manually to give host permissions.
 	UPROPERTY(Config, EditAnywhere, Category = "Init")
-	bool SetSecretKeyAutomatically = true;
+	bool SetSecretKeyAutomatically = false;
 };
