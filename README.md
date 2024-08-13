@@ -30,7 +30,7 @@ Within the `Plugins` folder of your Unreal project, clone the Unreal SDK reposit
 
 Each PubNub API is available through Blueprints and C++ code. For further information on using and configuring the workspace and the Unreal Engine project, refer to the [PubNub Unreal SDK documentation](https://www.pubnub.com/docs/sdks/unreal).
 
-<iframe src="https://blueprintue.com/render/v1yr0g6-/" scrolling="no" allowfullscreen></iframe>
+![Using docs](readme_content/using_docs.gif)
 
 You can copy the Blueprints from the docs and paste them into your Unreal Editor.
 
