@@ -2,22 +2,20 @@ name: unreal-engine
 version: 0.0.0
 schema: 1
 scm: github.com/pubnub/unreal-engine
-files: []
 changelog:
 sdks:
   - 
-      type: library
       full-name: Unreal Engine SDK
       short-name: UnrealEngine
       artifacts:
         -
+          artifact-type: library
           language: C++
+          tier: 2
           tags:
             - Server
           source-repository: https://github.com/pubnub/unreal-engine
           documentation: https://www.pubnub.com/docs/sdks/unreal-engine/
-          tier: 2
-          artifact-type: library
           distributions:
             -
               distribution-type: source-code
@@ -54,18 +52,17 @@ sdks:
                     target-architecture:
                       - x86-64
   - 
-      type: plugin
       full-name: Unreal Engine SDK
       short-name: UnrealEngine
       artifacts:
         -
+          artifact-type: plugin
           language: C++
           tags:
             - Server
+          tier: 2
           source-repository: https://github.com/pubnub/unreal-engine
           documentation: https://www.pubnub.com/docs/sdks/unreal-engine/
-          tier: 2
-          artifact-type: plugin
           distributions:
             -
               distribution-type: source-code
@@ -176,7 +173,6 @@ features:
     - MESSAGE-ACTIONS-GET
     - MESSAGE-ACTIONS-ADD
     - MESSAGE-ACTIONS-REMOVE
-
 supported-platforms:
   - version: PubNub Unreal Engine SDK
     platforms:
