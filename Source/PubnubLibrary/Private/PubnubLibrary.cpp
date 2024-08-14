@@ -14,9 +14,9 @@ void FPubnubLibraryModule::StartupModule()
 	LibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/sdk/lib/macos/libpubnub-chat.dylib"));
 
 	
-	ChatSDKLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
+	PubnubLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
 
-	if (!ChatSDKLibraryHandle)
+	if (!PubnubLibraryHandle)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ChatSDKModuleHandle", "Failed to load pubnub third party library"));
 	}
@@ -26,8 +26,8 @@ void FPubnubLibraryModule::StartupModule()
 void FPubnubLibraryModule::ShutdownModule()
 {
 #if PLATFORM_MAC
-	FPlatformProcess::FreeDllHandle(ChatSDKLibraryHandle);
-	ChatSDKLibraryHandle = nullptr;
+	FPlatformProcess::FreeDllHandle(PubnubLibraryHandle);
+	PubnubLibraryHandle = nullptr;
 #endif
 }
 
