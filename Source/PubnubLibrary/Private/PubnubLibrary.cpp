@@ -2,18 +2,33 @@
 
 #include "PubnubLibrary.h"
 #include "Core.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Interfaces/IPluginManager.h"
 
 #define LOCTEXT_NAMESPACE "FPubnubLibraryModule"
 
 void FPubnubLibraryModule::StartupModule()
 {
+#if PLATFORM_MAC
+	FString BaseDir = IPluginManager::Get().FindPlugin("PubnubChat")->GetBaseDir();
+	FString LibraryPath;
+	LibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/sdk/lib/macos/libpubnub-chat.dylib"));
 
+	
+	ChatSDKLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
+
+	if (!ChatSDKLibraryHandle)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ChatSDKModuleHandle", "Failed to load pubnub third party library"));
+	}
+#endif
 }
 
 void FPubnubLibraryModule::ShutdownModule()
 {
-
+#if PLATFORM_MAC
+	FPlatformProcess::FreeDllHandle(ChatSDKLibraryHandle);
+	ChatSDKLibraryHandle = nullptr;
+#endif
 }
 
 #undef LOCTEXT_NAMESPACE
