@@ -30,7 +30,7 @@ sdks:
                     minimum-os-version:
                       - Ubuntu 12.04
                     maximum-os-version:
-                      - Ubuntu 22.04 LTS
+                      - Ubuntu 20.04 LTS
                     target-architecture:
                       - x86-64
                   macOS:
@@ -77,7 +77,7 @@ sdks:
                     minimum-os-version:
                       - Ubuntu 12.04
                     maximum-os-version:
-                      - Ubuntu 22.04 LTS
+                      - Ubuntu 20.04 LTS
                     target-architecture:
                       - x86-64
                   macOS:
