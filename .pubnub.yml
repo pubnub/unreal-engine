@@ -1,8 +1,13 @@
 name: unreal-engine
-version: 0.0.0
+version: 0.1.0
 schema: 1
 scm: github.com/pubnub/unreal-engine
-changelog: []
+changelog: 
+  - date: 2024-08-14
+    version: 0.1.0
+    changes:
+      - type: feature
+        text: "Initial PubNub Unreal Engine SDK release"
 sdks:
   - 
       full-name: Unreal Engine SDK
