@@ -38,9 +38,3 @@ enum class EPubnubErrorType : uint8
 	PET_Error		UMETA(DisplayName="Error"),
 	PET_Warning		UMETA(DisplayName="Warning")
 };
-
-UENUM(BlueprintType)
-enum class EPubnubChatMessageType : uint8
-{
-	PCMT_TEXT	UMETA(DisplayName="TEXT")
-};
