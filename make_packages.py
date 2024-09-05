@@ -5,7 +5,7 @@ import shutil
 import json
 import zipfile
 
-
+print("Creating packages for Unreal Engine")
 supported_ue_versions = ["5.0.0", "5.1.0", "5.2.0", "5.3.0", "5.4.0"]
 
 
@@ -22,10 +22,10 @@ def add_license(filename):
             file_write.write(license_text + "\n\n" + file_text)
 
 
+print("Preparing files")
+
 current_dir = os.path.dirname(os.path.realpath(__file__))
 temporary_dir = current_dir + "/../Pubnub/"
-print(current_dir)
-print(temporary_dir)
 
 shutil.copytree(current_dir, temporary_dir)
 
@@ -46,7 +46,12 @@ cpp_files = itertools.chain(
     glob.glob(temporary_dir + "/**/*.h", recursive=True),
 )
 
+print("Adding license to files")
+for filename in cpp_files:
+    add_license(filename)
+
 for version in supported_ue_versions:
+    print("Creating package for Unreal Engine " + version)
     with open(temporary_dir + "/PubnubLibrary.uplugin", "r") as uplugin_file:
         uplugin = json.load(uplugin_file)
         uplugin["EngineVersion"] = version
@@ -55,10 +60,6 @@ for version in supported_ue_versions:
         temporary_dir + "/PubnubLibrary.uplugin", "w"
     ) as uplugin_file_write:
         json.dump(uplugin, uplugin_file_write, indent=4)
-
-    for filename in cpp_files:
-        print(filename)
-        add_license(filename)
 
     zipf = zipfile.ZipFile(
         temporary_dir
