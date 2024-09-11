@@ -1,32 +1,32 @@
 {
-    "FileVersion": 3,
-    "Version": 2,
-    "VersionName": "0.1.1",
-    "FriendlyName": "Pubnub Unreal SDK",
-    "Description": "Quickly add interactive features to your game that scale without building your backend infrastructure.",
-    "Category": "Code",
-    "CreatedBy": "PubNub Inc.",
-    "CreatedByURL": "https://www.pubnub.com/",
-    "DocsURL": "https://www.pubnub.com/docs/sdks/unreal",
-    "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/f19f329bb0f54385a0af714cfdf27bfc",
-    "SupportURL": "",
-    "CanContainContent": true,
-    "IsBetaVersion": false,
-    "IsExperimentalVersion": false,
-    "Installed": false,
-    "SupportedTargetPlatforms": [
-        "Win64",
-        "Mac"
-    ],
-    "Modules": [
-        {
-            "Name": "PubnubLibrary",
-            "Type": "Runtime",
-            "LoadingPhase": "Default",
-            "PlatformAllowList": [
-                "Win64",
-                "Mac"
-            ]
-        }
-    ]
+	"FileVersion": 3,
+	"Version": 2,
+	"VersionName": "0.1.1",
+	"FriendlyName": "Pubnub Unreal SDK",
+	"Description": "Quickly add interactive features to your game that scale without building your backend infrastructure.",
+	"Category": "Code",
+	"CreatedBy": "PubNub Inc.",
+	"CreatedByURL": "https://www.pubnub.com/",
+	"DocsURL": "https://www.pubnub.com/docs/sdks/unreal",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/f19f329bb0f54385a0af714cfdf27bfc",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"SupportedTargetPlatforms": [
+		"Win64",
+		"Mac"
+	],
+	"Modules": [
+		{
+			"Name": "PubnubLibrary",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac"
+			]
+		}
+	]
 }

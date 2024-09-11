@@ -1,9 +1,11 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
 #pragma once
 
 #include "Engine/DeveloperSettings.h"
 #include "PubnubSettings.generated.h"
 
-UCLASS(Config = Engine, defaultconfig, meta=(DisplayName="Pubnub SDK"))
+UCLASS(Config=PubnubSDK, meta=(DisplayName="Pubnub SDK"))
 class PUBNUBLIBRARY_API UPubnubSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -24,5 +26,5 @@ public:
 
 	//Should Secret Key be used automatically (secret key gives host permissions to the user). If set to false, SetSecretKey needs to be called manually to give host permissions.
 	UPROPERTY(Config, EditAnywhere, Category = "Init")
-	bool SetSecretKeyAutomatically = false;
+	bool SetSecretKetAutomatically = true;
 };

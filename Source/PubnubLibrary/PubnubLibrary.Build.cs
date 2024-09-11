@@ -1,3 +1,5 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
 using UnrealBuildTool;
 
 public class PubnubLibrary : ModuleRules
@@ -12,8 +14,7 @@ public class PubnubLibrary : ModuleRules
 			new string[]
 			{
 				"Core",
-				"PubNubModule",
-    				"Projects"
+				"PubNubModule"
 			}
 			);
 			

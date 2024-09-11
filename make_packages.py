@@ -8,20 +8,6 @@ import zipfile
 print("Creating packages for Unreal Engine")
 supported_ue_versions = ["5.0.0", "5.1.0", "5.2.0", "5.3.0", "5.4.0"]
 
-
-def add_license(filename):
-    with open("LICENSE", "r") as license_file:
-        license_text = license_file.read()
-        license_text = ["// " + line for line in license_text.split("\n")]
-        license_text.pop()
-        license_text = "\n".join(license_text)
-        file_text = ""
-        with open(filename, "r") as file:
-            file_text = file.read()
-        with open(filename, "w") as file_write:
-            file_write.write(license_text + "\n\n" + file_text)
-
-
 print("Preparing files")
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -45,10 +31,6 @@ cpp_files = itertools.chain(
     glob.glob(temporary_dir + "/**/*.c", recursive=True),
     glob.glob(temporary_dir + "/**/*.h", recursive=True),
 )
-
-print("Adding license to files")
-for filename in cpp_files:
-    add_license(filename)
 
 for version in supported_ue_versions:
     print("Creating package for Unreal Engine " + version)

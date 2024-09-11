@@ -1,6 +1,9 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PubnubEnumLibrary.generated.h"
 
 UENUM(BlueprintType)
 enum class EPubnubPublishMethod : uint8
