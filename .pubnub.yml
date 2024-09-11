@@ -3,6 +3,11 @@ version: 0.1.0
 schema: 1
 scm: github.com/pubnub/unreal-engine
 changelog: 
+  - date: 2024-09-11
+    version: 0.1.2
+    changes:
+      - type: feature
+        text: "Fixes for Unreal Engine Marketplace"
   - date: 2024-08-14
     version: 0.1.0
     changes:
