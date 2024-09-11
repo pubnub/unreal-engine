@@ -1,4 +1,8 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
+
 #include "Threads/PubnubLoopingThread.h"
+#include "Windows/WindowsPlatformProcess.h"
 
 
 bool FPubnubLoopingThread::Init()
@@ -25,10 +29,6 @@ uint32 FPubnubLoopingThread::Run()
 			//Run all functions from queue
 			for(int i = 0; i <  PubnubAsyncLoopingFunctions.Num(); i++)
 			{
-				if(bShutdown)
-				{
-					return 0;
-				}
 				PubnubAsyncLoopingFunctions[i]();
 			}
 		}

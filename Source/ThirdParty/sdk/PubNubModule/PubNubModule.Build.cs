@@ -1,3 +1,5 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
 using System;
 using System.IO;
 using UnrealBuildTool;
@@ -11,29 +13,39 @@ public class PubNubModule : ModuleRules
     {
 	    Type = ModuleType.External;
 
-	    if (OpenSsl) {
+	    string extention = null;
+        string PlatformLib = null;
+        string binary = null;
+        if(Target.Platform == UnrealTargetPlatform.Win64)
+        {
+	        extention = StaticLink ? "lib" : "dll";
+	        PlatformLib = OpenSsl ? "openssl" : "windows";
+	        binary = $"pubnub.{extention}";
+        }
+        else if(Target.Platform == UnrealTargetPlatform.Mac)
+        {
+	        extention = StaticLink ? "a" : "dylib";
+	        PlatformLib = OpenSsl ? "openssl" : "posix";
+	        binary = $"libpubnub.{extention}";
+        }
+        else
+        {
+	        extention = StaticLink ? "a" : "so";
+	        PlatformLib = OpenSsl ? "openssl" : "posix";
+	        binary = $"libpubnub.{extention}";
+        }
+
+        if (OpenSsl) {
             PublicDependencyModuleNames.AddRange(new string[] { "OpenSSL" });
         }
 
 		var SDKPath = Path.Combine(new string[] { ModuleDirectory, ".." });
+		
+		//TODO: Read library location depending on platform
+		string BuildLocation = "Lib/win64";
+		
 
-		
-		
-		if (Target.Platform == UnrealTargetPlatform.Win64)
-		{
-			string BuildLocation = "Lib/win64";
-			PublicAdditionalLibraries.Add(Path.Combine(SDKPath, BuildLocation, "pubnub.lib"));
-			
-		}
-		else if(Target.Platform == UnrealTargetPlatform.Mac)
-		{
-			PublicDelayLoadDLLs.Add(Path.Combine(SDKPath, "lib", "macos", "libpubnub.dylib"));
-			RuntimeDependencies.Add("$(PluginDir)/Source/ThirdParty/sdk/lib/macos/libpubnub.dylib");
-		}
-		
-		string PlatformLib = "openssl";
-		
-		
+		PublicAdditionalLibraries.Add(Path.Combine(SDKPath, BuildLocation, binary));
 		PublicIncludePaths.AddRange(
 			new string[] {
 				SDKPath,

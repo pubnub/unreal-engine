@@ -1,3 +1,5 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,5 +13,6 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	void*	PubnubLibraryHandle;
+private:
+	
 };

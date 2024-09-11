@@ -26,8 +26,6 @@ enum pubnub_res pbcc_find_objects_id(struct pbcc_context* pb,
                                      char const* file,
                                      int line);
 
-// TODO: maybe we should decrease amount of parameters in these functions
-
 /** Prepares the 'get_users' transaction, mostly by
     formatting the URI of the HTTP request.
   */
@@ -37,8 +35,6 @@ enum pubnub_res pbcc_getall_uuidmetadata_prep(struct pbcc_context* pb,
                                     char const* start,
                                     char const* end,
                                     enum pubnub_tribool count,
-                                    char const* filter,
-                                    char const* sort,
                                     enum pubnub_trans pt);
 
 /** Prepares the 'set_uuidmetadata' transaction, mostly by
@@ -74,8 +70,6 @@ enum pubnub_res pbcc_getall_channelmetadata_prep(struct pbcc_context* pb,
                                      char const* start,
                                      char const* end,
                                      enum pubnub_tribool count,
-                                     char const* filter,
-                                     char const* sort,
                                      enum pubnub_trans pt);
 
 
@@ -114,8 +108,6 @@ enum pubnub_res pbcc_get_memberships_prep(struct pbcc_context* pb,
                                           char const* start,
                                           char const* end,
                                           enum pubnub_tribool count,
-                                          char const* filter,
-                                          char const* sort,
                                           enum pubnub_trans pt);
 
 
@@ -126,12 +118,6 @@ enum pubnub_res pbcc_set_memberships_prep(struct pbcc_context* pb,
                                              char const* uuid_metadataid,
                                              char const* include,
                                              char const* update_obj,
-                                             char const* filter,
-                                             char const* sort,
-                                             size_t limit,
-                                             char const* start,
-                                             char const* end,
-                                             enum pubnub_tribool count,
                                              enum pubnub_trans pt);
 
 /** Prepares the 'get_members' transaction, mostly by
@@ -144,7 +130,6 @@ enum pubnub_res pbcc_get_members_prep(struct pbcc_context* pb,
                                       char const* start,
                                       char const* end,
                                       char const* filter,
-                                      char const* sort,
                                       enum pubnub_tribool count,
                                       enum pubnub_trans pt);
 
@@ -155,12 +140,6 @@ enum pubnub_res pbcc_set_members_prep(struct pbcc_context* pb,
                                          char const* channel_metadataid,
                                          char const* include,
                                          char const* set_obj, 
-                                         char const* filter,
-                                         char const* sort,
-                                         size_t limit,
-                                         char const* start,
-                                         char const* end,
-                                         enum pubnub_tribool count,
                                          enum pubnub_trans pt);
 
 

@@ -1,4 +1,8 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
+
 #include "Threads/PubnubFunctionThread.h"
+#include "Windows/WindowsPlatformProcess.h"
 
 
 bool FPubnubFunctionThread::Init()

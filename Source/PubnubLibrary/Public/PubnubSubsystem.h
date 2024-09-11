@@ -1,21 +1,26 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "PubNub.h"
 #include "PubnubStructLibrary.h"
 #include "PubnubEnumLibrary.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "PubnubSubsystem.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(PubnubLog, Log, All);
 
+class FJsonObject;
+
 class UPubnubSettings;
 class FPubnubFunctionThread;
 class FPubnubLoopingThread;
+class UPubnubChatSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 
 
 UCLASS()
@@ -35,6 +40,7 @@ public:
 	FOnPubnubError OnPubnubError;
 
 #pragma region BLUEPRINT EXPOSED
+
 	
 	/* BLUEPRINT EXPOSED FUNCTIONS */
 	//These functions don't have actual logic, they just call corresponding private functions on Pubnub threads
@@ -44,7 +50,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
 	void DeinitPubnub();
-
+	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Users")
 	void SetUserID(FString UserID);
 
@@ -115,7 +121,7 @@ public:
 	void RevokeToken(FString Token);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
-	void ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse);
+	void ParseToken(FString Token);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
 	void SetAuthToken(FString Token);
@@ -127,7 +133,7 @@ public:
 	void FetchHistory(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
-	void MessageCounts(FString ChannelName, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
+	void MessageCounts(FString ChannelName, FString TimeStamp, FOnPubnubResponse OnMessageCountsResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse);
@@ -163,7 +169,7 @@ public:
 	void RemoveMemberships(FString UUIDMetadataID, FString Include, FString RemoveObj);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
-	void GetChannelMembers(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse);
+	void GetChannelMembers(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse, FString Filter);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void AddChannelMembers(FString ChannelMetadataID, FString Include, FString AddObj);
@@ -175,22 +181,19 @@ public:
 	void RemoveChannelMembers(FString ChannelMetadataID, FString Include, FString RemoveObj);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
-	void AddMessageAction(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value, FOnPubnubResponse AddActionResponse);
+	void AddMessageAction(FString ChannelName, FString MessageTimeToken, EPubnubActionType ActionType,  FString Value);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
 	void HistoryWithMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse);
 
-	//UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
-	//void HistoryWithMessageActionsContinue(FOnPubnubResponse OnHistoryWithMAContinueResponse);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
+	void HistoryWithMessageActionsContinue(FOnPubnubResponse OnHistoryWithMAContinueResponse);
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
 	void GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
-	void RemoveMessageAction(FString ChannelName, FString MessageTimetoken, FString ActionTimetoken);
-	
-	//UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
-	//void GetMessageActionsContinue(FOnPubnubResponse OnGetMessageActionsContinueResponse);
+	void GetMessageActionsContinue(FOnPubnubResponse OnGetMessageActionsContinueResponse);
 
 #pragma endregion
 
@@ -300,11 +303,11 @@ private:
 	void Heartbeat_priv(FString ChannelName, FString ChannelGroup);
 	void GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token);
-	void ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse);
+	void ParseToken_priv(FString Token);
 	void SetAuthToken_priv(FString Token);
 	void History_priv(FString ChannelName, FOnPubnubResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings = FPubnubHistorySettings());
 	void FetchHistory_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
-	void MessageCounts_priv(FString ChannelName, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
+	void MessageCounts_priv(FString ChannelName, FString TimeStamp, FOnPubnubResponse OnMessageCountsResponse);
 	void GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse);
 	void SetUUIDMetadata_priv(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj);
 	void GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse);
@@ -316,12 +319,11 @@ private:
 	void GetMemberships_priv(FString UUIDMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembershipResponse);
 	void SetMemberships_priv(FString UUIDMetadataID, FString Include, FString SetObj);
 	void RemoveMemberships_priv(FString UUIDMetadataID, FString Include, FString RemoveObj);
-	void GetChannelMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse);
+	void GetChannelMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse, FString Filter);
 	void AddChannelMembers_priv(FString ChannelMetadataID, FString Include, FString AddObj);
 	void SetChannelMembers_priv(FString ChannelMetadataID, FString Include, FString SetObj);
 	void RemoveChannelMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj);
-	void AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, EPubnubActionType ActionType,  FString Value, FOnPubnubResponse AddActionResponse);
-	void RemoveMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionTimetoken);
+	void AddMessageAction_priv(FString ChannelName, FString MessageTimeToken, EPubnubActionType ActionType,  FString Value);
 	void HistoryWithMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse);
 	void HistoryWithMessageActionsContinue_priv(FOnPubnubResponse OnHistoryWithMAContinueResponse);
 	void GetMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);
@@ -342,5 +344,20 @@ private:
 	TSharedPtr<FJsonObject> AddChannelPermissionsToJson(TArray<FString> Channels, TArray<FPubnubChannelPermissions> ChannelPermissions);
 	TSharedPtr<FJsonObject> AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions);
 	TSharedPtr<FJsonObject> AddUUIDPermissionsToJson(TArray<FString> UUIDs, TArray<FPubnubUserPermissions> UUIDPermissions);
+
+    static void CallbackFunctionInClass(int number, const char* response)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Callback from class, number: %d"), number);
+    };
+
+	void DynamicCallbackFunctionInClass(int number, const char* response)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dynamic Callback from class, number: %d"), number);
+	};
+
 };
 
+static void CallbackFunction(int number, const char* response)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Callback number: %d"), number);
+};

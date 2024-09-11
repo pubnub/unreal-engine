@@ -1,8 +1,12 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PubnubUtilities.generated.h"
+
+class FJsonObject;
 
 /**
  * 

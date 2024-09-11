@@ -6,10 +6,6 @@
 
 #define PUBNUB_SDK_NAME "POSIX"
 
-#ifndef PUBNUB_SDK_VERSION_SUFFIX
-#define PUBNUB_SDK_VERSION_SUFFIX
-#endif
-
 
 char const *pubnub_sdk_name(void)
 {
@@ -25,12 +21,12 @@ char const *pubnub_version(void)
 
 char const *pubnub_uname(void)
 {
-    return PUBNUB_SDK_NAME "-PubNub-C-core/" PUBNUB_SDK_VERSION PUBNUB_SDK_VERSION_SUFFIX;
+    return PUBNUB_SDK_NAME "-PubNub-C-core/" PUBNUB_SDK_VERSION;
 }
 
 
 char const *pubnub_uagent(void)
 {
-    return PUBNUB_SDK_NAME "-PubNub-C-core/" PUBNUB_SDK_VERSION PUBNUB_SDK_VERSION_SUFFIX;
+    return PUBNUB_SDK_NAME "-PubNub-C-core/" PUBNUB_SDK_VERSION;
 }
 

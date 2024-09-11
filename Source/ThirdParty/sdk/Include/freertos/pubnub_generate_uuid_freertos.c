@@ -3,11 +3,7 @@
 #include <FreeRTOS.h>
 #include "task.h"
 
-#ifndef ESP_PLATFORM
 #include "FreeRTOS_IP.h"
-#else
-#define ipconfigRAND32() rand()
-#endif
 
 
 int pubnub_generate_uuid_v4_random(struct Pubnub_UUID *uuid)
