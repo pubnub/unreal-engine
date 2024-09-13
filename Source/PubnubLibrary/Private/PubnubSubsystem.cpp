@@ -465,14 +465,14 @@ void UPubnubSubsystem::RemoveMemberships(FString UUIDMetadataID, FString Include
 }
 
 void UPubnubSubsystem::GetChannelMembers(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End,
-	EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse, FString Filter)
+	EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse)
 {
 	if(!CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, Limit, Start, End, Count, OnGetMembersResponse, Filter]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, Limit, Start, End, Count, OnGetMembersResponse]
 	{
-		GetChannelMembers_priv(ChannelMetadataID, Include, Limit, Start, End, Count, OnGetMembersResponse, Filter);
+		GetChannelMembers_priv(ChannelMetadataID, Include, Limit, Start, End, Count, OnGetMembersResponse);
 	});
 }
 
@@ -1708,8 +1708,7 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString In
 	}
 }
 
-void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start,
-	FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse, FString Filter)
+void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckIsUserIDSet())
 	{return;}
@@ -1718,14 +1717,9 @@ void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FString
 	{return;}
 
 	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
-	if(Filter.IsEmpty())
-	{
-		pubnub_get_members(ctx_pub,TCHAR_TO_ANSI(*ChannelMetadataID),  TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
-	}
-	else
-	{
-		pubnub_get_members_with_filter(ctx_pub,TCHAR_TO_ANSI(*ChannelMetadataID),  TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), TCHAR_TO_ANSI(*Filter), InCount);
-	}
+
+	pubnub_get_members(ctx_pub,TCHAR_TO_ANSI(*ChannelMetadataID),  TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+	
 	FString JsonResponse = GetLastResponse(ctx_pub);
 
 	//Delegate needs to be executed back on Game Thread
