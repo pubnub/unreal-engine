@@ -2,7 +2,13 @@
 
 
 #include "Threads/PubnubFunctionThread.h"
+#if PLATFORM_WINDOWS
 #include "Windows/WindowsPlatformProcess.h"
+#elif PLATFORM_MAC
+#include "Mac/MacPlatformProcess.h"
+#else
+#error "Platform not supported"
+#endif
 
 
 bool FPubnubFunctionThread::Init()
