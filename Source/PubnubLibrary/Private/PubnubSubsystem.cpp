@@ -13,10 +13,6 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	//Create new threads - separate for subscribe and all other operations
-	QuickActionThread = new FPubnubFunctionThread;
-	LongpollThread = new FPubnubLoopingThread;
-
 	//Load all settings from plugin config
 	LoadPluginSettings();
 	if(PubnubSettings->InitializeAutomatically)
@@ -42,6 +38,16 @@ void UPubnubSubsystem::Deinitialize()
 
 void UPubnubSubsystem::InitPubnub()
 {
+	if(IsInitialized)
+	{
+		PubnubError("Pubnub is already initialized", EPubnubErrorType::PET_Warning);
+		return;
+	}
+	
+	//Create new threads - separate for subscribe and all other operations
+	QuickActionThread = new FPubnubFunctionThread;
+	LongpollThread = new FPubnubLoopingThread;
+	
 	if(!CheckQuickActionThreadValidity())
 	{return;}
 
