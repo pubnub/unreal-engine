@@ -49,24 +49,26 @@ void UPubnubSubsystem::InitPubnub()
 		PubnubError("Pubnub is already initialized", EPubnubErrorType::PET_Warning);
 		return;
 	}
-	
-	//Create new threads - separate for subscribe and all other operations
-	QuickActionThread = new FPubnubFunctionThread;
-	LongpollThread = new FPubnubLoopingThread;
-	
-	if(!CheckQuickActionThreadValidity())
-	{return;}
 
-	QuickActionThread->AddFunctionToQueue( [this]
+	InitPubnub_priv();
+
+	//If initialized correctly, create required thread.
+	if(IsInitialized)
 	{
-		InitPubnub_priv();
-	});
+		//Create new threads - separate for subscribe and all other operations
+		QuickActionThread = new FPubnubFunctionThread;
+		LongpollThread = new FPubnubLoopingThread;
+	}
+	
 }
 
 void UPubnubSubsystem::DeinitPubnub()
 {
-	if(!CheckQuickActionThreadValidity())
-	{return;}
+	if(!QuickActionThread)
+	{
+		DeinitPubnub_priv();
+		return;
+	}
 	
 	QuickActionThread->AddFunctionToQueue( [this]
 	{
@@ -828,6 +830,11 @@ void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorT
 		UE_LOG(PubnubLog, Warning, TEXT("%s"), *ErrorMessage);
 	}
 
+	if(!OnPubnubError.IsBound())
+	{
+		return;
+	}
+
 	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
 	AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage, ErrorType]()
 	{
@@ -959,11 +966,13 @@ void UPubnubSubsystem::InitPubnub_priv()
 	if(std::strlen(PublishKey) == 0 )
 	{
 		PubnubError("Publish key is empty, can't initialize Pubnub");
+		return;
 	}
 
 	if(std::strlen(SubscribeKey) == 0 )
 	{
 		PubnubError("Subscribe key is empty, can't initialize Pubnub");
+		return;
 	}
 	
 	ctx_pub = pubnub_alloc();
@@ -1179,8 +1188,11 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 	}
 	
 	LongpollThread->ClearLoopingFunctions();
-	
-	SystemPublish(ChannelForSystemPublish);
+
+	if(!ChannelForSystemPublish.IsEmpty())
+	{
+		SystemPublish(ChannelForSystemPublish);
+	}
 }
 
 void UPubnubSubsystem::AddChannelToGroup_priv(FString ChannelName, FString ChannelGroup)
