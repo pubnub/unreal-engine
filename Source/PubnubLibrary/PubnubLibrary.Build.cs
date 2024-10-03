@@ -14,7 +14,8 @@ public class PubnubLibrary : ModuleRules
 			new string[]
 			{
 				"Core",
-				"PubNubModule"
+				"PubNubModule",
+    				"Projects"
 			}
 			);
 			

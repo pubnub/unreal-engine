@@ -36,6 +36,10 @@ uint32 FPubnubLoopingThread::Run()
 			//Run all functions from queue
 			for(int i = 0; i <  PubnubAsyncLoopingFunctions.Num(); i++)
 			{
+				if(bShutdown)
+				{
+					return 0;
+				}
 				PubnubAsyncLoopingFunctions[i]();
 			}
 		}
