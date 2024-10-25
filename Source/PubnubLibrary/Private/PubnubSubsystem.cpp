@@ -345,36 +345,36 @@ void UPubnubSubsystem::MessageCounts(FString ChannelName, FString Timetoken, FOn
 	});
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse)
+void UPubnubSubsystem::GetAllUUIDMetadata(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Include, Limit, Start, End, Count, OnGetAllUUIDMetadataResponse]
+	QuickActionThread->AddFunctionToQueue( [this, OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetAllUUIDMetadata_priv(Include, Limit, Start, End, Count, OnGetAllUUIDMetadataResponse);
+		GetAllUUIDMetadata_priv(OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::SetUUIDMetadata(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj)
+void UPubnubSubsystem::SetUUIDMetadata(FString UUIDMetadataID, FString UUIDMetadataObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, Include, UUIDMetadataObj]
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, UUIDMetadataObj, Include]
 	{
-		SetUUIDMetadata_priv(UUIDMetadataID, Include, UUIDMetadataObj);
+		SetUUIDMetadata_priv(UUIDMetadataID, UUIDMetadataObj, Include);
 	});
 }
 
-void UPubnubSubsystem::GetUUIDMetadata(FString Include, FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse)
+void UPubnubSubsystem::GetUUIDMetadata(FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Include, UUIDMetadataID, OnGetUUIDMetadataResponse]
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetUUIDMetadataResponse, Include]
 	{
-		GetUUIDMetadata_priv(Include, UUIDMetadataID, OnGetUUIDMetadataResponse);
+		GetUUIDMetadata_priv(UUIDMetadataID, OnGetUUIDMetadataResponse, Include);
 	});
 }
 
@@ -389,36 +389,36 @@ void UPubnubSubsystem::RemoveUUIDMetadata(FString UUIDMetadataID)
 	});
 }
 
-void UPubnubSubsystem::GetAllChannelMetadata(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllChannelMetadataResponse)
+void UPubnubSubsystem::GetAllChannelMetadata(FOnPubnubResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Include, Limit, Start, End, Count, OnGetAllChannelMetadataResponse]
+	QuickActionThread->AddFunctionToQueue( [this, OnGetAllChannelMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetAllChannelMetadata_priv(Include, Limit, Start, End, Count, OnGetAllChannelMetadataResponse);
+		GetAllChannelMetadata_priv(OnGetAllChannelMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::SetChannelMetadata(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj)
+void UPubnubSubsystem::SetChannelMetadata(FString ChannelMetadataID, FString ChannelMetadataObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, ChannelMetadataObj]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, ChannelMetadataObj, Include]
 	{
-		SetChannelMetadata_priv(ChannelMetadataID, Include, ChannelMetadataObj);
+		SetChannelMetadata_priv(ChannelMetadataID, ChannelMetadataObj, Include);
 	});
 }
 
-void UPubnubSubsystem::GetChannelMetadata(FString Include, FString ChannelMetadataID, FOnPubnubResponse OnGetChannelMetadataResponse)
+void UPubnubSubsystem::GetChannelMetadata(FString ChannelMetadataID, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Include, ChannelMetadataID, OnGetChannelMetadataResponse]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, OnGetChannelMetadataResponse, Include]
 	{
-		GetChannelMetadata_priv(Include, ChannelMetadataID, OnGetChannelMetadataResponse);
+		GetChannelMetadata_priv(ChannelMetadataID, OnGetChannelMetadataResponse, Include);
 	});
 }
 
@@ -433,82 +433,80 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString ChannelMetadataID)
 	});
 }
 
-void UPubnubSubsystem::GetMemberships(FString UUIDMetadataID, FString Include, int Limit, FString Start, FString End,
-	EPubnubTribool Count, FOnPubnubResponse OnGetMembershipResponse)
+void UPubnubSubsystem::GetMemberships(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, Include, Limit, Start, End, Count, OnGetMembershipResponse]
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetMemberships_priv(UUIDMetadataID, Include, Limit, Start, End, Count, OnGetMembershipResponse);
+		GetMemberships_priv(UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::SetMemberships(FString UUIDMetadataID, FString Include, FString SetObj)
+void UPubnubSubsystem::SetMemberships(FString UUIDMetadataID, FString SetObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, Include, SetObj]
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, SetObj, Include]
 	{
-		SetMemberships_priv(UUIDMetadataID, Include, SetObj);
+		SetMemberships_priv(UUIDMetadataID, SetObj, Include);
 	});
 }
 
-void UPubnubSubsystem::RemoveMemberships(FString UUIDMetadataID, FString Include, FString RemoveObj)
+void UPubnubSubsystem::RemoveMemberships(FString UUIDMetadataID, FString RemoveObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, Include, RemoveObj]
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, RemoveObj, Include]
 	{
-		RemoveMemberships_priv(UUIDMetadataID, Include, RemoveObj);
+		RemoveMemberships_priv(UUIDMetadataID, RemoveObj, Include);
 	});
 }
 
-void UPubnubSubsystem::GetChannelMembers(FString ChannelMetadataID, FString Include, int Limit, FString Start, FString End,
-	EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse)
+void UPubnubSubsystem::GetChannelMembers(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, Limit, Start, End, Count, OnGetMembersResponse]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetChannelMembers_priv(ChannelMetadataID, Include, Limit, Start, End, Count, OnGetMembersResponse);
+		GetChannelMembers_priv(ChannelMetadataID, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::AddChannelMembers(FString ChannelMetadataID, FString Include, FString AddObj)
+void UPubnubSubsystem::AddChannelMembers(FString ChannelMetadataID, FString AddObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, AddObj]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, AddObj, Include]
 	{
-		AddChannelMembers_priv(ChannelMetadataID, Include, AddObj);
+		AddChannelMembers_priv(ChannelMetadataID, AddObj, Include);
 	});
 }
 
-void UPubnubSubsystem::SetChannelMembers(FString ChannelMetadataID, FString Include, FString SetObj)
+void UPubnubSubsystem::SetChannelMembers(FString ChannelMetadataID, FString SetObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, SetObj]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, SetObj, Include]
 	{
-		SetChannelMembers_priv(ChannelMetadataID, Include, SetObj);
+		SetChannelMembers_priv(ChannelMetadataID, SetObj, Include);
 	});
 }
 
-void UPubnubSubsystem::RemoveChannelMembers(FString ChannelMetadataID, FString Include, FString RemoveObj)
+void UPubnubSubsystem::RemoveChannelMembers(FString ChannelMetadataID, FString RemoveObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, Include, RemoveObj]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, RemoveObj, Include]
 	{
-		RemoveChannelMembers_priv(ChannelMetadataID, Include, RemoveObj);
+		RemoveChannelMembers_priv(ChannelMetadataID, RemoveObj, Include);
 	});
 }
 
@@ -1480,13 +1478,26 @@ void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FString Timetoken
 	});
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllUUIDMetadataResponse)
+void UPubnubSubsystem::GetAllUUIDMetadata_priv(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
-	pubnub_getall_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
+	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
+	PubnubOptions.include = CharConverterInclude.Get();
+	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
+	PubnubOptions.filter = CharConverterFilter.Get();
+	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
+	PubnubOptions.sort = CharConverterSort.Get();
+	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
+	PubnubOptions.page.next = CharConverterPageNext.Get();
+	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
+	PubnubOptions.page.prev = CharConverterPagePrev.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+	
+	pubnub_getall_uuidmetadata_ex(ctx_pub, PubnubOptions);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 
@@ -1498,7 +1509,7 @@ void UPubnubSubsystem::GetAllUUIDMetadata_priv(FString Include, int Limit, FStri
 	});
 }
 
-void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString Include, FString UUIDMetadataObj)
+void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString UUIDMetadataObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1515,7 +1526,7 @@ void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString Incl
 	}
 }
 
-void UPubnubSubsystem::GetUUIDMetadata_priv(FString Include, FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse)
+void UPubnubSubsystem::GetUUIDMetadata_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1552,13 +1563,27 @@ void UPubnubSubsystem::RemoveUUIDMetadata_priv(FString UUIDMetadataID)
 	}
 }
 
-void UPubnubSubsystem::GetAllChannelMetadata_priv(FString Include, int Limit, FString Start, FString End, EPubnubTribool Count, FOnPubnubResponse OnGetAllChannelMetadataResponse)
+void UPubnubSubsystem::GetAllChannelMetadata_priv(FOnPubnubResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
-	pubnub_getall_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+
+	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
+	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
+	PubnubOptions.include = CharConverterInclude.Get();
+	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
+	PubnubOptions.filter = CharConverterFilter.Get();
+	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
+	PubnubOptions.sort = CharConverterSort.Get();
+	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
+	PubnubOptions.page.next = CharConverterPageNext.Get();
+	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
+	PubnubOptions.page.prev = CharConverterPagePrev.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+	
+	pubnub_getall_channelmetadata_ex(ctx_pub, PubnubOptions);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 
@@ -1570,7 +1595,7 @@ void UPubnubSubsystem::GetAllChannelMetadata_priv(FString Include, int Limit, FS
 	});
 }
 
-void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FString Include, FString ChannelMetadataObj)
+void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FString ChannelMetadataObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1587,7 +1612,7 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FStrin
 	}
 }
 
-void UPubnubSubsystem::GetChannelMetadata_priv(FString Include, FString ChannelMetadataID, FOnPubnubResponse OnGetChannelMetadataResponse)
+void UPubnubSubsystem::GetChannelMetadata_priv(FString ChannelMetadataID, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1624,8 +1649,8 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString ChannelMetadataID)
 	}
 }
 
-void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FString Include, int Limit, FString Start,
-	FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembershipResponse)
+void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit,
+	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1633,8 +1658,23 @@ void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FString Inclu
 	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetMemberships"))
 	{return;}
 	
-	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
-	pubnub_get_memberships(ctx_pub,TCHAR_TO_ANSI(*UUIDMetadataID),  TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
+	auto CharConverterUuid = StringCast<ANSICHAR>(*UUIDMetadataID);
+	PubnubOptions.uuid = CharConverterUuid.Get();
+	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
+	PubnubOptions.include = CharConverterInclude.Get();
+	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
+	PubnubOptions.filter = CharConverterFilter.Get();
+	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
+	PubnubOptions.sort = CharConverterSort.Get();
+	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
+	PubnubOptions.page.next = CharConverterPageNext.Get();
+	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
+	PubnubOptions.page.prev = CharConverterPagePrev.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+	
+	pubnub_get_memberships_ex(ctx_pub, PubnubOptions);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 
@@ -1646,7 +1686,7 @@ void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FString Inclu
 	});
 }
 
-void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString Include, FString SetObj)
+void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString SetObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1663,7 +1703,7 @@ void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString Inclu
 	}
 }
 
-void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString Include, FString RemoveObj)
+void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString RemoveObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1680,8 +1720,8 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString In
 	}
 }
 
-void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FString Include, int Limit, FString Start,
-	FString End, EPubnubTribool Count, FOnPubnubResponse OnGetMembersResponse)
+void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit,
+	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1689,8 +1729,21 @@ void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FString
 	if(CheckIsFieldEmpty(ChannelMetadataID, "UUIDMetadataID", "GetChannelMembers"))
 	{return;}
 
-	pubnub_tribool InCount = (pubnub_tribool)(uint8)Count;
-	pubnub_get_members(ctx_pub,TCHAR_TO_ANSI(*ChannelMetadataID),  TCHAR_TO_ANSI(*Include), Limit,  TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), InCount);
+	pubnub_members_opts PubnubOptions = pubnub_members_opts();
+	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
+	PubnubOptions.include = CharConverterInclude.Get();
+	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
+	PubnubOptions.filter = CharConverterFilter.Get();
+	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
+	PubnubOptions.sort = CharConverterSort.Get();
+	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
+	PubnubOptions.page.next = CharConverterPageNext.Get();
+	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
+	PubnubOptions.page.prev = CharConverterPagePrev.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+	
+	pubnub_get_members_ex(ctx_pub,TCHAR_TO_ANSI(*ChannelMetadataID), PubnubOptions);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 
@@ -1702,7 +1755,7 @@ void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FString
 	});
 }
 
-void UPubnubSubsystem::AddChannelMembers_priv(FString ChannelMetadataID, FString Include, FString AddObj)
+void UPubnubSubsystem::AddChannelMembers_priv(FString ChannelMetadataID, FString AddObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1719,7 +1772,7 @@ void UPubnubSubsystem::AddChannelMembers_priv(FString ChannelMetadataID, FString
 	}
 }
 
-void UPubnubSubsystem::SetChannelMembers_priv(FString ChannelMetadataID, FString Include, FString SetObj)
+void UPubnubSubsystem::SetChannelMembers_priv(FString ChannelMetadataID, FString SetObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1736,7 +1789,7 @@ void UPubnubSubsystem::SetChannelMembers_priv(FString ChannelMetadataID, FString
 	}
 }
 
-void UPubnubSubsystem::RemoveChannelMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj)
+void UPubnubSubsystem::RemoveChannelMembers_priv(FString ChannelMetadataID, FString RemoveObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
