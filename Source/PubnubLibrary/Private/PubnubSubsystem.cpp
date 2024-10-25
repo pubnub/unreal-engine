@@ -323,17 +323,6 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 	});
 }
 
-void UPubnubSubsystem::History(FString ChannelName, FOnPubnubResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings)
-{
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
-	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelName, OnHistoryResponse, HistorySettings]
-	{
-		History_priv(ChannelName, OnHistoryResponse, HistorySettings);
-	});
-}
-
 void UPubnubSubsystem::FetchHistory(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
@@ -533,29 +522,6 @@ void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTime
 		AddMessageAction_priv(ChannelName, MessageTimetoken, ActionType, Value, AddActionResponse);
 	});
 }
-
-void UPubnubSubsystem::HistoryWithMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse)
-{
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
-	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Start, End, SizeLimit, OnHistoryWithMessageActionsResponse]
-	{
-		HistoryWithMessageActions_priv(ChannelName, Start, End, SizeLimit, OnHistoryWithMessageActionsResponse);
-	});
-}
-/* DISABLED 
-void UPubnubSubsystem::HistoryWithMessageActionsContinue(FOnPubnubResponse OnHistoryWithMAContinueResponse)
-{
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
-	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, OnHistoryWithMAContinueResponse]
-	{
-		HistoryWithMessageActionsContinue_priv(OnHistoryWithMAContinueResponse);
-	});
-}
-*/
 
 void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
 {
@@ -1462,37 +1428,6 @@ void UPubnubSubsystem::SetAuthToken_priv(FString Token)
 	}
 }
 
-void UPubnubSubsystem::History_priv(FString ChannelName, FOnPubnubResponse OnHistoryResponse, FPubnubHistorySettings HistorySettings)
-{
-	if(!CheckIsUserIDSet())
-	{return;}
-
-	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "History"))
-	{return;}
-
-	//Set all options from HistorySettings
-
-	//Converted char needs to live in function scope, so we need to create it here
-	pubnub_history_options HistoryOptions;
-	auto StartCharConverter = StringCast<ANSICHAR>(*HistorySettings.Start);
-	HistoryOptions.start = StartCharConverter.Get();
-	auto EndCharConverter = StringCast<ANSICHAR>(*HistorySettings.End);
-	HistoryOptions.end = EndCharConverter.Get();
-
-	HistoryUESettingsToPubnubHistoryOptions(HistorySettings,HistoryOptions);
-	
-	pubnub_history_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), HistoryOptions);
-
-	FString JsonResponse = GetLastResponse(ctx_pub);
-
-	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnHistoryResponse, JsonResponse]()
-	{
-		//Broadcast bound delegate with JsonResponse
-		OnHistoryResponse.ExecuteIfBound(JsonResponse);
-	});
-}
-
 void UPubnubSubsystem::FetchHistory_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
 {
 	if(!CheckIsUserIDSet())
@@ -1894,43 +1829,6 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString ChannelName, FString Mes
 	delete[] action_timetoken_char;
 }
 
-void UPubnubSubsystem::HistoryWithMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnHistoryWithMessageActionsResponse)
-{
-	if(!CheckIsUserIDSet())
-	{return;}
-	
-	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "HistoryWithMessageActions"))
-	{return;}
-	
-	pubnub_history_with_message_actions(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), SizeLimit);
-
-	FString JsonResponse = GetLastResponse(ctx_pub);
-
-	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnHistoryWithMessageActionsResponse, JsonResponse]()
-	{
-		//Broadcast bound delegate with JsonResponse
-		OnHistoryWithMessageActionsResponse.ExecuteIfBound(JsonResponse);
-	});
-}
-
-void UPubnubSubsystem::HistoryWithMessageActionsContinue_priv(FOnPubnubResponse OnHistoryWithMAContinueResponse)
-{
-	if(!CheckIsUserIDSet())
-	{return;}
-
-	pubnub_history_with_message_actions_more(ctx_pub);
-
-	FString JsonResponse = GetLastResponse(ctx_pub);
-
-	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnHistoryWithMAContinueResponse, JsonResponse]()
-	{
-		//Broadcast bound delegate with JsonResponse
-		OnHistoryWithMAContinueResponse.ExecuteIfBound(JsonResponse);
-	});
-}
-
 void UPubnubSubsystem::GetMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
 {
 	if(!CheckIsUserIDSet())
@@ -1989,17 +1887,6 @@ void UPubnubSubsystem::SetStateUESettingsToPubnubSetStateOptions(FPubnubSetState
 	SetStateSettings.ChannelGroup.IsEmpty() ? PubnubSetStateOptions.channel_group = NULL : nullptr;
 	SetStateSettings.UserID.IsEmpty() ? PubnubSetStateOptions.user_id = NULL : nullptr;
 	PubnubSetStateOptions.heartbeat = SetStateSettings.HeartBeat;
-}
-
-void UPubnubSubsystem::HistoryUESettingsToPubnubHistoryOptions(FPubnubHistorySettings& HistorySettings, pubnub_history_options& PubnubHistoryOptions)
-{
-	PubnubHistoryOptions.string_token = HistorySettings.StringToken;
-	PubnubHistoryOptions.count = HistorySettings.Count;
-	PubnubHistoryOptions.reverse = HistorySettings.Reverse;
-	PubnubHistoryOptions.include_token = HistorySettings.IncludeToken;
-	PubnubHistoryOptions.include_meta = HistorySettings.IncludeMeta;
-	HistorySettings.Start.IsEmpty() ? PubnubHistoryOptions.start = NULL : nullptr;
-	HistorySettings.End.IsEmpty() ? PubnubHistoryOptions.end = NULL : nullptr;
 }
 
 void UPubnubSubsystem::FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings& FetchHistorySettings, pubnub_fetch_history_options& PubnubFetchHistoryOptions)
