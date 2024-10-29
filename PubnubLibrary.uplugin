@@ -16,16 +16,18 @@
 	"Installed": false,
 	"SupportedTargetPlatforms": [
 		"Win64",
-		"Mac"
+		"Mac",
+		"Android"
 	],
 	"Modules": [
 		{
 			"Name": "PubnubLibrary",
 			"Type": "Runtime",
-			"LoadingPhase": "PostEngineInit",
+			"LoadingPhase": "PreDefault",
 			"PlatformAllowList": [
 				"Win64",
-				"Mac"
+				"Mac",
+				"Android"
 			]
 		}
 	]

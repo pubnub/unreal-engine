@@ -17,25 +17,31 @@ public class PubNubModule : ModuleRules
         string PlatformLib = null;
         string binary = null;
         string BuildLocation = null;
+        
         if(Target.Platform == UnrealTargetPlatform.Win64)
         {
 	        extention = StaticLink ? "lib" : "dll";
 	        PlatformLib = OpenSsl ? "openssl" : "windows";
 	        binary = $"pubnub.{extention}";
-		    BuildLocation = "Lib/win64";
+		    BuildLocation = "lib/win64";
         }
         else if(Target.Platform == UnrealTargetPlatform.Mac)
         {
 	        extention = StaticLink ? "a" : "dylib";
 	        PlatformLib = OpenSsl ? "openssl" : "posix";
 	        binary = $"libpubnub.{extention}";
-            BuildLocation = "Lib/MacOS";
+            BuildLocation = "lib/MacOS";
         }
-        else
+        else if(Target.Platform == UnrealTargetPlatform.Android)
         {
 	        extention = StaticLink ? "a" : "so";
 	        PlatformLib = OpenSsl ? "openssl" : "posix";
 	        binary = $"libpubnub.{extention}";
+	        BuildLocation = "lib/arm64";
+        }
+        else
+        {
+	        System.Console.WriteLine("Error - this target platform is not supported");
         }
 
         if (OpenSsl) {
@@ -43,8 +49,6 @@ public class PubNubModule : ModuleRules
         }
 
 		var SDKPath = Path.Combine(new string[] { ModuleDirectory, ".." });
-		
-		
 
 		PublicAdditionalLibraries.Add(Path.Combine(SDKPath, BuildLocation, binary));
 		PublicIncludePaths.AddRange(
