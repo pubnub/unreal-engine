@@ -23,6 +23,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessa
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 
+DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponse, bool, Error, int, Status, const TArray<FString>&, Channels);
+DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponse, int, Status, FString, Message, const TArray<FString>&, Channels);
+
 
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
@@ -95,7 +98,10 @@ public:
 	void RemoveChannelFromGroup(FString ChannelName, FString ChannelGroup);
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channels")
-	void ListChannelsFromGroup(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse);
+	void ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channels")
+	void ListChannelsFromGroup_JSON(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channels")
 	void RemoveChannelGroup(FString ChannelGroup);
@@ -104,7 +110,10 @@ public:
 	void ListUsersFromChannel(FString ChannelName, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void ListUserSubscribedChannels(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
+	void ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void ListUserSubscribedChannels_JSON(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void SetState(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
@@ -289,10 +298,14 @@ private:
 	void UnsubscribeFromAll_priv();
 	void AddChannelToGroup_priv(FString ChannelName, FString ChannelGroup);
 	void RemoveChannelFromGroup_priv(FString ChannelName, FString ChannelGroup);
-	void ListChannelsFromGroup_priv(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse);
+	FString ListChannelsFromGroup_pn(FString ChannelGroup);
+	void ListChannelsFromGroup_JSON_priv(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse);
+	void ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
 	void RemoveChannelGroup_priv(FString ChannelGroup);
 	void ListUsersFromChannel_priv(FString ChannelName, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
-	void ListUserSubscribedChannels_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
+	FString ListUserSubscribedChannels_pn(FString UserID);
+	void ListUserSubscribedChannels_JSON_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
+	void ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
 	void SetState_priv(FString ChannelName, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	void GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse);
 	void Heartbeat_priv(FString ChannelName, FString ChannelGroup);
@@ -337,4 +350,5 @@ private:
 	TSharedPtr<FJsonObject> AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions);
 	TSharedPtr<FJsonObject> AddUUIDPermissionsToJson(TArray<FString> UUIDs, TArray<FPubnubUserPermissions> UUIDPermissions);
 };
+
 

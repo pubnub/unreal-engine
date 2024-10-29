@@ -168,8 +168,8 @@ struct FPubnubGrantTokenStructure
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TTLMinutes;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString AuthorizedUUID;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TTLMinutes = 0;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString AuthorizedUUID = "";
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelPermissions> ChannelPermissions;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroups;

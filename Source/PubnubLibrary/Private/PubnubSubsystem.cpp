@@ -4,7 +4,7 @@
 #include "Json.h"
 
 #include "Config/PubnubSettings.h"
-#include "FunctionLibraries/PubnubUtilities.h"
+#include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Threads/PubnubFunctionThread.h"
 #include "Threads/PubnubLoopingThread.h"
 
@@ -202,14 +202,25 @@ void UPubnubSubsystem::RemoveChannelFromGroup(FString ChannelName, FString Chann
 	});
 }
 
-void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse)
+void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, OnListChannelsResponse]
 	{
-		ListChannelsFromGroup_priv(ChannelGroup, OnListChannelsResponse);
+		ListChannelsFromGroup_DATA_priv(ChannelGroup, OnListChannelsResponse);
+	});
+}
+
+void UPubnubSubsystem::ListChannelsFromGroup_JSON(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, OnListChannelsResponse]
+	{
+		ListChannelsFromGroup_JSON_priv(ChannelGroup, OnListChannelsResponse);
 	});
 }
 
@@ -235,14 +246,25 @@ void UPubnubSubsystem::ListUsersFromChannel(FString ChannelName, FOnPubnubRespon
 	});
 }
 
-void UPubnubSubsystem::ListUserSubscribedChannels(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse)
+void UPubnubSubsystem::ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, UserID, ListUserSubscribedChannelsResponse]
 	{
-		ListUserSubscribedChannels_priv(UserID, ListUserSubscribedChannelsResponse);
+		ListUserSubscribedChannels_DATA_priv(UserID, ListUserSubscribedChannelsResponse);
+	});
+}
+
+void UPubnubSubsystem::ListUserSubscribedChannels_JSON(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UserID, ListUserSubscribedChannelsResponse]
+	{
+		ListUserSubscribedChannels_JSON_priv(UserID, ListUserSubscribedChannelsResponse);
 	});
 }
 
@@ -654,7 +676,7 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 	PermissionsJsonObject->SetObjectField("permissions", TokenStructureJsonObject);
 
 	//Convert created Json object to string
-	return UPubnubUtilities::JsonObjectToString(PermissionsJsonObject);
+	return UPubnubJsonUtilities::JsonObjectToString(PermissionsJsonObject);
 }
 
 void UPubnubSubsystem::SystemPublish(FString ChannelOpt)
@@ -1182,24 +1204,45 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString ChannelName, FString 
 	pubnub_remove_channel_from_group(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*ChannelGroup));
 }
 
-void UPubnubSubsystem::ListChannelsFromGroup_priv(FString ChannelGroup,
-	FOnPubnubResponse OnListChannelsResponse)
+FString UPubnubSubsystem::ListChannelsFromGroup_pn(FString ChannelGroup)
 {
 	if(!CheckIsUserIDSet())
-	{return;}
+	{return "";}
 
 	if(CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "ListChannelsFromGroup"))
-	{return;}
+	{return "";}
 
 	pubnub_list_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
-	FString JsonResponse = GetLastChannelResponse(ctx_pub);
+	return GetLastChannelResponse(ctx_pub);
+}
 
+void UPubnubSubsystem::ListChannelsFromGroup_JSON_priv(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse)
+{
+	FString JsonResponse = ListChannelsFromGroup_pn(ChannelGroup);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnListChannelsResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnListChannelsResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
+{
+	FString JsonResponse = ListChannelsFromGroup_pn(ChannelGroup);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnListChannelsResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		bool Error;
+		int Status;
+		TArray<FString> Channels;
+		UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(JsonResponse, Error, Status, Channels);
+		
+		//Broadcast bound delegate with parsed response
+		OnListChannelsResponse.ExecuteIfBound(Error, Status, Channels);
 	});
 }
 
@@ -1242,22 +1285,45 @@ void UPubnubSubsystem::ListUsersFromChannel_priv(FString ChannelName, FOnPubnubR
 	});
 }
 
-void UPubnubSubsystem::ListUserSubscribedChannels_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse)
+FString UPubnubSubsystem::ListUserSubscribedChannels_pn(FString UserID)
 {
 	if(!CheckIsUserIDSet())
-	{return;}
+	{return "";}
 
 	if(CheckIsFieldEmpty(UserID, "UserID", "ListUserSubscribedChannels"))
-	{return;}
+	{return "";}
 
 	pubnub_where_now(ctx_pub, TCHAR_TO_ANSI(*UserID));
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	return GetLastResponse(ctx_pub);
+}
 
+void UPubnubSubsystem::ListUserSubscribedChannels_JSON_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse)
+{
+	FString JsonResponse = ListUserSubscribedChannels_pn(UserID);
+	
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, ListUserSubscribedChannelsResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
 		ListUserSubscribedChannelsResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse)
+{
+	FString JsonResponse = ListUserSubscribedChannels_pn(UserID);
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, ListUserSubscribedChannelsResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		int Status;
+		FString Message;
+		TArray<FString> Channels;
+		UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(JsonResponse, Status, Message, Channels);
+		
+		//Broadcast bound delegate with parsed response
+		ListUserSubscribedChannelsResponse.ExecuteIfBound(Status, Message, Channels);
 	});
 }
 
