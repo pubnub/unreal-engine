@@ -31,15 +31,8 @@ void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson,
 		return;
 	}
 	
-	if(JsonObject->HasField(ANSI_TO_TCHAR("error")))
-	{
-		Error = JsonObject->GetBoolField(ANSI_TO_TCHAR("error"));
-	}
-
-	if(JsonObject->HasField(ANSI_TO_TCHAR("status")))
-	{
-		Status = JsonObject->GetIntegerField(ANSI_TO_TCHAR("status"));
-	}
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("message"), Error);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{
@@ -69,16 +62,9 @@ void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString Response
 	{
 		return;
 	}
-
-	if(JsonObject->HasField(ANSI_TO_TCHAR("status")))
-	{
-		Status = JsonObject->GetIntegerField(ANSI_TO_TCHAR("status"));
-	}
 	
-	if(JsonObject->HasField(ANSI_TO_TCHAR("message")))
-	{
-		Message = JsonObject->GetStringField(ANSI_TO_TCHAR("message"));
-	}
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Message);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{
@@ -94,6 +80,39 @@ void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString Response
 		for(auto ChannelJsonValue : ChannelsJsonValue)
 		{
 			Channels.Add(ChannelJsonValue->AsString());
+		}
+	}
+}
+
+void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, int& Status, FString& Message, FPubnubListUsersFromChannelWrapper &Data)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Message);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), Data.Occupancy);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
+	{
+		TArray<TSharedPtr<FJsonValue>> UuidsJsonValue = JsonObject->GetArrayField(ANSI_TO_TCHAR("uuids"));
+		
+		for(auto UuidJsonValue : UuidsJsonValue)
+		{
+			FString Uuid;
+			FString State;
+			//Depending on if response was set to include uuids state this will be a string field or an object field
+			if(!UuidJsonValue->TryGetString(Uuid))
+			{
+				Uuid = UuidJsonValue->AsObject()->GetStringField(ANSI_TO_TCHAR("uuid"));
+				State = UuidJsonValue->AsObject()->HasField(ANSI_TO_TCHAR("state")) ?
+					JsonObjectToString(UuidJsonValue->AsObject()->GetObjectField(ANSI_TO_TCHAR("state"))) : "";
+			}
+			Data.UuidsState.Add(Uuid, State);
 		}
 	}
 }

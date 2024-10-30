@@ -183,3 +183,12 @@ struct FPubnubGrantTokenStructure
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> UUIDPatterns;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UUIDPatternPermissions;
 };
+
+USTRUCT(BlueprintType)
+struct FPubnubListUsersFromChannelWrapper
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Occupancy = 0;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FString> UuidsState;
+};

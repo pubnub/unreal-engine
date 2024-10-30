@@ -235,14 +235,25 @@ void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup)
 	});
 }
 
-void UPubnubSubsystem::ListUsersFromChannel(FString ChannelName, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+void UPubnubSubsystem::ListUsersFromChannel(FString ChannelName, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ListUsersFromChannelResponse, ListUsersFromChannelSettings]
 	{
-		ListUsersFromChannel_priv(ChannelName, ListUsersFromChannelResponse, ListUsersFromChannelSettings);
+		ListUsersFromChannel_DATA_priv(ChannelName, ListUsersFromChannelResponse, ListUsersFromChannelSettings);
+	});
+}
+
+void UPubnubSubsystem::ListUsersFromChannel_JSON(FString ChannelName, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, ListUsersFromChannelResponse, ListUsersFromChannelSettings]
+	{
+		ListUsersFromChannel_JSON_priv(ChannelName, ListUsersFromChannelResponse, ListUsersFromChannelSettings);
 	});
 }
 
@@ -1206,18 +1217,18 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString ChannelName, FString 
 
 FString UPubnubSubsystem::ListChannelsFromGroup_pn(FString ChannelGroup)
 {
-	if(!CheckIsUserIDSet())
-	{return "";}
-
-	if(CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "ListChannelsFromGroup"))
-	{return "";}
-
 	pubnub_list_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
 	return GetLastChannelResponse(ctx_pub);
 }
 
 void UPubnubSubsystem::ListChannelsFromGroup_JSON_priv(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse)
 {
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "ListChannelsFromGroup"))
+	{return;}
+	
 	FString JsonResponse = ListChannelsFromGroup_pn(ChannelGroup);
 
 	//Delegate needs to be executed back on Game Thread
@@ -1230,6 +1241,12 @@ void UPubnubSubsystem::ListChannelsFromGroup_JSON_priv(FString ChannelGroup, FOn
 
 void UPubnubSubsystem::ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
 {
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "ListChannelsFromGroup"))
+	{return;}
+	
 	FString JsonResponse = ListChannelsFromGroup_pn(ChannelGroup);
 
 	//Delegate needs to be executed back on Game Thread
@@ -1257,14 +1274,8 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
 	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
 }
 
-void UPubnubSubsystem::ListUsersFromChannel_priv(FString ChannelName, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+FString UPubnubSubsystem::ListUsersFromChannel_pn(FString ChannelName, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
-	if(!CheckIsUserIDSet())
-	{return;}
-	
-	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "ListUsersFromChannel"))
-	{return;}
-
 	//Set all options from ListUsersFromChannelSettings
 	
 	//Converted char needs to live in function scope, so we need to create it here
@@ -1275,7 +1286,18 @@ void UPubnubSubsystem::ListUsersFromChannel_priv(FString ChannelName, FOnPubnubR
 	HereNowUESettingsToPubnubHereNowOptions(ListUsersFromChannelSettings, HereNowOptions);
 	
 	pubnub_here_now_ex(ctx_pub, TCHAR_TO_ANSI(*ChannelName), HereNowOptions);
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	return GetLastResponse(ctx_pub);
+}
+
+void UPubnubSubsystem::ListUsersFromChannel_JSON_priv(FString ChannelName, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "ListUsersFromChannel"))
+	{return;}
+	
+	FString JsonResponse = ListUsersFromChannel_pn(ChannelName, ListUsersFromChannelSettings);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, ListUsersFromChannelResponse, JsonResponse]()
@@ -1285,20 +1307,44 @@ void UPubnubSubsystem::ListUsersFromChannel_priv(FString ChannelName, FOnPubnubR
 	});
 }
 
-FString UPubnubSubsystem::ListUserSubscribedChannels_pn(FString UserID)
+void UPubnubSubsystem::ListUsersFromChannel_DATA_priv(FString ChannelName, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
 	if(!CheckIsUserIDSet())
-	{return "";}
+	{return;}
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "ListUsersFromChannel"))
+	{return;}
+	
+	FString JsonResponse = ListUsersFromChannel_pn(ChannelName, ListUsersFromChannelSettings);
 
-	if(CheckIsFieldEmpty(UserID, "UserID", "ListUserSubscribedChannels"))
-	{return "";}
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, ListUsersFromChannelResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		int Status;
+		FString Message;
+		FPubnubListUsersFromChannelWrapper Data;
+		UPubnubJsonUtilities::ListUsersFromChannelJsonToData(JsonResponse, Status, Message, Data);
+		
+		//Broadcast bound delegate with parsed response
+		ListUsersFromChannelResponse.ExecuteIfBound(Status, Message, Data);
+	});
+}
 
+FString UPubnubSubsystem::ListUserSubscribedChannels_pn(FString UserID)
+{
 	pubnub_where_now(ctx_pub, TCHAR_TO_ANSI(*UserID));
 	return GetLastResponse(ctx_pub);
 }
 
 void UPubnubSubsystem::ListUserSubscribedChannels_JSON_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse)
 {
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(UserID, "UserID", "ListUserSubscribedChannels"))
+	{return;}
+
 	FString JsonResponse = ListUserSubscribedChannels_pn(UserID);
 	
 	//Delegate needs to be executed back on Game Thread
@@ -1311,6 +1357,12 @@ void UPubnubSubsystem::ListUserSubscribedChannels_JSON_priv(FString UserID, FOnP
 
 void UPubnubSubsystem::ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse)
 {
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(UserID, "UserID", "ListUserSubscribedChannels"))
+	{return;}
+
 	FString JsonResponse = ListUserSubscribedChannels_pn(UserID);
 	
 	//Delegate needs to be executed back on Game Thread
