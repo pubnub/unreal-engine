@@ -192,3 +192,29 @@ struct FPubnubListUsersFromChannelWrapper
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Occupancy = 0;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FString> UuidsState;
 };
+
+USTRUCT(BlueprintType)
+struct FPNMessageAction
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Value = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ActionTimetoken = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MessageTimetoken = "";
+	
+};
+
+USTRUCT(BlueprintType)
+struct FPNMessage
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Message = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Timetoken = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Meta = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MessageType = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPNMessageAction> MessageActions;
+};

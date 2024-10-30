@@ -356,14 +356,25 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 	});
 }
 
-void UPubnubSubsystem::FetchHistory(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+void UPubnubSubsystem::FetchHistory(FString ChannelName, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName, OnFetchHistoryResponse, FetchHistorySettings]
 	{
-		FetchHistory_priv(ChannelName, OnFetchHistoryResponse, FetchHistorySettings);
+		FetchHistory_DATA_priv(ChannelName, OnFetchHistoryResponse, FetchHistorySettings);
+	});
+}
+
+void UPubnubSubsystem::FetchHistory_JSON(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, OnFetchHistoryResponse, FetchHistorySettings]
+	{
+		FetchHistory_JSON_priv(ChannelName, OnFetchHistoryResponse, FetchHistorySettings);
 	});
 }
 
@@ -1544,14 +1555,8 @@ void UPubnubSubsystem::SetAuthToken_priv(FString Token)
 	}
 }
 
-void UPubnubSubsystem::FetchHistory_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+FString UPubnubSubsystem::FetchHistory_pn(FString ChannelName, FPubnubFetchHistorySettings FetchHistorySettings)
 {
-	if(!CheckIsUserIDSet())
-	{return;}
-
-	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "FetchHistory"))
-	{return;}
-
 	//Set all options from HistorySettings
 
 	//Converted char needs to live in function scope, so we need to create it here
@@ -1565,13 +1570,49 @@ void UPubnubSubsystem::FetchHistory_priv(FString ChannelName, FOnPubnubResponse 
 	
 	pubnub_fetch_history(ctx_pub, TCHAR_TO_ANSI(*ChannelName), FetchHistoryOptions);
 
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	return GetLastResponse(ctx_pub);
+}
+
+void UPubnubSubsystem::FetchHistory_JSON_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "FetchHistory"))
+	{return;}
+	
+	FString JsonResponse = FetchHistory_pn(ChannelName, FetchHistorySettings);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnFetchHistoryResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnFetchHistoryResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::FetchHistory_DATA_priv(FString ChannelName, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "FetchHistory"))
+	{return;}
+	
+	FString JsonResponse = FetchHistory_pn(ChannelName, FetchHistorySettings);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnFetchHistoryResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		bool Error;
+		int Status;
+		FString ErrorMessage;
+		TArray<FPNMessage> Messages;
+		UPubnubJsonUtilities::FetchHistoryJsonToData(JsonResponse, Error, Status, ErrorMessage, Messages);
+				
+		//Broadcast bound delegate with parsed response
+		OnFetchHistoryResponse.ExecuteIfBound(Error, Status, ErrorMessage, Messages);
 	});
 }
 

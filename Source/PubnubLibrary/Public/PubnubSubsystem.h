@@ -26,7 +26,7 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponse, bool, Error, int, Status, const TArray<FString>&, Channels);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponse, int, Status, FString, Message, const TArray<FString>&, Channels);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersFromChannelResponse, int, Status, FString, Message, FPubnubListUsersFromChannelWrapper, Data);
-
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnFetchHistoryResponse, bool, Error, int, Status, FString, ErrorMessage, const TArray<FPNMessage>&, Messages);
 
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
@@ -141,7 +141,10 @@ public:
 	void SetAuthToken(FString Token);
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
-	void FetchHistory(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void FetchHistory(FString ChannelName, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
+	void FetchHistory_JSON(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessagePersistence")
 	void MessageCounts(FString ChannelName, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
@@ -319,7 +322,9 @@ private:
 	void RevokeToken_priv(FString Token);
 	void ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse);
 	void SetAuthToken_priv(FString Token);
-	void FetchHistory_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	FString FetchHistory_pn(FString ChannelName, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void FetchHistory_JSON_priv(FString ChannelName, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void FetchHistory_DATA_priv(FString ChannelName, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void MessageCounts_priv(FString ChannelName, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
 	void GetAllUUIDMetadata_priv(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void SetUUIDMetadata_priv(FString UUIDMetadataID, FString UUIDMetadataObj, FString Include);

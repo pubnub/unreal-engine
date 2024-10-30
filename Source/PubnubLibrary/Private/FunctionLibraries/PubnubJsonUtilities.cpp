@@ -32,7 +32,7 @@ void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson,
 	}
 	
 	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
-	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("message"), Error);
+	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), Error);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{
@@ -116,3 +116,75 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 		}
 	}
 }
+
+void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Error, int& Status, FString& ErrorMessage, TArray<FPNMessage> &Messages)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+
+	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), Error);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("error_message"), ErrorMessage);
+
+	if(!JsonObject->HasField(ANSI_TO_TCHAR("channels")))
+	{
+		return;
+	}
+
+	TSharedPtr<FJsonObject> ChannelsJsonObject = JsonObject->GetObjectField(ANSI_TO_TCHAR("channels"));
+	
+	for(auto Iterator = ChannelsJsonObject->Values.CreateIterator(); Iterator; ++Iterator)
+	{
+		TSharedPtr<FJsonValue> ChannelJsonValue = Iterator.Value();
+		
+		//Iterate through all messages from the response
+		for(auto MessageValue : ChannelJsonValue->AsArray())
+		{
+			FPNMessage CurrentMessage;
+			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message);
+			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("uuid"), CurrentMessage.UserID);
+			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("timetoken"), CurrentMessage.Timetoken);
+			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message_type"), CurrentMessage.MessageType);
+			if(!MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("meta"), CurrentMessage.Meta))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Reading Meta as Json Object"));
+				const TSharedPtr<FJsonObject>* MetaJsonObject;
+				if(MessageValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("meta"), MetaJsonObject))
+				{
+					CurrentMessage.Meta = JsonObjectToString(*MetaJsonObject);
+				}
+			}
+
+			//Iterate through all message actions from the message
+			const TSharedPtr<FJsonObject>* MessageActionsJsonObject;
+			if(MessageValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("actions"), MessageActionsJsonObject))
+			{
+				FPNMessageAction CurrentMessageAction;
+				CurrentMessageAction.MessageTimetoken = CurrentMessage.Timetoken;
+				for(auto ActionsTypeIterator = MessageActionsJsonObject->Get()->Values.CreateIterator(); ActionsTypeIterator; ++ActionsTypeIterator)
+				{
+					CurrentMessageAction.Type = ActionsTypeIterator.Key();
+					for(auto ActionsValueIterator = ActionsTypeIterator.Value()->AsObject()->Values.CreateIterator(); ActionsValueIterator; ++ActionsValueIterator)
+					{
+						CurrentMessageAction.Value = ActionsValueIterator.Key();
+						for(auto MessageActionValue : ActionsValueIterator.Value()->AsArray())
+						{
+							MessageActionValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("uuid"), CurrentMessageAction.UserID);
+							MessageActionValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("actionTimetoken"), CurrentMessageAction.ActionTimetoken);
+							CurrentMessage.MessageActions.Add(CurrentMessageAction);
+						}
+					}
+				}
+			}
+
+			Messages.Add(CurrentMessage);
+		}
+		//At the moment C-Core and UE SDK support Fetching history from one channel. 
+		break;
+	}
+}
+

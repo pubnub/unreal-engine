@@ -32,4 +32,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void ListUsersFromChannelJsonToData(FString ResponseJson, int &Status, FString &Message, FPubnubListUsersFromChannelWrapper &Data);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static void FetchHistoryJsonToData(FString ResponseJson, bool &Error, int &Status, FString &ErrorMessage, TArray<FPNMessage> &Messages);
+	
 };
