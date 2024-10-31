@@ -1743,7 +1743,7 @@ void UPubnubSubsystem::GetAllUUIDMetadata_DATA_priv(FOnGetAllUUIDMetadataRespons
 		TArray<FPubnubUserData> UsersData;
 		FString PageNext;
 		FString PagePrev;
-		UPubnubJsonUtilities::FOnGetAllUUIDMetadataJsonToData(JsonResponse, Status, UsersData, PageNext, PagePrev);
+		UPubnubJsonUtilities::GetAllUUIDMetadataJsonToData(JsonResponse, Status, UsersData, PageNext, PagePrev);
 						
 		//Broadcast bound delegate with parsed response
 		OnGetAllUUIDMetadataResponse.ExecuteIfBound(Status, UsersData, PageNext, PagePrev);
@@ -1808,7 +1808,7 @@ void UPubnubSubsystem::GetUUIDMetadata_DATA_priv(FString UUIDMetadataID, FOnGetU
 		//Parse Json response into data
 		int Status;
 		FPubnubUserData UserData;
-		UPubnubJsonUtilities::FOnGetUUIDMetadataJsonToData(JsonResponse, Status, UserData);
+		UPubnubJsonUtilities::GetUUIDMetadataJsonToData(JsonResponse, Status, UserData);
 								
 		//Broadcast bound delegate with parsed response
 		OnGetUUIDMetadataResponse.ExecuteIfBound(Status, UserData);
@@ -1883,7 +1883,7 @@ void UPubnubSubsystem::GetAllChannelMetadata_DATA_priv(FOnGetAllChannelMetadataR
 		TArray<FPubnubChannelData> ChannelsData;
 		FString PageNext;
 		FString PagePrev;
-		UPubnubJsonUtilities::FOnGetAllChannelMetadataJsonToData(JsonResponse, Status, ChannelsData, PageNext, PagePrev);
+		UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(JsonResponse, Status, ChannelsData, PageNext, PagePrev);
 								
 		//Broadcast bound delegate with parsed response
 		OnGetAllChannelMetadataResponse.ExecuteIfBound(Status, ChannelsData, PageNext, PagePrev);
@@ -1948,7 +1948,7 @@ void UPubnubSubsystem::GetChannelMetadata_DATA_priv(FString ChannelMetadataID, F
 		//Parse Json response into data
 		int Status;
 		FPubnubChannelData ChannelData;
-		UPubnubJsonUtilities::FOnGetChannelMetadataJsonToData(JsonResponse, Status, ChannelData);
+		UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, Status, ChannelData);
 								
 		//Broadcast bound delegate with parsed response
 		OnGetChannelMetadataResponse.ExecuteIfBound(Status, ChannelData);
@@ -2247,7 +2247,7 @@ void UPubnubSubsystem::GetMessageActions_DATA_priv(FString ChannelName, FString 
 		//Parse Json response into data
 		int Status;
 		TArray<FPubnubMessageActionData> MessageActions;
-		UPubnubJsonUtilities::FOnGetMessageActionsJsonToData(JsonResponse, Status, MessageActions);
+		UPubnubJsonUtilities::GetMessageActionsJsonToData(JsonResponse, Status, MessageActions);
 										
 		//Broadcast bound delegate with parsed response
 		OnGetMessageActionsResponse.ExecuteIfBound(Status, MessageActions);

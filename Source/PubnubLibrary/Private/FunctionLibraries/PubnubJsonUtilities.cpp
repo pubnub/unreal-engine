@@ -188,7 +188,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 	}
 }
 
-void UPubnubJsonUtilities::FOnGetAllUUIDMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetAllUUIDMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -213,7 +213,7 @@ void UPubnubJsonUtilities::FOnGetAllUUIDMetadataJsonToData(FString ResponseJson,
 	}
 }
 
-void UPubnubJsonUtilities::FOnGetUUIDMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
+void UPubnubJsonUtilities::GetUUIDMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -234,7 +234,7 @@ void UPubnubJsonUtilities::FOnGetUUIDMetadataJsonToData(FString ResponseJson, in
 	}
 }
 
-void UPubnubJsonUtilities::FOnGetAllChannelMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubChannelData>& ChannelsData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubChannelData>& ChannelsData, FString& PageNext, FString& PagePrev)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -259,7 +259,7 @@ void UPubnubJsonUtilities::FOnGetAllChannelMetadataJsonToData(FString ResponseJs
 	}
 }
 
-void UPubnubJsonUtilities::FOnGetChannelMetadataJsonToData(FString ResponseJson, int& Status, FPubnubChannelData& ChannelData)
+void UPubnubJsonUtilities::GetChannelMetadataJsonToData(FString ResponseJson, int& Status, FPubnubChannelData& ChannelData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -280,7 +280,7 @@ void UPubnubJsonUtilities::FOnGetChannelMetadataJsonToData(FString ResponseJson,
 	}
 }
 
-void UPubnubJsonUtilities::FOnGetMessageActionsJsonToData(FString ResponseJson, int& Status, TArray<FPubnubMessageActionData>& MessageActions)
+void UPubnubJsonUtilities::GetMessageActionsJsonToData(FString ResponseJson, int& Status, TArray<FPubnubMessageActionData>& MessageActions)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 

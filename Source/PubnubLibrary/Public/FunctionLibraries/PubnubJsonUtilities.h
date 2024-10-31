@@ -37,19 +37,19 @@ public:
 	static void FetchHistoryJsonToData(FString ResponseJson, bool &Error, int &Status, FString &ErrorMessage, TArray<FPubnubMessageData> &Messages);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void FOnGetAllUUIDMetadataJsonToData(FString ResponseJson, int &Status, TArray<FPubnubUserData> &UsersData, FString &PageNext, FString &PagePrev);
+	static void GetAllUUIDMetadataJsonToData(FString ResponseJson, int &Status, TArray<FPubnubUserData> &UsersData, FString &PageNext, FString &PagePrev);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void FOnGetUUIDMetadataJsonToData(FString ResponseJson, int &Status, FPubnubUserData &UserData);
+	static void GetUUIDMetadataJsonToData(FString ResponseJson, int &Status, FPubnubUserData &UserData);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void FOnGetAllChannelMetadataJsonToData(FString ResponseJson, int &Status, TArray<FPubnubChannelData> &ChannelsData, FString &PageNext, FString &PagePrev);
+	static void GetAllChannelMetadataJsonToData(FString ResponseJson, int &Status, TArray<FPubnubChannelData> &ChannelsData, FString &PageNext, FString &PagePrev);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void FOnGetChannelMetadataJsonToData(FString ResponseJson, int &Status, FPubnubChannelData &ChannelData);
+	static void GetChannelMetadataJsonToData(FString ResponseJson, int &Status, FPubnubChannelData &ChannelData);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void FOnGetMessageActionsJsonToData(FString ResponseJson, int &Status, TArray<FPubnubMessageActionData> &MessageActions);
+	static void GetMessageActionsJsonToData(FString ResponseJson, int &Status, TArray<FPubnubMessageActionData> &MessageActions);
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FPubnubUserData GetUserDataFromJson(FString ResponseJson);
