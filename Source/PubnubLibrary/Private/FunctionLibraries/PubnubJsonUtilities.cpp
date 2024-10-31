@@ -188,3 +188,80 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 	}
 }
 
+void UPubnubJsonUtilities::FOnGetAllUUIDMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+	
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{
+		TArray<TSharedPtr<FJsonValue>> UuidsJsonValue = JsonObject->GetArrayField(ANSI_TO_TCHAR("data"));
+		
+		for(auto UuidJsonValue : UuidsJsonValue)
+		{
+			FPubnubUserData CurrentUuidData = GetUserDataFromJson(JsonObjectToString(UuidJsonValue->AsObject()));
+			UsersData.Add(CurrentUuidData);
+		}
+	}
+	
+}
+
+void UPubnubJsonUtilities::FOnGetUUIDMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+	
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{
+		const TSharedPtr<FJsonObject> *DataJsonObject;
+		if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("data"), DataJsonObject))
+		{
+			UserData = GetUserDataFromJson(JsonObjectToString(*DataJsonObject));
+		}
+	}
+}
+
+FPubnubUserData UPubnubJsonUtilities::GetUserDataFromJson(FString ResponseJson)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return FPubnubUserData();
+	}
+
+	FPubnubUserData UserData;
+
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("id"), UserData.UserID);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("name"), UserData.UserName);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("externalId"), UserData.ExternalID);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("profileUrl"), UserData.ProfileUrl);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("email"), UserData.Email);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("status"), UserData.Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("type"), UserData.Type);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("updated"), UserData.Updated);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("eTag"), UserData.ETag);
+
+	const TSharedPtr<FJsonObject> *CustomJsonObject;
+	if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
+	{
+		UserData.Custom = JsonObjectToString(*CustomJsonObject);
+	}
+
+	return UserData;
+}
+

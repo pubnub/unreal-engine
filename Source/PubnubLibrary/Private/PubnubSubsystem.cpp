@@ -389,14 +389,25 @@ void UPubnubSubsystem::MessageCounts(FString ChannelName, FString Timetoken, FOn
 	});
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetAllUUIDMetadata(FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetAllUUIDMetadata_priv(OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetAllUUIDMetadata_DATA_priv(OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+	});
+}
+
+void UPubnubSubsystem::GetAllUUIDMetadata_JSON(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	{
+		GetAllUUIDMetadata_JSON_priv(OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
@@ -411,14 +422,25 @@ void UPubnubSubsystem::SetUUIDMetadata(FString UUIDMetadataID, FString UUIDMetad
 	});
 }
 
-void UPubnubSubsystem::GetUUIDMetadata(FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse, FString Include)
+void UPubnubSubsystem::GetUUIDMetadata(FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetUUIDMetadataResponse, Include]
 	{
-		GetUUIDMetadata_priv(UUIDMetadataID, OnGetUUIDMetadataResponse, Include);
+		GetUUIDMetadata_DATA_priv(UUIDMetadataID, OnGetUUIDMetadataResponse, Include);
+	});
+}
+
+void UPubnubSubsystem::GetUUIDMetadata_JSON(FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse, FString Include)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetUUIDMetadataResponse, Include]
+	{
+		GetUUIDMetadata_JSON_priv(UUIDMetadataID, OnGetUUIDMetadataResponse, Include);
 	});
 }
 
@@ -1637,11 +1659,8 @@ void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FString Timetoken
 	});
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata_priv(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+FString UPubnubSubsystem::GetAllUUIDMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
-	if(!CheckIsUserIDSet())
-	{return;}
-
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
 	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
 	PubnubOptions.include = CharConverterInclude.Get();
@@ -1658,13 +1677,43 @@ void UPubnubSubsystem::GetAllUUIDMetadata_priv(FOnPubnubResponse OnGetAllUUIDMet
 	
 	pubnub_getall_uuidmetadata_ex(ctx_pub, PubnubOptions);
 
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	return GetLastResponse(ctx_pub);
+}
+
+void UPubnubSubsystem::GetAllUUIDMetadata_JSON_priv(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+	
+	FString JsonResponse = GetAllUUIDMetadata_pn(Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllUUIDMetadataResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnGetAllUUIDMetadataResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::GetAllUUIDMetadata_DATA_priv(FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	FString JsonResponse = GetAllUUIDMetadata_pn(Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllUUIDMetadataResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		int Status;
+		TArray<FPubnubUserData> UsersData;
+		FString PageNext;
+		FString PagePrev;
+		UPubnubJsonUtilities::FOnGetAllUUIDMetadataJsonToData(JsonResponse, Status, UsersData, PageNext, PagePrev);
+						
+		//Broadcast bound delegate with parsed response
+		OnGetAllUUIDMetadataResponse.ExecuteIfBound(Status, UsersData, PageNext, PagePrev);
 	});
 }
 
@@ -1685,7 +1734,32 @@ void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString UUID
 	}
 }
 
-void UPubnubSubsystem::GetUUIDMetadata_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse, FString Include)
+FString UPubnubSubsystem::GetUUIDMetadata_pn(FString UUIDMetadataID, FString Include)
+{
+	pubnub_get_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataID));
+
+	return GetLastResponse(ctx_pub);
+}
+
+void UPubnubSubsystem::GetUUIDMetadata_JSON_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse, FString Include)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetUUIDMetadata"))
+	{return;}
+	
+	FString JsonResponse = GetUUIDMetadata_pn(UUIDMetadataID, Include);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetUUIDMetadataResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnGetUUIDMetadataResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::GetUUIDMetadata_DATA_priv(FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1693,15 +1767,18 @@ void UPubnubSubsystem::GetUUIDMetadata_priv(FString UUIDMetadataID, FOnPubnubRes
 	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetUUIDMetadata"))
 	{return;}
 
-	pubnub_get_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataID));
-
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	FString JsonResponse = GetUUIDMetadata_pn(UUIDMetadataID, Include);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetUUIDMetadataResponse, JsonResponse]()
 	{
-		//Broadcast bound delegate with JsonResponse
-		OnGetUUIDMetadataResponse.ExecuteIfBound(JsonResponse);
+		//Parse Json response into data
+		int Status;
+		FPubnubUserData UserData;
+		UPubnubJsonUtilities::FOnGetUUIDMetadataJsonToData(JsonResponse, Status, UserData);
+								
+		//Broadcast bound delegate with parsed response
+		OnGetUUIDMetadataResponse.ExecuteIfBound(Status, UserData);
 	});
 }
 
