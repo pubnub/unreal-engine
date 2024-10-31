@@ -117,7 +117,7 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 	}
 }
 
-void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Error, int& Status, FString& ErrorMessage, TArray<FPNMessage> &Messages)
+void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Error, int& Status, FString& ErrorMessage, TArray<FPubnubMessageData> &Messages)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -144,7 +144,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 		//Iterate through all messages from the response
 		for(auto MessageValue : ChannelJsonValue->AsArray())
 		{
-			FPNMessage CurrentMessage;
+			FPubnubMessageData CurrentMessage;
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("uuid"), CurrentMessage.UserID);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("timetoken"), CurrentMessage.Timetoken);
@@ -163,7 +163,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 			const TSharedPtr<FJsonObject>* MessageActionsJsonObject;
 			if(MessageValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("actions"), MessageActionsJsonObject))
 			{
-				FPNMessageAction CurrentMessageAction;
+				FPubnubMessageActionData CurrentMessageAction;
 				CurrentMessageAction.MessageTimetoken = CurrentMessage.Timetoken;
 				for(auto ActionsTypeIterator = MessageActionsJsonObject->Get()->Values.CreateIterator(); ActionsTypeIterator; ++ActionsTypeIterator)
 				{
@@ -211,7 +211,6 @@ void UPubnubJsonUtilities::FOnGetAllUUIDMetadataJsonToData(FString ResponseJson,
 			UsersData.Add(CurrentUuidData);
 		}
 	}
-	
 }
 
 void UPubnubJsonUtilities::FOnGetUUIDMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
@@ -231,6 +230,52 @@ void UPubnubJsonUtilities::FOnGetUUIDMetadataJsonToData(FString ResponseJson, in
 		if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("data"), DataJsonObject))
 		{
 			UserData = GetUserDataFromJson(JsonObjectToString(*DataJsonObject));
+		}
+	}
+}
+
+void UPubnubJsonUtilities::FOnGetAllChannelMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubChannelData>& ChannelsData, FString& PageNext, FString& PagePrev)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+	
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{
+		TArray<TSharedPtr<FJsonValue>> ChannelsJsonValue = JsonObject->GetArrayField(ANSI_TO_TCHAR("data"));
+		
+		for(auto ChannelJsonValue : ChannelsJsonValue)
+		{
+			FPubnubChannelData CurrentChannelData = GetChannelDataFromJson(JsonObjectToString(ChannelJsonValue->AsObject()));
+			ChannelsData.Add(CurrentChannelData);
+		}
+	}
+}
+
+void UPubnubJsonUtilities::FOnGetChannelMetadataJsonToData(FString ResponseJson, int& Status, FPubnubChannelData& ChannelData)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+	
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{
+		const TSharedPtr<FJsonObject> *DataJsonObject;
+		if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("data"), DataJsonObject))
+		{
+			ChannelData = GetChannelDataFromJson(JsonObjectToString(*DataJsonObject));
 		}
 	}
 }
@@ -263,5 +308,33 @@ FPubnubUserData UPubnubJsonUtilities::GetUserDataFromJson(FString ResponseJson)
 	}
 
 	return UserData;
+}
+
+FPubnubChannelData UPubnubJsonUtilities::GetChannelDataFromJson(FString ResponseJson)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return FPubnubChannelData();
+	}
+
+	FPubnubChannelData ChannelData;
+
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("id"), ChannelData.ChannelID);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("name"), ChannelData.ChannelName);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("description"), ChannelData.Description);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("status"), ChannelData.Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("type"), ChannelData.Type);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("updated"), ChannelData.Updated);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("eTag"), ChannelData.ETag);
+
+	const TSharedPtr<FJsonObject> *CustomJsonObject;
+	if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
+	{
+		ChannelData.Custom = JsonObjectToString(*CustomJsonObject);
+	}
+
+	return ChannelData;
 }
 
