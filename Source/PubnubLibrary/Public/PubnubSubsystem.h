@@ -32,7 +32,7 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetUUIDMetadataResponse, int, Status, FPub
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, int, Status, const TArray<FPubnubChannelData>&, ChannelsData, FString, PageNext, FString, PagePrev);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetChannelMetadataResponse, int, Status, FPubnubChannelData, ChannelData);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, int, Status, const TArray<FPubnubMessageActionData>&, MessageActions);
-
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddMessageActionsResponse, FString, MessageActionTimetoken);
 
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
@@ -213,7 +213,7 @@ public:
 	void RemoveChannelMembers(FString ChannelMetadataID, FString RemoveObj, FString Include = "");
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
-	void AddMessageAction(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubResponse AddActionResponse);
+	void AddMessageAction(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse);
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|MessageActions")
 	void GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
@@ -370,7 +370,7 @@ private:
 	void AddChannelMembers_priv(FString ChannelMetadataID, FString AddObj, FString Include);
 	void SetChannelMembers_priv(FString ChannelMetadataID, FString SetObj, FString Include);
 	void RemoveChannelMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj);
-	void AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubResponse AddActionResponse);
+	void AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse);
 	void RemoveMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionTimetoken);
 	FString GetMessageActions_pn(FString ChannelName, FString Start, FString End, int SizeLimit);
 	void GetMessageActions_JSON_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);

@@ -598,7 +598,7 @@ void UPubnubSubsystem::RemoveChannelMembers(FString ChannelMetadataID, FString R
 	});
 }
 
-void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubResponse AddActionResponse)
+void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
@@ -2129,7 +2129,7 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString ChannelMetadataID, FStr
 	}
 }
 
-void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubResponse AddActionResponse)
+void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2149,13 +2149,16 @@ void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString Messag
 	{
 		return;
 	}
-	FString JsonResponse(AddMessageActionResponse.ptr);
+	FString ActionTimetoken(AddMessageActionResponse.ptr);
+	//C-Core returns action timetoken in format: "17303705496647270"}} so we need to clean it up and get pure timetoken
+	ActionTimetoken = ActionTimetoken.RightChop(1);
+	ActionTimetoken = ActionTimetoken.LeftChop(3);
 	
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, AddActionResponse, JsonResponse]()
+	AsyncTask(ENamedThreads::GameThread, [this, AddActionResponse, ActionTimetoken]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		AddActionResponse.ExecuteIfBound(JsonResponse);
+		AddActionResponse.ExecuteIfBound(ActionTimetoken);
 	});
 }
 
