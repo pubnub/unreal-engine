@@ -609,14 +609,25 @@ void UPubnubSubsystem::AddMessageAction(FString ChannelName, FString MessageTime
 	});
 }
 
-void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
+void UPubnubSubsystem::GetMessageActions(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Start, End, SizeLimit, OnGetMessageActionsResponse]
 	{
-		GetMessageActions_priv(ChannelName, Start, End, SizeLimit, OnGetMessageActionsResponse);
+		GetMessageActions_DATA_priv(ChannelName, Start, End, SizeLimit, OnGetMessageActionsResponse);
+	});
+}
+
+void UPubnubSubsystem::GetMessageActions_JSON(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelName, Start, End, SizeLimit, OnGetMessageActionsResponse]
+	{
+		GetMessageActions_JSON_priv(ChannelName, Start, End, SizeLimit, OnGetMessageActionsResponse);
 	});
 }
 
@@ -2192,7 +2203,14 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString ChannelName, FString Mes
 	delete[] action_timetoken_char;
 }
 
-void UPubnubSubsystem::GetMessageActions_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
+FString UPubnubSubsystem::GetMessageActions_pn(FString ChannelName, FString Start, FString End, int SizeLimit)
+{
+	pubnub_get_message_actions(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), SizeLimit);
+	
+	return GetLastResponse(ctx_pub);
+}
+
+void UPubnubSubsystem::GetMessageActions_JSON_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2200,15 +2218,36 @@ void UPubnubSubsystem::GetMessageActions_priv(FString ChannelName, FString Start
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "HistoryWithMessageActions"))
 	{return;}
 
-	pubnub_get_message_actions(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), SizeLimit);
-	
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	FString JsonResponse = GetMessageActions_pn(ChannelName, Start, End, SizeLimit);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetMessageActionsResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnGetMessageActionsResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::GetMessageActions_DATA_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+	
+	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "HistoryWithMessageActions"))
+	{return;}
+
+	FString JsonResponse = GetMessageActions_pn(ChannelName, Start, End, SizeLimit);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetMessageActionsResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		int Status;
+		TArray<FPubnubMessageActionData> MessageActions;
+		UPubnubJsonUtilities::FOnGetMessageActionsJsonToData(JsonResponse, Status, MessageActions);
+										
+		//Broadcast bound delegate with parsed response
+		OnGetMessageActionsResponse.ExecuteIfBound(Status, MessageActions);
 	});
 }
 

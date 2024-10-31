@@ -280,6 +280,35 @@ void UPubnubJsonUtilities::FOnGetChannelMetadataJsonToData(FString ResponseJson,
 	}
 }
 
+void UPubnubJsonUtilities::FOnGetMessageActionsJsonToData(FString ResponseJson, int& Status, TArray<FPubnubMessageActionData>& MessageActions)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+	
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{
+		TArray<TSharedPtr<FJsonValue>> ActionsJsonValue = JsonObject->GetArrayField(ANSI_TO_TCHAR("data"));
+		
+		for(auto ActionJsonValue : ActionsJsonValue)
+		{
+			FPubnubMessageActionData CurrentMessageAction;
+			ActionJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("messageTimetoken"), CurrentMessageAction.MessageTimetoken);
+			ActionJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("type"), CurrentMessageAction.Type);
+			ActionJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("uuid"), CurrentMessageAction.UserID);
+			ActionJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("value"), CurrentMessageAction.Value);
+			ActionJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("actionTimetoken"), CurrentMessageAction.ActionTimetoken);
+
+			MessageActions.Add(CurrentMessageAction);
+		}
+	}
+}
+
 FPubnubUserData UPubnubJsonUtilities::GetUserDataFromJson(FString ResponseJson)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);

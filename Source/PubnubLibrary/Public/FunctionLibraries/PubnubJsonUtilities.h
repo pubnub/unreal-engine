@@ -47,6 +47,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void FOnGetChannelMetadataJsonToData(FString ResponseJson, int &Status, FPubnubChannelData &ChannelData);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static void FOnGetMessageActionsJsonToData(FString ResponseJson, int &Status, TArray<FPubnubMessageActionData> &MessageActions);
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FPubnubUserData GetUserDataFromJson(FString ResponseJson);
