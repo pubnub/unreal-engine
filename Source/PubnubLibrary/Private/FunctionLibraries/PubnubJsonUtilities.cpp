@@ -6,6 +6,11 @@
 
 FString UPubnubJsonUtilities::JsonObjectToString(TSharedPtr<FJsonObject> JsonObject)
 {
+	if(!JsonObject)
+	{
+		return "";
+	}
+	
 	FString JsonString;
 	TSharedRef< TJsonWriter<> > JsonWriter = TJsonWriterFactory<>::Create(&JsonString);
 	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
@@ -305,6 +310,90 @@ void UPubnubJsonUtilities::GetMessageActionsJsonToData(FString ResponseJson, int
 			ActionJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("actionTimetoken"), CurrentMessageAction.ActionTimetoken);
 
 			MessageActions.Add(CurrentMessageAction);
+		}
+	}
+}
+
+void UPubnubJsonUtilities::GetMembershipsJsonToData(FString ResponseJson, int& Status, TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString& PageNext, FString& PagePrev)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+	
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{
+		TArray<TSharedPtr<FJsonValue>> MembershipsJsonValue = JsonObject->GetArrayField(ANSI_TO_TCHAR("data"));
+		
+		for(auto MembershipJsonValue : MembershipsJsonValue)
+		{
+			FPubnubGetMembershipsWrapper CurrentMembership;
+			const TSharedPtr<FJsonObject>* ChannelJsonObject;
+			if(MembershipJsonValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("channel"), ChannelJsonObject))
+			{
+				CurrentMembership.Channel = GetChannelDataFromJson(JsonObjectToString(*ChannelJsonObject));
+			}
+			
+			const TSharedPtr<FJsonObject>* CustomJsonObject;
+			if(MembershipJsonValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
+			{
+				CurrentMembership.Custom = JsonObjectToString(*CustomJsonObject);
+			}
+			
+			MembershipJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("status"), CurrentMembership.Status);
+			MembershipJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("type"), CurrentMembership.Type);
+			MembershipJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("updated"), CurrentMembership.Updated);
+			MembershipJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("eTag"), CurrentMembership.ETag);
+
+			MembershipsData.Add(CurrentMembership);
+		}
+	}
+}
+
+void UPubnubJsonUtilities::GetChannelMembersJsonToData(FString ResponseJson, int& Status, TArray<FPubnubGetChannelMembersWrapper>& MembershipsData, FString& PageNext, FString& PagePrev)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return;
+	}
+	
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{
+		TArray<TSharedPtr<FJsonValue>> MembershipsJsonValue = JsonObject->GetArrayField(ANSI_TO_TCHAR("data"));
+		
+		for(auto MembershipJsonValue : MembershipsJsonValue)
+		{
+			FPubnubGetChannelMembersWrapper CurrentMembership;
+			const TSharedPtr<FJsonObject>* UserJsonObject;
+			if(MembershipJsonValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("uuid"), UserJsonObject))
+			{
+				CurrentMembership.User = GetUserDataFromJson(JsonObjectToString(*UserJsonObject));
+			}
+			
+			const TSharedPtr<FJsonObject>* CustomJsonObject;
+			if(MembershipJsonValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
+			{
+				CurrentMembership.Custom = JsonObjectToString(*CustomJsonObject);
+			}
+			
+			MembershipJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("status"), CurrentMembership.Status);
+			MembershipJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("type"), CurrentMembership.Type);
+			MembershipJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("updated"), CurrentMembership.Updated);
+			MembershipJsonValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("eTag"), CurrentMembership.ETag);
+
+			MembershipsData.Add(CurrentMembership);
 		}
 	}
 }

@@ -50,6 +50,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetMessageActionsJsonToData(FString ResponseJson, int &Status, TArray<FPubnubMessageActionData> &MessageActions);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static void GetMembershipsJsonToData(FString ResponseJson, int &Status, TArray<FPubnubGetMembershipsWrapper> &MembershipsData, FString &PageNext, FString &PagePrev);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static void GetChannelMembersJsonToData(FString ResponseJson, int &Status, TArray<FPubnubGetChannelMembersWrapper> &MembershipsData, FString &PageNext, FString &PagePrev);
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FPubnubUserData GetUserDataFromJson(FString ResponseJson);

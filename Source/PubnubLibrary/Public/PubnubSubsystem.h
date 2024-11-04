@@ -33,6 +33,9 @@ DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, int, Statu
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetChannelMetadataResponse, int, Status, FPubnubChannelData, ChannelData);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, int, Status, const TArray<FPubnubMessageActionData>&, MessageActions);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddMessageActionsResponse, FString, MessageActionTimetoken);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetMembershipsResponse, int, Status, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetChannelMembersResponse, int, Status, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
+
 
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
@@ -192,8 +195,11 @@ public:
 	void RemoveChannelMetadata(FString ChannelMetadataID);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetMemberships(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::pbccNotSet);
+	void GetMemberships(FString UUIDMetadataID, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::pbccNotSet);
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	void GetMemberships_JSON(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::pbccNotSet);
+	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void SetMemberships(FString UUIDMetadataID, FString SetObj, FString Include = "");
 
@@ -201,7 +207,10 @@ public:
 	void RemoveMemberships(FString UUIDMetadataID, FString RemoveObj, FString Include = "");
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetChannelMembers(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::pbccNotSet);
+	void GetChannelMembers(FString ChannelMetadataID, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::pbccNotSet);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	void GetChannelMembers_JSON(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::pbccNotSet);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AppContext")
 	void AddChannelMembers(FString ChannelMetadataID, FString AddObj, FString Include = "");
@@ -363,10 +372,14 @@ private:
 	void GetChannelMetadata_JSON_priv(FString ChannelMetadataID, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include);
 	void GetChannelMetadata_DATA_priv(FString ChannelMetadataID, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include);
 	void RemoveChannelMetadata_priv(FString ChannelMetadataID);
-	void GetMemberships_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FString GetMemberships_pn(FString UUIDMetadataID, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetMemberships_JSON_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetMemberships_DATA_priv(FString UUIDMetadataID, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void SetMemberships_priv(FString UUIDMetadataID, FString SetObj, FString Include);
 	void RemoveMemberships_priv(FString UUIDMetadataID, FString RemoveObj, FString Include);
-	void GetChannelMembers_priv(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FString GetChannelMembers_pn(FString ChannelMetadataID, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetChannelMembers_JSON_priv(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetChannelMembers_DATA_priv(FString ChannelMetadataID, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void AddChannelMembers_priv(FString ChannelMetadataID, FString AddObj, FString Include);
 	void SetChannelMembers_priv(FString ChannelMetadataID, FString SetObj, FString Include);
 	void RemoveChannelMembers_priv(FString ChannelMetadataID, FString Include, FString RemoveObj);
