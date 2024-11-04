@@ -20,8 +20,40 @@ FString UPubnubJsonUtilities::JsonObjectToString(TSharedPtr<FJsonObject> JsonObj
 bool UPubnubJsonUtilities::StringToJsonObject(FString JsonString, TSharedPtr<FJsonObject>& JsonObject)
 {
 	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonString);
-	bool Result =  FJsonSerializer::Deserialize(JsonReader, JsonObject);
-	return Result;
+	return FJsonSerializer::Deserialize(JsonReader, JsonObject);
+}
+
+bool UPubnubJsonUtilities::IsCorrectJsonString(const FString InString, bool AllowSimpleTypes)
+{
+	//A String is correct Json if it's a valid Json Object or Json Array
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	if(StringToJsonObject(InString, JsonObject))
+	{
+		return true;
+	}
+	
+	if(!AllowSimpleTypes)
+	{
+		return false;
+	}
+	
+	//Or it's a text in quotes (string type)
+	if(InString.Left(1) == "\"" && InString.Right(1) == "\"")
+	{
+		return true;
+	}
+	//Or a numeric field
+	if(InString.IsNumeric())
+	{
+		return true;
+	}
+	//Or a bool field
+	if(InString == "true" || InString == "false")
+	{
+		return true;
+	}
+
+	return false;
 }
 
 void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson, bool& Error, int& Status, TArray<FString>& Channels)

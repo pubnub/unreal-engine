@@ -1132,6 +1132,12 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "PublishMessage") || CheckIsFieldEmpty(Message, "Message", "PublishMessage"))
 	{return;}
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message))
+	{
+		PubnubError("Can't Publish Message, Message has to be a correct Json", EPubnubErrorType::PET_Warning);
+		return;
+	}
 	
 	//Convert all UE PublishSettings to Pubnub PublishOptions
 	
@@ -1475,6 +1481,12 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "SetState") || CheckIsFieldEmpty(StateJson, "StateJson", "SetState"))
 	{return;}
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(StateJson, false))
+	{
+		PubnubError("Can't Set State, StateJson has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
 	
 	//Set all options from SetStateSettings
 
@@ -1493,6 +1505,9 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 	if (PNR_OK != PubnubResponse) {
 		PubnubResponseError(PubnubResponse, "Failed to set state.");
 	}
+	
+	//Clean up the responses
+	pubnub_get(ctx_pub);
 }
 
 void UPubnubSubsystem::GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
@@ -1781,6 +1796,12 @@ void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString UUID
 	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "SetUUIDMetadata") || CheckIsFieldEmpty(UUIDMetadataObj, "UUIDMetadataObj", "SetUUIDMetadata"))
 	{return;}
 
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(UUIDMetadataObj, false))
+	{
+		PubnubError("Can't Set UUID Metadata, UUIDMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+
 	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -1920,6 +1941,12 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FStrin
 	
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "SetChannelMetadata") || CheckIsFieldEmpty(ChannelMetadataObj, "ChannelMetadataObj", "SetChannelMetadata"))
 	{return;}
+	
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(ChannelMetadataObj, false))
+	{
+		PubnubError("Can't Set Channel Metadata, ChannelMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
 	
 	pubnub_set_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*ChannelMetadataObj));
 
@@ -2072,6 +2099,12 @@ void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString SetOb
 	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "SetMemberships") || CheckIsFieldEmpty(SetObj, "SetObj", "SetMemberships"))
 	{return;}
 
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
+	{
+		PubnubError("Can't Set Memberships, SetObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+
 	pubnub_set_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -2088,6 +2121,12 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString Re
 
 	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "RemoveMemberships") || CheckIsFieldEmpty(RemoveObj, "RemoveObj", "RemoveMemberships"))
 	{return;}
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
+	{
+		PubnubError("Can't Remove Memberships, RemoveObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
 
 	pubnub_remove_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
 
@@ -2174,6 +2213,12 @@ void UPubnubSubsystem::AddChannelMembers_priv(FString ChannelMetadataID, FString
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "AddChannelMembers") || CheckIsFieldEmpty(AddObj, "AddObj", "AddChannelMembers"))
 	{return;}
 
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(AddObj, false))
+	{
+		PubnubError("Can't Add Channel Members, AddObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+
 	pubnub_add_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*AddObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -2191,6 +2236,12 @@ void UPubnubSubsystem::SetChannelMembers_priv(FString ChannelMetadataID, FString
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "SetChannelMembers") || CheckIsFieldEmpty(SetObj, "SetObj", "SetChannelMembers"))
 	{return;}
 
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
+	{
+		PubnubError("Can't Set Channel Members, SetObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+
 	pubnub_set_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -2207,6 +2258,12 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString ChannelMetadataID, FStr
 
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "RemoveChannelMembers") || CheckIsFieldEmpty(RemoveObj, "RemoveObj", "RemoveChannelMembers"))
 	{return;}
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
+	{
+		PubnubError("Can't Remove Channel Members, RemoveObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
 
 	pubnub_remove_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
 
