@@ -5,6 +5,7 @@
 
 #include "Config/PubnubSettings.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "FunctionLibraries/PubnubUtilities.h"
 #include "Threads/PubnubFunctionThread.h"
 #include "Threads/PubnubLoopingThread.h"
 
@@ -2223,8 +2224,12 @@ void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString Messag
 	
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "AddMessageAction") || CheckIsFieldEmpty(MessageTimetoken, "MessageTimetoken", "AddMessageAction"))
 	{return;}
+
+	//Add quotes to these fields as they are required by C-Core
+	FString FinalActionType = UPubnubUtilities::AddQuotesToString(ActionType);
+	FString FinalValue = UPubnubUtilities::AddQuotesToString(Value);
 	
-	pubnub_add_message_action_str(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*MessageTimetoken), TCHAR_TO_ANSI(*ActionType),  TCHAR_TO_ANSI(*Value));
+	pubnub_add_message_action_str(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*MessageTimetoken), TCHAR_TO_ANSI(*FinalActionType),  TCHAR_TO_ANSI(*FinalValue));
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
@@ -2258,24 +2263,28 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString ChannelName, FString Mes
 		|| CheckIsFieldEmpty(ActionTimetoken, "ActionTimetoken", "RemoveMessageAction"))
 	{return;}
 
-	auto MessageTimetokenConverter = StringCast<ANSICHAR>(*MessageTimetoken);
-	auto ActionTimetokenConverter = StringCast<ANSICHAR>(*ActionTimetoken);
+	//Add quotes to these fields as they are required by C-Core
+	FString FinalMessageTimetoken = UPubnubUtilities::AddQuotesToString(MessageTimetoken);
+	FString FinalActionTimetoken = UPubnubUtilities::AddQuotesToString(ActionTimetoken);
+
+	auto MessageTimetokenConverter = StringCast<ANSICHAR>(*FinalMessageTimetoken);
+	auto ActionTimetokenConverter = StringCast<ANSICHAR>(*FinalActionTimetoken);
 
 	// Allocate memory for message_timetoken_char and copy the content
-	char* message_timetoken_char = new char[MessageTimetoken.Len() + 1];
+	char* message_timetoken_char = new char[FinalMessageTimetoken.Len() + 1];
 	std::strcpy(message_timetoken_char, MessageTimetokenConverter.Get());
 
 	pubnub_chamebl_t message_timetoken_chamebl;
 	message_timetoken_chamebl.ptr = message_timetoken_char;
-	message_timetoken_chamebl.size = MessageTimetoken.Len();
+	message_timetoken_chamebl.size = FinalMessageTimetoken.Len();
 	
 	// Allocate memory for action_timetoken_char and copy the content
-	char* action_timetoken_char = new char[ActionTimetoken.Len() + 1];
+	char* action_timetoken_char = new char[FinalActionTimetoken.Len() + 1];
 	std::strcpy(action_timetoken_char, ActionTimetokenConverter.Get());
 
 	pubnub_chamebl_t action_timetoken_chamebl;
 	action_timetoken_chamebl.ptr = action_timetoken_char;
-	action_timetoken_chamebl.size = ActionTimetoken.Len();
+	action_timetoken_chamebl.size = FinalActionTimetoken.Len();
 	
 	pubnub_remove_message_action(ctx_pub, TCHAR_TO_ANSI(*ChannelName), message_timetoken_chamebl, action_timetoken_chamebl);
 
