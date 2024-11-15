@@ -5,6 +5,7 @@
 
 #include "Config/PubnubSettings.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "FunctionLibraries/PubnubUtilities.h"
 #include "Threads/PubnubFunctionThread.h"
 #include "Threads/PubnubLoopingThread.h"
 
@@ -521,14 +522,25 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString ChannelMetadataID)
 	});
 }
 
-void UPubnubSubsystem::GetMemberships(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetMemberships(FString UUIDMetadataID, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetMemberships_priv(UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetMemberships_DATA_priv(UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+	});
+}
+
+void UPubnubSubsystem::GetMemberships_JSON(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	{
+		GetMemberships_JSON_priv(UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
@@ -554,14 +566,25 @@ void UPubnubSubsystem::RemoveMemberships(FString UUIDMetadataID, FString RemoveO
 	});
 }
 
-void UPubnubSubsystem::GetChannelMembers(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetChannelMembers(FString ChannelMetadataID, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetChannelMembers_priv(ChannelMetadataID, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetChannelMembers_DATA_priv(ChannelMetadataID, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+	});
+}
+
+void UPubnubSubsystem::GetChannelMembers_JSON(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelMetadataID, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	{
+		GetChannelMembers_JSON_priv(ChannelMetadataID, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
@@ -1109,6 +1132,12 @@ void UPubnubSubsystem::PublishMessage_priv(FString ChannelName, FString Message,
 
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "PublishMessage") || CheckIsFieldEmpty(Message, "Message", "PublishMessage"))
 	{return;}
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message))
+	{
+		PubnubError("Can't Publish Message, Message has to be a correct Json", EPubnubErrorType::PET_Warning);
+		return;
+	}
 	
 	//Convert all UE PublishSettings to Pubnub PublishOptions
 	
@@ -1452,6 +1481,12 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "SetState") || CheckIsFieldEmpty(StateJson, "StateJson", "SetState"))
 	{return;}
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(StateJson, false))
+	{
+		PubnubError("Can't Set State, StateJson has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
 	
 	//Set all options from SetStateSettings
 
@@ -1470,6 +1505,9 @@ void UPubnubSubsystem::SetState_priv(FString ChannelName, FString StateJson, FPu
 	if (PNR_OK != PubnubResponse) {
 		PubnubResponseError(PubnubResponse, "Failed to set state.");
 	}
+	
+	//Clean up the responses
+	pubnub_get(ctx_pub);
 }
 
 void UPubnubSubsystem::GetState_priv(FString ChannelName, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
@@ -1758,6 +1796,12 @@ void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString UUID
 	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "SetUUIDMetadata") || CheckIsFieldEmpty(UUIDMetadataObj, "UUIDMetadataObj", "SetUUIDMetadata"))
 	{return;}
 
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(UUIDMetadataObj, false))
+	{
+		PubnubError("Can't Set UUID Metadata, UUIDMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+
 	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -1898,6 +1942,12 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString ChannelMetadataID, FStrin
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "SetChannelMetadata") || CheckIsFieldEmpty(ChannelMetadataObj, "ChannelMetadataObj", "SetChannelMetadata"))
 	{return;}
 	
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(ChannelMetadataObj, false))
+	{
+		PubnubError("Can't Set Channel Metadata, ChannelMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+	
 	pubnub_set_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*ChannelMetadataObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -1972,15 +2022,9 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString ChannelMetadataID)
 	}
 }
 
-void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit,
+FString UPubnubSubsystem::GetMemberships_pn(FString UUIDMetadataID, FString Include, int Limit,
 	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
-	if(!CheckIsUserIDSet())
-	{return;}
-
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetMemberships"))
-	{return;}
-	
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
 	auto CharConverterUuid = StringCast<ANSICHAR>(*UUIDMetadataID);
 	PubnubOptions.uuid = CharConverterUuid.Get();
@@ -1999,13 +2043,51 @@ void UPubnubSubsystem::GetMemberships_priv(FString UUIDMetadataID, FOnPubnubResp
 	
 	pubnub_get_memberships_ex(ctx_pub, PubnubOptions);
 
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	return GetLastResponse(ctx_pub);
+}
+
+void UPubnubSubsystem::GetMemberships_JSON_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit,
+	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetMemberships"))
+	{return;}
+
+	FString JsonResponse = GetMemberships_pn(UUIDMetadataID, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembershipResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnGetMembershipResponse.ExecuteIfBound(JsonResponse);
+	});
+}
+
+void UPubnubSubsystem::GetMemberships_DATA_priv(FString UUIDMetadataID, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit,
+	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetMemberships"))
+	{return;}
+	
+	FString JsonResponse = GetMemberships_pn(UUIDMetadataID, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembershipResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		int Status;
+		TArray<FPubnubGetMembershipsWrapper> MembershipsData;
+		FString PageNext;
+		FString PagePrev;
+		UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, Status, MembershipsData, PageNext, PagePrev);
+
+		//Broadcast bound delegate with parsed response
+		OnGetMembershipResponse.ExecuteIfBound(Status, MembershipsData, PageNext, PagePrev);
 	});
 }
 
@@ -2016,6 +2098,12 @@ void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString SetOb
 
 	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "SetMemberships") || CheckIsFieldEmpty(SetObj, "SetObj", "SetMemberships"))
 	{return;}
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
+	{
+		PubnubError("Can't Set Memberships, SetObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
 
 	pubnub_set_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
 
@@ -2034,6 +2122,12 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString Re
 	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "RemoveMemberships") || CheckIsFieldEmpty(RemoveObj, "RemoveObj", "RemoveMemberships"))
 	{return;}
 
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
+	{
+		PubnubError("Can't Remove Memberships, RemoveObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+
 	pubnub_remove_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -2043,15 +2137,9 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString Re
 	}
 }
 
-void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit,
+FString UPubnubSubsystem::GetChannelMembers_pn(FString ChannelMetadataID, FString Include, int Limit,
 	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
-	if(!CheckIsUserIDSet())
-	{return;}
-
-	if(CheckIsFieldEmpty(ChannelMetadataID, "UUIDMetadataID", "GetChannelMembers"))
-	{return;}
-
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
 	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
 	PubnubOptions.include = CharConverterInclude.Get();
@@ -2068,7 +2156,19 @@ void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FOnPubn
 	
 	pubnub_get_members_ex(ctx_pub,TCHAR_TO_ANSI(*ChannelMetadataID), PubnubOptions);
 
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	return GetLastResponse(ctx_pub);
+}
+
+void UPubnubSubsystem::GetChannelMembers_JSON_priv(FString ChannelMetadataID, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit,
+	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(ChannelMetadataID, "UUIDMetadataID", "GetChannelMembers"))
+	{return;}
+
+	FString JsonResponse = GetChannelMembers_pn(ChannelMetadataID, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembersResponse, JsonResponse]()
@@ -2078,6 +2178,33 @@ void UPubnubSubsystem::GetChannelMembers_priv(FString ChannelMetadataID, FOnPubn
 	});
 }
 
+void UPubnubSubsystem::GetChannelMembers_DATA_priv(FString ChannelMetadataID, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include, int Limit,
+	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(ChannelMetadataID, "UUIDMetadataID", "GetChannelMembers"))
+	{return;}
+	
+	FString JsonResponse = GetChannelMembers_pn(ChannelMetadataID, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembersResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		int Status;
+		TArray<FPubnubGetChannelMembersWrapper> MembersData;
+		FString PageNext;
+		FString PagePrev;
+		UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, Status, MembersData, PageNext, PagePrev);
+
+		//Broadcast bound delegate with parsed response
+		OnGetMembersResponse.ExecuteIfBound(Status, MembersData, PageNext, PagePrev);
+	});
+}
+
+
 void UPubnubSubsystem::AddChannelMembers_priv(FString ChannelMetadataID, FString AddObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
@@ -2085,6 +2212,12 @@ void UPubnubSubsystem::AddChannelMembers_priv(FString ChannelMetadataID, FString
 
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "AddChannelMembers") || CheckIsFieldEmpty(AddObj, "AddObj", "AddChannelMembers"))
 	{return;}
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(AddObj, false))
+	{
+		PubnubError("Can't Add Channel Members, AddObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
 
 	pubnub_add_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*AddObj));
 
@@ -2103,6 +2236,12 @@ void UPubnubSubsystem::SetChannelMembers_priv(FString ChannelMetadataID, FString
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "SetChannelMembers") || CheckIsFieldEmpty(SetObj, "SetObj", "SetChannelMembers"))
 	{return;}
 
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
+	{
+		PubnubError("Can't Set Channel Members, SetObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+
 	pubnub_set_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -2120,6 +2259,12 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString ChannelMetadataID, FStr
 	if(CheckIsFieldEmpty(ChannelMetadataID, "ChannelMetadataID", "RemoveChannelMembers") || CheckIsFieldEmpty(RemoveObj, "RemoveObj", "RemoveChannelMembers"))
 	{return;}
 
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
+	{
+		PubnubError("Can't Remove Channel Members, RemoveObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		return;
+	}
+
 	pubnub_remove_members(ctx_pub, TCHAR_TO_ANSI(*ChannelMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
@@ -2136,8 +2281,12 @@ void UPubnubSubsystem::AddMessageAction_priv(FString ChannelName, FString Messag
 	
 	if(CheckIsFieldEmpty(ChannelName, "ChannelName", "AddMessageAction") || CheckIsFieldEmpty(MessageTimetoken, "MessageTimetoken", "AddMessageAction"))
 	{return;}
+
+	//Add quotes to these fields as they are required by C-Core
+	FString FinalActionType = UPubnubUtilities::AddQuotesToString(ActionType);
+	FString FinalValue = UPubnubUtilities::AddQuotesToString(Value);
 	
-	pubnub_add_message_action_str(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*MessageTimetoken), TCHAR_TO_ANSI(*ActionType),  TCHAR_TO_ANSI(*Value));
+	pubnub_add_message_action_str(ctx_pub, TCHAR_TO_ANSI(*ChannelName), TCHAR_TO_ANSI(*MessageTimetoken), TCHAR_TO_ANSI(*FinalActionType),  TCHAR_TO_ANSI(*FinalValue));
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
@@ -2171,24 +2320,28 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString ChannelName, FString Mes
 		|| CheckIsFieldEmpty(ActionTimetoken, "ActionTimetoken", "RemoveMessageAction"))
 	{return;}
 
-	auto MessageTimetokenConverter = StringCast<ANSICHAR>(*MessageTimetoken);
-	auto ActionTimetokenConverter = StringCast<ANSICHAR>(*ActionTimetoken);
+	//Add quotes to these fields as they are required by C-Core
+	FString FinalMessageTimetoken = UPubnubUtilities::AddQuotesToString(MessageTimetoken);
+	FString FinalActionTimetoken = UPubnubUtilities::AddQuotesToString(ActionTimetoken);
+
+	auto MessageTimetokenConverter = StringCast<ANSICHAR>(*FinalMessageTimetoken);
+	auto ActionTimetokenConverter = StringCast<ANSICHAR>(*FinalActionTimetoken);
 
 	// Allocate memory for message_timetoken_char and copy the content
-	char* message_timetoken_char = new char[MessageTimetoken.Len() + 1];
+	char* message_timetoken_char = new char[FinalMessageTimetoken.Len() + 1];
 	std::strcpy(message_timetoken_char, MessageTimetokenConverter.Get());
 
 	pubnub_chamebl_t message_timetoken_chamebl;
 	message_timetoken_chamebl.ptr = message_timetoken_char;
-	message_timetoken_chamebl.size = MessageTimetoken.Len();
+	message_timetoken_chamebl.size = FinalMessageTimetoken.Len();
 	
 	// Allocate memory for action_timetoken_char and copy the content
-	char* action_timetoken_char = new char[ActionTimetoken.Len() + 1];
+	char* action_timetoken_char = new char[FinalActionTimetoken.Len() + 1];
 	std::strcpy(action_timetoken_char, ActionTimetokenConverter.Get());
 
 	pubnub_chamebl_t action_timetoken_chamebl;
 	action_timetoken_chamebl.ptr = action_timetoken_char;
-	action_timetoken_chamebl.size = ActionTimetoken.Len();
+	action_timetoken_chamebl.size = FinalActionTimetoken.Len();
 	
 	pubnub_remove_message_action(ctx_pub, TCHAR_TO_ANSI(*ChannelName), message_timetoken_chamebl, action_timetoken_chamebl);
 

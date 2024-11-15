@@ -250,3 +250,29 @@ struct FPubnubChannelData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
+
+USTRUCT(BlueprintType)
+struct FPubnubGetMembershipsWrapper
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubChannelData Channel;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetChannelMembersWrapper
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubUserData User;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
+};

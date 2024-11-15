@@ -22,6 +22,14 @@ public:
 	//Convert FString to JsonObject. Returns true if conversion was successful
 	static bool StringToJsonObject(FString JsonString, TSharedPtr<FJsonObject> &JsonObject);
 
+	/**
+	 * Checks if gives string can be converted to a json
+	 * @param InString - String to check
+	 * @param AllowSimpleTypes - If json root can be of type string, number or int
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static bool IsCorrectJsonString(const FString InString, bool AllowSimpleTypes = true);
+
 	/* JSON CONVERTERS*/
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
@@ -50,6 +58,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetMessageActionsJsonToData(FString ResponseJson, int &Status, TArray<FPubnubMessageActionData> &MessageActions);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static void GetMembershipsJsonToData(FString ResponseJson, int &Status, TArray<FPubnubGetMembershipsWrapper> &MembershipsData, FString &PageNext, FString &PagePrev);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static void GetChannelMembersJsonToData(FString ResponseJson, int &Status, TArray<FPubnubGetChannelMembersWrapper> &MembershipsData, FString &PageNext, FString &PagePrev);
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FPubnubUserData GetUserDataFromJson(FString ResponseJson);
