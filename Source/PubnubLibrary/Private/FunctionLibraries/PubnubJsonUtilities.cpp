@@ -149,12 +149,12 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 				State = UuidJsonValue->AsObject()->HasField(ANSI_TO_TCHAR("state")) ?
 					JsonObjectToString(UuidJsonValue->AsObject()->GetObjectField(ANSI_TO_TCHAR("state"))) : "";
 			}
-			Data.UuidsState.Add(Uuid, State);
+			Data.UsersState.Add(Uuid, State);
 		}
 	}
 }
 
-void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Error, int& Status, FString& ErrorMessage, TArray<FPubnubMessageData> &Messages)
+void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Error, int& Status, FString& ErrorMessage, TArray<FPubnubHistoryMessageData> &Messages)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -181,7 +181,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 		//Iterate through all messages from the response
 		for(auto MessageValue : ChannelJsonValue->AsArray())
 		{
-			FPubnubMessageData CurrentMessage;
+			FPubnubHistoryMessageData CurrentMessage;
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("uuid"), CurrentMessage.UserID);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("timetoken"), CurrentMessage.Timetoken);
@@ -225,7 +225,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 	}
 }
 
-void UPubnubJsonUtilities::GetAllUUIDMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetAllUserMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -250,7 +250,7 @@ void UPubnubJsonUtilities::GetAllUUIDMetadataJsonToData(FString ResponseJson, in
 	}
 }
 
-void UPubnubJsonUtilities::GetUUIDMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
+void UPubnubJsonUtilities::GetUserMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
