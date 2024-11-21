@@ -22,7 +22,7 @@ struct FPubnubPublishSettings
 	//An optional JSON object, used to send additional (meta) data about the message, which can be used for stream filtering.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MetaData = "";
 	//Defines the method by which publish transaction will be performed. Can be HTTP GET or POST. If using POST, content can be GZIP compressed.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishMethod PublishMethod = EPubnubPublishMethod::pubnubSendViaGET;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishMethod PublishMethod = EPubnubPublishMethod::PPM_SendViaGET;
 };
 
 USTRUCT(BlueprintType)
@@ -32,9 +32,9 @@ struct FPubnubListUsersFromChannelSettings
 
 	//Comma-delimited list of channel group names. If NULL, will not be used.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelGroup = "";
-	//If true will not give uuids associated with occupancy.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool DisableUUID = true;
-	//If true (and if disable_uuds is false), will give associated state alongside uuid info.
+	//If true will not give users associated with occupancy.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool DisableUserID = true;
+	//If true (and if DisableUserID is false), will give associated state alongside user info.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool State = false;
 };
 
@@ -169,19 +169,19 @@ struct FPubnubGrantTokenStructure
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TTLMinutes = 0;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString AuthorizedUUID = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString AuthorizedUser = "";
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelPermissions> ChannelPermissions;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroups;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> UUIDs;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UUIDPermissions;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Users;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UserPermissions;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelPatterns;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelPermissions> ChannelPatternPermissions;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroupPatterns;
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelGroupPermissions> ChannelGroupPatternPermissions;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> UUIDPatterns;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UUIDPatternPermissions;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> UserPatterns;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UserPatternPermissions;
 };
 
 USTRUCT(BlueprintType)
@@ -190,7 +190,7 @@ struct FPubnubListUsersFromChannelWrapper
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Occupancy = 0;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FString> UuidsState;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FString> UsersState;
 };
 
 USTRUCT(BlueprintType)
@@ -207,7 +207,7 @@ struct FPubnubMessageActionData
 };
 
 USTRUCT(BlueprintType)
-struct FPubnubMessageData
+struct FPubnubHistoryMessageData
 {
 	GENERATED_BODY()
 	

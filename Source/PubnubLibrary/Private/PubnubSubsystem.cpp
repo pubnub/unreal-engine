@@ -390,69 +390,69 @@ void UPubnubSubsystem::MessageCounts(FString ChannelName, FString Timetoken, FOn
 	});
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata(FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	QuickActionThread->AddFunctionToQueue( [this, OnGetAllUserMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetAllUUIDMetadata_DATA_priv(OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetAllUserMetadata_DATA_priv(OnGetAllUserMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata_JSON(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetAllUserMetadata_JSON(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	QuickActionThread->AddFunctionToQueue( [this, OnGetAllUserMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetAllUUIDMetadata_JSON_priv(OnGetAllUUIDMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetAllUserMetadata_JSON_priv(OnGetAllUserMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::SetUUIDMetadata(FString UUIDMetadataID, FString UUIDMetadataObj, FString Include)
+void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, UUIDMetadataObj, Include]
+	QuickActionThread->AddFunctionToQueue( [this, User, UserMetadataObj, Include]
 	{
-		SetUUIDMetadata_priv(UUIDMetadataID, UUIDMetadataObj, Include);
+		SetUserMetadata_priv(User, UserMetadataObj, Include);
 	});
 }
 
-void UPubnubSubsystem::GetUUIDMetadata(FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse, FString Include)
+void UPubnubSubsystem::GetUserMetadata(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetUUIDMetadataResponse, Include]
+	QuickActionThread->AddFunctionToQueue( [this, User, OnGetUserMetadataResponse, Include]
 	{
-		GetUUIDMetadata_DATA_priv(UUIDMetadataID, OnGetUUIDMetadataResponse, Include);
+		GetUserMetadata_DATA_priv(User, OnGetUserMetadataResponse, Include);
 	});
 }
 
-void UPubnubSubsystem::GetUUIDMetadata_JSON(FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse, FString Include)
+void UPubnubSubsystem::GetUserMetadata_JSON(FString User, FOnPubnubResponse OnGetUserMetadataResponse, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetUUIDMetadataResponse, Include]
+	QuickActionThread->AddFunctionToQueue( [this, User, OnGetUserMetadataResponse, Include]
 	{
-		GetUUIDMetadata_JSON_priv(UUIDMetadataID, OnGetUUIDMetadataResponse, Include);
+		GetUserMetadata_JSON_priv(User, OnGetUserMetadataResponse, Include);
 	});
 }
 
-void UPubnubSubsystem::RemoveUUIDMetadata(FString UUIDMetadataID)
+void UPubnubSubsystem::RemoveUserMetadata(FString User)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID]
+	QuickActionThread->AddFunctionToQueue( [this, User]
 	{
-		RemoveUUIDMetadata_priv(UUIDMetadataID);
+		RemoveUserMetadata_priv(User);
 	});
 }
 
@@ -522,47 +522,47 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString ChannelMetadataID)
 	});
 }
 
-void UPubnubSubsystem::GetMemberships(FString UUIDMetadataID, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	QuickActionThread->AddFunctionToQueue( [this, User, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetMemberships_DATA_priv(UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetMemberships_DATA_priv(User, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::GetMemberships_JSON(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetMemberships_JSON(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	QuickActionThread->AddFunctionToQueue( [this, User, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetMemberships_JSON_priv(UUIDMetadataID, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetMemberships_JSON_priv(User, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::SetMemberships(FString UUIDMetadataID, FString SetObj, FString Include)
+void UPubnubSubsystem::SetMemberships(FString User, FString SetObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, SetObj, Include]
+	QuickActionThread->AddFunctionToQueue( [this, User, SetObj, Include]
 	{
-		SetMemberships_priv(UUIDMetadataID, SetObj, Include);
+		SetMemberships_priv(User, SetObj, Include);
 	});
 }
 
-void UPubnubSubsystem::RemoveMemberships(FString UUIDMetadataID, FString RemoveObj, FString Include)
+void UPubnubSubsystem::RemoveMemberships(FString User, FString RemoveObj, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UUIDMetadataID, RemoveObj, Include]
+	QuickActionThread->AddFunctionToQueue( [this, User, RemoveObj, Include]
 	{
-		RemoveMemberships_priv(UUIDMetadataID, RemoveObj, Include);
+		RemoveMemberships_priv(User, RemoveObj, Include);
 	});
 }
 
@@ -699,9 +699,9 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 		return TokenJsonString;
 	}
 
-	if(TokenStructure.UUIDs.Num() != TokenStructure.UUIDPermissions.Num() && TokenStructure.UUIDPermissions.Num() != 1)
+	if(TokenStructure.Users.Num() != TokenStructure.UserPermissions.Num() && TokenStructure.UserPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPermissions and UUIDs (or only 1 UserPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPermissions and Users (or only 1 UserPermissions).");
 		success = false;
 		return TokenJsonString;
 	}
@@ -720,21 +720,21 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 		return TokenJsonString;
 	}
 
-	if(TokenStructure.UUIDPatterns.Num() != TokenStructure.UUIDPatternPermissions.Num() && TokenStructure.UUIDPatternPermissions.Num() != 1)
+	if(TokenStructure.UserPatterns.Num() != TokenStructure.UserPatternPermissions.Num() && TokenStructure.UserPatternPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPatternPermissions and UUIDsPatterns (or only 1 UserPatternPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPatternPermissions and UsersPatterns (or only 1 UserPatternPermissions).");
 		success = false;
 		return TokenJsonString;
 	}
 	
 
-	//Create Json objects with channels, groups, uuids permissions and they patterns
+	//Create Json objects with channels, groups, users permissions and their patterns
 	TSharedPtr<FJsonObject> ChannelsJsonObject = AddChannelPermissionsToJson(TokenStructure.Channels, TokenStructure.ChannelPermissions);
 	TSharedPtr<FJsonObject> ChannelGroupsJsonObject = AddChannelGroupPermissionsToJson(TokenStructure.ChannelGroups, TokenStructure.ChannelGroupPermissions);
-	TSharedPtr<FJsonObject> UUIDsJsonObject = AddUUIDPermissionsToJson(TokenStructure.UUIDs, TokenStructure.UUIDPermissions);
+	TSharedPtr<FJsonObject> UsersJsonObject = AddUserPermissionsToJson(TokenStructure.Users, TokenStructure.UserPermissions);
 	TSharedPtr<FJsonObject> ChannelPatternsJsonObject = AddChannelPermissionsToJson(TokenStructure.ChannelPatterns, TokenStructure.ChannelPatternPermissions);
 	TSharedPtr<FJsonObject> ChannelGroupPatternsJsonObject = AddChannelGroupPermissionsToJson(TokenStructure.ChannelGroupPatterns, TokenStructure.ChannelGroupPatternPermissions);
-	TSharedPtr<FJsonObject> UUIDPatternsJsonObject = AddUUIDPermissionsToJson(TokenStructure.UUIDPatterns, TokenStructure.UUIDPatternPermissions);
+	TSharedPtr<FJsonObject> UserPatternsJsonObject = AddUserPermissionsToJson(TokenStructure.UserPatterns, TokenStructure.UserPatternPermissions);
 
 	//Add resources fields
 	TSharedPtr<FJsonObject> ResourcesJsonObject = MakeShareable(new FJsonObject);
@@ -746,9 +746,9 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 	{
 		ResourcesJsonObject->SetObjectField("groups", ChannelGroupsJsonObject);
 	}
-	if(TokenStructure.UUIDs.Num() > 0)
+	if(TokenStructure.Users.Num() > 0)
 	{
-		ResourcesJsonObject->SetObjectField("uuids", UUIDsJsonObject);
+		ResourcesJsonObject->SetObjectField("uuids", UsersJsonObject);
 	}
 
 	//Add patterns fields
@@ -761,9 +761,9 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 	{
 		PatternsJsonObject->SetObjectField("groups", ChannelGroupPatternsJsonObject);
 	}
-	if(TokenStructure.UUIDPatterns.Num() > 0)
+	if(TokenStructure.UserPatterns.Num() > 0)
 	{
-		PatternsJsonObject->SetObjectField("uuids", UUIDPatternsJsonObject);
+		PatternsJsonObject->SetObjectField("uuids", UserPatternsJsonObject);
 	}
 
 	TSharedPtr<FJsonObject> TokenStructureJsonObject = MakeShareable(new FJsonObject);
@@ -772,7 +772,7 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 
 	TSharedPtr<FJsonObject> PermissionsJsonObject = MakeShareable(new FJsonObject);
 	PermissionsJsonObject->SetNumberField("ttl", TokenStructure.TTLMinutes);
-	PermissionsJsonObject->SetStringField("authorized_uuid", TokenStructure.AuthorizedUUID);
+	PermissionsJsonObject->SetStringField("authorized_uuid", TokenStructure.AuthorizedUser);
 	PermissionsJsonObject->SetObjectField("permissions", TokenStructureJsonObject);
 
 	//Convert created Json object to string
@@ -1701,7 +1701,7 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString ChannelName, FOnFetchHisto
 		bool Error;
 		int Status;
 		FString ErrorMessage;
-		TArray<FPubnubMessageData> Messages;
+		TArray<FPubnubHistoryMessageData> Messages;
 		UPubnubJsonUtilities::FetchHistoryJsonToData(JsonResponse, Error, Status, ErrorMessage, Messages);
 				
 		//Broadcast bound delegate with parsed response
@@ -1730,7 +1730,7 @@ void UPubnubSubsystem::MessageCounts_priv(FString ChannelName, FString Timetoken
 	});
 }
 
-FString UPubnubSubsystem::GetAllUUIDMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+FString UPubnubSubsystem::GetAllUserMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
 	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
@@ -1751,128 +1751,128 @@ FString UPubnubSubsystem::GetAllUUIDMetadata_pn(FString Include, int Limit, FStr
 	return GetLastResponse(ctx_pub);
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata_JSON_priv(FOnPubnubResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetAllUserMetadata_JSON_priv(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 	
-	FString JsonResponse = GetAllUUIDMetadata_pn(Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+	FString JsonResponse = GetAllUserMetadata_pn(Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllUUIDMetadataResponse, JsonResponse]()
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllUserMetadataResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		OnGetAllUUIDMetadataResponse.ExecuteIfBound(JsonResponse);
+		OnGetAllUserMetadataResponse.ExecuteIfBound(JsonResponse);
 	});
 }
 
-void UPubnubSubsystem::GetAllUUIDMetadata_DATA_priv(FOnGetAllUUIDMetadataResponse OnGetAllUUIDMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	FString JsonResponse = GetAllUUIDMetadata_pn(Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+	FString JsonResponse = GetAllUserMetadata_pn(Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllUUIDMetadataResponse, JsonResponse]()
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllUserMetadataResponse, JsonResponse]()
 	{
 		//Parse Json response into data
 		int Status;
 		TArray<FPubnubUserData> UsersData;
 		FString PageNext;
 		FString PagePrev;
-		UPubnubJsonUtilities::GetAllUUIDMetadataJsonToData(JsonResponse, Status, UsersData, PageNext, PagePrev);
+		UPubnubJsonUtilities::GetAllUserMetadataJsonToData(JsonResponse, Status, UsersData, PageNext, PagePrev);
 						
 		//Broadcast bound delegate with parsed response
-		OnGetAllUUIDMetadataResponse.ExecuteIfBound(Status, UsersData, PageNext, PagePrev);
+		OnGetAllUserMetadataResponse.ExecuteIfBound(Status, UsersData, PageNext, PagePrev);
 	});
 }
 
-void UPubnubSubsystem::SetUUIDMetadata_priv(FString UUIDMetadataID, FString UUIDMetadataObj, FString Include)
+void UPubnubSubsystem::SetUserMetadata_priv(FString User, FString UserMetadataObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "SetUUIDMetadata") || CheckIsFieldEmpty(UUIDMetadataObj, "UUIDMetadataObj", "SetUUIDMetadata"))
+	if(CheckIsFieldEmpty(User, "User", "SetUserMetadata") || CheckIsFieldEmpty(UserMetadataObj, "UserMetadataObj", "SetUserMetadata"))
 	{return;}
 
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(UUIDMetadataObj, false))
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(UserMetadataObj, false))
 	{
-		PubnubError("Can't Set UUID Metadata, UUIDMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		PubnubError("Can't Set User Metadata, UserMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
 		return;
 	}
 
-	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataObj));
+	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*User), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UserMetadataObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Set UUID Metadata.");
+		PubnubResponseError(PubnubResponse, "Failed to Set User Metadata.");
 	}
 }
 
-FString UPubnubSubsystem::GetUUIDMetadata_pn(FString UUIDMetadataID, FString Include)
+FString UPubnubSubsystem::GetUserMetadata_pn(FString User, FString Include)
 {
-	pubnub_get_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UUIDMetadataID));
+	pubnub_get_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*User));
 
 	return GetLastResponse(ctx_pub);
 }
 
-void UPubnubSubsystem::GetUUIDMetadata_JSON_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetUUIDMetadataResponse, FString Include)
+void UPubnubSubsystem::GetUserMetadata_JSON_priv(FString User, FOnPubnubResponse OnGetUserMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetUUIDMetadata"))
+	if(CheckIsFieldEmpty(User, "User", "GetUUIDMetadata"))
 	{return;}
 	
-	FString JsonResponse = GetUUIDMetadata_pn(UUIDMetadataID, Include);
+	FString JsonResponse = GetUserMetadata_pn(User, Include);
 
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnGetUUIDMetadataResponse, JsonResponse]()
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetUserMetadataResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		OnGetUUIDMetadataResponse.ExecuteIfBound(JsonResponse);
+		OnGetUserMetadataResponse.ExecuteIfBound(JsonResponse);
 	});
 }
 
-void UPubnubSubsystem::GetUUIDMetadata_DATA_priv(FString UUIDMetadataID, FOnGetUUIDMetadataResponse OnGetUUIDMetadataResponse, FString Include)
+void UPubnubSubsystem::GetUserMetadata_DATA_priv(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetUUIDMetadata"))
+	if(CheckIsFieldEmpty(User, "User", "GetUserMetadata"))
 	{return;}
 
-	FString JsonResponse = GetUUIDMetadata_pn(UUIDMetadataID, Include);
+	FString JsonResponse = GetUserMetadata_pn(User, Include);
 
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnGetUUIDMetadataResponse, JsonResponse]()
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetUserMetadataResponse, JsonResponse]()
 	{
 		//Parse Json response into data
 		int Status;
 		FPubnubUserData UserData;
-		UPubnubJsonUtilities::GetUUIDMetadataJsonToData(JsonResponse, Status, UserData);
+		UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, Status, UserData);
 								
 		//Broadcast bound delegate with parsed response
-		OnGetUUIDMetadataResponse.ExecuteIfBound(Status, UserData);
+		OnGetUserMetadataResponse.ExecuteIfBound(Status, UserData);
 	});
 }
 
-void UPubnubSubsystem::RemoveUUIDMetadata_priv(FString UUIDMetadataID)
+void UPubnubSubsystem::RemoveUserMetadata_priv(FString User)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "RemoveUUIDMetadata"))
+	if(CheckIsFieldEmpty(User, "User", "RemoveUserMetadata"))
 	{return;}
 	
-	pubnub_remove_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID));
+	pubnub_remove_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*User));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Remove UUID Metadata.");
+		PubnubResponseError(PubnubResponse, "Failed to Remove User Metadata.");
 	}
 }
 
@@ -2022,11 +2022,11 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString ChannelMetadataID)
 	}
 }
 
-FString UPubnubSubsystem::GetMemberships_pn(FString UUIDMetadataID, FString Include, int Limit,
+FString UPubnubSubsystem::GetMemberships_pn(FString User, FString Include, int Limit,
 	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
-	auto CharConverterUuid = StringCast<ANSICHAR>(*UUIDMetadataID);
+	auto CharConverterUuid = StringCast<ANSICHAR>(*User);
 	PubnubOptions.uuid = CharConverterUuid.Get();
 	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
 	PubnubOptions.include = CharConverterInclude.Get();
@@ -2046,16 +2046,16 @@ FString UPubnubSubsystem::GetMemberships_pn(FString UUIDMetadataID, FString Incl
 	return GetLastResponse(ctx_pub);
 }
 
-void UPubnubSubsystem::GetMemberships_JSON_priv(FString UUIDMetadataID, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit,
+void UPubnubSubsystem::GetMemberships_JSON_priv(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit,
 	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetMemberships"))
+	if(CheckIsFieldEmpty(User, "User", "GetMemberships"))
 	{return;}
 
-	FString JsonResponse = GetMemberships_pn(UUIDMetadataID, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+	FString JsonResponse = GetMemberships_pn(User, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembershipResponse, JsonResponse]()
@@ -2065,16 +2065,16 @@ void UPubnubSubsystem::GetMemberships_JSON_priv(FString UUIDMetadataID, FOnPubnu
 	});
 }
 
-void UPubnubSubsystem::GetMemberships_DATA_priv(FString UUIDMetadataID, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit,
+void UPubnubSubsystem::GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit,
 	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "GetMemberships"))
+	if(CheckIsFieldEmpty(User, "User", "GetMemberships"))
 	{return;}
 	
-	FString JsonResponse = GetMemberships_pn(UUIDMetadataID, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+	FString JsonResponse = GetMemberships_pn(User, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembershipResponse, JsonResponse]()
@@ -2091,12 +2091,12 @@ void UPubnubSubsystem::GetMemberships_DATA_priv(FString UUIDMetadataID, FOnGetMe
 	});
 }
 
-void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString SetObj, FString Include)
+void UPubnubSubsystem::SetMemberships_priv(FString User, FString SetObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "SetMemberships") || CheckIsFieldEmpty(SetObj, "SetObj", "SetMemberships"))
+	if(CheckIsFieldEmpty(User, "User", "SetMemberships") || CheckIsFieldEmpty(SetObj, "SetObj", "SetMemberships"))
 	{return;}
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
@@ -2105,7 +2105,7 @@ void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString SetOb
 		return;
 	}
 
-	pubnub_set_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
+	pubnub_set_memberships(ctx_pub, TCHAR_TO_ANSI(*User), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*SetObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
@@ -2114,12 +2114,12 @@ void UPubnubSubsystem::SetMemberships_priv(FString UUIDMetadataID, FString SetOb
 	}
 }
 
-void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString RemoveObj, FString Include)
+void UPubnubSubsystem::RemoveMemberships_priv(FString User, FString RemoveObj, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(UUIDMetadataID, "UUIDMetadataID", "RemoveMemberships") || CheckIsFieldEmpty(RemoveObj, "RemoveObj", "RemoveMemberships"))
+	if(CheckIsFieldEmpty(User, "User", "RemoveMemberships") || CheckIsFieldEmpty(RemoveObj, "RemoveObj", "RemoveMemberships"))
 	{return;}
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
@@ -2128,7 +2128,7 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString UUIDMetadataID, FString Re
 		return;
 	}
 
-	pubnub_remove_memberships(ctx_pub, TCHAR_TO_ANSI(*UUIDMetadataID), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
+	pubnub_remove_memberships(ctx_pub, TCHAR_TO_ANSI(*User), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*RemoveObj));
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
@@ -2165,7 +2165,7 @@ void UPubnubSubsystem::GetChannelMembers_JSON_priv(FString ChannelMetadataID, FO
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(ChannelMetadataID, "UUIDMetadataID", "GetChannelMembers"))
+	if(CheckIsFieldEmpty(ChannelMetadataID, "User", "GetChannelMembers"))
 	{return;}
 
 	FString JsonResponse = GetChannelMembers_pn(ChannelMetadataID, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
@@ -2184,7 +2184,7 @@ void UPubnubSubsystem::GetChannelMembers_DATA_priv(FString ChannelMetadataID, FO
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(ChannelMetadataID, "UUIDMetadataID", "GetChannelMembers"))
+	if(CheckIsFieldEmpty(ChannelMetadataID, "User", "GetChannelMembers"))
 	{return;}
 	
 	FString JsonResponse = GetChannelMembers_pn(ChannelMetadataID, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
@@ -2435,7 +2435,7 @@ void UPubnubSubsystem::PublishUESettingsToPubnubPublishOptions(FPubnubPublishSet
 
 void UPubnubSubsystem::HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersFromChannelSettings& HereNowSettings, pubnub_here_now_options& PubnubHereNowOptions)
 {
-	PubnubHereNowOptions.disable_uuids = HereNowSettings.DisableUUID;
+	PubnubHereNowOptions.disable_uuids = HereNowSettings.DisableUserID;
 	PubnubHereNowOptions.state = HereNowSettings.State;
 	HereNowSettings.ChannelGroup.IsEmpty() ? PubnubHereNowOptions.channel_group = NULL : nullptr;
 }
@@ -2525,23 +2525,23 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddChannelGroupPermissionsToJson(TArra
 	return JsonObject;
 }
 
-TSharedPtr<FJsonObject> UPubnubSubsystem::AddUUIDPermissionsToJson(TArray<FString> UUIDs, TArray<FPubnubUserPermissions> UUIDPermissions)
+TSharedPtr<FJsonObject> UPubnubSubsystem::AddUserPermissionsToJson(TArray<FString> Users, TArray<FPubnubUserPermissions> UserPermissions)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	bool UseOnePermission = UUIDPermissions.Num() == 1;
+	bool UseOnePermission = UserPermissions.Num() == 1;
 
 	TArray<TSharedPtr<FJsonValue>> ObjectValues;
 	
-	for(int i = 0; i < UUIDs.Num(); i++)
+	for(int i = 0; i < Users.Num(); i++)
 	{
-		if(UUIDs[i].IsEmpty())
+		if(Users[i].IsEmpty())
 		{
 			continue;
 		}
 		
 		//For permissions use the first index if this is the only valid index or corresponding channel index
 		FPubnubUserPermissions CurrentPermissions;
-		UseOnePermission ? CurrentPermissions = UUIDPermissions[0] : CurrentPermissions = UUIDPermissions[i];
+		UseOnePermission ? CurrentPermissions = UserPermissions[0] : CurrentPermissions = UserPermissions[i];
 
 		//Create bit mask value from all permissions
 		struct pam_permission ChPerm;
@@ -2550,7 +2550,7 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddUUIDPermissionsToJson(TArray<FStrin
 		ChPerm.update = CurrentPermissions.Update;
 		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
 
-		JsonObject->SetNumberField(UUIDs[i], PermBitMask);
+		JsonObject->SetNumberField(Users[i], PermBitMask);
 	}
 
 	return JsonObject;
