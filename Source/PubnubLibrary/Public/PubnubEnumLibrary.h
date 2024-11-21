@@ -8,20 +8,20 @@
 UENUM(BlueprintType)
 enum class EPubnubPublishMethod : uint8
 {
-	pubnubSendViaGET,
-	pubnubSendViaPOST,
-	pubnubUsePATCH,
-	pubnubSendViaPOSTwithGZIP,
-	pubnubUsePATCHwithGZIP,
-	pubnubUseDELETE
+	PPM_SendViaGET				UMETA(DisplayName="SendViaGET"),
+	PPM_SendViaPOST				UMETA(DisplayName="SendViaPOST"),
+	PPM_UsePATCH				UMETA(DisplayName="UsePATCH"),
+	PPM_SendViaPOSTwithGZIP		UMETA(DisplayName="SendViaPOSTwithGZIP"),
+	PPM_UsePATCHwithGZIP		UMETA(DisplayName="UsePATCHwithGZIP"),
+	PPM_UseDELETE				UMETA(DisplayName="UseDELETE")
 };
 
 UENUM(BlueprintType)
 enum class EPubnubTribool : uint8
 {
-	pbccFalse,
-	pbccTrue,
-	pbccNotSet
+	PT_False		UMETA(DisplayName="False"),
+	PT_True			UMETA(DisplayName="True"),
+	PT_NotSet		UMETA(DisplayName="NotSet"),
 };
 
 UENUM(BlueprintType)
