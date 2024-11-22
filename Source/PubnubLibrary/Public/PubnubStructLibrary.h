@@ -87,7 +87,7 @@ struct FPubnubFetchHistorySettings
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int MaxPerChannel = 0;
 	/** Direction of time traversal. Default is false, which means
-	* timeline is traversed newest to oldest. */
+	 * timeline is traversed newest to oldest. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Reverse = false;
 	/** If provided (not NULL), lets you select a "start date", in
 	 * Timetoken format. If not provided, it will default to current
@@ -135,12 +135,19 @@ struct FPubnubChannelPermissions
 {
 	GENERATED_BODY()
 
+	//Read permission. Applies to Subscribe, History, and Presence.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Read = false;
+	//Write permission. Applies to Publish.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Write = false;
+	//Delete permission. Applies to History and App Context.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Delete = false;
+	//Get permission. Applies to App Context.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Get = false;
+	//Update permission. Applies to App Context.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Update = false;
+	//Manage permission. Applies to Channel Groups and App Context.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Manage = false;
+	//Join permission. Applies to App Context.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Join = false;
 };
 
@@ -149,7 +156,9 @@ struct FPubnubChannelGroupPermissions
 {
 	GENERATED_BODY()
 
+	//Read permission. Applies to presence and history access for the group.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Read = false;
+	//Manage permission. Applies to modifying members of the group.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Manage = false;
 };
 
@@ -158,8 +167,11 @@ struct FPubnubUserPermissions
 {
 	GENERATED_BODY()
 
+	//Delete permission. Allows deletion of user metadata.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Delete = false;
+	//Get permission. Allows retrieval of user metadata.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Get = false;
+	//Update permission. Allows updating of user metadata.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Update = false;
 };
 
@@ -168,19 +180,33 @@ struct FPubnubGrantTokenStructure
 {
 	GENERATED_BODY()
 
+	//Time-To-Live (TTL) in minutes for the granted token.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TTLMinutes = 0;
+	//The User that is authorized by this grant.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString AuthorizedUser = "";
+	//List of channel names included in this grant.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
+	//Permissions applied to the listed channels. Has to be either 1 or the same amount as Channels.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelPermissions> ChannelPermissions;
+	//List of channel group names included in this grant.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroups;
+	//Permissions applied to the listed channel groups. Has to be either 1 or the same amount as ChannelGroups.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions;
+	//List of Users included in this grant.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Users;
+	//Permissions applied to the listed Users. Has to be either 1 or the same amount as Users.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UserPermissions;
+	//List of channel name patterns included in this grant.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelPatterns;
+	//Permissions applied to the listed channel name patterns. Has to be either 1 or the same amount as ChannelPatterns.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelPermissions> ChannelPatternPermissions;
+	//List of channel group name patterns included in this grant.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroupPatterns;
+	//Permissions applied to the listed channel group name patterns. Has to be either 1 or the same amount as ChannelGroupPatterns.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelGroupPermissions> ChannelGroupPatternPermissions;
+	//List of User name patterns included in this grant.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> UserPatterns;
+	//Permissions applied to the listed User name patterns. Has to be either 1 or the same amount as UserPatterns.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UserPatternPermissions;
 };
 
@@ -189,7 +215,9 @@ struct FPubnubListUsersFromChannelWrapper
 {
 	GENERATED_BODY()
 
+	//The number of users in a given channel.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Occupancy = 0;
+	//A map of user IDs and their respective state.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FString> UsersState;
 };
 
@@ -197,25 +225,35 @@ USTRUCT(BlueprintType)
 struct FPubnubMessageActionData
 {
 	GENERATED_BODY()
-	
+
+	//Message action type.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	//Message action value.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Value = "";
+	//User ID of the user who added the action.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
+	//Timetoken indicating when the message action was added.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ActionTimetoken = "";
+	//Timetoken indicating when the message the action was added to had been sent.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MessageTimetoken = "";
-	
 };
 
 USTRUCT(BlueprintType)
 struct FPubnubHistoryMessageData
 {
 	GENERATED_BODY()
-	
+
+	//The message text.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Message = "";
+	//User ID of the user who sent the message.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
+	//Timetoken indicating when the message was sent.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Timetoken = "";
+	//Additional information.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Meta = "";
+	//Type of the message. Refer to Message types for more information.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MessageType = "";
+	//An array of FPubnubMessageActionData structs which are message actions that were added to the historical messages.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubMessageActionData> MessageActions;
 };
 
@@ -224,15 +262,25 @@ struct FPubnubUserData
 {
 	GENERATED_BODY()
 
+	//Unique user identifier.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
+	//Display name for the user.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserName = "";
+	//User's identifier in an external system.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ExternalID = "";
+	//The URL of the user's profile picture.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ProfileUrl = "";
+	//The user's email address.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Email = "";
+	//JSON object providing custom user data. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//User status. Max. 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//User type. Max. 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	//The date when the user's metadata was last updated.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
+	//Information on the object's content fingerprint.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
 
@@ -241,13 +289,21 @@ struct FPubnubChannelData
 {
 	GENERATED_BODY()
 
+	//Unique channel identifier.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelID = "";
+	//Display name for the channel.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelName = "";
+	//Description of the channel.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Description = "";
+	//JSON object providing custom channel data. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//Channel status. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//Channel type. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	//The date when the channel's metadata was last updated.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
+	//Version identifier of the channel's metadata.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
 
@@ -256,11 +312,17 @@ struct FPubnubGetMembershipsWrapper
 {
 	GENERATED_BODY()
 
+	//Contains channel metadata, depending on requested includes in the call
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubChannelData Channel;
+	//JSON providing custom data about the membership. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//Status of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//Type of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	//The date when the channel's membership was last updated.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
+	//Version identifier of the membership metadata.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
 
@@ -269,10 +331,16 @@ struct FPubnubGetChannelMembersWrapper
 {
 	GENERATED_BODY()
 
+	//Contains user metadata, depending on requested includes in the call
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubUserData User;
+	//JSON providing custom data about the member. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//Status of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//Type of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	//The date when the membership was last updated.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
+	//Version identifier of the membership metadata.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
