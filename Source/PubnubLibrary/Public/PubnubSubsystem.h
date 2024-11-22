@@ -870,11 +870,11 @@ private:
 	void AddChannelMembers_priv(FString Channel, FString AddObj, FString Include);
 	void SetChannelMembers_priv(FString Channel, FString SetObj, FString Include);
 	void RemoveChannelMembers_priv(FString Channel, FString Include, FString RemoveObj);
-	void AddMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse);
-	void RemoveMessageAction_priv(FString ChannelName, FString MessageTimetoken, FString ActionTimetoken);
-	FString GetMessageActions_pn(FString ChannelName, FString Start, FString End, int SizeLimit);
-	void GetMessageActions_JSON_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);
-	void GetMessageActions_DATA_priv(FString ChannelName, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
+	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse);
+	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
+	FString GetMessageActions_pn(FString Channel, FString Start, FString End, int SizeLimit);
+	void GetMessageActions_JSON_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);
+	void GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
 	void GetMessageActionsContinue_priv(FOnPubnubResponse OnGetMessageActionsContinueResponse);
 
 #pragma endregion
