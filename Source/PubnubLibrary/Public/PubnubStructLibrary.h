@@ -23,6 +23,23 @@ struct FPubnubPublishSettings
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MetaData = "";
 	//Defines the method by which publish transaction will be performed. Can be HTTP GET or POST. If using POST, content can be GZIP compressed.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishMethod PublishMethod = EPubnubPublishMethod::PPM_SendViaGET;
+	//For how many hours message should be kept and available with history API. If 0, server default will be used.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Ttl = 0;
+	/** User-specified message type.
+	Important: String limited by **3**-**50** case-sensitive alphanumeric characters with only `-` and `_` special characters allowed.
+	*/
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString CustomMessageType = "";
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubSignalSettings
+{
+	GENERATED_BODY()
+
+	/** User-specified message type.
+	Important: String limited by **3**-**50** case-sensitive alphanumeric characters with only `-` and `_` special characters allowed.
+	*/
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString CustomMessageType = "";
 };
 
 USTRUCT(BlueprintType)
@@ -128,6 +145,10 @@ struct FPubnubFetchHistorySettings
 	 * false.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeMessageActions = false;
+	/** Include messages' custom type flag.
+	Message / signal and file messages may contain user-provided type.
+	*/
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeCustomMessageType = false;
 };
 
 USTRUCT(BlueprintType)
@@ -253,6 +274,8 @@ struct FPubnubHistoryMessageData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Meta = "";
 	//Type of the message. Refer to Message types for more information.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MessageType = "";
+	//User-specified message type.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString CustomMessageType = "";
 	//An array of FPubnubMessageActionData structs which are message actions that were added to the historical messages.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubMessageActionData> MessageActions;
 };
@@ -343,4 +366,31 @@ struct FPubnubGetChannelMembersWrapper
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
 	//Version identifier of the membership metadata.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubMessageData
+{
+	GENERATED_BODY()
+	
+	/** The message itself */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Message = "";
+	/** Channel that message was published to */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Channel = "";
+	/** The message information about publisher */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
+	/** The time token of the message - when it was published. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Timetoken = "";
+	/** The message metadata, as published */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Metadata = "";
+	/** Indicates the message type: a signal, published, or something else */ 
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubMessageType MessageType = EPubnubMessageType::PMT_Published;
+	/** User-provided message type. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString CustomMessageType = "";
+	/** Subscription match or the channel group */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MatchOrGroup = "";
+	/** Region of the message - not interesting in most cases */
+	int region = 0;
+	/** Message flags */
+	int flags = 0;
 };

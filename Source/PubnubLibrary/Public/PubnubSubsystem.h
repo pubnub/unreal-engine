@@ -18,7 +18,7 @@ class FPubnubFunctionThread;
 class FPubnubLoopingThread;
 class UPubnubChatSystem;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageReceived, FString, MessageJson, FString, Channel);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
@@ -113,7 +113,7 @@ public:
 	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish")
-	void Signal(FString Channel, FString Message);
+	void Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 
 	/**
 	 * Subscribes to a specified channel - start listening for messages on that channel.
@@ -814,7 +814,7 @@ private:
 	void SetUserID_priv(FString UserID);
 	void SetSecretKey_priv();
 	void PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
-	void Signal_priv(FString Channel, FString Message);
+	void Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 	void SubscribeToChannel_priv(FString Channel);
 	void SubscribeToGroup_priv(FString GroupName);
 	void UnsubscribeFromChannel_priv(FString Channel);
@@ -885,12 +885,11 @@ private:
 	void HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersFromChannelSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
 	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
 	void FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
-
+	FPubnubMessageData UEMessageFromPubnub(pubnub_v2_message PubnubMessage);
+	
 	/* GRANT TOKEN HELPERS */
 
 	TSharedPtr<FJsonObject> AddChannelPermissionsToJson(TArray<FString> Channels, TArray<FPubnubChannelPermissions> ChannelPermissions);
 	TSharedPtr<FJsonObject> AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions);
 	TSharedPtr<FJsonObject> AddUserPermissionsToJson(TArray<FString> Users, TArray<FPubnubUserPermissions> UserPermissions);
 };
-
-

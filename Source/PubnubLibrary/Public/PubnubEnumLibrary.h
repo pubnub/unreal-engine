@@ -30,3 +30,18 @@ enum class EPubnubErrorType : uint8
 	PET_Error		UMETA(DisplayName="Error"),
 	PET_Warning		UMETA(DisplayName="Warning")
 };
+
+UENUM(BlueprintType)
+enum class EPubnubMessageType : uint8
+{
+	/* Indicates that message was received as a signal */ 
+	PMT_Signal,
+	/* Indicates that message was published */ 
+	PMT_Published,
+	/* Indicates action on published message */
+	PMT_Action,
+	/* Message about Objects */
+	PMT_Objects,
+	/* Message about Files */
+	PMT_Files,
+};

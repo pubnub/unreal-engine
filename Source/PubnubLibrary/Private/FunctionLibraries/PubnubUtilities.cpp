@@ -14,3 +14,13 @@ FString UPubnubUtilities::AddQuotesToString(const FString InString, bool SkipIfH
 
 	return InString;
 }
+
+FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar)
+{
+	if(!PnChar.ptr)
+	{
+		return "";
+	}
+
+	return FString::ConstructFromPtrSize(PnChar.ptr, PnChar.size);
+}
