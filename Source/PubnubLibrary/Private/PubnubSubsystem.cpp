@@ -829,7 +829,7 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 		if(!IsInitialized)
 		{return;}
 		
-		//At this stage we received messages, so read them and get channel from where they were sent
+		//At this stage we received messages, so just read them and parse to correct structure
 		pubnub_v2_message message = pubnub_get_v2(ctx_sub);
 		while(message.payload.ptr)
 		{
