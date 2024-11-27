@@ -6,7 +6,7 @@ import json
 import zipfile
 
 print("Creating packages for Unreal Engine")
-supported_ue_versions = ["5.0.0", "5.1.0", "5.2.0", "5.3.0", "5.4.0"]
+supported_ue_versions = ["5.0.0", "5.1.0", "5.2.0", "5.3.0", "5.4.0", "5.5.0"]
 
 print("Preparing files")
 

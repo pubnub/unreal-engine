@@ -817,7 +817,6 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 		{return;}
 
 		//Check for subscribe result
-		//pubnub_res SubscribeResult = pubnub_await(ctx_sub);
 		pubnub_await(ctx_sub);
 		if (SubscribeResult != PNR_OK && SubscribeResult != PNR_STARTED )
 		{
