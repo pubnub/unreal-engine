@@ -115,14 +115,14 @@ void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FPubnubP
 	});
 }
 
-void UPubnubSubsystem::Signal(FString Channel, FString Message)
+void UPubnubSubsystem::Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
-
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Message]
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, SignalSettings]
 	{
-		PublishMessage_priv(Channel, Message);
+		Signal_priv(Channel, Message, SignalSettings);
 	});
 }
 
@@ -804,16 +804,21 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 		if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
 		{return;}
 		
-		//Subscribe to channels - this is blocking function
-		pubnub_subscribe(ctx_sub, TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedChannels)), TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedGroups)));
 		
+		pubnub_subscribe_v2_options PubnubOptions = pubnub_subscribe_v2_defopts();
+		auto CharConverter = StringCast<ANSICHAR>(*StringArrayToCommaSeparated(SubscribedGroups));
+		PubnubOptions.channel_group = CharConverter.Get();
+
+		//Subscribe to channels - this is blocking function
+		pubnub_res SubscribeResult = pubnub_subscribe_v2(ctx_sub, TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedChannels)), PubnubOptions);
+
 		//If context was released on deinitializing subsystem it should just return
 		if(!IsInitialized)
 		{return;}
 
 		//Check for subscribe result
-		pubnub_res SubscribeResult = pubnub_await(ctx_sub);
-		if (SubscribeResult != PNR_OK)
+		pubnub_await(ctx_sub);
+		if (SubscribeResult != PNR_OK && SubscribeResult != PNR_STARTED )
 		{
 			PubnubResponseError(SubscribeResult, "Failed to subscribe to channel.");
 			{return;}
@@ -822,28 +827,24 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 		//Check once again, as subsystem could be deinitialized during await
 		if(!IsInitialized)
 		{return;}
-
-		//At this stage we received messages, so read them and get channel from where they were sent
-		const char* MessageChar = pubnub_get(ctx_sub);
-		const char* ChannelChar = pubnub_get_channel(ctx_sub);
-		while(MessageChar != NULL)
+		
+		//At this stage we received messages, so just read them and parse to correct structure
+		pubnub_v2_message message = pubnub_get_v2(ctx_sub);
+		while(message.payload.ptr)
 		{
-			FString Message(MessageChar);
-			FString Channel(ChannelChar);
+			FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
 
 			//Skip system messages, we don't need to display them to user
-			if(Message != SystemPublishMessage)
+			if(MessageData.Message != SystemPublishMessage)
 			{
 				//Broadcast callback with message content
 				//Message needs to be called back on Game Thread
-				AsyncTask(ENamedThreads::GameThread, [this, Message, Channel]()
+				AsyncTask(ENamedThreads::GameThread, [this, MessageData]()
 				{
-				OnMessageReceived.Broadcast(Message, Channel);
+					OnMessageReceived.Broadcast(MessageData);
 				});
 			}
-			
-			MessageChar = pubnub_get(ctx_sub);
-			ChannelChar = pubnub_get_channel(ctx_sub);
+			message = pubnub_get_v2(ctx_sub);
 		}
 	});
 }
@@ -1145,10 +1146,13 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPu
 	pubnub_publish_options PubnubOptions;
 	auto CharConverter = StringCast<ANSICHAR>(*PublishSettings.MetaData);
 	PubnubOptions.meta = CharConverter.Get();
-
-	PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
+		
+	auto TypeCharConverter = StringCast<ANSICHAR>(*PublishSettings.CustomMessageType);
+	PubnubOptions.custom_message_type = TypeCharConverter.Get();
 	
+	PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
 	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message), PubnubOptions);
+
 	pubnub_res PublishResult = pubnub_await(ctx_pub);
 
 	if(PublishResult != PNR_OK)
@@ -1157,15 +1161,25 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPu
 	}
 }
 
-void UPubnubSubsystem::Signal_priv(FString Channel, FString Message)
+void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
 
 	if(CheckIsFieldEmpty(Channel, "ChannelName", "Signal") || CheckIsFieldEmpty(Message, "Message", "Signal"))
 	{return;}
+	
+	pubnub_signal_options PubnubOptions = pubnub_signal_defopts();
+	auto CharConverter = StringCast<ANSICHAR>(*SignalSettings.CustomMessageType);
+	PubnubOptions.custom_message_type = CharConverter.Get();
+	pubnub_signal_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message), PubnubOptions);
+	
+	pubnub_res PublishResult = pubnub_await(ctx_pub);
 
-	pubnub_signal(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message));
+	if(PublishResult != PNR_OK)
+	{
+		PubnubPublishError();
+	}
 }
 
 void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel)
@@ -2429,7 +2443,9 @@ void UPubnubSubsystem::PublishUESettingsToPubnubPublishOptions(FPubnubPublishSet
 	PubnubPublishOptions.store = PublishSettings.StoreInHistory;
 	PubnubPublishOptions.replicate = PublishSettings.Replicate;
 	PubnubPublishOptions.cipher_key = NULL;
+	PubnubPublishOptions.ttl = PublishSettings.Ttl;
 	PublishSettings.MetaData.IsEmpty() ? PubnubPublishOptions.meta = NULL : nullptr;
+	PublishSettings.CustomMessageType.IsEmpty() ? PubnubPublishOptions.custom_message_type = NULL : nullptr;
 	PubnubPublishOptions.method = (pubnub_method)(uint8)PublishSettings.PublishMethod;
 }
 
@@ -2455,8 +2471,23 @@ void UPubnubSubsystem::FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetc
 	PubnubFetchHistoryOptions.include_message_type = FetchHistorySettings.IncludeMessageType;
 	PubnubFetchHistoryOptions.include_user_id = FetchHistorySettings.IncludeUserID;
 	PubnubFetchHistoryOptions.include_message_actions = FetchHistorySettings.IncludeMessageActions;
+	PubnubFetchHistoryOptions.include_custom_message_type = FetchHistorySettings.IncludeCustomMessageType;
 	FetchHistorySettings.Start.IsEmpty() ? PubnubFetchHistoryOptions.start = NULL : nullptr;
 	FetchHistorySettings.End.IsEmpty() ? PubnubFetchHistoryOptions.end = NULL : nullptr;
+}
+
+FPubnubMessageData UPubnubSubsystem::UEMessageFromPubnub(pubnub_v2_message PubnubMessage)
+{
+	FPubnubMessageData MessageData;
+	MessageData.Message = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.payload);
+	MessageData.Channel = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.channel);
+	MessageData.UserID = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.publisher);
+	MessageData.Timetoken = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.tt);
+	MessageData.Metadata = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.metadata);
+	MessageData.MessageType = (EPubnubMessageType)(PubnubMessage.message_type);
+	MessageData.CustomMessageType = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.custom_message_type);
+	MessageData.MatchOrGroup = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.match_or_group);
+	return MessageData;
 }
 
 //This functions assumes that Channels and Permissions are already checked. It means that there is the same amount of permissions as channels or there is exactly one permission
