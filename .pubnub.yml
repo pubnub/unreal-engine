@@ -13,9 +13,9 @@ changelog:
      - type: feature
        text: "Add CustomMessageType parameter to publish, signal and history"
      - type: improvement
-        text: "Rename uuid to user in all inputs and functions."
+       text: "Rename uuid to user in all inputs and functions."
      - type: improvement
-        text: "Rename ChannelName to Channel in in function inputs."
+       text: "Rename ChannelName to Channel in in function inputs."
   - date: 2024-09-16
     version: 0.1.4
     changes:
