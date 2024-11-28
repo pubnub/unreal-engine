@@ -8,6 +8,7 @@
 #include "PubnubJsonUtilities.generated.h"
 
 class FJsonObject;
+class FJsonValue;
 
 /**
  * 
