@@ -22,6 +22,9 @@ public:
 	//Convert FString to JsonObject. Returns true if conversion was successful
 	static bool StringToJsonObject(FString JsonString, TSharedPtr<FJsonObject> &JsonObject);
 
+	//Convert FString to JsonArray. Returns true if conversion was successful
+	static bool StringToJsonArray(FString JsonString, TArray<TSharedPtr<FJsonValue>>& OutArray);
+
 	/**
 	 * Checks if gives string can be converted to a json
 	 * @param InString - String to check
