@@ -23,11 +23,24 @@ bool UPubnubJsonUtilities::StringToJsonObject(FString JsonString, TSharedPtr<FJs
 	return FJsonSerializer::Deserialize(JsonReader, JsonObject);
 }
 
+bool UPubnubJsonUtilities::StringToJsonArray(FString JsonString, TArray<TSharedPtr<FJsonValue>>& OutArray)
+{
+	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonString);
+	return FJsonSerializer::Deserialize(JsonReader, OutArray);
+}
+
 bool UPubnubJsonUtilities::IsCorrectJsonString(const FString InString, bool AllowSimpleTypes)
 {
-	//A String is correct Json if it's a valid Json Object or Json Array
+	//A String is correct Json if it's a valid Json Object
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 	if(StringToJsonObject(InString, JsonObject))
+	{
+		return true;
+	}
+
+	//or a Json Array
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	if(StringToJsonArray(InString, JsonArray))
 	{
 		return true;
 	}
