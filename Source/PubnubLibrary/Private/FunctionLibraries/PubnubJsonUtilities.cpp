@@ -23,11 +23,24 @@ bool UPubnubJsonUtilities::StringToJsonObject(FString JsonString, TSharedPtr<FJs
 	return FJsonSerializer::Deserialize(JsonReader, JsonObject);
 }
 
+bool UPubnubJsonUtilities::StringToJsonArray(FString JsonString, TArray<TSharedPtr<FJsonValue>>& OutArray)
+{
+	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonString);
+	return FJsonSerializer::Deserialize(JsonReader, OutArray);
+}
+
 bool UPubnubJsonUtilities::IsCorrectJsonString(const FString InString, bool AllowSimpleTypes)
 {
-	//A String is correct Json if it's a valid Json Object or Json Array
+	//A String is correct Json if it's a valid Json Object
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 	if(StringToJsonObject(InString, JsonObject))
+	{
+		return true;
+	}
+
+	//or a Json Array
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	if(StringToJsonArray(InString, JsonArray))
 	{
 		return true;
 	}
@@ -149,12 +162,12 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 				State = UuidJsonValue->AsObject()->HasField(ANSI_TO_TCHAR("state")) ?
 					JsonObjectToString(UuidJsonValue->AsObject()->GetObjectField(ANSI_TO_TCHAR("state"))) : "";
 			}
-			Data.UuidsState.Add(Uuid, State);
+			Data.UsersState.Add(Uuid, State);
 		}
 	}
 }
 
-void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Error, int& Status, FString& ErrorMessage, TArray<FPubnubMessageData> &Messages)
+void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Error, int& Status, FString& ErrorMessage, TArray<FPubnubHistoryMessageData> &Messages)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -181,11 +194,12 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 		//Iterate through all messages from the response
 		for(auto MessageValue : ChannelJsonValue->AsArray())
 		{
-			FPubnubMessageData CurrentMessage;
+			FPubnubHistoryMessageData CurrentMessage;
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("uuid"), CurrentMessage.UserID);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("timetoken"), CurrentMessage.Timetoken);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message_type"), CurrentMessage.MessageType);
+			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("custom_message_type"), CurrentMessage.MessageType);
 			if(!MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("meta"), CurrentMessage.Meta))
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Reading Meta as Json Object"));
@@ -225,7 +239,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 	}
 }
 
-void UPubnubJsonUtilities::GetAllUUIDMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetAllUserMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -250,7 +264,7 @@ void UPubnubJsonUtilities::GetAllUUIDMetadataJsonToData(FString ResponseJson, in
 	}
 }
 
-void UPubnubJsonUtilities::GetUUIDMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
+void UPubnubJsonUtilities::GetUserMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 

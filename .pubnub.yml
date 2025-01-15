@@ -3,6 +3,19 @@ version: 0.1.0
 schema: 1
 scm: github.com/pubnub/unreal-engine
 changelog: 
+  - date: 2024-11-25
+    version: 0.2.2
+    changes:
+     - type: feature
+       text: "Add Unreal 5.5 support"
+     - type: feature
+       text: "Add documentation in code"
+     - type: feature
+       text: "Add CustomMessageType parameter to publish, signal and history"
+     - type: improvement
+       text: "Rename uuid to user in all inputs and functions."
+     - type: improvement
+       text: "Rename ChannelName to Channel in in function inputs."
   - date: 2024-09-16
     version: 0.1.4
     changes:
