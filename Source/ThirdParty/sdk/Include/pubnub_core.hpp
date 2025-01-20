@@ -16,6 +16,7 @@ extern "C" {
 #include "../core/pubnub_blocking_io.h"
 #include "../core/pubnub_ssl.h"
 #include "../core/pubnub_timers.h"
+#include "../core/pubnub_log.h"
 #include "../core/pubnub_helper.h"
 #include "../core/pubnub_free_with_timeout.h"
 #include "../core/pubnub_ntf_sync.h"

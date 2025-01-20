@@ -2,7 +2,6 @@
 
 #include "PubnubSubsystem.h"
 #include "Json.h"
-
 #include "Config/PubnubSettings.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
@@ -1065,6 +1064,9 @@ void UPubnubSubsystem::InitPubnub_priv()
 	
 	ctx_pub = pubnub_alloc();
 	ctx_sub = pubnub_alloc();
+
+	//Send logging callback to Pubnub sdk, so we can pass all logs to UE
+	pubnub_set_log_callback(PubnubSDKLogConverter);
 
 	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
 	pubnub_init(ctx_sub, PublishKey, SubscribeKey);
