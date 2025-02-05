@@ -1,8 +1,13 @@
 name: unreal-engine
-version: 0.2.3
+version: 0.2.4
 schema: 1
 scm: github.com/pubnub/unreal-engine
 changelog: 
+  - date: 2024-01-21
+    version: 0.2.4
+    changes:
+     - type: feature
+       text: "Pass logs from c-core to UE sdk."
   - date: 2024-11-28
     version: 0.2.3
     changes:
