@@ -3,6 +3,11 @@ version: 0.2.4
 schema: 1
 scm: github.com/pubnub/unreal-engine
 changelog: 
+  - date: 2024-02-06
+    version: 0.2.5
+    changes:
+     - type: feature
+       text: "Add plugin support for Linux and IOS projects."
   - date: 2024-01-21
     version: 0.2.4
     changes:
@@ -220,6 +225,8 @@ supported-platforms:
   - version: PubNub Unreal Engine SDK
     platforms:
       - Windows
-      - Mac OS 
+      - Mac OS
+      - IOS       
       - Unix 
+      - Android 
 

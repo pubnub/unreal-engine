@@ -8,6 +8,10 @@
 #include "Mac/MacPlatformProcess.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidPlatformProcess.h"
+#elif PLATFORM_IOS
+#include "Ios/IosPlatformProcess.h"
+#elif PLATFORM_LINUX
+#include "Linux/LinuxPlatformProcess.h"
 #else
 #error "Platform not supported"
 #endif
