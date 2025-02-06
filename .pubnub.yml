@@ -9,7 +9,7 @@ changelog:
      - type: feature
        text: "Add plugin support for Linux and IOS projects."
   - date: 2024-01-21
-    version: 0.2.5
+    version: 0.2.4
     changes:
      - type: feature
        text: "Pass logs from c-core to UE sdk."
