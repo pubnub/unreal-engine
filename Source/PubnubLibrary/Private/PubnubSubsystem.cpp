@@ -354,11 +354,15 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, Token]
-	{
-		SetAuthToken_priv(Token);
-	});
+
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(Token, "Token", "SetAuthToken"))
+	{return;}
+
+	//This is just a setter, so no need to call it on a separate thread
+	pubnub_set_auth_token(ctx_pub, TCHAR_TO_ANSI(*Token));
 }
 
 void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
@@ -1633,23 +1637,6 @@ void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponse OnParseT
 	
 	//Free this char, as it's allocated with malloc inside of pubnub_parse_token
 	free(TokenResponse);
-}
-
-void UPubnubSubsystem::SetAuthToken_priv(FString Token)
-{
-	if(!CheckIsUserIDSet())
-	{return;}
-
-	if(CheckIsFieldEmpty(Token, "Token", "SetAuthToken"))
-	{return;}
-	
-	pubnub_set_auth_token(ctx_pub, TCHAR_TO_ANSI(*Token));
-
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
-	{
-		PubnubResponseError(PubnubResponse, "Failed to Set Auth Token.");
-	}
 }
 
 FString UPubnubSubsystem::FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)
