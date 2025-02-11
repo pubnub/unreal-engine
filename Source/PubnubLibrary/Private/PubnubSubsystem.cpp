@@ -1263,6 +1263,9 @@ void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromAll_priv()
 {
+	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
+	{return;}
+	
 	if(!CheckIsUserIDSet())
 	{return;}
 
