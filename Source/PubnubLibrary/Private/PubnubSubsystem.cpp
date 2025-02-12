@@ -94,13 +94,18 @@ FString UPubnubSubsystem::GetUserID()
 
 void UPubnubSubsystem::SetSecretKey()
 {
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	if(!CheckIsPubnubInitialized())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this]
+	if(std::strlen(SecretKey) == 0)
 	{
-		SetSecretKey_priv();
-	});
+		PubnubError("Can't set Secret Key. Secret Key is empty.");
+		return;
+	}
+
+	//This function only changes data locally, doesn't do any networking operations, so no need to call it on separate thread
+	pubnub_set_secret_key(ctx_pub, SecretKey);
+	pubnub_set_secret_key(ctx_sub, SecretKey);
 }
 
 void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
@@ -349,11 +354,15 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, Token]
-	{
-		SetAuthToken_priv(Token);
-	});
+
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(Token, "Token", "SetAuthToken"))
+	{return;}
+
+	//This is just a setter, so no need to call it on a separate thread
+	pubnub_set_auth_token(ctx_pub, TCHAR_TO_ANSI(*Token));
 }
 
 void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
@@ -850,6 +859,9 @@ void UPubnubSubsystem::StartPubnubSubscribeLoop()
 
 FString UPubnubSubsystem::StringArrayToCommaSeparated(TArray<FString> StringArray)
 {
+	if(StringArray.IsEmpty())
+	{return "";}
+	
 	FString CommaSeparatedString;
 	for(FString StringElement : SubscribedChannels)
 	{
@@ -1070,13 +1082,12 @@ void UPubnubSubsystem::InitPubnub_priv()
 
 	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
 	pubnub_init(ctx_sub, PublishKey, SubscribeKey);
-
+	IsInitialized = true;
+	
 	if(PubnubSettings->SetSecretKeyAutomatically)
 	{
 		SetSecretKey();
 	}
-
-	IsInitialized = true;
 }
 
 void UPubnubSubsystem::DeinitPubnub_priv()
@@ -1114,18 +1125,6 @@ void UPubnubSubsystem::SetUserID_priv(FString UserID)
 	pubnub_set_user_id(ctx_sub, TCHAR_TO_ANSI(*UserID));
 
 	IsUserIDSet = true;
-}
-
-void UPubnubSubsystem::SetSecretKey_priv()
-{
-	if(std::strlen(SecretKey) == 0)
-	{
-		PubnubError("Can't set Secret Key. Secret Key is empty.");
-		return;
-	}
-
-	pubnub_set_secret_key(ctx_pub, SecretKey);
-	pubnub_set_secret_key(ctx_sub, SecretKey);
 }
 
 void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
@@ -1268,6 +1267,9 @@ void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromAll_priv()
 {
+	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
+	{return;}
+	
 	if(!CheckIsUserIDSet())
 	{return;}
 
@@ -1622,22 +1624,9 @@ void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponse OnParseT
 	if(CheckIsFieldEmpty(Token, "Token", "ParseToken"))
 	{return;}
 	
-	pubnub_parse_token(ctx_pub, TCHAR_TO_ANSI(*Token));
-
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
-	{
-		PubnubResponseError(PubnubResponse, "Failed to Parse Token.");
-	}
-
-	pubnub_chamebl_t grant_token_resp = pubnub_get_grant_token(ctx_pub);
-	if(!grant_token_resp.ptr)
-	{
-		PubnubError("Failed to get Parse Token - pointer to token is invalid.");
-		return;
-	}
+	char* TokenResponse = pubnub_parse_token(ctx_pub, TCHAR_TO_ANSI(*Token));
 	
-	FString JsonResponse(grant_token_resp.ptr);
+	FString JsonResponse(TokenResponse);
 	
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnParseTokenResponse, JsonResponse]()
@@ -1645,23 +1634,9 @@ void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponse OnParseT
 		//Broadcast bound delegate with JsonResponse
 		OnParseTokenResponse.ExecuteIfBound(JsonResponse);
 	});
-}
-
-void UPubnubSubsystem::SetAuthToken_priv(FString Token)
-{
-	if(!CheckIsUserIDSet())
-	{return;}
-
-	if(CheckIsFieldEmpty(Token, "Token", "SetAuthToken"))
-	{return;}
 	
-	pubnub_set_auth_token(ctx_pub, TCHAR_TO_ANSI(*Token));
-
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
-	{
-		PubnubResponseError(PubnubResponse, "Failed to Set Auth Token.");
-	}
+	//Free this char, as it's allocated with malloc inside of pubnub_parse_token
+	free(TokenResponse);
 }
 
 FString UPubnubSubsystem::FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)
@@ -2520,6 +2495,7 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddChannelPermissionsToJson(TArray<FSt
 		ChPerm.update = CurrentPermissions.Update;
 		ChPerm.manage = CurrentPermissions.Manage;
 		ChPerm.join = CurrentPermissions.Join;
+		ChPerm.create = false;
 		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
 
 		JsonObject->SetNumberField(Channels[i], PermBitMask);
@@ -2550,6 +2526,12 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddChannelGroupPermissionsToJson(TArra
 		struct pam_permission ChPerm;
 		ChPerm.read = CurrentPermissions.Read;
 		ChPerm.manage = CurrentPermissions.Manage;
+		ChPerm.write = false;
+		ChPerm.del = false;
+		ChPerm.get = false;
+		ChPerm.update = false;
+		ChPerm.join = false;
+		ChPerm.create = false;
 		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
 
 		JsonObject->SetNumberField(ChannelGroups[i], PermBitMask);
@@ -2581,6 +2563,11 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddUserPermissionsToJson(TArray<FStrin
 		ChPerm.del = CurrentPermissions.Delete;
 		ChPerm.get = CurrentPermissions.Get;
 		ChPerm.update = CurrentPermissions.Update;
+		ChPerm.read = false;
+		ChPerm.write = false;
+		ChPerm.manage = false;
+		ChPerm.join = false;
+		ChPerm.create = false;
 		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
 
 		JsonObject->SetNumberField(Users[i], PermBitMask);

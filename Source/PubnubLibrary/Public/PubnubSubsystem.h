@@ -318,6 +318,16 @@ public:
 	 * Parses an access token and retrieves information about its permissions.
 	 * 
 	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * Permissions are written in bit mask int:
+	 * READ = 1
+	 * WRITE = 2
+	 * MANAGE = 4
+	 * DELETE = 8
+	 * CREATE = 16
+	 * GET = 32
+	 * UPDATE = 64
+	 * JOIN = 128
 	 * 
 	 * @param Token The access token to parse.
 	 * @param OnParseTokenResponse The callback function used to handle the result in JSON format.
@@ -812,7 +822,6 @@ private:
 	void InitPubnub_priv();
 	void DeinitPubnub_priv();
 	void SetUserID_priv(FString UserID);
-	void SetSecretKey_priv();
 	void PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 	void SubscribeToChannel_priv(FString Channel);
@@ -838,7 +847,6 @@ private:
 	void GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token);
 	void ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse);
-	void SetAuthToken_priv(FString Token);
 	FString FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_JSON_priv(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
