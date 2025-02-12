@@ -1,8 +1,17 @@
 name: unreal-engine
-version: 0.2.4
+version: 0.2.6
 schema: 1
 scm: github.com/pubnub/unreal-engine
 changelog: 
+  - date: 2024-02-12
+    version: 0.2.6
+    changes:
+     - type: bug
+       text: "Fix Auth Token related functions."
+     - type: bug
+       text: "Fix SetSecretKeyAutomatically setting to set the key properly."
+     - type: bug
+       text: "Fix 'PubnubLog: Error: Pubnub user ID is not set. Aborting operation.' false error."
   - date: 2024-02-06
     version: 0.2.5
     changes:
