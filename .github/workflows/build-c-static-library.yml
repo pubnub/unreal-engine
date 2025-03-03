@@ -1,4 +1,4 @@
-name: Build C-Core SDK static library
+name: Build static library
 
 on:
   workflow_dispatch:
