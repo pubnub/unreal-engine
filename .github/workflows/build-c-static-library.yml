@@ -17,111 +17,13 @@ on:
         description: "Unreal Engine SDK version"
         required: true
         type: string
-      cBuildType:
-        description: "Build type"
-        required: true
-        default: "Release"
-        type: choice
-        options:
-          - Release
-          - Debug
       cVerboseBuild:
         description: "Verbose build"
         required: true
         default: false
         type: boolean
-      featureUseProxy:
-        description: "[Feature] Proxy"
-        required: true
-        default: true
-        type: boolean
-      featureUseCompression:
-        description: "[Feature] gzip compression"
-        required: true
-        default: true
-        type: boolean
-      featureUseDecompression:
-        description: "[Feature] gzip decompression"
-        required: true
-        default: true
-        type: boolean
-      featureUseRetryConfiguration:
-        description: "[Feature] Request retry"
-        required: true
-        default: false
-        type: boolean
-      featureUseSubscribeV2:
-        description: "[Feature] Subscribe v2"
-        required: true
-        default: true
-        type: boolean
-      featureUseSubscribeEE:
-        description: "[Feature] Subscribe event engine"
-        required: true
-        default: false
-        type: boolean
-      featureUseAdvancedHistory:
-        description: "[Feature] Advanced history"
-        required: true
-        default: true
-        type: boolean
-      featureUseAppContext:
-        description: "[Feature] App Context"
-        required: true
-        default: true
-        type: boolean
-      featureUseAutoHeartbeat:
-        description: "[Feature] Auto heartbeat"
-        required: true
-        default: true
-        type: boolean
-      featureUseMessageReactions:
-        description: "[Feature] Message reactions"
-        required: true
-        default: true
-        type: boolean
-      featureUseRevokeToken:
-        description: "[Feature] Revoke Token"
-        required: true
-        default: false
-        type: boolean
-      featureUseGrantToken:
-        description: "[Feature] Grant Token"
-        required: true
-        default: false
-        type: boolean
-      featureUseFetchHistory:
-        description: "[Feature] Fetch History"
-        required: true
-        default: true
-        type: boolean
-      featureUseCrypto:
-        description: "[Feature] Crypto Module"
-        required: true
-        default: false
-        type: boolean
-      featureUseCallback:
-        description: "[Feature] Callback interface"
-        required: true
-        default: false
-        type: boolean
-      featureUseIPv6:
-        description: "[Feature] IPv6"
-        required: true
-        default: true
-        type: boolean
-      featureUseCustomDNS:
-        description: "[Feature] Custom DNS"
-        required: true
-        default: false
-        type: boolean
       featureUseExternAPI:
         description: "[Feature] Externs"
-        required: true
-        default: true
-        type: boolean
-      featureUseLegacyRandomIV:
-        description: "[Feature] Legacy Crypto random IV"
         required: true
         default: true
         type: boolean
@@ -198,28 +100,28 @@ jobs:
       - name: Generate CMakePresets.json
         run: |
           COMMON_CACHE_VARIABLES=$(cat <<-EOF
-                  "CMAKE_BUILD_TYPE": "${{ github.event.inputs.cBuildType }}",
+                  "CMAKE_BUILD_TYPE": "Release",
                   "SHARED_LIB": "OFF",
                   "OPENSSL": "ON",
                   "USE_REVOKE_TOKEN_API": "ON",
                   "USE_GRANT_TOKEN_API": "ON",
                   "USE_CRYPTO_API": "ON",
-                  "USE_PROXY": "${{ github.event.inputs.featureUseProxy == 'true' && 'ON' || 'OFF' }}",
-                  "USE_GZIP_COMPRESSION": "${{ github.event.inputs.featureUseCompression == 'true' && 'ON' || 'OFF' }}",
-                  "RECEIVE_GZIP_RESPONSE": "${{ github.event.inputs.featureUseDecompression == 'true' && 'ON' || 'OFF' }}",
-                  "USE_RETRY_CONFIGURATION": "${{ github.event.inputs.featureUseRetryConfiguration == 'true' && 'ON' || 'OFF' }}",
-                  "USE_SUBSCRIBE_V2": "${{ github.event.inputs.featureUseSubscribeV2 == 'true' && 'ON' || 'OFF' }}",
-                  "USE_SUBSCRIBE_EVENT_ENGINE": "${{ github.event.inputs.featureUseSubscribeEE == 'true' && 'ON' || 'OFF' }}",
-                  "USE_ADVANCED_HISTORY": "${{ github.event.inputs.featureUseAdvancedHistory == 'true' && 'ON' || 'OFF' }}",
-                  "USE_OBJECTS_API": "${{ github.event.inputs.featureUseAppContext == 'true' && 'ON' || 'OFF' }}",
-                  "USE_AUTO_HEARTBEAT": "${{ github.event.inputs.featureUseAutoHeartbeat == 'true' && 'ON' || 'OFF' }}",
-                  "USE_ACTIONS_API": "${{ github.event.inputs.featureUseMessageReactions == 'true' && 'ON' || 'OFF' }}",
-                  "USE_FETCH_HISTORY": "${{ github.event.inputs.featureUseFetchHistory == 'true' && 'ON' || 'OFF' }}",
-                  "USE_CALLBACK_API": "${{ github.event.inputs.featureUseCallback == 'true' && 'ON' || 'OFF' }}",
-                  "USE_IPV6": "${{ github.event.inputs.featureUseIPv6 == 'true' && 'ON' || 'OFF' }}",
-                  "USE_SET_DNS_SERVERS": "${{ github.event.inputs.featureUseCustomDNS == 'true' && 'ON' || 'OFF' }}",
+                  "USE_PROXY": "ON",
+                  "USE_GZIP_COMPRESSION": "ON",
+                  "RECEIVE_GZIP_RESPONSE": "ON",
+                  "USE_RETRY_CONFIGURATION": "OFF",
+                  "USE_SUBSCRIBE_V2": "ON",
+                  "USE_SUBSCRIBE_EVENT_ENGINE": "OFF",
+                  "USE_ADVANCED_HISTORY": "ON",
+                  "USE_OBJECTS_API": "ON",
+                  "USE_AUTO_HEARTBEAT": "ON",
+                  "USE_ACTIONS_API": "ON",
+                  "USE_FETCH_HISTORY": "ON",
+                  "USE_CALLBACK_API": "OFF",
+                  "USE_IPV6": "ON",
+                  "USE_SET_DNS_SERVERS": "OFF",
                   "USE_EXTERN_API": "${{ github.event.inputs.featureUseExternAPI == 'true' && 'ON' || 'OFF' }}",
-                  "USE_LEGACY_CRYPTO_RANDOM_IV": "${{ github.event.inputs.featureUseLegacyRandomIV == 'true' && 'ON' || 'OFF' }}",
+                  "USE_LEGACY_CRYPTO_RANDOM_IV": "ON",
                   "USE_LOG_CALLBACK": "${{ github.event.inputs.featureUseLogCallback == 'true' && 'ON' || 'OFF' }}",
                   "SDK_VERSION_SUFFIX": "\\\\\"/Unreal/${{ github.event.inputs.ueVersion }}\\\\\"",
                   "LOG_LEVEL": "${{ github.event.inputs.customLogLevel }}"
@@ -357,4 +259,3 @@ jobs:
 
           git add .
           git commit -m "build(library): add new PubNub static library"
-          git push origin
