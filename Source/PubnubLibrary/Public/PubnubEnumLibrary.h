@@ -45,3 +45,29 @@ enum class EPubnubMessageType : uint8
 	/* Message about Files */
 	PMT_Files,
 };
+
+UENUM(BlueprintType)
+enum class EPubnubMembershipSortType : uint8
+{
+	PMST_ChannelID				UMETA(DisplayName="ChannelID"),
+	PMST_ChannelName			UMETA(DisplayName="ChannelName"),
+	PMST_ChannelUpdated			UMETA(DisplayName="ChannelUpdated"),
+	PMST_ChannelStatus			UMETA(DisplayName="ChannelStatus"),
+	PMST_ChannelType			UMETA(DisplayName="ChannelType"),
+	PMST_Updated				UMETA(DisplayName="Updated"),
+	PMST_Status					UMETA(DisplayName="Status"),
+	PMST_Type					UMETA(DisplayName="Type")
+};
+
+UENUM(BlueprintType)
+enum class EPubnubMemberSortType : uint8
+{
+	PMST_UserID					UMETA(DisplayName="UserID"),
+	PMST_UserName				UMETA(DisplayName="UserName"),
+	PMST_UserUpdated			UMETA(DisplayName="UserUpdated"),
+	PMST_UserStatus				UMETA(DisplayName="UserStatus"),
+	PMST_UserType				UMETA(DisplayName="UserType"),
+	PMST_Updated				UMETA(DisplayName="Updated"),
+	PMST_Status					UMETA(DisplayName="Status"),
+	PMST_Type					UMETA(DisplayName="Type")
+};

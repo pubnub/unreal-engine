@@ -30,3 +30,39 @@ FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block
 	return FString::ConstructFromPtrSize(PnChar.ptr, PnChar.size);
 #endif
 }
+
+FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude)
+{
+	FString FinalString = "";
+	for(TFieldIterator<FProperty> It(MembershipInclude.StaticStruct()); It; ++It)
+	{
+		if (FBoolProperty* BoolProperty = CastField<FBoolProperty>(*It))
+		{
+			if(BoolProperty->GetPropertyValue_InContainer(&MembershipInclude))
+			{
+				FString StringToAppend = FinalString.IsEmpty() ? BoolProperty->GetName() : "," +BoolProperty->GetName();
+				FinalString.Append(StringToAppend);
+			}
+		}
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::MemberIncludeToString(const FPubnubMemberInclude& MemberInclude)
+{
+	FString FinalString = "";
+	for(TFieldIterator<FProperty> It(MemberInclude.StaticStruct()); It; ++It)
+	{
+		if (FBoolProperty* BoolProperty = CastField<FBoolProperty>(*It))
+		{
+			if(BoolProperty->GetPropertyValue_InContainer(&MemberInclude))
+			{
+				FString StringToAppend = FinalString.IsEmpty() ? BoolProperty->GetName() : "," + BoolProperty->GetName();
+				FinalString.Append(StringToAppend);
+			}
+		}
+	}
+
+	return FinalString;
+}

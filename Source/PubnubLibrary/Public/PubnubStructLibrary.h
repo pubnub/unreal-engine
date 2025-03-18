@@ -394,3 +394,62 @@ struct FPubnubMessageData
 	/** Message flags */
 	int flags = 0;
 };
+
+
+USTRUCT(BlueprintType)
+struct FPubnubMembershipInclude
+{
+	GENERATED_BODY()
+
+	/* Include Membership Custom field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeCustom = false;
+	/* Include Membership Status field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeStatus = false;
+	/* Include Membership Type field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeType = false;
+	/* Include Membership's Channel data field - in for of FPubnubChannelData */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeChannel = false;
+	/* Include Membership's Channel Custom field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeChannelCustom = false;
+	/* Include Membership's Channel Type field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeChannelType = false;
+	/* Include Membership's Channel Status field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeChannelStatus = false;
+	/* Include Total Count */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeTotalCount = false;
+
+	/* Set all Includes to the given bool Value */
+	static FPubnubMembershipInclude SetAllToValue(bool Value)
+	{
+		return FPubnubMembershipInclude(Value, Value, Value, Value, Value, Value, Value, Value);
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubMemberInclude
+{
+	GENERATED_BODY()
+
+	/* Include Membership Custom field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeCustom = false;
+	/* Include Membership Status field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeStatus = false;
+	/* Include Membership Type field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeType = false;
+	/* Include Membership's User data field - in for of FPubnubUserData */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeUser = false;
+	/* Include Membership's User Custom field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeUserCustom = false;
+	/* Include Membership's User Type field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeUserType = false;
+	/* Include Membership's User Status field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeUserStatus = false;
+	/* Include Total Count */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeTotalCount = false;
+
+	/* Set all Includes to the given bool Value */
+	static FPubnubMemberInclude SetAllToValue(bool Value)
+	{
+		return FPubnubMemberInclude(Value, Value, Value, Value, Value, Value, Value, Value);
+	}
+};

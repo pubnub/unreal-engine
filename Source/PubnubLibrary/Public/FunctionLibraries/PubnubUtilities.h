@@ -4,6 +4,7 @@
 
 #include <pubnub_memory_block.h>
 #include "CoreMinimal.h"
+#include "PubnubStructLibrary.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PubnubUtilities.generated.h"
 
@@ -18,4 +19,6 @@ public:
 
 	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
+	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);
+	static FString MemberIncludeToString(const FPubnubMemberInclude& MemberInclude);
 };
