@@ -417,6 +417,7 @@ bool pubnub_subscription_set_free(pubnub_subscription_set_t** set)
     if (pubnub_subscription_set_free_(*set)) {
         pubnub_mutex_unlock((*set)->mutw);
         pubnub_mutex_destroy((*set)->mutw);
+        free(*set);
         *set = NULL;
         return true;
     }
@@ -432,7 +433,6 @@ bool pubnub_subscription_set_free_(pubnub_subscription_set_t* set)
     if (0 == pbref_counter_free(set->counter)) {
         if (NULL != set->subscriptions)
             pbhash_set_free(&set->subscriptions);
-        free(set);
         return true;
     }
 

@@ -20,6 +20,9 @@ extern "C" {
 #include "../core/pubnub_helper.h"
 #include "../core/pubnub_free_with_timeout.h"
 #include "../core/pubnub_ntf_sync.h"
+#include "../core/pubnub_ntf_enforcement.h"
+#include "../core/pubnub_entities.h"
+#include "../core/pubnub_subscribe_event_listener.h"
 #if defined(PUBNUB_CALLBACK_API)
 #include "../core/pubnub_ntf_callback.h"
 #endif

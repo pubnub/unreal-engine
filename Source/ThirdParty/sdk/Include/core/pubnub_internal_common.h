@@ -64,6 +64,15 @@
 #define PUBNUB_USE_GRANT_TOKEN_API 0
 #endif
 
+#if !defined(PUBNUB_USE_SUBSCRIBE_EVENT_ENGINE)
+#define PUBNUB_USE_SUBSCRIBE_EVENT_ENGINE 0
+#endif
+
+#if !defined(PUBNUB_CALLBACK_API )
+#define PUBNUB_CALLBACK_API  0
+#endif
+
+
 #if !defined(PUBNUB_USE_REVOKE_TOKEN_API)
 #define PUBNUB_USE_REVOKE_TOKEN_API 0
 #endif
@@ -107,6 +116,10 @@
 #include <stdint.h>
 #if PUBNUB_ADVANCED_KEEP_ALIVE
 #include <time.h>
+#endif
+
+#if defined PUBNUB_NTF_RUNTIME_SELECTION
+#include "core/pubnub_ntf_enforcement.h"
 #endif
 
 #include "core/pubnub_crypto.h"
@@ -535,6 +548,11 @@ struct pubnub_ {
 #endif /* PUBNUB_PROXY_API */
     /** Crypto module for encryption and decryption */
     struct pubnub_crypto_provider_t *crypto_module;
+
+#ifdef PUBNUB_NTF_RUNTIME_SELECTION
+    /** The PubNub API enforcement policy. */
+    enum pubnub_api_enforcement api_policy;
+#endif
 };
 
 
@@ -545,7 +563,7 @@ struct pubnub_ {
 */
 void pbntf_trans_outcome(pubnub_t* pb, enum pubnub_state state);
 
-int pbntf_init(void);
+int pbntf_init(pubnub_t* pb);
 
 int pbntf_got_socket(pubnub_t* pb);
 

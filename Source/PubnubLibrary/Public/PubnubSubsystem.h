@@ -18,6 +18,13 @@ class FPubnubFunctionThread;
 class FPubnubLoopingThread;
 class UPubnubChatSystem;
 
+
+struct CCoreMessageCallbackData
+{
+	pubnub_subscribe_message_callback_t Callback;
+	pubnub_subscription_t* Subscription;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
@@ -754,15 +761,20 @@ private:
 	//Pubnub contexts for publishing data and subscribing to channels
 	pubnub_t *ctx_pub = nullptr;
 	pubnub_t *ctx_sub = nullptr;
+	pubnub_t *ctx_sync = nullptr;
 
 	TArray<FString> SubscribedChannels;
 	TArray<FString> SubscribedGroups;
+	TMap<FString, CCoreMessageCallbackData> ChannelSubscriptions;
 	
 	//Publish to the first subscribed channel to unlock subscribe context
 	void SystemPublish(FString ChannelOpt = "");
 
 	//Register to PubnubLoopingThread function to check in loop for messages from subscribed channels and groups
 	void StartPubnubSubscribeLoop();
+
+	void EventEngineSubscribeToChannel(FString Channel);
+	void EventEngineUnsubscribeFromChannel(FString Channel);
 
 	//Useful for subscribing into multiple channels/groups. Returns Strings in format String1,String2,...
 	FString StringArrayToCommaSeparated(TArray<FString> StringArray);
@@ -893,7 +905,7 @@ private:
 	void HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersFromChannelSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
 	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
 	void FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
-	FPubnubMessageData UEMessageFromPubnub(pubnub_v2_message PubnubMessage);
+	static FPubnubMessageData UEMessageFromPubnub(pubnub_v2_message PubnubMessage);
 	
 	/* GRANT TOKEN HELPERS */
 
@@ -917,4 +929,3 @@ private:
 		};
 	};
 };
-
