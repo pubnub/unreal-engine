@@ -131,15 +131,6 @@ public:
 	void SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	
 	/**
-	 * Subscribes to a specified channels - start listening for messages on those channels.
-	 * Use OnMessageReceived Callback to get those messages.
-	 * 
-	 * @param Channels The ID of the channels to subscribe to.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void SubscribeToChannels(TArray<FString> Channels);
-
-	/**
 	 * Subscribes to a specified group - start listening for messages on that group.
 	 * Use OnMessageReceived Callback to get those messages.
 	 * 

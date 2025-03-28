@@ -24,14 +24,9 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UPubnubSubsystem::Deinitialize()
 {
-	//TODO::Check if it's still needed after implementing event engine. Shouldn't Deinit be before the delay?
-	//Give some time for C-Core to clean up correctly
-	FPlatformProcess::Sleep(0.5);
-
+	//First clean up all Pubnub data
 	DeinitPubnub();
-
 	Super::Deinitialize();
-	
 }
 
 void UPubnubSubsystem::InitPubnub()
@@ -146,11 +141,6 @@ void UPubnubSubsystem::SubscribeToChannel(FString Channel, FPubnubSubscribeSetti
 	{
 		SubscribeToChannel_priv(Channel, SubscribeSettings);
 	});
-}
-
-void UPubnubSubsystem::SubscribeToChannels(TArray<FString> Channels)
-{
-	//TODO:: Finish
 }
 
 void UPubnubSubsystem::SubscribeToGroup(FString GroupName, FPubnubSubscribeSettings SubscribeSettings)
