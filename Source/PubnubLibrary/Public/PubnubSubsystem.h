@@ -19,7 +19,7 @@ class FPubnubLoopingThread;
 class UPubnubChatSystem;
 
 
-struct CCoreMessageCallbackData
+struct CCoreSubscriptionData
 {
 	pubnub_subscribe_message_callback_t Callback;
 	pubnub_subscription_t* Subscription;
@@ -129,7 +129,16 @@ public:
 	 * @param Channel The ID of the channel to subscribe to.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void SubscribeToChannel(FString Channel);
+	void SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	
+	/**
+	 * Subscribes to a specified channels - start listening for messages on those channels.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param Channels The ID of the channels to subscribe to.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	void SubscribeToChannels(TArray<FString> Channels);
 
 	/**
 	 * Subscribes to a specified group - start listening for messages on that group.
@@ -138,7 +147,7 @@ public:
 	 * @param GroupName The name of the channel to subscribe to.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void SubscribeToGroup(FString GroupName);
+	void SubscribeToGroup(FString GroupName, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
 	/**
 	 * Unsubscribes from a specified channel - stop listening for messages on that channel.
@@ -763,9 +772,11 @@ private:
 	pubnub_t *ctx_sub = nullptr;
 	pubnub_t *ctx_sync = nullptr;
 
+	//TODO::Delete these 2 arrays
 	TArray<FString> SubscribedChannels;
 	TArray<FString> SubscribedGroups;
-	TMap<FString, CCoreMessageCallbackData> ChannelSubscriptions;
+	TMap<FString, CCoreSubscriptionData> ChannelSubscriptions;
+	TMap<FString, CCoreSubscriptionData> ChannelGroupSubscriptions;
 	
 	//Publish to the first subscribed channel to unlock subscribe context
 	void SystemPublish(FString ChannelOpt = "");
@@ -773,7 +784,7 @@ private:
 	//Register to PubnubLoopingThread function to check in loop for messages from subscribed channels and groups
 	void StartPubnubSubscribeLoop();
 
-	void EventEngineSubscribeToChannel(FString Channel);
+	void EventEngineSubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings);
 	void EventEngineUnsubscribeFromChannel(FString Channel);
 
 	//Useful for subscribing into multiple channels/groups. Returns Strings in format String1,String2,...
@@ -786,12 +797,14 @@ private:
 	FString GetLastChannelResponse(pubnub_t* context);
 
 #pragma region ERROR FUNCTIONS
-	
+
+public:
 	/* ERROR FUNCTIONS */
 	//Every Error function prints error to the Log and Broadcasts OnPubnubError delegate
 	
-	//Default error for most use cases
+	//Default error for most use cases. Internal usage only.
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
+private:
 	//Error when the response was not OK
 	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
 	//Error during publishing a message
@@ -836,8 +849,8 @@ private:
 	void SetUserID_priv(FString UserID);
 	void PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
-	void SubscribeToChannel_priv(FString Channel);
-	void SubscribeToGroup_priv(FString GroupName);
+	void SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	void SubscribeToGroup_priv(FString GroupName, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void UnsubscribeFromChannel_priv(FString Channel);
 	void UnsubscribeFromGroup_priv(FString GroupName);
 	void UnsubscribeFromAll_priv();

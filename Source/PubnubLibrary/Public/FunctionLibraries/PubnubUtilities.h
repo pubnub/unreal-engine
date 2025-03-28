@@ -3,9 +3,13 @@
 #pragma once
 
 #include <pubnub_memory_block.h>
+#include "PubNub.h"
 #include "CoreMinimal.h"
+#include "PubnubStructLibrary.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PubnubUtilities.generated.h"
+
+class UPubnubSubsystem;
 
 /**
  * 
@@ -18,4 +22,11 @@ public:
 
 	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
+
+	/* C-CORE EVENT ENGINE HELPERS */
+
+	static pubnub_subscription_t* EEGetSubscriptionForChannel(pubnub_t* Context, FString Channel, FPubnubSubscribeSettings Options);
+	static pubnub_subscription_t* EEGetSubscriptionForChannelGroup(pubnub_t* Context, FString ChannelGroup, FPubnubSubscribeSettings Options);
+	static bool EEAddListenerAndSubscribe(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem);
+	static bool EERemoveListenerAndUnsubscribe(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem);
 };

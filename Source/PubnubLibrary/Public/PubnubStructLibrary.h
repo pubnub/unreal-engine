@@ -43,6 +43,15 @@ struct FPubnubSignalSettings
 };
 
 USTRUCT(BlueprintType)
+struct FPubnubSubscribeSettings
+{
+	GENERATED_BODY()
+
+	/** Whether presence events should be received or not. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool ReceivePresenceEvents = false;
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubListUsersFromChannelSettings
 {
 	GENERATED_BODY()

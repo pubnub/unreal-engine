@@ -485,7 +485,7 @@ enum pubnub_res pbcc_event_listener_remove_subscription_object_listener(
     if (NULL == listener || NULL == cb) { return PNR_INVALID_PARAMETERS; }
 
     pubnub_mutex_lock(listener->mutw);
-    if (NULL == listener->listeners) {
+    if (NULL == listener->global_events) {
         pubnub_mutex_unlock(listener->mutw);
         return PNR_OK;
     }
@@ -695,6 +695,38 @@ enum pubnub_res pbcc_remove_listener_(
     for (size_t i = 0; i < pbarray_count(listeners);) {
         pbcc_listener_t* _listener = (pbcc_listener_t*)
             pbarray_element_at(listeners, i);
+
+
+            if (_listener->type == listener->type)
+            {
+                PUBNUB_LOG_WARNING("type matches\n");
+            }
+            else
+            {
+                PUBNUB_LOG_WARNING("type not matches\n");
+            }
+    
+            if (_listener->subscription_object == listener->subscription_object) 
+            {
+                PUBNUB_LOG_WARNING("subscription_object matches\n");
+            }
+            else {
+                PUBNUB_LOG_WARNING("subscription_object not matches\n");
+            }
+    
+            if (_listener->callback == listener->callback) {
+                PUBNUB_LOG_WARNING("callback matches\n");
+            }
+            else {
+                PUBNUB_LOG_WARNING("callback not matches\n");
+            }
+    
+            if (_listener->user_data == listener->user_data) {
+                PUBNUB_LOG_WARNING("user_data matches\n");
+            }
+            else {
+                PUBNUB_LOG_WARNING("user_data not matches\n");
+            }
 
         if (_listener->type == listener->type &&
             _listener->subscription_object == listener->subscription_object &&
