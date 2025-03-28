@@ -15,7 +15,6 @@ class FJsonObject;
 
 class UPubnubSettings;
 class FPubnubFunctionThread;
-class FPubnubLoopingThread;
 class UPubnubChatSystem;
 
 
@@ -757,39 +756,18 @@ public:
 	bool CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName);
 	
 private:
-
-	inline static const FString SystemPublishMessage = "\"Pubnub system unlock message\"";
-	
-	//New threads to call all C-Core functions asynchronously
 	
 	//Thread for quick operations, generally everything except subscribe
 	TObjectPtr<FPubnubFunctionThread> QuickActionThread = nullptr;
-	//Thread for long operations that need to be called in a loop, mostly for subcribe
-	TObjectPtr<FPubnubLoopingThread> LongpollThread = nullptr;
 
-	//Pubnub contexts for publishing data and subscribing to channels
+	//Pubnub context for the most of the pubnub operations
 	pubnub_t *ctx_pub = nullptr;
-	pubnub_t *ctx_sub = nullptr;
-	pubnub_t *ctx_sync = nullptr;
-
-	//TODO::Delete these 2 arrays
-	TArray<FString> SubscribedChannels;
-	TArray<FString> SubscribedGroups;
+	//Pubnub context for the event engine - subscribe operations
+	pubnub_t *ctx_ee = nullptr;
+	
 	TMap<FString, CCoreSubscriptionData> ChannelSubscriptions;
 	TMap<FString, CCoreSubscriptionData> ChannelGroupSubscriptions;
 	
-	//Publish to the first subscribed channel to unlock subscribe context
-	void SystemPublish(FString ChannelOpt = "");
-
-	//Register to PubnubLoopingThread function to check in loop for messages from subscribed channels and groups
-	void StartPubnubSubscribeLoop();
-
-	void EventEngineSubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings);
-	void EventEngineUnsubscribeFromChannel(FString Channel);
-
-	//Useful for subscribing into multiple channels/groups. Returns Strings in format String1,String2,...
-	FString StringArrayToCommaSeparated(TArray<FString> StringArray);
-
 	//Returns FString from the pubnub_get response
 	FString GetLastResponse(pubnub_t* context);
 	
@@ -845,7 +823,6 @@ private:
 	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 	
 	void InitPubnub_priv();
-	void DeinitPubnub_priv();
 	void SetUserID_priv(FString UserID);
 	void PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());

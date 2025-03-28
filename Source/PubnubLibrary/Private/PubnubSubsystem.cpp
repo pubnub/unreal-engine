@@ -7,7 +7,6 @@
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "Threads/PubnubFunctionThread.h"
-#include "Threads/PubnubLoopingThread.h"
 
 DEFINE_LOG_CATEGORY(PubnubLog)
 
@@ -25,17 +24,9 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UPubnubSubsystem::Deinitialize()
 {
+	//TODO::Check if it's still needed after implementing event engine. Shouldn't Deinit be before the delay?
 	//Give some time for C-Core to clean up correctly
 	FPlatformProcess::Sleep(0.5);
-	
-	if(QuickActionThread)
-	{
-		QuickActionThread->Stop();
-	}
-	if(LongpollThread)
-	{
-		LongpollThread->Stop();
-	}
 
 	DeinitPubnub();
 
@@ -56,26 +47,40 @@ void UPubnubSubsystem::InitPubnub()
 	//If initialized correctly, create required thread.
 	if(IsInitialized)
 	{
-		//Create new threads - separate for subscribe and all other operations
+		//Create new thread to queue all pubnub sync operations
 		QuickActionThread = new FPubnubFunctionThread;
-		LongpollThread = new FPubnubLoopingThread;
 	}
 	
 }
 
 void UPubnubSubsystem::DeinitPubnub()
 {
-	DeinitPubnub_priv();
-	/*if(!QuickActionThread)
+	if(!IsInitialized)
+	{return;}
+
+	if(QuickActionThread)
 	{
-		DeinitPubnub_priv();
-		return;
+		QuickActionThread->Stop();
+	}
+
+	//Unsubscribe from all channels and groups so this user will not be visible for others anymore
+	UnsubscribeFromAll_priv();
+	
+	IsInitialized = false;
+	
+	if(ctx_pub)
+	{
+		pubnub_free(ctx_pub);
+		ctx_pub = nullptr;
+	}
+	if(ctx_ee)
+	{
+		pubnub_free(ctx_ee);
+		ctx_ee = nullptr;
 	}
 	
-	QuickActionThread->AddFunctionToQueue( [this]
-	{
-		DeinitPubnub_priv();
-	});*/
+	ChannelSubscriptions.Empty();
+	ChannelGroupSubscriptions.Empty();
 }
 
 void UPubnubSubsystem::SetUserID(FString UserID)
@@ -107,7 +112,7 @@ void UPubnubSubsystem::SetSecretKey()
 
 	//This function only changes data locally, doesn't do any networking operations, so no need to call it on separate thread
 	pubnub_set_secret_key(ctx_pub, SecretKey);
-	pubnub_set_secret_key(ctx_sync, SecretKey);
+	pubnub_set_secret_key(ctx_ee, SecretKey);
 }
 
 void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
@@ -794,224 +799,6 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 	return UPubnubJsonUtilities::JsonObjectToString(PermissionsJsonObject);
 }
 
-void UPubnubSubsystem::SystemPublish(FString ChannelOpt)
-{
-	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty() && ChannelOpt.IsEmpty())
-	{return;}
-	
-	FPubnubPublishSettings PublishSettings;
-	PublishSettings.StoreInHistory = false;
-
-	FString PublishChannel;
-	ChannelOpt.IsEmpty() ? PublishChannel = SubscribedChannels[0] : PublishChannel = ChannelOpt;
-
-	//TODO: this will not unlock context if user is subscribed only to groups, but not to any channels. This issue needs to be addressed.
-	PublishMessage(PublishChannel, SystemPublishMessage, PublishSettings);
-}
-
-void UPubnubSubsystem::StartPubnubSubscribeLoop()
-{
-	pubnub_subscription_options_t Options = pubnub_subscription_options_defopts();
-	Options.receive_presence_events = true;
-	TArray<pubnub_entity_t*> PubnubEntities;
-
-	for (FString ChannelID : SubscribedChannels)
-	{
-		PubnubEntities.Add((pubnub_entity_t*)pubnub_channel_alloc(ctx_sync, TCHAR_TO_ANSI(*ChannelID)));
-	}
-	pubnub_subscription_set_t* SubscriptionSet = pubnub_subscription_set_alloc_with_entities(PubnubEntities.GetData(), PubnubEntities.Num(), &Options);
-	
-	for (auto Entity : PubnubEntities)
-    {
-		pubnub_entity_free((void**)&Entity);
-    }
-
-	if(nullptr == SubscriptionSet)
-	{
-		PubnubError("Failed to subscribe. Pubnub_subscription_set_alloc_with_entities didn't create subscription");
-		return;
-	}
-	
-
-	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
-	{
-		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(user_data);
-		FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, ThisSubsystem]()
-		{
-			if(ThisSubsystem)
-			{
-				ThisSubsystem->OnMessageReceived.Broadcast(MessageData);
-			}
-		});
-	};
-
-	enum pubnub_res AddListenerResult = pubnub_subscribe_add_subscription_set_listener(SubscriptionSet, PBSL_LISTENER_ON_MESSAGE, Callback, this);
-
-	if(PNR_OK != AddListenerResult)
-	{
-		FString ResultString(pubnub_res_2_string(AddListenerResult));
-		PubnubError("Failed to subscribe. Add_subscription_ser_listener failed with error: " + ResultString);
-		return;
-	}
-
-	enum pubnub_res SubscribeResult = pubnub_subscribe_with_subscription_set(SubscriptionSet, nullptr);
-
-	if(PNR_OK != SubscribeResult)
-	{
-		FString ResultString(pubnub_res_2_string(AddListenerResult));
-		PubnubError("Failed to subscribe. Subscribe_with_subscription_set failed with error: " + ResultString);
-		return;
-	}
-	
-	
-	/*pubnub_channel_t* channel = pubnub_channel_alloc(ctx_sync, TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedChannels)));
-	pubnub_subscription_t* subscription =
-		pubnub_subscription_alloc((pubnub_entity_t*)channel, NULL);
-	pubnub_entity_free((void**)&channel);
-	pubnub_subscribe_add_subscription_listener(subscription, PBSL_LISTENER_ON_MESSAGE, PubnubEEReceiveMessage);
-	
-	UE_LOG(PubnubLog, Warning, TEXT("Subscribing with subscription"));
-	
-	enum pubnub_res rslt = pubnub_subscribe_with_subscription(subscription, NULL);
-	FString ResponseString(pubnub_res_2_string(rslt));
-	
-	UE_LOG(PubnubLog, Warning, TEXT("Subscribe with subscription result: %s"), *ResponseString);*/
-
-	
-	/*
-	if(!LongpollThread)
-	{return;}
-
-	LongpollThread->AddLoopingFunction([this]
-	{
-		if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
-		{return;}
-		
-		
-		pubnub_subscribe_v2_options PubnubOptions = pubnub_subscribe_v2_defopts();
-		auto CharConverter = StringCast<ANSICHAR>(*StringArrayToCommaSeparated(SubscribedGroups));
-		PubnubOptions.channel_group = CharConverter.Get();
-
-		//Subscribe to channels - this is blocking function
-		pubnub_res SubscribeResult = pubnub_subscribe_v2(ctx_sub, TCHAR_TO_ANSI(*StringArrayToCommaSeparated(SubscribedChannels)), PubnubOptions);
-
-		//If context was released on deinitializing subsystem it should just return
-		if(!IsInitialized)
-		{return;}
-
-		//Check for subscribe result
-		pubnub_await(ctx_sub);
-		if (SubscribeResult != PNR_OK && SubscribeResult != PNR_STARTED )
-		{
-			PubnubResponseError(SubscribeResult, "Failed to subscribe to channel.");
-			{return;}
-		}
-
-		//Check once again, as subsystem could be deinitialized during await
-		if(!IsInitialized)
-		{return;}
-		
-		//At this stage we received messages, so just read them and parse to correct structure
-		pubnub_v2_message message = pubnub_get_v2(ctx_sub);
-		while(message.payload.ptr)
-		{
-			FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
-
-			//Skip system messages, we don't need to display them to user
-			if(MessageData.Message != SystemPublishMessage)
-			{
-				//Broadcast callback with message content
-				//Message needs to be called back on Game Thread
-				AsyncTask(ENamedThreads::GameThread, [this, MessageData]()
-				{
-					OnMessageReceived.Broadcast(MessageData);
-				});
-			}
-			message = pubnub_get_v2(ctx_sub);
-		}
-	});*/
-}
-
-void UPubnubSubsystem::EventEngineSubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings)
-{
-	//Create subscription for channel entity
-	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannel(ctx_sync, Channel, SubscribeSettings);
-
-	if(nullptr == Subscription)
-	{
-		PubnubError("Failed to subscribe. Pubnub_subscription_alloc didn't create subscription");
-		return;
-	}
-
-	//Create callback that will be triggered by the c-core event engine
-	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
-	{
-		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(user_data);
-		FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, ThisSubsystem]()
-		{
-			if(ThisSubsystem)
-			{
-				ThisSubsystem->OnMessageReceived.Broadcast(MessageData);
-			}
-		});
-	};
-
-	//Add subscription listener and subscribe with subscription
-	if(!UPubnubUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
-	{
-		PubnubError("Failed to subscribe.");
-		return;
-	}
-
-	//Save Callback and Subscription, so later we can use it to unsubscribe
-	CCoreSubscriptionData SubscriptionData{Callback, Subscription};
-	ChannelSubscriptions.Add(Channel, SubscriptionData);
-}
-
-void UPubnubSubsystem::EventEngineUnsubscribeFromChannel(FString Channel)
-{
-	CCoreSubscriptionData* SubscriptionData =  ChannelSubscriptions.Find(Channel);
-	if(!SubscriptionData)
-	{
-		PubnubError("Failed to unsubscribe from channel. There is no such subscription");
-		return;
-	}
-
-	//Add subscription listener and subscribe with subscription
-	if(!UPubnubUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
-	{
-		PubnubError("Failed to unsubscribe.");
-		return;
-	}
-
-	pubnub_subscription_free(&SubscriptionData->Subscription);
-
-	ChannelSubscriptions.Remove(Channel);
-}
-
-FString UPubnubSubsystem::StringArrayToCommaSeparated(TArray<FString> StringArray)
-{
-	if(StringArray.IsEmpty())
-	{return "";}
-	
-	FString CommaSeparatedString;
-	for(FString StringElement : SubscribedChannels)
-	{
-		if(CommaSeparatedString.IsEmpty())
-		{
-			CommaSeparatedString.Append(StringElement);
-		}
-		else
-		{
-			CommaSeparatedString.Append(",");
-			CommaSeparatedString.Append(StringElement);
-		}
-	}
-	return CommaSeparatedString;
-}
-
 FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
 {
 	FString Response;
@@ -1209,18 +996,16 @@ void UPubnubSubsystem::InitPubnub_priv()
 	}
 	
 	ctx_pub = pubnub_alloc();
-	//ctx_sub = pubnub_alloc();
-	ctx_sync = pubnub_alloc();
+	ctx_ee = pubnub_alloc();
 
 	//Send logging callback to Pubnub sdk, so we can pass all logs to UE
 	pubnub_set_log_callback(PubnubSDKLogConverter);
 	
 	pubnub_enforce_api(ctx_pub, PNA_SYNC);
-	pubnub_enforce_api(ctx_sync, PNA_CALLBACK);
+	pubnub_enforce_api(ctx_ee, PNA_CALLBACK);
 
 	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
-	//pubnub_init(ctx_sub, PublishKey, SubscribeKey);
-	pubnub_init(ctx_sync, PublishKey, SubscribeKey);
+	pubnub_init(ctx_ee, PublishKey, SubscribeKey);
 	
 	IsInitialized = true;
 	
@@ -1228,31 +1013,6 @@ void UPubnubSubsystem::InitPubnub_priv()
 	{
 		SetSecretKey();
 	}
-}
-
-void UPubnubSubsystem::DeinitPubnub_priv()
-{
-	if(!IsInitialized)
-	{return;}
-
-	//Unsubscribe from all channels so this user will not be visible for others anymore
-	pubnub_unsubscribe_all(ctx_sync);
-	
-	IsInitialized = false;
-	
-	if(ctx_pub)
-	{
-		pubnub_free(ctx_pub);
-		ctx_pub = nullptr;
-	}
-	if(ctx_sync)
-	{
-		pubnub_free(ctx_sync);
-		ctx_sync = nullptr;
-	}
-	
-	ChannelSubscriptions.Empty();
-	ChannelGroupSubscriptions.Empty();
 }
 
 void UPubnubSubsystem::SetUserID_priv(FString UserID)
@@ -1264,7 +1024,7 @@ void UPubnubSubsystem::SetUserID_priv(FString UserID)
 	}
 
 	pubnub_set_user_id(ctx_pub, TCHAR_TO_ANSI(*UserID));
-	pubnub_set_user_id(ctx_sync, TCHAR_TO_ANSI(*UserID));
+	pubnub_set_user_id(ctx_ee, TCHAR_TO_ANSI(*UserID));
 
 	IsUserIDSet = true;
 }
@@ -1333,11 +1093,11 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FPubnubSubscribe
 	if(CheckIsFieldEmpty(Channel, "Channel", "SubscribeToChannel"))
 	{return;}
 
-	if(SubscribedChannels.Contains(Channel))
+	if(ChannelSubscriptions.Contains(Channel))
 	{return;}
 
 	//Create subscription for channel entity
-	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannel(ctx_sync, Channel, SubscribeSettings);
+	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannel(ctx_ee, Channel, SubscribeSettings);
 
 	if(nullptr == Subscription)
 	{
@@ -1369,8 +1129,6 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FPubnubSubscribe
 	//Save Callback and Subscription, so later we can use it to unsubscribe
 	CCoreSubscriptionData SubscriptionData{Callback, Subscription};
 	ChannelSubscriptions.Add(Channel, SubscriptionData);
-	
-	SubscribedChannels.Add(Channel);
 }
 
 void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName, FPubnubSubscribeSettings SubscribeSettings)
@@ -1381,11 +1139,11 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName, FPubnubSubscribe
 	if(CheckIsFieldEmpty(GroupName, "GroupName", "SubscribeToGroup"))
 	{return;}
 
-	if(SubscribedGroups.Contains(GroupName))
+	if(ChannelGroupSubscriptions.Contains(GroupName))
 	{return;}
 	
 	//Create subscription for channel group entity
-	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannelGroup(ctx_sync, GroupName, SubscribeSettings);
+	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannelGroup(ctx_ee, GroupName, SubscribeSettings);
 
 	if(nullptr == Subscription)
 	{
@@ -1417,8 +1175,6 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName, FPubnubSubscribe
 	//Save Callback and Subscription, so later we can use it to unsubscribe
 	CCoreSubscriptionData SubscriptionData{Callback, Subscription};
 	ChannelGroupSubscriptions.Add(GroupName, SubscriptionData);
-	
-	SubscribedGroups.Add(GroupName);
 }
 
 void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString Channel)
@@ -1426,10 +1182,6 @@ void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString Channel)
 	if(!CheckIsUserIDSet())
 	{return;}
 	
-	//make sure user was subscribed to that channel
-	if(SubscribedChannels.Remove(Channel) == 0)
-	{return;}
-
 	CCoreSubscriptionData* SubscriptionData =  ChannelSubscriptions.Find(Channel);
 	if(!SubscriptionData)
 	{
@@ -1454,10 +1206,6 @@ void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
-	
-	//make sure user was subscribed to that channel
-	if(SubscribedGroups.Remove(GroupName) == 0)
-	{return;}
 
 	CCoreSubscriptionData* SubscriptionData =  ChannelGroupSubscriptions.Find(GroupName);
 	if(!SubscriptionData)
@@ -1481,16 +1229,14 @@ void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
 
 void UPubnubSubsystem::UnsubscribeFromAll_priv()
 {
-	if(SubscribedChannels.IsEmpty() && SubscribedGroups.IsEmpty())
+	if(ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty())
 	{return;}
 	
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	pubnub_unsubscribe_all(ctx_sync);
-
-	SubscribedChannels.Empty();
-	SubscribedGroups.Empty();
+	pubnub_unsubscribe_all(ctx_ee);
+	
 	ChannelSubscriptions.Empty();
 	ChannelGroupSubscriptions.Empty();
 }
