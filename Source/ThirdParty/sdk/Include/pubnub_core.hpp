@@ -7,7 +7,6 @@ extern "C" {
 #define PUBNUB_USE_SUBSCRIBE_EVENT_ENGINE 1
 #define PUBNUB_CALLBACK_API 1
 #define PUBNUB_NTF_RUNTIME_SELECTION 1
-#define PUBNUB_USE_RETRY_CONFIGURATION 1
 #define PUBNUB_USE_LOG_CALLBACK 1
 
 #include "../core/pubnub_api_types.h"
