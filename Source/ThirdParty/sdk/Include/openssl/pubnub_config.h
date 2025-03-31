@@ -223,22 +223,6 @@
 #define PUBNUB_USE_GRANT_TOKEN_API 1
 #endif
 
-#if !defined(PUBNUB_USE_SUBSCRIBE_EVENT_ENGINE)
-#define PUBNUB_USE_SUBSCRIBE_EVENT_ENGINE 1
-#endif
-
-#if !defined(PUBNUB_CALLBACK_API )
-#define PUBNUB_CALLBACK_API  1
-#endif
-
-#if !defined(PUBNUB_NTF_RUNTIME_SELECTION )
-#define PUBNUB_NTF_RUNTIME_SELECTION  1
-#endif
-
-#if !defined(PUBNUB_USE_RETRY_CONFIGURATION )
-#define PUBNUB_USE_RETRY_CONFIGURATION  0
-#endif
-
 #if !defined(PUBNUB_USE_REVOKE_TOKEN_API)
 /** If true (!=0) will enable using the Revoke Token API */
 #define PUBNUB_USE_REVOKE_TOKEN_API 1
