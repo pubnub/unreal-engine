@@ -393,7 +393,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -410,7 +410,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -473,7 +473,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -490,7 +490,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -544,6 +544,7 @@ public:
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
+	 * (Generally the same as GetMemberships just using raw strings as Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -552,16 +553,31 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
-	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "channel.id" or "channel.name:desc" or "channel.id:desc,status".
+	 * If direction is not specified, ascending will be used.
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
+	/**
+	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param User The user ID for whom to retrieve memberships.
+	 * @param OnGetMembershipResponse The callback function used to handle the result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetMembershipsNew(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -573,9 +589,10 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
-	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "channel.id" or "channel.name:desc" or "channel.id:desc,status".
+	 * If direction is not specified, ascending will be used.
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -617,7 +634,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -635,7 +652,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))

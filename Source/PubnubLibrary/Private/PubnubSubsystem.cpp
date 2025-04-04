@@ -530,7 +530,7 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString Channel)
 	});
 }
 
-void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
@@ -541,15 +541,9 @@ void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponse On
 	});
 }
 
-void UPubnubSubsystem::GetMembershipsNew(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, 
-	FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Include string: %s"), *UPubnubUtilities::MembershipIncludeToString(Include));
-	UE_LOG(LogTemp, Warning, TEXT("Sort string: %s"), *UPubnubUtilities::MembershipSortToString(Sort));
-	QuickActionThread->AddFunctionToQueue( [this, User, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev]
-	{
-		GetMemberships_DATA_priv(User, OnGetMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
-	});
+	GetMembershipsRaw(User, OnGetMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::GetMemberships_JSON(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
