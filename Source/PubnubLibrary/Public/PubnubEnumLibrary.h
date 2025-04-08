@@ -62,12 +62,22 @@ enum class EPubnubMembershipSortType : uint8
 UENUM(BlueprintType)
 enum class EPubnubMemberSortType : uint8
 {
-	PMST_UserID					UMETA(DisplayName="UserID"),
-	PMST_UserName				UMETA(DisplayName="UserName"),
-	PMST_UserUpdated			UMETA(DisplayName="UserUpdated"),
-	PMST_UserStatus				UMETA(DisplayName="UserStatus"),
-	PMST_UserType				UMETA(DisplayName="UserType"),
-	PMST_Updated				UMETA(DisplayName="Updated"),
-	PMST_Status					UMETA(DisplayName="Status"),
-	PMST_Type					UMETA(DisplayName="Type")
+	PMeST_UserID					UMETA(DisplayName="UserID"),
+	PMeST_UserName				UMETA(DisplayName="UserName"),
+	PMeST_UserUpdated			UMETA(DisplayName="UserUpdated"),
+	PMeST_UserStatus				UMETA(DisplayName="UserStatus"),
+	PMeST_UserType				UMETA(DisplayName="UserType"),
+	PMeST_Updated				UMETA(DisplayName="Updated"),
+	PMeST_Status					UMETA(DisplayName="Status"),
+	PMeST_Type					UMETA(DisplayName="Type")
+};
+
+UENUM(BlueprintType)
+enum class EPubnubGetAllSortType : uint8
+{
+	PGAST_ID				UMETA(DisplayName="UserID"),
+	PGAST_Name				UMETA(DisplayName="UserName"),
+	PGAST_Updated			UMETA(DisplayName="UserUpdated"),
+	PGAST_Status			UMETA(DisplayName="UserStatus"),
+	PGAST_Type				UMETA(DisplayName="UserType")
 };

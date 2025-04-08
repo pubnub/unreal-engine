@@ -73,6 +73,23 @@ FString UPubnubUtilities::MemberIncludeToString(const FPubnubMemberInclude& Memb
 	return FinalString;
 }
 
+FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude)
+{
+	FString FinalString = "";
+	if(GetAllInclude.IncludeCustom)			{FinalString.Append("Custom,");}
+	if(GetAllInclude.IncludeStatus)			{FinalString.Append("Status,");}
+	if(GetAllInclude.IncludeType)			{FinalString.Append("Type,");}
+	//Total count is passed as a separate parameter, so it's not included directly in the final string
+
+	//If there was any include remove the last comma
+	if(!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
 FString UPubnubUtilities::MembershipSortTypeToString(const EPubnubMembershipSortType SortType)
 {
 	switch (SortType)
@@ -101,21 +118,39 @@ FString UPubnubUtilities::MemberSortTypeToString(const EPubnubMemberSortType Sor
 {
 	switch (SortType)
 	{
-	case EPubnubMemberSortType::PMST_UserID:
+	case EPubnubMemberSortType::PMeST_UserID:
 		return "user.id";
-	case EPubnubMemberSortType::PMST_UserName:
+	case EPubnubMemberSortType::PMeST_UserName:
 		return "user.name";
-	case EPubnubMemberSortType::PMST_UserUpdated:
+	case EPubnubMemberSortType::PMeST_UserUpdated:
 		return "user.updated";
-	case EPubnubMemberSortType::PMST_UserStatus:
+	case EPubnubMemberSortType::PMeST_UserStatus:
 		return "user.status";
-	case EPubnubMemberSortType::PMST_UserType:
+	case EPubnubMemberSortType::PMeST_UserType:
 		return "user.type";
-	case EPubnubMemberSortType::PMST_Updated:
+	case EPubnubMemberSortType::PMeST_Updated:
 		return "updated";
-	case EPubnubMemberSortType::PMST_Status:
+	case EPubnubMemberSortType::PMeST_Status:
 		return "status";
-	case EPubnubMemberSortType::PMST_Type:
+	case EPubnubMemberSortType::PMeST_Type:
+		return "type";
+	}
+	return "";
+}
+
+FString UPubnubUtilities::GetAllSortTypeToString(const EPubnubGetAllSortType SortType)
+{
+	switch (SortType)
+	{
+	case EPubnubGetAllSortType::PGAST_ID:
+		return "id";
+	case EPubnubGetAllSortType::PGAST_Name:
+		return "name";
+	case EPubnubGetAllSortType::PGAST_Updated:
+		return "updated";
+	case EPubnubGetAllSortType::PGAST_Status:
+		return "status";
+	case EPubnubGetAllSortType::PGAST_Type:
 		return "type";
 	}
 	return "";
@@ -147,6 +182,24 @@ FString UPubnubUtilities::MemberSortToString(const FPubnubMemberSort& MemberIncl
 	{
 		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
 		FinalString.Append(MemberSortTypeToString(SingleSort.SortType));
+		//Default sort is ascending, so we only specify order when it's descending
+		if(SingleSort.SortOrder)
+		{
+			FinalString.Append(":desc");
+		}
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllInclude)
+{
+	FString FinalString = "";
+	//Form comma separated string of sorts
+	for(auto SingleSort : GetAllInclude.GetAllSort)
+	{
+		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
+		FinalString.Append(GetAllSortTypeToString(SingleSort.SortType));
 		//Default sort is ascending, so we only specify order when it's descending
 		if(SingleSort.SortOrder)
 		{

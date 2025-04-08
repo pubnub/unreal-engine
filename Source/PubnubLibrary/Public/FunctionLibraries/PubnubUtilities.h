@@ -21,8 +21,11 @@ public:
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
 	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);
 	static FString MemberIncludeToString(const FPubnubMemberInclude& MemberInclude);
+	static FString GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude);
 	static FString MembershipSortTypeToString(const EPubnubMembershipSortType SortType);
 	static FString MemberSortTypeToString(const EPubnubMemberSortType SortType);
+	static FString GetAllSortTypeToString(const EPubnubGetAllSortType SortType);
 	static FString MembershipSortToString(const FPubnubMembershipSort& MemberInclude);
 	static FString MemberSortToString(const FPubnubMemberSort& MemberInclude);
+	static FString GetAllSortToString(const FPubnubGetAllSort& GetAllInclude);
 };
