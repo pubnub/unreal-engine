@@ -22,7 +22,16 @@ public:
 
 	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
-
+	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);
+	static FString MemberIncludeToString(const FPubnubMemberInclude& MemberInclude);
+	static FString GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude);
+	static FString MembershipSortTypeToString(const EPubnubMembershipSortType SortType);
+	static FString MemberSortTypeToString(const EPubnubMemberSortType SortType);
+	static FString GetAllSortTypeToString(const EPubnubGetAllSortType SortType);
+	static FString MembershipSortToString(const FPubnubMembershipSort& MemberInclude);
+	static FString MemberSortToString(const FPubnubMemberSort& MemberInclude);
+	static FString GetAllSortToString(const FPubnubGetAllSort& GetAllInclude);
+	
 	/* C-CORE EVENT ENGINE HELPERS */
 
 	static pubnub_subscription_t* EEGetSubscriptionForChannel(pubnub_t* Context, FString Channel, FPubnubSubscribeSettings Options);
