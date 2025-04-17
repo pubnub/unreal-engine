@@ -15,11 +15,18 @@ class FJsonObject;
 
 class UPubnubSettings;
 class FPubnubFunctionThread;
-class FPubnubLoopingThread;
 class UPubnubChatSystem;
+
+
+struct CCoreSubscriptionData
+{
+	pubnub_subscribe_message_callback_t Callback;
+	pubnub_subscription_t* Subscription;
+};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, const FPubnubSubscriptionStatusData&, StatusData);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 
@@ -52,6 +59,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnPubnubError OnPubnubError;
+
+	/**Listener to react for subscription status changed */
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	FOnSubscriptionStatusChanged OnSubscriptionStatusChanged;
 
 #pragma region BLUEPRINT EXPOSED
 
@@ -122,8 +133,8 @@ public:
 	 * @param Channel The ID of the channel to subscribe to.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void SubscribeToChannel(FString Channel);
-
+	void SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	
 	/**
 	 * Subscribes to a specified group - start listening for messages on that group.
 	 * Use OnMessageReceived Callback to get those messages.
@@ -131,7 +142,7 @@ public:
 	 * @param GroupName The name of the channel to subscribe to.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void SubscribeToGroup(FString GroupName);
+	void SubscribeToGroup(FString GroupName, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
 	/**
 	 * Unsubscribes from a specified channel - stop listening for messages on that channel.
@@ -384,6 +395,7 @@ public:
 
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
+	 * (Generally the same as GetAllUserMetadata just using raw strings as Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
@@ -391,14 +403,30 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
-	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.  For example: "id" or "name:desc" or "id:desc,status".
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetAllUserMetadataRaw(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
+	/**
+	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param OnGetAllUserMetadataResponse The callback function used to handle the result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	void GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+	
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
 	 * 
@@ -410,7 +438,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -464,20 +492,36 @@ public:
 
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
+	 * (Generally the same as GetAllChannelMetadata just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.  For example: "id" or "name:desc" or "id:desc,status".
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	void GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param OnGetAllChannelMetadataResponse The callback function used to handle the result.
-	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
-	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
-	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetAllChannelMetadata(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	void GetAllChannelMetadata(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
@@ -490,7 +534,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -544,6 +588,7 @@ public:
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
+	 * (Generally the same as GetMemberships just using raw strings as Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -552,13 +597,31 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
-	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "channel.id" or "channel.name:desc" or "channel.id:desc,status".
+	 * If direction is not specified, ascending will be used.
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param User The user ID for whom to retrieve memberships.
+	 * @param OnGetMembershipResponse The callback function used to handle the result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	void GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -570,9 +633,10 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
-	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "channel.id" or "channel.name:desc" or "channel.id:desc,status".
+	 * If direction is not specified, ascending will be used.
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -604,21 +668,41 @@ public:
 
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
+	 *
+	 * (Generally the same as GetChannelMembers just using raw strings as Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
-	 * @param Channel The user ID for whom to retrieve memberships.
+	 * @param Channel The Channel ID for which to retrieve member.
 	 * @param OnGetMembersResponse The callback function used to handle the result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
-	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 * If direction is not specified, ascending will be used.
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetChannelMembers(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The Channel ID for which to retrieve member.
+	 * @param OnGetMembersResponse The callback function used to handle the result.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	void GetChannelMembers(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
@@ -632,7 +716,7 @@ public:
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction. For example: {name: 'asc'}
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
-	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
@@ -741,32 +825,18 @@ public:
 	bool CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName);
 	
 private:
-
-	inline static const FString SystemPublishMessage = "\"Pubnub system unlock message\"";
-	
-	//New threads to call all C-Core functions asynchronously
 	
 	//Thread for quick operations, generally everything except subscribe
 	TObjectPtr<FPubnubFunctionThread> QuickActionThread = nullptr;
-	//Thread for long operations that need to be called in a loop, mostly for subcribe
-	TObjectPtr<FPubnubLoopingThread> LongpollThread = nullptr;
 
-	//Pubnub contexts for publishing data and subscribing to channels
+	//Pubnub context for the most of the pubnub operations
 	pubnub_t *ctx_pub = nullptr;
-	pubnub_t *ctx_sub = nullptr;
-
-	TArray<FString> SubscribedChannels;
-	TArray<FString> SubscribedGroups;
+	//Pubnub context for the event engine - subscribe operations
+	pubnub_t *ctx_ee = nullptr;
 	
-	//Publish to the first subscribed channel to unlock subscribe context
-	void SystemPublish(FString ChannelOpt = "");
-
-	//Register to PubnubLoopingThread function to check in loop for messages from subscribed channels and groups
-	void StartPubnubSubscribeLoop();
-
-	//Useful for subscribing into multiple channels/groups. Returns Strings in format String1,String2,...
-	FString StringArrayToCommaSeparated(TArray<FString> StringArray);
-
+	TMap<FString, CCoreSubscriptionData> ChannelSubscriptions;
+	TMap<FString, CCoreSubscriptionData> ChannelGroupSubscriptions;
+	
 	//Returns FString from the pubnub_get response
 	FString GetLastResponse(pubnub_t* context);
 	
@@ -774,12 +844,14 @@ private:
 	FString GetLastChannelResponse(pubnub_t* context);
 
 #pragma region ERROR FUNCTIONS
-	
+
+public:
 	/* ERROR FUNCTIONS */
 	//Every Error function prints error to the Log and Broadcasts OnPubnubError delegate
 	
-	//Default error for most use cases
+	//Default error for most use cases. Internal usage only.
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
+private:
 	//Error when the response was not OK
 	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
 	//Error during publishing a message
@@ -820,12 +892,11 @@ private:
 	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 	
 	void InitPubnub_priv();
-	void DeinitPubnub_priv();
 	void SetUserID_priv(FString UserID);
 	void PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
-	void SubscribeToChannel_priv(FString Channel);
-	void SubscribeToGroup_priv(FString GroupName);
+	void SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	void SubscribeToGroup_priv(FString GroupName, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void UnsubscribeFromChannel_priv(FString Channel);
 	void UnsubscribeFromGroup_priv(FString GroupName);
 	void UnsubscribeFromAll_priv();
@@ -893,7 +964,7 @@ private:
 	void HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersFromChannelSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
 	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
 	void FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
-	FPubnubMessageData UEMessageFromPubnub(pubnub_v2_message PubnubMessage);
+	static FPubnubMessageData UEMessageFromPubnub(pubnub_v2_message PubnubMessage);
 	
 	/* GRANT TOKEN HELPERS */
 
@@ -916,5 +987,6 @@ private:
 			break;
 		};
 	};
-};
 
+	void OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data);
+};

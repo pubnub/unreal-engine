@@ -3,6 +3,11 @@
 #define INC_PUBNUB_CORE
 
 extern "C" {
+//Required defines from C-Core
+#define PUBNUB_USE_SUBSCRIBE_EVENT_ENGINE 1
+#define PUBNUB_CALLBACK_API 1
+#define PUBNUB_NTF_RUNTIME_SELECTION 1
+#define PUBNUB_USE_LOG_CALLBACK 1
 
 #include "../core/pubnub_api_types.h"
 #include "../core/pubnub_assert.h"
@@ -20,6 +25,9 @@ extern "C" {
 #include "../core/pubnub_helper.h"
 #include "../core/pubnub_free_with_timeout.h"
 #include "../core/pubnub_ntf_sync.h"
+#include "../core/pubnub_ntf_enforcement.h"
+#include "../core/pubnub_entities.h"
+#include "../core/pubnub_subscribe_event_listener.h"
 #if defined(PUBNUB_CALLBACK_API)
 #include "../core/pubnub_ntf_callback.h"
 #endif
@@ -53,7 +61,7 @@ extern "C" {
 #include "../core/pubnub_revoke_token_api.h"
 #endif
 #include "../core/pubnub_auto_heartbeat.h"
-
+	
 }
 
 #endif // !defined INC_PUBNUB_CORE
