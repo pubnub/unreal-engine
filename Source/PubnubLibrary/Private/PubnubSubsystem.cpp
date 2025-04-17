@@ -1019,6 +1019,17 @@ void UPubnubSubsystem::InitPubnub_priv()
 
 	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
 	pubnub_init(ctx_ee, PublishKey, SubscribeKey);
+
+	pubnub_subscribe_status_callback_t Callback = +[](const pubnub_t *pb, const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data, void* _data)
+	{
+		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(_data);
+		if(!ThisSubsystem)
+		{return;}
+
+		ThisSubsystem->OnCCoreSubscriptionStatusReceived(status, status_data);
+	};
+	//Register subscription status listener with callback created above
+	pubnub_subscribe_add_status_listener(ctx_ee, Callback, this);
 	
 	IsInitialized = true;
 	
@@ -1168,6 +1179,8 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName, FPubnubSubscribe
 	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
 		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(user_data);
+		if(!ThisSubsystem)
+		{return;}
 		FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, ThisSubsystem]()
 		{
@@ -2522,4 +2535,28 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddUserPermissionsToJson(TArray<FStrin
 	}
 
 	return JsonObject;
+}
+
+void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data)
+{
+	//Don't waste resources to translate data if there is no delegate bound to it
+	if(!OnSubscriptionStatusChanged.IsBound())
+	{return;}
+
+	FPubnubSubscriptionStatusData SubscriptionStatusData;
+	SubscriptionStatusData.Reason = pubnub_res_2_string(status_data.reason);
+	if (NULL != status_data.channels)
+	{
+		FString Channels(status_data.channels);
+		Channels.ParseIntoArray(SubscriptionStatusData.Channels, TEXT(","));
+	}
+	if (NULL != status_data.channel_groups)
+	{
+		FString ChannelGroups(status_data.channel_groups);
+		ChannelGroups.ParseIntoArray(SubscriptionStatusData.ChannelGroups, TEXT(","));
+	}
+	
+
+
+	OnSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
 }

@@ -81,3 +81,13 @@ enum class EPubnubGetAllSortType : uint8
 	PGAST_Status			UMETA(DisplayName="UserStatus"),
 	PGAST_Type				UMETA(DisplayName="UserType")
 };
+
+UENUM(BlueprintType)
+enum class EPubnubSubscriptionStatus : uint8
+{
+	PSS_Connected						UMETA(DisplayName="Connected"),
+	PSS_ConnectionError					UMETA(DisplayName="ConnectionError"),
+	PSS_DisconnectedUnexpectedly		UMETA(DisplayName="DisconnectedUnexpectedly"),
+	PSS_Disconnected					UMETA(DisplayName="Disconnected"),
+	PSS_SubscriptionChanged				UMETA(DisplayName="SubscriptionChanged")
+};

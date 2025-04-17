@@ -549,3 +549,17 @@ struct FPubnubGetAllSort
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubGetAllSingleSort> GetAllSort;
 	
 };
+
+USTRUCT(BlueprintType)
+struct FPubnubSubscriptionStatusData
+{
+	GENERATED_BODY()
+
+	/**Error details in case of `PSS_ConnectionError` and `PSS_DisconnectedUnexpectedly` may contain additional information about reasons of failure.*/
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Reason = "";
+	/** All currently subscribed channels */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
+	/** All currently subscribed channel groups */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroups;
+	
+};
