@@ -1098,7 +1098,7 @@ void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FPubnubSign
 	
 	pubnub_signal_options PubnubOptions = pubnub_signal_defopts();
 	auto CharConverter = StringCast<ANSICHAR>(*SignalSettings.CustomMessageType);
-	PubnubOptions.custom_message_type = CharConverter.Get();
+	PubnubOptions.custom_message_type = SignalSettings.CustomMessageType.IsEmpty() ? NULL : CharConverter.Get();
 	pubnub_signal_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message), PubnubOptions);
 	
 	pubnub_res PublishResult = pubnub_await(ctx_pub);
@@ -1686,15 +1686,15 @@ FString UPubnubSubsystem::GetAllUserMetadata_pn(FString Include, int Limit, FStr
 {
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
 	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = CharConverterInclude.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
 	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = CharConverterFilter.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
 	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = CharConverterSort.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
 	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = CharConverterPageNext.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
 	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = CharConverterPagePrev.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
@@ -1832,15 +1832,15 @@ FString UPubnubSubsystem::GetAllChannelMetadata_pn(FString Include, int Limit, F
 {
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
 	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = CharConverterInclude.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
 	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = CharConverterFilter.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
 	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = CharConverterSort.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
 	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = CharConverterPageNext.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
 	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = CharConverterPagePrev.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
@@ -1979,17 +1979,17 @@ FString UPubnubSubsystem::GetMemberships_pn(FString User, FString Include, int L
 {
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
 	auto CharConverterUuid = StringCast<ANSICHAR>(*User);
-	PubnubOptions.uuid = CharConverterUuid.Get();
+	PubnubOptions.uuid = User.IsEmpty() ? NULL : CharConverterUuid.Get();
 	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = CharConverterInclude.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
 	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = CharConverterFilter.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
 	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = CharConverterSort.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
 	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = CharConverterPageNext.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
 	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = CharConverterPagePrev.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
@@ -2094,15 +2094,15 @@ FString UPubnubSubsystem::GetChannelMembers_pn(FString Channel, FString Include,
 {
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
 	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = CharConverterInclude.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
 	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = CharConverterFilter.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
 	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = CharConverterSort.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
 	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = CharConverterPageNext.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
 	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = CharConverterPagePrev.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
