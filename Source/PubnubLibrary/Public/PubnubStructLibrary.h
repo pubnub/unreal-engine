@@ -428,7 +428,7 @@ struct FPubnubMembershipInclude
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeTotalCount = false;
 
 	/* Set all Includes to the given bool Value */
-	static FPubnubMembershipInclude SetAllToValue(bool Value)
+	static FPubnubMembershipInclude FromValue(bool Value)
 	{
 		return FPubnubMembershipInclude(Value, Value, Value, Value, Value, Value, Value, Value);
 	}
@@ -457,7 +457,7 @@ struct FPubnubMemberInclude
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeTotalCount = false;
 
 	/* Set all Includes to the given bool Value */
-	static FPubnubMemberInclude SetAllToValue(bool Value)
+	static FPubnubMemberInclude FromValue(bool Value)
 	{
 		return FPubnubMemberInclude(Value, Value, Value, Value, Value, Value, Value, Value);
 	}
@@ -478,7 +478,7 @@ struct FPubnubGetAllInclude
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeTotalCount = false;
 	
 	/* Set all Includes to the given bool Value */
-	static FPubnubGetAllInclude SetAllToValue(bool Value)
+	static FPubnubGetAllInclude FromValue(bool Value)
 	{
 		return FPubnubGetAllInclude(Value, Value, Value);
 	}

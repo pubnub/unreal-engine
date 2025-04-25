@@ -862,16 +862,12 @@ void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorT
 		UE_LOG(PubnubLog, Warning, TEXT("%s"), *ErrorMessage);
 	}
 
-	if(!OnPubnubError.IsBound())
-	{
-		return;
-	}
-
 	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
 	AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage, ErrorType]()
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnPubnubError.Broadcast(ErrorMessage, ErrorType);
+		OnPubnubErrorLambda.Broadcast(ErrorMessage, ErrorType);
 	});
 	
 }
@@ -889,7 +885,8 @@ void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString Er
 	AsyncTask(ENamedThreads::GameThread, [this, FinalErrorMessage]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);;
+		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
+		OnPubnubErrorLambda.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
 	});
 }
 
@@ -911,7 +908,8 @@ void UPubnubSubsystem::PubnubPublishError()
 	AsyncTask(ENamedThreads::GameThread, [this, FinalErrorMessage]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);;
+		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
+		OnPubnubErrorLambda.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
 	});
 }
 

@@ -26,6 +26,7 @@ struct CCoreSubscriptionData
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorLambda, FString ErrorMessage, EPubnubErrorType ErrorType);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, const FPubnubSubscriptionStatusData&, StatusData);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
@@ -57,8 +58,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnMessageReceived OnMessageReceived;
 
+	/**Listener to react for all Errors in Pubnub functions*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnPubnubError OnPubnubError;
+	/**Listener to react for all Errors in Pubnub functions, equivalent that accepts lambdas*/
+	FOnPubnubErrorLambda OnPubnubErrorLambda;
 
 	/**Listener to react for subscription status changed */
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")

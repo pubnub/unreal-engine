@@ -34,13 +34,13 @@ FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block
 FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude)
 {
 	FString FinalString = "";
-	if(MembershipInclude.IncludeCustom)			{FinalString.Append("Custom,");}
-	if(MembershipInclude.IncludeStatus)			{FinalString.Append("Status,");}
-	if(MembershipInclude.IncludeType)			{FinalString.Append("Type,");}
-	if(MembershipInclude.IncludeChannel)		{FinalString.Append("Channel,");}
-	if(MembershipInclude.IncludeChannelCustom)	{FinalString.Append("Channel.Custom,");}
-	if(MembershipInclude.IncludeChannelStatus)	{FinalString.Append("Channel.Status,");}
-	if(MembershipInclude.IncludeChannelType)	{FinalString.Append("Channel.Type,");}
+	if(MembershipInclude.IncludeCustom)			{FinalString.Append("custom,");}
+	if(MembershipInclude.IncludeStatus)			{FinalString.Append("status,");}
+	if(MembershipInclude.IncludeType)			{FinalString.Append("type,");}
+	if(MembershipInclude.IncludeChannel)		{FinalString.Append("channel,");}
+	if(MembershipInclude.IncludeChannelCustom)	{FinalString.Append("channel.custom,");}
+	if(MembershipInclude.IncludeChannelStatus)	{FinalString.Append("channel.status,");}
+	if(MembershipInclude.IncludeChannelType)	{FinalString.Append("channel.type,");}
 	//Total count is passed as a separate parameter, so it's not included directly in the final string
 
 	//If there was any include remove the last comma
@@ -55,13 +55,13 @@ FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclu
 FString UPubnubUtilities::MemberIncludeToString(const FPubnubMemberInclude& MemberInclude)
 {
 	FString FinalString = "";
-	if(MemberInclude.IncludeCustom)			{FinalString.Append("Custom,");}
-	if(MemberInclude.IncludeStatus)			{FinalString.Append("Status,");}
-	if(MemberInclude.IncludeType)			{FinalString.Append("Type,");}
-	if(MemberInclude.IncludeUser)			{FinalString.Append("User,");}
-	if(MemberInclude.IncludeUserCustom)		{FinalString.Append("User.Custom,");}
-	if(MemberInclude.IncludeUserStatus)		{FinalString.Append("User.Status,");}
-	if(MemberInclude.IncludeUserType)		{FinalString.Append("User.Type,");}
+	if(MemberInclude.IncludeCustom)			{FinalString.Append("custom,");}
+	if(MemberInclude.IncludeStatus)			{FinalString.Append("status,");}
+	if(MemberInclude.IncludeType)			{FinalString.Append("type,");}
+	if(MemberInclude.IncludeUser)			{FinalString.Append("user,");}
+	if(MemberInclude.IncludeUserCustom)		{FinalString.Append("user.custom,");}
+	if(MemberInclude.IncludeUserStatus)		{FinalString.Append("user.status,");}
+	if(MemberInclude.IncludeUserType)		{FinalString.Append("user.type,");}
 	//Total count is passed as a separate parameter, so it's not included directly in the final string
 
 	//If there was any include remove the last comma
@@ -76,9 +76,9 @@ FString UPubnubUtilities::MemberIncludeToString(const FPubnubMemberInclude& Memb
 FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude)
 {
 	FString FinalString = "";
-	if(GetAllInclude.IncludeCustom)			{FinalString.Append("Custom,");}
-	if(GetAllInclude.IncludeStatus)			{FinalString.Append("Status,");}
-	if(GetAllInclude.IncludeType)			{FinalString.Append("Type,");}
+	if(GetAllInclude.IncludeCustom)			{FinalString.Append("custom,");}
+	if(GetAllInclude.IncludeStatus)			{FinalString.Append("status,");}
+	if(GetAllInclude.IncludeType)			{FinalString.Append("type,");}
 	//Total count is passed as a separate parameter, so it's not included directly in the final string
 
 	//If there was any include remove the last comma
