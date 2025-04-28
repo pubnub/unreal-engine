@@ -12,7 +12,8 @@ FString UPubnubJsonUtilities::JsonObjectToString(TSharedPtr<FJsonObject> JsonObj
 	}
 	
 	FString JsonString;
-	TSharedRef< TJsonWriter<> > JsonWriter = TJsonWriterFactory<>::Create(&JsonString);
+	TSharedRef< TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>> > JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&JsonString);
+
 	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
 	return JsonString;
 }
@@ -195,14 +196,20 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 		for(auto MessageValue : ChannelJsonValue->AsArray())
 		{
 			FPubnubHistoryMessageData CurrentMessage;
-			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message);
+			if(!MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message))
+			{
+				const TSharedPtr<FJsonObject>* MetaJsonObject;
+				if(MessageValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("message"), MetaJsonObject))
+				{
+					CurrentMessage.Message = JsonObjectToString(*MetaJsonObject);
+				}
+			}
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("uuid"), CurrentMessage.UserID);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("timetoken"), CurrentMessage.Timetoken);
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message_type"), CurrentMessage.MessageType);
-			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("custom_message_type"), CurrentMessage.MessageType);
+			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("custom_message_type"), CurrentMessage.CustomMessageType);
 			if(!MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("meta"), CurrentMessage.Meta))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Reading Meta as Json Object"));
 				const TSharedPtr<FJsonObject>* MetaJsonObject;
 				if(MessageValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("meta"), MetaJsonObject))
 				{
