@@ -211,7 +211,8 @@ public:
 	 * @param ChannelGroup The name of the channel group to list channels from.
 	 * @param OnListChannelsResponse The callback function used to handle the result in JSON format.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void ListChannelsFromGroup_JSON(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse);
 
 	/**
@@ -245,7 +246,8 @@ public:
 	 * @param ListUsersFromChannelResponse The callback function used to handle the result in Json format.
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void ListUsersFromChannel_JSON(FString Channel, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	/**
@@ -267,7 +269,8 @@ public:
 	 * @param UserID The user ID to list subscribed channels for.
 	 * @param ListUserSubscribedChannelsResponse The callback function used to handle the result in JSON format.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void ListUserSubscribedChannels_JSON(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
 
 	/**
@@ -380,7 +383,8 @@ public:
 	 * @param OnFetchHistoryResponse The callback function used to handle the result in JSON format.
 	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	
 	/**
@@ -445,7 +449,8 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"), meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void GetAllUserMetadata_JSON(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -481,7 +486,8 @@ public:
 	 * @param OnGetUserMetadataResponse The callback function used to handle the result in JSON format.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void GetUserMetadata_JSON(FString User, FOnPubnubResponse OnGetUserMetadataResponse, FString Include = "");
 
 	/**
@@ -541,7 +547,8 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"), meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void GetAllChannelMetadata_JSON(FOnPubnubResponse OnGetAllChannelMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -577,7 +584,8 @@ public:
 	 * @param OnGetChannelMetadataResponse The callback function used to handle the result in JSON format.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void GetChannelMetadata_JSON(FString Channel, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include = "");
 
 	/**
@@ -643,7 +651,8 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"), meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void GetMemberships_JSON(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -723,7 +732,8 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"), meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void GetChannelMembers_JSON(FString Channel, FOnPubnubResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -795,7 +805,8 @@ public:
 	 * @param SizeLimit The maximum number of actions to retrieve.
 	 * @param OnGetMessageActionsResponse The callback function used to handle the result in JSON format.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
 	void GetMessageActions_JSON(FString Channel, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);
 
 	/**
