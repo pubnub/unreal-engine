@@ -125,7 +125,7 @@ sdks:
               distribution-type: source-code
               distribution-repository: Unreal Engine Marketplace
               package-name: pubnub
-              location: https://www.unrealengine.com/marketplace/en-US/product/pubnub
+              location: https://www.fab.com/listings/9501a8d6-f9e6-4cf8-8b56-d173bdb71fc4
               supported-platforms:
                 supported-operating-systems:
                   Linux:
