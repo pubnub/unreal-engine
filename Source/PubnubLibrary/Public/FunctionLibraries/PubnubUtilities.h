@@ -2,14 +2,12 @@
 
 #pragma once
 
-#include <pubnub_memory_block.h>
-#include "PubNub.h"
+#include "PubnubSubsystem.h"
 #include "CoreMinimal.h"
 #include "PubnubStructLibrary.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PubnubUtilities.generated.h"
 
-class UPubnubSubsystem;
 
 /**
  * 
