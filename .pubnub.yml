@@ -1,9 +1,24 @@
 name: unreal-engine
-version: 0.2.6
+version: 0.3.0
 schema: 1
 scm: github.com/pubnub/unreal-engine
 changelog: 
-  - date: 2024-02-12
+  - date: 2025-04-29
+    version: 0.3.0
+    changes:
+     - type: feature
+       text: "Rework GetMemberships, GetChannelMembers, GetAllUsersMetadataand GetAllChannelsMetadata to have dedicated structures for Include and Sort fields. Note: this is BREAKING CHANGE."
+     - type: improvement
+       text: "Change subscription loop to use Event Engine."
+     - type: improvement
+       text: "Mark _JSON functions as deprecated"
+     - type: improvement
+       text: "Remove not needed C-Core files. Leave only required headers."
+     - type: bug
+       text: "Fix bugs in parsing FetchHistory response."
+     - type: bug
+       text: "Fix bug that not all requested data was included in functions response when TotalCount was set."
+  - date: 2025-02-12
     version: 0.2.6
     changes:
      - type: bug
@@ -12,12 +27,12 @@ changelog:
        text: "Fix SetSecretKeyAutomatically setting to set the key properly."
      - type: bug
        text: "Fix 'PubnubLog: Error: Pubnub user ID is not set. Aborting operation.' false error."
-  - date: 2024-02-06
+  - date: 2025-02-06
     version: 0.2.5
     changes:
      - type: feature
        text: "Add plugin support for Linux and IOS projects."
-  - date: 2024-01-21
+  - date: 2025-01-21
     version: 0.2.4
     changes:
      - type: feature
