@@ -32,17 +32,29 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponse, bool, Error, int, Status, const TArray<FString>&, Channels);
+DECLARE_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponseNative, bool Error, int Status, const TArray<FString>& Channels);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponse, int, Status, FString, Message, const TArray<FString>&, Channels);
+DECLARE_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponseNative, int Status, FString Message, const TArray<FString>& Channels);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersFromChannelResponse, int, Status, FString, Message, FPubnubListUsersFromChannelWrapper, Data);
+DECLARE_DELEGATE_ThreeParams(FOnListUsersFromChannelResponseNative, int Status, FString Message, FPubnubListUsersFromChannelWrapper Data);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnFetchHistoryResponse, bool, Error, int, Status, FString, ErrorMessage, const TArray<FPubnubHistoryMessageData>&, Messages);
+DECLARE_DELEGATE_FourParams(FOnFetchHistoryResponseNative, bool Error, int Status, FString ErrorMessage, const TArray<FPubnubHistoryMessageData>& Messages);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllUserMetadataResponse, int, Status, const TArray<FPubnubUserData>&, UsersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetAllUserMetadataResponseNative, int Status, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetUserMetadataResponse, int, Status, FPubnubUserData, UserData);
+DECLARE_DELEGATE_TwoParams(FOnGetUserMetadataResponseNative, int Status, FPubnubUserData UserData);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, int, Status, const TArray<FPubnubChannelData>&, ChannelsData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetAllChannelMetadataResponseNative, int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetChannelMetadataResponse, int, Status, FPubnubChannelData, ChannelData);
+DECLARE_DELEGATE_TwoParams(FOnGetChannelMetadataResponseNative, int Status, FPubnubChannelData ChannelData);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, int, Status, const TArray<FPubnubMessageActionData>&, MessageActions);
+DECLARE_DELEGATE_TwoParams(FOnGetMessageActionsResponseNative, int Status, const TArray<FPubnubMessageActionData>& MessageActions);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddMessageActionsResponse, FString, MessageActionTimetoken);
+DECLARE_DELEGATE_OneParam(FOnAddMessageActionsResponseNative, FString MessageActionTimetoken);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetMembershipsResponse, int, Status, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetMembershipsResponseNative, int Status, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetChannelMembersResponse, int, Status, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetChannelMembersResponseNative, int Status, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
 
 
 UCLASS()
@@ -202,6 +214,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
 	void ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
+	void ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponseNative NativeCallback);
 
 	/**
 	 * Lists the channels that belong to a specified channel group.
@@ -236,6 +249,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void ListUsersFromChannel(FString Channel, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+	void ListUsersFromChannel(FString Channel, FOnListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	/**
 	 * Lists the users currently present on a specified channel.
@@ -260,6 +274,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
+	void ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponseNative NativeCallback);
 
 	/**
 	 * Lists the channels that a specified user is currently subscribed to.
@@ -373,6 +388,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
 	void FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void FetchHistory(FString Channel, FOnFetchHistoryResponseNative NativeCallback, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 
 	/**
 	 * Fetches historical messages from a specified channel using Message Persistence.
@@ -418,6 +434,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetAllUserMetadataRaw(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetAllUserMetadataRaw(FOnGetAllUserMetadataResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
@@ -434,6 +451,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+	void GetAllUserMetadata(FOnGetAllUserMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
@@ -476,6 +494,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
 	void GetUserMetadata(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include = "");
+	void GetUserMetadata(FString User, FOnGetUserMetadataResponseNative NativeCallback, FString Include = "");
 
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
@@ -516,6 +535,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
@@ -532,6 +552,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetAllChannelMetadata(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+	void GetAllChannelMetadata(FOnGetAllChannelMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
@@ -574,6 +595,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
 	void GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include = "");
+	void GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponseNative NativeCallback, FString Include = "");
 
 	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
@@ -617,6 +639,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetMembershipsRaw(FString User, FOnGetMembershipsResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -634,6 +657,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void GetMemberships(FString User, FOnGetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -699,6 +723,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
@@ -716,6 +741,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetChannelMembers(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void GetChannelMembers(FString Channel, FOnGetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
@@ -783,6 +809,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
 	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse);
+	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative NativeCallback);
 
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
@@ -795,6 +822,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
 	void GetMessageActions(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
+	void GetMessageActions(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponseNative NativeCallback);
 
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
@@ -919,14 +947,14 @@ private:
 	void RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup);
 	FString ListChannelsFromGroup_pn(FString ChannelGroup);
 	void ListChannelsFromGroup_JSON_priv(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse);
-	void ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
+	void ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOnListChannelsFromGroupResponseNative OnListChannelsResponse);
 	void RemoveChannelGroup_priv(FString ChannelGroup);
 	FString ListUsersFromChannel_pn(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 	void ListUsersFromChannel_JSON_priv(FString Channel, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
-	void ListUsersFromChannel_DATA_priv(FString Channel, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+	void ListUsersFromChannel_DATA_priv(FString Channel, FOnListUsersFromChannelResponseNative ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 	FString ListUserSubscribedChannels_pn(FString UserID);
 	void ListUserSubscribedChannels_JSON_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
-	void ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
+	void ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponseNative ListUserSubscribedChannelsResponse);
 	void SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse);
 	void Heartbeat_priv(FString Channel, FString ChannelGroup);
@@ -935,40 +963,40 @@ private:
 	void ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse);
 	FString FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_JSON_priv(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
-	void FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
 	FString GetAllUserMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllUserMetadata_JSON_priv(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void SetUserMetadata_priv(FString User, FString UserMetadataObj, FString Include);
 	FString GetUserMetadata_pn(FString User, FString Include);
 	void GetUserMetadata_JSON_priv(FString User, FOnPubnubResponse OnGetUserMetadataResponse, FString Include);
-	void GetUserMetadata_DATA_priv(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include);
+	void GetUserMetadata_DATA_priv(FString User, FOnGetUserMetadataResponseNative OnGetUserMetadataResponse, FString Include);
 	void RemoveUserMetadata_priv(FString User);
 	FString GetAllChannelMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllChannelMetadata_JSON_priv(FOnPubnubResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void GetAllChannelMetadata_DATA_priv(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetAllChannelMetadata_DATA_priv(FOnGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FString Include);
 	FString GetChannelMetadata_pn(FString Channel, FString Include);
 	void GetChannelMetadata_JSON_priv(FString Channel, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include);
-	void GetChannelMetadata_DATA_priv(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include);
+	void GetChannelMetadata_DATA_priv(FString Channel, FOnGetChannelMetadataResponseNative OnGetChannelMetadataResponse, FString Include);
 	void RemoveChannelMetadata_priv(FString Channel);
 	FString GetMemberships_pn(FString User, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetMemberships_JSON_priv(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponseNative OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void SetMemberships_priv(FString User, FString SetObj, FString Include);
 	void RemoveMemberships_priv(FString User, FString RemoveObj, FString Include);
 	FString GetChannelMembers_pn(FString Channel, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetChannelMembers_JSON_priv(FString Channel, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void GetChannelMembers_DATA_priv(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetChannelMembers_DATA_priv(FString Channel, FOnGetChannelMembersResponseNative OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void AddChannelMembers_priv(FString Channel, FString AddObj, FString Include);
 	void SetChannelMembers_priv(FString Channel, FString SetObj, FString Include);
 	void RemoveChannelMembers_priv(FString Channel, FString Include, FString RemoveObj);
-	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse);
+	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative AddActionResponse);
 	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
 	FString GetMessageActions_pn(FString Channel, FString Start, FString End, int SizeLimit);
 	void GetMessageActions_JSON_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);
-	void GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
+	void GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse);
 	void GetMessageActionsContinue_priv(FOnPubnubResponse OnGetMessageActionsContinueResponse);
 
 #pragma endregion
