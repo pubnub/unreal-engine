@@ -25,9 +25,11 @@ struct CCoreSubscriptionData
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMessageReceivedNative, FPubnubMessageData Message);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorLambda, FString ErrorMessage, EPubnubErrorType ErrorType);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorNative, FString ErrorMessage, EPubnubErrorType ErrorType);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, const FPubnubSubscriptionStatusData&, StatusData);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 
@@ -66,19 +68,26 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-	
+
+	/**Global listener for all messages received on subscribed channels */
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnMessageReceived OnMessageReceived;
 
-	/**Listener to react for all Errors in Pubnub functions*/
+	/**Global listener for all messages received on subscribed channels, equivalent that accepts lambdas*/
+	FOnMessageReceivedNative OnMessageReceivedNative;
+
+	/**Listener to react for all Errors in Pubnub functions */
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnPubnubError OnPubnubError;
 	/**Listener to react for all Errors in Pubnub functions, equivalent that accepts lambdas*/
-	FOnPubnubErrorLambda OnPubnubErrorLambda;
+	FOnPubnubErrorNative OnPubnubErrorNative;
 
 	/**Listener to react for subscription status changed */
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnSubscriptionStatusChanged OnSubscriptionStatusChanged;
+
+	/**Listener to react for subscription status changed , equivalent that accepts lambdas*/
+	FOnSubscriptionStatusChangedNative OnSubscriptionStatusChangedNative;
 
 #pragma region BLUEPRINT EXPOSED
 

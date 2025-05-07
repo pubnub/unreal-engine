@@ -1013,7 +1013,7 @@ void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorT
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnPubnubError.Broadcast(ErrorMessage, ErrorType);
-		OnPubnubErrorLambda.Broadcast(ErrorMessage, ErrorType);
+		OnPubnubErrorNative.Broadcast(ErrorMessage, ErrorType);
 	});
 	
 }
@@ -1032,7 +1032,7 @@ void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString Er
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
-		OnPubnubErrorLambda.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
+		OnPubnubErrorNative.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
 	});
 }
 
@@ -1055,7 +1055,7 @@ void UPubnubSubsystem::PubnubPublishError()
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
-		OnPubnubErrorLambda.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
+		OnPubnubErrorNative.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
 	});
 }
 
@@ -1283,6 +1283,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FPubnubSubscribe
 			if(ThisSubsystem)
 			{
 				ThisSubsystem->OnMessageReceived.Broadcast(MessageData);
+				ThisSubsystem->OnMessageReceivedNative.Broadcast(MessageData);
 			}
 		});
 	};
@@ -1331,6 +1332,7 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName, FPubnubSubscribe
 			if(ThisSubsystem)
 			{
 				ThisSubsystem->OnMessageReceived.Broadcast(MessageData);
+				ThisSubsystem->OnMessageReceivedNative.Broadcast(MessageData);
 			}
 		});
 	};
@@ -2683,7 +2685,7 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddUserPermissionsToJson(TArray<FStrin
 void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data)
 {
 	//Don't waste resources to translate data if there is no delegate bound to it
-	if(!OnSubscriptionStatusChanged.IsBound())
+	if(!OnSubscriptionStatusChanged.IsBound() && !OnSubscriptionStatusChangedNative.IsBound())
 	{return;}
 
 	FPubnubSubscriptionStatusData SubscriptionStatusData;
@@ -2699,7 +2701,6 @@ void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscripti
 		ChannelGroups.ParseIntoArray(SubscriptionStatusData.ChannelGroups, TEXT(","));
 	}
 	
-
-
 	OnSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
+	OnSubscriptionStatusChangedNative.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
 }
