@@ -80,13 +80,10 @@ void UPubnubSubsystem::DeinitPubnub()
 
 void UPubnubSubsystem::SetUserID(FString UserID)
 {
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	if(!CheckIsPubnubInitialized())
 	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, UserID]
-	{
-		SetUserID_priv(UserID);
-	});
+
+	SetUserID_priv(UserID);
 }
 
 FString UPubnubSubsystem::GetUserID()
@@ -1115,8 +1112,8 @@ FString UPubnubSubsystem::GetUserIDInternal()
 		FString UserIDString(UserIDChar);
 		return UserIDString;
 	}
-	else
-	{return "";}
+
+	return "";
 }
 
 bool UPubnubSubsystem::CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName)
