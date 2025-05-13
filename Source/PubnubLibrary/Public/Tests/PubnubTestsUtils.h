@@ -4,6 +4,11 @@
 #include "Templates/Function.h"
 #include "PubnubSubsystem.h"
 
+namespace PubnubTests
+{
+	constexpr float MAX_WAIT_TIME = 10.0f;
+	const FString SDK_PREFIX = "UE_SDK_";
+}
 
 
 
