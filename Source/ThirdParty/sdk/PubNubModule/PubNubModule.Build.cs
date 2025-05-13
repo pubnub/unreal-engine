@@ -39,6 +39,20 @@ public class PubNubModule : ModuleRules
 	        binary = $"libpubnub.{extention}";
 	        BuildLocation = "lib/arm64";
         }
+        else if(Target.Platform == UnrealTargetPlatform.IOS)
+        {
+	        extention = StaticLink ? "a" : "dylib";
+	        PlatformLib = OpenSsl ? "openssl" : "posix";
+	        binary = $"libpubnub.{extention}";
+	        BuildLocation = "lib/ios";
+        }
+        else if(Target.Platform == UnrealTargetPlatform.Linux)
+        {
+	        extention = StaticLink ? "a" : "dylib";
+	        PlatformLib = OpenSsl ? "openssl" : "posix";
+	        binary = $"libpubnub.{extention}";
+	        BuildLocation = "lib/linux";
+        }
         else
         {
 	        System.Console.WriteLine("Error - this target platform is not supported");

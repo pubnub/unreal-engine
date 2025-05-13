@@ -1,8 +1,42 @@
 name: unreal-engine
-version: 0.2.3
+version: 0.3.0
 schema: 1
 scm: github.com/pubnub/unreal-engine
 changelog: 
+  - date: 2025-04-29
+    version: 0.3.0
+    changes:
+     - type: feature
+       text: "Rework GetMemberships, GetChannelMembers, GetAllUsersMetadataand GetAllChannelsMetadata to have dedicated structures for Include and Sort fields. Note: this is BREAKING CHANGE."
+     - type: improvement
+       text: "Change subscription loop to use Event Engine."
+     - type: improvement
+       text: "Mark _JSON functions as deprecated"
+     - type: improvement
+       text: "Remove not needed C-Core files. Leave only required headers."
+     - type: bug
+       text: "Fix bugs in parsing FetchHistory response."
+     - type: bug
+       text: "Fix bug that not all requested data was included in functions response when TotalCount was set."
+  - date: 2025-02-12
+    version: 0.2.6
+    changes:
+     - type: bug
+       text: "Fix Auth Token related functions."
+     - type: bug
+       text: "Fix SetSecretKeyAutomatically setting to set the key properly."
+     - type: bug
+       text: "Fix 'PubnubLog: Error: Pubnub user ID is not set. Aborting operation.' false error."
+  - date: 2025-02-06
+    version: 0.2.5
+    changes:
+     - type: feature
+       text: "Add plugin support for Linux and IOS projects."
+  - date: 2025-01-21
+    version: 0.2.4
+    changes:
+     - type: feature
+       text: "Pass logs from c-core to UE sdk."
   - date: 2024-11-28
     version: 0.2.3
     changes:
@@ -106,7 +140,7 @@ sdks:
               distribution-type: source-code
               distribution-repository: Unreal Engine Marketplace
               package-name: pubnub
-              location: https://www.unrealengine.com/marketplace/en-US/product/pubnub
+              location: https://www.fab.com/listings/9501a8d6-f9e6-4cf8-8b56-d173bdb71fc4
               supported-platforms:
                 supported-operating-systems:
                   Linux:
@@ -215,6 +249,8 @@ supported-platforms:
   - version: PubNub Unreal Engine SDK
     platforms:
       - Windows
-      - Mac OS 
+      - Mac OS
+      - IOS       
       - Unix 
+      - Android 
 
