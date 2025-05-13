@@ -4,7 +4,7 @@ schema: 1
 scm: github.com/pubnub/unreal-engine
 changelog: 
   - date: 2025-04-29
-    version: 0.3.0
+    version: v0.3.0
     changes:
      - type: feature
        text: "Rework GetMemberships, GetChannelMembers, GetAllUsersMetadataand GetAllChannelsMetadata to have dedicated structures for Include and Sort fields. Note: this is BREAKING CHANGE."
