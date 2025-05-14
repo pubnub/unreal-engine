@@ -1419,6 +1419,8 @@ void UPubnubSubsystem::AddChannelToGroup_priv(FString Channel, FString ChannelGr
 	{return;}
 	
 	pubnub_add_channel_to_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+
+	GetLastResponse(ctx_pub);
 }
 
 void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup)
@@ -1430,6 +1432,8 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString Chan
 	{return;}
 
 	pubnub_remove_channel_from_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+
+	GetLastResponse(ctx_pub);
 }
 
 FString UPubnubSubsystem::ListChannelsFromGroup_pn(FString ChannelGroup)
@@ -1489,6 +1493,8 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
 	{return;}
 
 	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
+	
+	GetLastResponse(ctx_pub);
 }
 
 FString UPubnubSubsystem::ListUsersFromChannel_pn(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
