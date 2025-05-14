@@ -9,6 +9,8 @@ using namespace PubnubTests;
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubAddChannelToGroupAndReceiveMessageTest, FPubnubAutomationTestBase, "Pubnub.E2E.ChannelGroups.AddChannelToGroupAndReceiveMessage", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelAddRemoveListGroupTest, FPubnubAutomationTestBase, "Pubnub.E2E.ChannelGroups.AddRemoveListChannelsInGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromGroupTest, FPubnubAutomationTestBase, "Pubnub.E2E.ChannelGroups.UnsubscribeFromGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAllTest, FPubnubAutomationTestBase, "Pubnub.E2E.ChannelGroups.UnsubscribeFromAll", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Parameters)
 {
@@ -178,7 +180,6 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	{
 		PubnubSubsystem->AddChannelToGroup(TestChannel2, TestGroup);
 	}, 0.2f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f));
 
 	// 4. List and Verify Channel1 and Channel2
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels]()
@@ -205,7 +206,6 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	{
 		PubnubSubsystem->RemoveChannelFromGroup(TestChannel1, TestGroup);
 	}, 0.2f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f));
 
 	// 6. List and Verify Only Channel2 Remains
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels]()
@@ -232,7 +232,6 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	{
 		PubnubSubsystem->RemoveChannelFromGroup(TestChannel2, TestGroup);
 	}, 0.2f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f));
 
 	// 8. List and Verify Group is Empty
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels]()
@@ -252,6 +251,177 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 		}
 	}, 0.1f));
 	
+	CleanUp();
+	return true;
+}
+
+bool FPubnubUnsubscribeFromGroupTest::RunTest(const FString& Parameters)
+{
+	//Initial variables
+	const FString TestMessage = "\"Message for group unsubscribe test\"";
+	const FString TestUser = SDK_PREFIX + "test_user_group_unsubscribe";
+	const FString TestChannel = SDK_PREFIX + "test_channel_for_group_unsubscribe";
+	const FString TestGroup = SDK_PREFIX + "test_group_unsubscribe";
+	TSharedPtr<bool> TestMessageReceivedAfterUnsubscribe = MakeShared<bool>(false);
+
+	if (!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubUnsubscribeFromGroupTest");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(FString::Printf(TEXT("Unexpected Pubnub Error in FPubnubUnsubscribeFromGroupTest: %s"), *ErrorMessage));
+	});
+
+	PubnubSubsystem->SetUserID(TestUser);
+
+	PubnubSubsystem->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestGroup, TestMessageReceivedAfterUnsubscribe](FPubnubMessageData ReceivedMessage)
+	{
+		if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.Message == TestMessage)
+		{
+			*TestMessageReceivedAfterUnsubscribe = true;
+			AddError(FString::Printf(TEXT("Message '%s' received on channel '%s' via group AFTER unsubscribing from group '%s'."), *TestMessage, *TestChannel, *TestGroup));
+		}
+	});
+
+	// Step 1: Add channel to group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup]()
+	{
+		PubnubSubsystem->AddChannelToGroup(TestChannel, TestGroup);
+	}, 0.2f));
+
+	// Step 2: Subscribe to the group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubSubsystem->SubscribeToGroup(TestGroup);
+	}, 0.2f));
+
+	// Step 3: Unsubscribe from the group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubSubsystem->UnsubscribeFromGroup(TestGroup);
+	}, 0.2f));
+
+	// Step 4: Publish a message to the channel (that was in the group)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	{
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
+	}, 0.3f));
+
+	// Step 5: Wait for a period to see if the message is incorrectly received
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(MAX_WAIT_TIME / 2.0f));
+
+	// Step 6: Check that the message was NOT received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestMessageReceivedAfterUnsubscribe, TestGroup]()
+	{
+		TestFalse(FString::Printf(TEXT("Message should NOT have been received via group '%s' after unsubscribing."), *TestGroup), *TestMessageReceivedAfterUnsubscribe);
+	}, 0.1f));
+
+	// Cleanup: Remove channel from group (optional, but good for test hygiene)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup]()
+	{
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannel, TestGroup);
+	}, 0.2f));
+
+	CleanUp();
+	return true;
+}
+
+bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
+{
+	//Initial variables
+	const FString TestUser = SDK_PREFIX + "test_user_unsubscribe_all";
+	const FString TestMessageForChannel = "\"Message for direct channel (unsubscribe all test)\"";
+	const FString TestMessageForGroupChannel = "\"Message for group channel (unsubscribe all test)\"";
+	
+	const FString TestChannelForAll = SDK_PREFIX + "channel_direct_unsubscribe_all";
+	const FString TestGroupForAll = SDK_PREFIX + "group_unsubscribe_all";
+	const FString TestChannelInGroupForAll = SDK_PREFIX + "channel_in_group_unsubscribe_all";
+
+	TSharedPtr<bool> bMessageReceivedOnDirectChannel = MakeShared<bool>(false);
+	TSharedPtr<bool> bMessageReceivedViaGroup = MakeShared<bool>(false);
+
+	if (!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubUnsubscribeFromAllTest");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(FString::Printf(TEXT("Unexpected Pubnub Error in FPubnubUnsubscribeFromAllTest: %s"), *ErrorMessage));
+	});
+
+	PubnubSubsystem->SetUserID(TestUser);
+
+	PubnubSubsystem->OnMessageReceivedNative.AddLambda([this, TestMessageForChannel, TestChannelForAll, TestMessageForGroupChannel, TestChannelInGroupForAll, bMessageReceivedOnDirectChannel, bMessageReceivedViaGroup](FPubnubMessageData ReceivedMessage)
+	{
+		if (ReceivedMessage.Channel == TestChannelForAll && ReceivedMessage.Message == TestMessageForChannel)
+		{
+			*bMessageReceivedOnDirectChannel = true;
+			AddError(FString::Printf(TEXT("Message '%s' received on direct channel '%s' AFTER UnsubscribeFromAll."), *TestMessageForChannel, *TestChannelForAll));
+		}
+		else if (ReceivedMessage.Channel == TestChannelInGroupForAll && ReceivedMessage.Message == TestMessageForGroupChannel)
+		{
+			*bMessageReceivedViaGroup = true;
+			AddError(FString::Printf(TEXT("Message '%s' received on channel '%s' (via group) AFTER UnsubscribeFromAll."), *TestMessageForGroupChannel, *TestChannelInGroupForAll));
+		}
+	});
+
+	// Step 1: Add a channel to the group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestGroupForAll]()
+	{
+		PubnubSubsystem->AddChannelToGroup(TestChannelInGroupForAll, TestGroupForAll);
+	}, 0.2f));
+
+	// Step 2: Subscribe to the channel
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelForAll]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannelForAll);
+	}, 0.2f));
+
+	// Step 3: Subscribe to the group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroupForAll]()
+	{
+		PubnubSubsystem->SubscribeToGroup(TestGroupForAll);
+	}, 0.5f));
+
+	// Step 4: Unsubscribe from all
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
+	{
+		PubnubSubsystem->UnsubscribeFromAll();
+	}, 1.0f));
+
+	// Step 5: Publish a message to the direct channel
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelForAll, TestMessageForChannel]()
+	{
+		PubnubSubsystem->PublishMessage(TestChannelForAll, TestMessageForChannel);
+	}, 0.3f));
+
+	// Step 6: Publish a message to the channel that was in the group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestMessageForGroupChannel]()
+	{
+		PubnubSubsystem->PublishMessage(TestChannelInGroupForAll, TestMessageForGroupChannel);
+	}, 0.3f));
+
+	// Step 7: Wait for a period to see if messages are incorrectly received
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(MAX_WAIT_TIME / 2.0f));
+
+	// Step 8: Check that messages were NOT received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bMessageReceivedOnDirectChannel, TestChannelForAll, bMessageReceivedViaGroup, TestGroupForAll]()
+	{
+		TestFalse(FString::Printf(TEXT("Message should NOT have been received on direct channel '%s' after UnsubscribeFromAll."), *TestChannelForAll), *bMessageReceivedOnDirectChannel);
+		TestFalse(FString::Printf(TEXT("Message should NOT have been received via group '%s' after UnsubscribeFromAll."), *TestGroupForAll), *bMessageReceivedViaGroup);
+	}, 0.1f));
+
+	// Cleanup: Remove channel from group (optional, but good for test hygiene)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestGroupForAll]()
+	{
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannelInGroupForAll, TestGroupForAll);
+	}, 0.2f));
+
 	CleanUp();
 	return true;
 }
