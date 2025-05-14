@@ -31,6 +31,7 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorNative, FString ErrorMessage,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, const FPubnubSubscriptionStatusData&, StatusData);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
+DECLARE_DELEGATE_OneParam(FOnPubnubResponseNative, FString JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponse, bool, Error, int, Status, const TArray<FString>&, Channels);
@@ -321,6 +322,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse);
+	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative NativeCallback);
 
 	/**
 	 * This method notifies channels and channel groups about a client's presence.
@@ -965,7 +967,7 @@ private:
 	void ListUserSubscribedChannels_JSON_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
 	void ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponseNative ListUserSubscribedChannelsResponse);
 	void SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
-	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse);
+	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative OnGetStateResponse);
 	void Heartbeat_priv(FString Channel, FString ChannelGroup);
 	void GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token);

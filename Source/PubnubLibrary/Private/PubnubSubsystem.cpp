@@ -329,12 +329,23 @@ void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FPubnubSetSt
 
 void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
 {
+	FOnPubnubResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetStateResponse](FString JsonResponse)
+	{
+		OnGetStateResponse.ExecuteIfBound(JsonResponse);
+	});
+
+	GetState(Channel, ChannelGroup, UserID, NativeCallback);
+}
+
+void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelGroup, UserID, OnGetStateResponse]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelGroup, UserID, NativeCallback]
 	{
-		GetState_priv(Channel, ChannelGroup, UserID, OnGetStateResponse);
+		GetState_priv(Channel, ChannelGroup, UserID, NativeCallback);
 	});
 }
 
@@ -1638,7 +1649,7 @@ void UPubnubSubsystem::SetState_priv(FString Channel, FString StateJson, FPubnub
 	pubnub_get(ctx_pub);
 }
 
-void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
+void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative OnGetStateResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
