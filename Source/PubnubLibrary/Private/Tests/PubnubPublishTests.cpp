@@ -3,6 +3,7 @@
 #include "PubnubEnumLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tests/PubnubTestsUtils.h"
+#include "Tests/AutomationCommon.h"
 
 using namespace PubnubTests;
 
@@ -10,6 +11,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubPublishMessageTest, FPubnubAutoma
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubPublishMessageWithSettingsTest, FPubnubAutomationTestBase, "Pubnub.E2E.PubSub.PublishMessageWithSettingsTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSignalTest, FPubnubAutomationTestBase, "Pubnub.E2E.PubSub.SendSignal", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSignalWithSettingsTest, FPubnubAutomationTestBase, "Pubnub.E2E.PubSub.SendSignalWithSettings", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeTest, FPubnubAutomationTestBase, "Pubnub.E2E.PubSub.UnsubscribeFromChannel", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 
 bool FPubnubPublishMessageTest::RunTest(const FString& Parameters)
@@ -265,6 +267,72 @@ bool FPubnubSignalWithSettingsTest::RunTest(const FString& Parameters)
 		{
 			AddError("Signal with settings was not received on the channel in FPubnubSignalWithSettingsTest.");
 		}
+	}, 0.1f));
+
+	CleanUp();
+	return true;
+}
+
+bool FPubnubUnsubscribeTest::RunTest(const FString& Parameters)
+{
+	//Initial variables
+	const FString TestMessage = "\"Message for unsubscribe test\"";
+	const FString TestUser = SDK_PREFIX + "test_user_unsubscribe";
+	const FString TestChannel = SDK_PREFIX + "test_channel_unsubscribe";
+	TSharedPtr<bool> TestMessageReceivedAfterUnsubscribe = MakeShared<bool>(false);
+	
+	if(!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubUnsubscribeTest");
+		return false;
+	}
+
+	//Check for any unexpected errors on the way
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(FString::Printf(TEXT("Unexpected Pubnub Error in FPubnubUnsubscribeTest: %s"), *ErrorMessage));
+	});
+	
+	//Set User ID
+	PubnubSubsystem->SetUserID(TestUser);
+
+	//Add listener for received messages.
+	//If this fires for our target channel and message, it's an error because we should be unsubscribed.
+	PubnubSubsystem->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestMessageReceivedAfterUnsubscribe](FPubnubMessageData ReceivedMessage)
+	{
+		if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.Message == TestMessage)
+		{
+			*TestMessageReceivedAfterUnsubscribe = true;
+			AddError(FString::Printf(TEXT("Message '%s' received on channel '%s' after unsubscribing."), *TestMessage, *TestChannel));
+		}
+	});
+
+	// Subscribe to the channel
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannel);
+	}, 0.5f));
+	
+	// Unsubscribe from the channel
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+	{
+		PubnubSubsystem->UnsubscribeFromChannel(TestChannel);
+	}, 1.0f));
+	
+	// Publish a message to the channel we just unsubscribed from
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	{
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
+	}, 1.0f));
+
+	// Wait for a period to see if the message is incorrectly received
+	// MAX_WAIT_TIME / 2.0f should be sufficient for a message to arrive if unsubscribe failed.
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(MAX_WAIT_TIME / 2.0f));
+
+	// Check whether the message was received after unsubscribing
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestMessageReceivedAfterUnsubscribe]()
+	{
+		TestFalse("Message should NOT have been received on channel after unsubscribing.", *TestMessageReceivedAfterUnsubscribe);
 	}, 0.1f));
 
 	CleanUp();
