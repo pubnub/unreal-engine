@@ -4,6 +4,7 @@
 #include "PubnubStructLibrary.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Kismet/GameplayStatics.h"
+#include "Tests/AutomationCommon.h"
 #include "Tests/PubnubTestsUtils.h"
 
 using namespace PubnubTests;
@@ -50,7 +51,7 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 {
     if (!InitTest())
     {
-        AddError(TEXT("TestInitialization failed for FPubnubGrantTokenStructureToJsonStringUnitTest"));
+        AddError("TestInitialization failed for FPubnubGrantTokenStructureToJsonStringUnitTest");
         return false;
     }
 
@@ -75,46 +76,46 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
         bool bSuccess = false;
         FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + TEXT(" - Conversion Success"), bSuccess);
+        TestTrue(TestDescription + " - Conversion Success", bSuccess);
 
         if (bSuccess)
         {
             TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + TEXT(" - Is Valid JSON"), UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
+            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
             if (RootObject.IsValid())
             {
-                TestEqual(TestDescription + TEXT(" - TTL"), RootObject->GetIntegerField(TEXT("ttl")), Ts.TTLMinutes);
-                TestEqual(TestDescription + TEXT(" - Auth User"), RootObject->GetStringField(TEXT("authorized_uuid")), Ts.AuthorizedUser);
+                TestEqual(TestDescription + " - TTL", RootObject->GetIntegerField(TEXT("ttl")), Ts.TTLMinutes);
+                TestEqual(TestDescription + " - Auth User", RootObject->GetStringField(TEXT("authorized_uuid")), Ts.AuthorizedUser);
 
                 const TSharedPtr<FJsonObject>* PermissionsObjectPtr;
-                TestTrue(TestDescription + TEXT(" - Has 'permissions' object"), RootObject->TryGetObjectField(TEXT("permissions"), PermissionsObjectPtr) && PermissionsObjectPtr && (*PermissionsObjectPtr).IsValid());
+                TestTrue(TestDescription + " - Has 'permissions' object", RootObject->TryGetObjectField(TEXT("permissions"), PermissionsObjectPtr) && PermissionsObjectPtr && (*PermissionsObjectPtr).IsValid());
                 if (PermissionsObjectPtr && (*PermissionsObjectPtr).IsValid())
                 {
                     const TSharedPtr<FJsonObject>* ResourcesObjectPtr;
-                    TestTrue(TestDescription + TEXT(" - Has 'resources' object"), (*PermissionsObjectPtr)->TryGetObjectField(TEXT("resources"), ResourcesObjectPtr) && ResourcesObjectPtr && (*ResourcesObjectPtr).IsValid());
+                    TestTrue(TestDescription + " - Has 'resources' object", (*PermissionsObjectPtr)->TryGetObjectField(TEXT("resources"), ResourcesObjectPtr) && ResourcesObjectPtr && (*ResourcesObjectPtr).IsValid());
                     if (ResourcesObjectPtr && (*ResourcesObjectPtr).IsValid())
                     {
                         const TSharedPtr<FJsonObject>* ChannelsObjectPtr;
-                        TestTrue(TestDescription + TEXT(" - Resources has 'channels'"), (*ResourcesObjectPtr)->TryGetObjectField(TEXT("channels"), ChannelsObjectPtr) && ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid());
+                        TestTrue(TestDescription + " - Resources has 'channels'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("channels"), ChannelsObjectPtr) && ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid());
                         if (ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid())
                         {
-                            TestEqual(TestDescription + TEXT(" - Channel Perms"), (*ChannelsObjectPtr)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPerms));
+                            TestEqual(TestDescription + " - Channel Perms", (*ChannelsObjectPtr)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPerms));
                         }
                         const TSharedPtr<FJsonObject>* GroupsObjectPtr;
-                        TestTrue(TestDescription + TEXT(" - Resources has 'groups'"), (*ResourcesObjectPtr)->TryGetObjectField(TEXT("groups"), GroupsObjectPtr) && GroupsObjectPtr && (*GroupsObjectPtr).IsValid());
+                        TestTrue(TestDescription + " - Resources has 'groups'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("groups"), GroupsObjectPtr) && GroupsObjectPtr && (*GroupsObjectPtr).IsValid());
                         if (GroupsObjectPtr && (*GroupsObjectPtr).IsValid())
                         {
-                             TestEqual(TestDescription + TEXT(" - Group Perms"), (*GroupsObjectPtr)->GetIntegerField(Ts.ChannelGroups[0]), CalculateChannelGroupPermissionsBitmask(GroupPerms));
+                             TestEqual(TestDescription + " - Group Perms", (*GroupsObjectPtr)->GetIntegerField(Ts.ChannelGroups[0]), CalculateChannelGroupPermissionsBitmask(GroupPerms));
                         }
                         const TSharedPtr<FJsonObject>* UuidsObjectPtr;
-                        TestTrue(TestDescription + TEXT(" - Resources has 'uuids'"), (*ResourcesObjectPtr)->TryGetObjectField(TEXT("uuids"), UuidsObjectPtr) && UuidsObjectPtr && (*UuidsObjectPtr).IsValid());
+                        TestTrue(TestDescription + " - Resources has 'uuids'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("uuids"), UuidsObjectPtr) && UuidsObjectPtr && (*UuidsObjectPtr).IsValid());
                         if (UuidsObjectPtr && (*UuidsObjectPtr).IsValid())
                         {
-                            TestEqual(TestDescription + TEXT(" - UUID Resource Perms"), (*UuidsObjectPtr)->GetIntegerField(Ts.Users[0]), CalculateUserPermissionsBitmask(UserResPerms));
+                            TestEqual(TestDescription + " - UUID Resource Perms", (*UuidsObjectPtr)->GetIntegerField(Ts.Users[0]), CalculateUserPermissionsBitmask(UserResPerms));
                         }
                     }
                      const TSharedPtr<FJsonObject>* PatternsObjectPtr;
-                     TestTrue(TestDescription + TEXT(" - Has 'patterns' object"), (*PermissionsObjectPtr)->TryGetObjectField(TEXT("patterns"), PatternsObjectPtr) && PatternsObjectPtr && (*PatternsObjectPtr).IsValid());
+                     TestTrue(TestDescription + " - Has 'patterns' object", (*PermissionsObjectPtr)->TryGetObjectField(TEXT("patterns"), PatternsObjectPtr) && PatternsObjectPtr && (*PatternsObjectPtr).IsValid());
                 }
             }
         }
@@ -134,18 +135,18 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
         bool bSuccess = false;
         FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + TEXT(" - Conversion Success"), bSuccess);
+        TestTrue(TestDescription + " - Conversion Success", bSuccess);
         if (bSuccess)
         {
             TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + TEXT(" - Is Valid JSON"), UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
+            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
             // ... (basic TTL, AuthUser checks) ...
             const TSharedPtr<FJsonObject>* PermsObj, *ResObj, *ChansObj;
             if (RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && (*ResObj)->TryGetObjectField(TEXT("channels"), ChansObj))
             {
-                TestEqual(TestDescription + TEXT(" - ChanA Perms"), (*ChansObj)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPerm));
-                TestEqual(TestDescription + TEXT(" - ChanB Perms"), (*ChansObj)->GetIntegerField(Ts.Channels[1]), CalculateChannelPermissionsBitmask(ChanPerm));
-            } else { AddError(TestDescription + TEXT(" - JSON structure error")); }
+                TestEqual(TestDescription + " - ChanA Perms", (*ChansObj)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPerm));
+                TestEqual(TestDescription + " - ChanB Perms", (*ChansObj)->GetIntegerField(Ts.Channels[1]), CalculateChannelPermissionsBitmask(ChanPerm));
+            } else { AddError(TestDescription + " - JSON structure error"); }
         }
     }
 
@@ -165,17 +166,17 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
         bool bSuccess = false;
         FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + TEXT(" - Conversion Success"), bSuccess);
+        TestTrue(TestDescription + " - Conversion Success", bSuccess);
          if (bSuccess)
         {
             TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + TEXT(" - Is Valid JSON"), UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
+            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
             const TSharedPtr<FJsonObject>* PermsObj, *ResObj, *ChansObj;
             if (RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && (*ResObj)->TryGetObjectField(TEXT("channels"), ChansObj))
             {
-                TestEqual(TestDescription + TEXT(" - ChanC Perms"), (*ChansObj)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPermC));
-                TestEqual(TestDescription + TEXT(" - ChanD Perms"), (*ChansObj)->GetIntegerField(Ts.Channels[1]), CalculateChannelPermissionsBitmask(ChanPermD));
-            } else { AddError(TestDescription + TEXT(" - JSON structure error")); }
+                TestEqual(TestDescription + " - ChanC Perms", (*ChansObj)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPermC));
+                TestEqual(TestDescription + " - ChanD Perms", (*ChansObj)->GetIntegerField(Ts.Channels[1]), CalculateChannelPermissionsBitmask(ChanPermD));
+            } else { AddError(TestDescription + " - JSON structure error"); }
         }
     }
 
@@ -196,7 +197,7 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
         bool bSuccess = true; // Expecting this to be set to false by the function
         FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestFalse(TestDescription + TEXT(" - Conversion should Fail"), bSuccess);
+        TestFalse(TestDescription + " - Conversion should Fail", bSuccess);
     }
     
     // --- Test Case 5: Empty Resources and Patterns ---
@@ -208,26 +209,26 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
         bool bSuccess = false;
         FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + TEXT(" - Conversion Success"), bSuccess);
+        TestTrue(TestDescription + " - Conversion Success", bSuccess);
         if(bSuccess)
         {
             TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + TEXT(" - Is Valid JSON"), UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
+            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
             if (RootObject.IsValid())
             {
-                 TestEqual(TestDescription + TEXT(" - TTL"), RootObject->GetIntegerField(TEXT("ttl")), Ts.TTLMinutes);
-                 TestEqual(TestDescription + TEXT(" - Auth User"), RootObject->GetStringField(TEXT("authorized_uuid")), Ts.AuthorizedUser);
+                 TestEqual(TestDescription + " - TTL", RootObject->GetIntegerField(TEXT("ttl")), Ts.TTLMinutes);
+                 TestEqual(TestDescription + " - Auth User", RootObject->GetStringField(TEXT("authorized_uuid")), Ts.AuthorizedUser);
                  const TSharedPtr<FJsonObject>* PermsObj;
-                 TestTrue(TestDescription + TEXT(" - Has 'permissions' object"), RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && PermsObj && (*PermsObj).IsValid());
+                 TestTrue(TestDescription + " - Has 'permissions' object", RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && PermsObj && (*PermsObj).IsValid());
                  if(PermsObj && (*PermsObj).IsValid())
                  {
                     const TSharedPtr<FJsonObject>* ResObj;
-                    TestTrue(TestDescription + TEXT(" - Perms has 'resources' object"), (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && ResObj && (*ResObj).IsValid());
-                    if(ResObj && (*ResObj).IsValid()) TestEqual(TestDescription + TEXT(" - Resources is empty"), (*ResObj)->Values.Num(), 0);
+                    TestTrue(TestDescription + " - Perms has 'resources' object", (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && ResObj && (*ResObj).IsValid());
+                    if(ResObj && (*ResObj).IsValid()) TestEqual(TestDescription + " - Resources is empty", (*ResObj)->Values.Num(), 0);
                     
                     const TSharedPtr<FJsonObject>* PatObj;
-                    TestTrue(TestDescription + TEXT(" - Perms has 'patterns' object"), (*PermsObj)->TryGetObjectField(TEXT("patterns"), PatObj) && PatObj && (*PatObj).IsValid());
-                    if(PatObj && (*PatObj).IsValid()) TestEqual(TestDescription + TEXT(" - Patterns is empty"), (*PatObj)->Values.Num(), 0);
+                    TestTrue(TestDescription + " - Perms has 'patterns' object", (*PermsObj)->TryGetObjectField(TEXT("patterns"), PatObj) && PatObj && (*PatObj).IsValid());
+                    if(PatObj && (*PatObj).IsValid()) TestEqual(TestDescription + " - Patterns is empty", (*PatObj)->Values.Num(), 0);
                  }
             }
         }
@@ -246,11 +247,11 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
         bool bSuccess = false;
         FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + TEXT(" - Conversion Success"), bSuccess);
+        TestTrue(TestDescription + " - Conversion Success", bSuccess);
         if (bSuccess)
         {
             TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + TEXT(" - Is Valid JSON"), UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
+            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
             if (RootObject.IsValid())
             {
                 // ... (basic TTL, AuthUser checks) ...
@@ -260,9 +261,9 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
                     (*PermsObj)->TryGetObjectField(TEXT("patterns"), PatObj) &&
                     (*PatObj)->TryGetObjectField(TEXT("channels"), ChanPatObj))
                 {
-                    TestEqual(TestDescription + TEXT(" - Resources is empty"), (*ResObj)->Values.Num(), 0);
-                    TestEqual(TestDescription + TEXT(" - Pattern Perms"), (*ChanPatObj)->GetIntegerField(Ts.ChannelPatterns[0]), CalculateChannelPermissionsBitmask(ChanPatternPerms));
-                } else { AddError(TestDescription + TEXT(" - JSON structure error")); }
+                    TestEqual(TestDescription + " - Resources is empty", (*ResObj)->Values.Num(), 0);
+                    TestEqual(TestDescription + " - Pattern Perms", (*ChanPatObj)->GetIntegerField(Ts.ChannelPatterns[0]), CalculateChannelPermissionsBitmask(ChanPatternPerms));
+                } else { AddError(TestDescription + " - JSON structure error"); }
             }
         }
     }
@@ -290,7 +291,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
 
     if (!InitTest())
     {
-        AddError(TEXT("TestInitialization failed for FPubnubGrantAndParseTokenTest"));
+        AddError("TestInitialization failed for FPubnubGrantAndParseTokenTest");
         return false;
     }
 
@@ -330,11 +331,11 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
     FString PermissionObjectJson = PubnubSubsystem->GrantTokenStructureToJsonString(TokenStructure, bJsonConversionSuccess);
     if (!bJsonConversionSuccess)
     {
-        AddError(TEXT("Failed to convert GrantTokenStructure to JSON. Check logs for details from PubnubSubsystem."));
+        AddError("Failed to convert GrantTokenStructure to JSON. Check logs for details from PubnubSubsystem.");
         CleanUp();
         return false;
     }
-    TestTrue(TEXT("GrantTokenStructureToJsonString conversion success"), bJsonConversionSuccess);
+    TestTrue("GrantTokenStructureToJsonString conversion success", bJsonConversionSuccess);
 
 
     // GrantToken callback
@@ -349,7 +350,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
         }
         else
         {
-            AddError(TEXT("GrantToken response was empty. Expected a token string."));
+            AddError("GrantToken response was empty. Expected a token string.");
             *bGrantTokenSuccess = false;
         }
     });
@@ -360,13 +361,8 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
     {
         *bParseTokenCallbackReceived = true;
         *ParsedTokenResponseJson = JsonResponse;
-        // Basic check: if we got any non-empty response, assume the call itself was "successful" at transport layer
-        // Deeper validation of content will happen in subsequent latent command.
         if (!JsonResponse.IsEmpty())
         {
-            // ParseToken returns the full parsed token structure as JSON string.
-            // The PubNub C-Core returns a string that is already a JSON object representing the token.
-            // Success here means we got a string. Further validation of the string content is needed.
              TSharedPtr<FJsonObject> ParsedTokenObject;
              if (UPubnubJsonUtilities::StringToJsonObject(JsonResponse, ParsedTokenObject) && ParsedTokenObject.IsValid())
              {
@@ -379,7 +375,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
         }
         else
         {
-            AddError(TEXT("ParseToken response was empty."));
+            AddError("ParseToken response was empty.");
         }
     });
 
@@ -408,14 +404,14 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
     // Step 2: Verify Grant Token Success and Proceed to Parse
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bGrantTokenSuccess, GrantedToken, ParseTokenCallback]()
     {
-        TestTrue(TEXT("GrantToken operation was successful (callback received and token extracted)"), *bGrantTokenSuccess);
+        TestTrue("GrantToken operation was successful (callback received and token extracted)", *bGrantTokenSuccess);
         if (*bGrantTokenSuccess && !GrantedToken->IsEmpty())
         {
             PubnubSubsystem->ParseToken(*GrantedToken, ParseTokenCallback);
         }
         else if (GrantedToken->IsEmpty())
         {
-            AddError(TEXT("Granted token string is empty, cannot proceed to ParseToken."));
+            AddError("Granted token string is empty, cannot proceed to ParseToken.");
         }
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bParseTokenCallbackReceived, bGrantTokenSuccess](){ return *bParseTokenCallbackReceived || !*bGrantTokenSuccess; }, MAX_WAIT_TIME)); // Wait if grant was successful
@@ -423,10 +419,10 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
     // Step 3: Verify Parsed Token
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bParseTokenSuccess, ParsedTokenResponseJson, TestTTLMinutes, TestChannelName, ExpectedChannelBitmask, TestGroupName, ExpectedGroupBitmask, TestTargetResourceUID, ExpectedUserResourceBitmask]()
     {
-        TestTrue(TEXT("ParseToken operation was successful (callback received and response is valid JSON)"), *bParseTokenSuccess);
+        TestTrue("ParseToken operation was successful (callback received and response is valid JSON)", *bParseTokenSuccess);
         if (!*bParseTokenSuccess || ParsedTokenResponseJson->IsEmpty())
         {
-            AddError(TEXT("Skipping ParsedToken verification due to previous errors or empty response."));
+            AddError("Skipping ParsedToken verification due to previous errors or empty response.");
             return;
         }
 
@@ -441,13 +437,13 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
         int ParsedTTL = 0;
         if (ParsedTokenObject->TryGetNumberField(TEXT("ttl"), ParsedTTL))
         {
-             TestEqual(TEXT("Parsed token TTL matches granted TTL"), ParsedTTL, TestTTLMinutes);
-        } else { AddError(TEXT("Parsed token JSON does not contain 'ttl' field.")); }
+             TestEqual("Parsed token TTL matches granted TTL", ParsedTTL, TestTTLMinutes);
+        } else { AddError("Parsed token JSON does not contain 'ttl' field."); }
         
         const TSharedPtr<FJsonObject>* ResourcesObjectPtr; // This will now point to the "res" object
         if (!ParsedTokenObject->TryGetObjectField(TEXT("res"), ResourcesObjectPtr) || !ResourcesObjectPtr || !(*ResourcesObjectPtr).IsValid())
         {
-            AddError(TEXT("Parsed token JSON does not contain 'res' (resources) object."));
+            AddError("Parsed token JSON does not contain 'res' (resources) object.");
             return;
         }
         const TSharedPtr<FJsonObject>& ResourcesObject = *ResourcesObjectPtr;
@@ -505,7 +501,7 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
 
     if (!InitTest())
     {
-        AddError(TEXT("TestInitialization failed for FPubnubRevokeTokenTest"));
+        AddError("TestInitialization failed for FPubnubRevokeTokenTest");
         return false;
     }
 
@@ -530,7 +526,7 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
     FString PermissionObjectJson = PubnubSubsystem->GrantTokenStructureToJsonString(TokenStructure, bJsonConversionSuccess);
     if (!bJsonConversionSuccess)
     {
-        AddError(TEXT("Failed to convert GrantTokenStructure to JSON for RevokeTest."));
+        AddError("Failed to convert GrantTokenStructure to JSON for RevokeTest.");
         CleanUp();
         return false;
     }
@@ -547,7 +543,7 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
         }
         else
         {
-            AddError(TEXT("GrantToken response was empty in RevokeTest. Expected a token string."));
+            AddError("GrantToken response was empty in RevokeTest. Expected a token string.");
             *bGrantTokenSuccess = false;
         }
     });
@@ -576,7 +572,7 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
     // Step 2: If token granted, Revoke it
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bGrantTokenSuccess, GrantedToken, bRevokeErrorOccurred]()
     {
-        TestTrue(TEXT("GrantToken operation for RevokeTest was successful"), *bGrantTokenSuccess);
+        TestTrue("GrantToken operation for RevokeTest was successful", *bGrantTokenSuccess);
         if (*bGrantTokenSuccess && !GrantedToken->IsEmpty())
         {
             // Reset error flag before calling RevokeToken to isolate errors from this operation
@@ -586,7 +582,7 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
         }
         else
         {
-            AddError(TEXT("Cannot proceed to RevokeToken: GrantToken failed or token is empty."));
+            AddError("Cannot proceed to RevokeToken: GrantToken failed or token is empty.");
             // To prevent waiting indefinitely if grant failed
             *bRevokeErrorOccurred = true; // Mark as error to skip further checks if grant failed
         }
@@ -601,10 +597,10 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
     {
         if(*bGrantTokenSuccess) // Only perform this check if grant was successful
         {
-            TestFalse(TEXT("No PubNub errors should have occurred during or after RevokeToken call."), *bRevokeErrorOccurred);
+            TestFalse("No PubNub errors should have occurred during or after RevokeToken call.", *bRevokeErrorOccurred);
             if(*bRevokeErrorOccurred)
             {
-                AddError(TEXT("An error was flagged by OnPubnubErrorNative, potentially related to RevokeToken."));
+                AddError("An error was flagged by OnPubnubErrorNative, potentially related to RevokeToken.");
             }
         }
         // If grant failed, an error would have already been added.

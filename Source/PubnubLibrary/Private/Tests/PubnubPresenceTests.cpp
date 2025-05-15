@@ -79,11 +79,11 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
     {
-        TestTrue(TEXT("ListUsersFromChannel operation (1) was successful"), *bListUsersOperationSuccess);
+        TestTrue("ListUsersFromChannel operation (1) was successful", *bListUsersOperationSuccess);
         if (*bListUsersOperationSuccess)
         {
             TestTrue(FString::Printf(TEXT("TestUserID '%s' should be in the list after subscribe"), *TestUserID), CurrentListedUserIDs->Contains(TestUserID));
-            TestEqual(TEXT("Occupancy should be 1 after subscribe"), *CurrentOccupancy, 1);
+            TestEqual("Occupancy should be 1 after subscribe", *CurrentOccupancy, 1);
         }
     }, 0.1f));
 
@@ -105,11 +105,11 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
     {
-        TestTrue(TEXT("ListUsersFromChannel operation (2) was successful"), *bListUsersOperationSuccess);
+        TestTrue("ListUsersFromChannel operation (2) was successful", *bListUsersOperationSuccess);
         if (*bListUsersOperationSuccess)
         {
             TestFalse(FString::Printf(TEXT("TestUserID '%s' should NOT be in the list after unsubscribe"), *TestUserID), CurrentListedUserIDs->Contains(TestUserID));
-            TestEqual(TEXT("Occupancy should be 0 after unsubscribe"), *CurrentOccupancy, 0);
+            TestEqual("Occupancy should be 0 after unsubscribe", *CurrentOccupancy, 0);
         }
     }, 0.1f));
 
@@ -176,10 +176,10 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListChannelsOpDone]() { return *bListChannelsOpDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA, ReceivedSubscribedChannels, bListChannelsOpSuccess]()
     {
-        TestTrue(TEXT("ListUserSubscribedChannels (1) operation successful"), *bListChannelsOpSuccess);
+        TestTrue("ListUserSubscribedChannels (1) operation successful", *bListChannelsOpSuccess);
         if(*bListChannelsOpSuccess)
         {
-            TestEqual(TEXT("Should be subscribed to 1 channel"), ReceivedSubscribedChannels->Num(), 1);
+            TestEqual("Should be subscribed to 1 channel", ReceivedSubscribedChannels->Num(), 1);
             TestTrue(FString::Printf(TEXT("Should contain '%s'"), *TestChannelA), ReceivedSubscribedChannels->Contains(TestChannelA));
         }
     }, 0.1f));
@@ -199,10 +199,10 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListChannelsOpDone]() { return *bListChannelsOpDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA, TestChannelB, ReceivedSubscribedChannels, bListChannelsOpSuccess]()
     {
-        TestTrue(TEXT("ListUserSubscribedChannels (2) operation successful"), *bListChannelsOpSuccess);
+        TestTrue("ListUserSubscribedChannels (2) operation successful", *bListChannelsOpSuccess);
         if(*bListChannelsOpSuccess)
         {
-            TestEqual(TEXT("Should be subscribed to 2 channels"), ReceivedSubscribedChannels->Num(), 2);
+            TestEqual("Should be subscribed to 2 channels", ReceivedSubscribedChannels->Num(), 2);
             TestTrue(FString::Printf(TEXT("Should contain '%s'"), *TestChannelA), ReceivedSubscribedChannels->Contains(TestChannelA));
             TestTrue(FString::Printf(TEXT("Should contain '%s'"), *TestChannelB), ReceivedSubscribedChannels->Contains(TestChannelB));
         }
@@ -223,10 +223,10 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListChannelsOpDone]() { return *bListChannelsOpDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA, TestChannelB, ReceivedSubscribedChannels, bListChannelsOpSuccess]()
     {
-        TestTrue(TEXT("ListUserSubscribedChannels (3) operation successful"), *bListChannelsOpSuccess);
+        TestTrue("ListUserSubscribedChannels (3) operation successful", *bListChannelsOpSuccess);
         if(*bListChannelsOpSuccess)
         {
-            TestEqual(TEXT("Should be subscribed to 1 channel after unsubscribing from A"), ReceivedSubscribedChannels->Num(), 1);
+            TestEqual("Should be subscribed to 1 channel after unsubscribing from A", ReceivedSubscribedChannels->Num(), 1);
             TestFalse(FString::Printf(TEXT("Should NOT contain '%s'"), *TestChannelA), ReceivedSubscribedChannels->Contains(TestChannelA));
             TestTrue(FString::Printf(TEXT("Should still contain '%s'"), *TestChannelB), ReceivedSubscribedChannels->Contains(TestChannelB));
         }
@@ -247,10 +247,10 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListChannelsOpDone]() { return *bListChannelsOpDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedSubscribedChannels, bListChannelsOpSuccess]()
     {
-        TestTrue(TEXT("ListUserSubscribedChannels (4) operation successful"), *bListChannelsOpSuccess);
+        TestTrue("ListUserSubscribedChannels (4) operation successful", *bListChannelsOpSuccess);
         if(*bListChannelsOpSuccess)
         {
-            TestEqual(TEXT("Should be subscribed to 0 channels after unsubscribing from all"), ReceivedSubscribedChannels->Num(), 0);
+            TestEqual("Should be subscribed to 0 channels after unsubscribing from all", ReceivedSubscribedChannels->Num(), 0);
         }
     }, 0.1f));
 
@@ -315,7 +315,7 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetStateOperationDone]() { return *bGetStateOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, InitialStateJson, ReceivedStateJson]()
     {
-        TestTrue(TEXT("GetState (1) operation should have completed (received a response)."), !ReceivedStateJson->IsEmpty());
+        TestTrue("GetState (1) operation should have completed (received a response).", !ReceivedStateJson->IsEmpty());
         if (!ReceivedStateJson->IsEmpty())
         {
             TSharedPtr<FJsonObject> JsonObject;
@@ -334,7 +334,7 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
                 }
                 else
                 {
-                    AddError(TEXT("GetState (1) response JSON does not contain a valid 'payload' object."));
+                    AddError("GetState (1) response JSON does not contain a valid 'payload' object.");
                 }
             }
             else
@@ -361,7 +361,7 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetStateOperationDone]() { return *bGetStateOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UpdatedStateJson, ReceivedStateJson]()
     {
-        TestTrue(TEXT("GetState (2) operation should have completed (received a response)."), !ReceivedStateJson->IsEmpty());
+        TestTrue("GetState (2) operation should have completed (received a response).", !ReceivedStateJson->IsEmpty());
         if (!ReceivedStateJson->IsEmpty())
         {
             TSharedPtr<FJsonObject> JsonObject;
@@ -380,7 +380,7 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
                 }
                 else
                 {
-                    AddError(TEXT("GetState (2) response JSON does not contain a valid 'payload' object."));
+                    AddError("GetState (2) response JSON does not contain a valid 'payload' object.");
                 }
             }
             else
@@ -471,7 +471,7 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetStateOperationDone]() { return *bGetStateOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name, State1Json, TestChannel2Name, State2Json, ReceivedCombinedStateJson]()
     {
-        TestTrue(TEXT("GetState (combined) operation should have completed (received a response)."), !ReceivedCombinedStateJson->IsEmpty());
+        TestTrue("GetState (combined) operation should have completed (received a response).", !ReceivedCombinedStateJson->IsEmpty());
         if (ReceivedCombinedStateJson->IsEmpty()) { return; }
 
         TSharedPtr<FJsonObject> FullResponseObject;
@@ -484,14 +484,14 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
         const TSharedPtr<FJsonObject>* PayloadObjectPtr;
         if (!FullResponseObject->TryGetObjectField(TEXT("payload"), PayloadObjectPtr) || !PayloadObjectPtr || !(*PayloadObjectPtr).IsValid())
         {
-            AddError(TEXT("GetState (combined) response JSON does not contain a valid 'payload' object."));
+            AddError("GetState (combined) response JSON does not contain a valid 'payload' object.");
             return;
         }
 
         const TSharedPtr<FJsonObject>* ChannelsObjectPtr;
         if (!(*PayloadObjectPtr)->TryGetObjectField(TEXT("channels"), ChannelsObjectPtr) || !ChannelsObjectPtr || !(*ChannelsObjectPtr).IsValid())
         {
-            AddError(TEXT("GetState (combined) payload does not contain a valid 'channels' object."));
+            AddError("GetState (combined) payload does not contain a valid 'channels' object.");
             return;
         }
         const TSharedPtr<FJsonObject>& ChannelsObject = *ChannelsObjectPtr;

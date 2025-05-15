@@ -163,7 +163,7 @@ bool FPubnubSignalTest::RunTest(const FString& Parameters)
 	//Check for any errors on the way
 	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
 	{
-		AddError(FString::Printf(TEXT("Pubnub Error in FPubnubSignalTest: %s"), *ErrorMessage));
+		AddError(ErrorMessage);
 	});
 	
 	//Set User ID - it's necessary for any operation
@@ -224,7 +224,7 @@ bool FPubnubSignalWithSettingsTest::RunTest(const FString& Parameters)
 	//Check for any errors on the way
 	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
 	{
-		AddError(FString::Printf(TEXT("Pubnub Error in FPubnubSignalWithSettingsTest: %s"), *ErrorMessage));
+		AddError(ErrorMessage);
 	});
 	
 	//Set User ID - it's necessary for any operation
@@ -290,7 +290,7 @@ bool FPubnubUnsubscribeTest::RunTest(const FString& Parameters)
 	//Check for any unexpected errors on the way
 	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
 	{
-		AddError(FString::Printf(TEXT("Unexpected Pubnub Error in FPubnubUnsubscribeTest: %s"), *ErrorMessage));
+		AddError(ErrorMessage);
 	});
 	
 	//Set User ID

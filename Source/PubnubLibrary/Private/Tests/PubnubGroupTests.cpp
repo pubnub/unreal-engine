@@ -167,10 +167,10 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListOperationCompleted]() { return *bListOperationCompleted; }, MAX_WAIT_TIME));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, ListedChannels, bListOperationSuccess]()
 	{
-		TestTrue(TEXT("ListChannelsInGroup operation was marked successful (1)"), *bListOperationSuccess);
+		TestTrue("ListChannelsInGroup operation was marked successful (1)", *bListOperationSuccess);
 		if(*bListOperationSuccess)
 		{
-			TestEqual(TEXT("Number of channels after adding Channel1"), ListedChannels->Num(), 1);
+			TestEqual("Number of channels after adding Channel1", ListedChannels->Num(), 1);
 			TestTrue(FString::Printf(TEXT("Channel1 ('%s') found in group"), *TestChannel1), ListedChannels->Contains(TestChannel1));
 		}
 	}, 0.1f));
@@ -192,10 +192,10 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListOperationCompleted]() { return *bListOperationCompleted; }, MAX_WAIT_TIME));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestChannel2, ListedChannels, bListOperationSuccess]()
 	{
-		TestTrue(TEXT("ListChannelsInGroup operation was marked successful (2)"), *bListOperationSuccess);
+		TestTrue("ListChannelsInGroup operation was marked successful (2)", *bListOperationSuccess);
 		if(*bListOperationSuccess)
 		{
-			TestEqual(TEXT("Number of channels after adding Channel2"), ListedChannels->Num(), 2);
+			TestEqual("Number of channels after adding Channel2", ListedChannels->Num(), 2);
 			TestTrue(FString::Printf(TEXT("Channel1 ('%s') found in group"), *TestChannel1), ListedChannels->Contains(TestChannel1));
 			TestTrue(FString::Printf(TEXT("Channel2 ('%s') found in group"), *TestChannel2), ListedChannels->Contains(TestChannel2));
 		}
@@ -218,10 +218,10 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListOperationCompleted]() { return *bListOperationCompleted; }, MAX_WAIT_TIME));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestChannel2, ListedChannels, bListOperationSuccess]()
 	{
-		TestTrue(TEXT("ListChannelsInGroup operation was marked successful (3)"), *bListOperationSuccess);
+		TestTrue("ListChannelsInGroup operation was marked successful (3)", *bListOperationSuccess);
 		if(*bListOperationSuccess)
 		{
-			TestEqual(TEXT("Number of channels after removing Channel1"), ListedChannels->Num(), 1);
+			TestEqual("Number of channels after removing Channel1", ListedChannels->Num(), 1);
 			TestFalse(FString::Printf(TEXT("Channel1 ('%s') NOT found in group"), *TestChannel1), ListedChannels->Contains(TestChannel1));
 			TestTrue(FString::Printf(TEXT("Channel2 ('%s') still in group"), *TestChannel2), ListedChannels->Contains(TestChannel2));
 		}
@@ -244,10 +244,10 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListOperationCompleted]() { return *bListOperationCompleted; }, MAX_WAIT_TIME));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ListedChannels, bListOperationSuccess]()
 	{
-		TestTrue(TEXT("ListChannelsInGroup operation was marked successful (4)"), *bListOperationSuccess);
+		TestTrue("ListChannelsInGroup operation was marked successful (4)", *bListOperationSuccess);
 		if(*bListOperationSuccess)
 		{
-			TestEqual(TEXT("Number of channels after removing Channel2 (group should be empty)"), ListedChannels->Num(), 0);
+			TestEqual("Number of channels after removing Channel2 (group should be empty)", ListedChannels->Num(), 0);
 		}
 	}, 0.1f));
 	

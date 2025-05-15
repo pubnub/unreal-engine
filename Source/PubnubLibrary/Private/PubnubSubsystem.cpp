@@ -465,12 +465,23 @@ void UPubnubSubsystem::FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFe
 
 void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse)
 {
+	FOnPubnubIntResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnMessageCountsResponse](int IntValue)
+	{
+		OnMessageCountsResponse.ExecuteIfBound(IntValue);
+	});
+
+	MessageCounts(Channel, Timetoken, NativeCallback);
+}
+
+void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Timetoken, OnMessageCountsResponse]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, Timetoken, NativeCallback]
 	{
-		MessageCounts_priv(Channel, Timetoken, OnMessageCountsResponse);
+		MessageCounts_priv(Channel, Timetoken, NativeCallback);
 	});
 }
 
@@ -1840,7 +1851,7 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 	});
 }
 
-void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubIntResponseNative OnMessageCountsResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
