@@ -70,6 +70,43 @@ bool UPubnubJsonUtilities::IsCorrectJsonString(const FString InString, bool Allo
 	return false;
 }
 
+bool UPubnubJsonUtilities::AreJsonObjectStringsEqual(const FString JsonString1, const FString JsonString2)
+{
+	if(JsonString1 == JsonString2)
+	{return true;}
+
+	//Try to parse both strings into Json objects
+	TSharedPtr<FJsonObject> JsonObject1;
+	if(!StringToJsonObject(JsonString1, JsonObject1))
+	{return false;}
+	TSharedPtr<FJsonObject> JsonObject2;
+	if(!StringToJsonObject(JsonString2, JsonObject2))
+	{return false;}
+
+	//Sort keys from both Json objects and compare if there is the same amount of them
+	TArray<FString> Keys1;
+	JsonObject1->Values.GetKeys(Keys1);
+	Keys1.Sort();
+
+	TArray<FString> Keys2;
+	JsonObject2->Values.GetKeys(Keys2);
+	Keys2.Sort();
+
+	if(Keys1.Num() != Keys2.Num())
+	{return false;}
+
+	//Compare if all keys and all values are the same
+	for(int i = 0; i < Keys1.Num(); i++)
+	{
+		if(Keys1[i] != Keys2[i])
+		{return false;}
+		if(*JsonObject1->Values[Keys1[i]] != *JsonObject2->Values[Keys2[i]])
+		{return false;}
+	}
+
+	return true;
+}
+
 void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson, bool& Error, int& Status, TArray<FString>& Channels)
 {
 	Channels.Empty();

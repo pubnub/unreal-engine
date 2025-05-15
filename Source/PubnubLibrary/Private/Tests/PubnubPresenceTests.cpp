@@ -1,6 +1,7 @@
 #include "Misc/AutomationTest.h"
 #include "PubnubSubsystem.h"
 #include "PubnubEnumLibrary.h"
+#include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tests/PubnubTestsUtils.h"
 #include "Tests/AutomationCommon.h"
@@ -9,7 +10,8 @@ using namespace PubnubTests;
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUsersFromChannelTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.ListUsersFromChannel", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUserSubscribedChannelsTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.ListUserSubscribedChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.ChannelSetGetState", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.SetGetState", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateForMultipleTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.SetGetStateMultipleChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
 {
@@ -261,13 +263,10 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     // Initial variables
     const FString TestUserID = SDK_PREFIX + "test_user_setget_state";
     const FString TestChannelName = SDK_PREFIX + "test_channel_setget_state";
-    const FString InitialStateJson = TEXT("{\"mood\": \"happy\", \"level\": 10}");
-    const FString UpdatedStateJson = TEXT("{\"mood\": \"focused\", \"level\": 11, \"item\": \"shield\"}");
+    const FString InitialStateJson = "{\"mood\": \"happy\", \"level\": 10}";
+    const FString UpdatedStateJson = "{\"mood\": \"focused\", \"level\": 11, \"item\": \"shield\"}";
 
     TSharedPtr<bool> bGetStateOperationDone = MakeShared<bool>(false);
-    // For GetState, the FOnPubnubResponse delegate's FString is the JSON response. Success can be inferred if it's not empty and parses, but there's no explicit success bool from that delegate.
-    // We'll consider it a success if the callback is fired and we get some JSON back.
-    // For more robust error handling, GetState would ideally have a status/error parameter in its callback.
     TSharedPtr<FString> ReceivedStateJson = MakeShared<FString>();
 
     if (!InitTest())
@@ -278,7 +277,6 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
 
     PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
     {
-        // Avoid flagging errors from GetState if it uses PNER_OK with an empty JSON for no state, handle that in callback.
         AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubChannelSetGetStateTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
@@ -300,21 +298,19 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     {
         PubnubSubsystem->SubscribeToChannel(TestChannelName);
     }, 0.2f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow subscription to process
-
     // Step 2: Set Initial State
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, InitialStateJson]()
     {
         PubnubSubsystem->SetState(TestChannelName, InitialStateJson);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.5f)); // Allow SetState to propagate before GetState
+    }, 0.2f));
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow SetState to propagate before GetState
 
     // Step 3: Get Initial State and Verify
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, TestUserID, GetStateCallback, bGetStateOperationDone, ReceivedStateJson]()
     {
         *bGetStateOperationDone = false;
         ReceivedStateJson->Empty();
-        PubnubSubsystem->GetState(TestChannelName, TEXT(""), TestUserID, GetStateCallback); // ChannelGroup is empty for channel state
+        PubnubSubsystem->GetState(TestChannelName, "", TestUserID, GetStateCallback);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetStateOperationDone]() { return *bGetStateOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, InitialStateJson, ReceivedStateJson]()
@@ -322,8 +318,29 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("GetState (1) operation should have completed (received a response)."), !ReceivedStateJson->IsEmpty());
         if (!ReceivedStateJson->IsEmpty())
         {
-             // For robust comparison, parse JSON. For simplicity here, direct string comparison (might be flaky due to key order/whitespace)
-            TestEqual(TEXT("Retrieved initial state should match set state"), *ReceivedStateJson, InitialStateJson);
+            TSharedPtr<FJsonObject> JsonObject;
+            if(UPubnubJsonUtilities::StringToJsonObject(*ReceivedStateJson, JsonObject))
+            {
+                const TSharedPtr<FJsonObject>* PayloadObjectPtr;
+                if (JsonObject->TryGetObjectField(TEXT("payload"), PayloadObjectPtr) && PayloadObjectPtr && (*PayloadObjectPtr).IsValid())
+                {
+                    FString ExtractedPayloadJson = UPubnubJsonUtilities::JsonObjectToString(*PayloadObjectPtr);
+                    bool StatesMatches = UPubnubJsonUtilities::AreJsonObjectStringsEqual(ExtractedPayloadJson, InitialStateJson);
+                    TestTrue("Retrieved initial state payload should match set state", StatesMatches);
+                    if(!StatesMatches)
+                    {
+                        AddError(FString::Printf(TEXT("States should match but exactracted state is: %s, original state is: %s"), *ExtractedPayloadJson, *InitialStateJson));
+                    }
+                }
+                else
+                {
+                    AddError(TEXT("GetState (1) response JSON does not contain a valid 'payload' object."));
+                }
+            }
+            else
+            {
+                AddError(FString::Printf(TEXT("GetState (1) response JSON could not be deserialized: %s"), **ReceivedStateJson));
+            }
         }
     }, 0.1f));
 
@@ -347,7 +364,29 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("GetState (2) operation should have completed (received a response)."), !ReceivedStateJson->IsEmpty());
         if (!ReceivedStateJson->IsEmpty())
         {
-            TestEqual(TEXT("Retrieved updated state should match set state"), *ReceivedStateJson, UpdatedStateJson);
+            TSharedPtr<FJsonObject> JsonObject;
+            if(UPubnubJsonUtilities::StringToJsonObject(*ReceivedStateJson, JsonObject))
+            {
+                const TSharedPtr<FJsonObject>* PayloadObjectPtr;
+                if (JsonObject->TryGetObjectField(TEXT("payload"), PayloadObjectPtr) && PayloadObjectPtr && (*PayloadObjectPtr).IsValid())
+                {
+                    FString ExtractedPayloadJson = UPubnubJsonUtilities::JsonObjectToString(*PayloadObjectPtr);
+                    bool StatesMatches = UPubnubJsonUtilities::AreJsonObjectStringsEqual(ExtractedPayloadJson, UpdatedStateJson);
+                    TestTrue("Retrieved initial state payload should match set state", StatesMatches);
+                    if(!StatesMatches)
+                    {
+                        AddError(FString::Printf(TEXT("States should match but exactracted state is: %s, original state is: %s"), *ExtractedPayloadJson, *UpdatedStateJson));
+                    }
+                }
+                else
+                {
+                    AddError(TEXT("GetState (2) response JSON does not contain a valid 'payload' object."));
+                }
+            }
+            else
+            {
+                AddError(FString::Printf(TEXT("GetState (2) response JSON could not be deserialized: %s"), **ReceivedStateJson));
+            }
         }
     }, 0.1f));
     
@@ -355,6 +394,151 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName]()
     {
         PubnubSubsystem->UnsubscribeFromChannel(TestChannelName);
+    }, 0.2f));
+
+    CleanUp();
+    return true;
+}
+
+bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters)
+{
+    // Initial variables
+    const FString TestUserID = SDK_PREFIX + "test_user_multi_setget_state";
+    const FString TestChannel1Name = SDK_PREFIX + "test_channel1_multi_setget_state";
+    const FString TestChannel2Name = SDK_PREFIX + "test_channel2_multi_setget_state";
+    const FString State1Json = TEXT("{\"item\": \"potion\", \"quantity\": 5}");
+    const FString State2Json = TEXT("{\"status\": \"exploring\", \"location\": \"dungeon_level_3\"}");
+    const FString CombinedChannelsString = FString::Printf(TEXT("%s,%s"), *TestChannel1Name, *TestChannel2Name);
+
+    TSharedPtr<bool> bGetStateOperationDone = MakeShared<bool>(false);
+    TSharedPtr<FString> ReceivedCombinedStateJson = MakeShared<FString>();
+
+    if (!InitTest())
+    {
+        AddError("TestInitialization failed for FPubnubChannelSetGetStateForMultipleTest");
+        return false;
+    }
+
+    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+    {
+        AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubChannelSetGetStateForMultipleTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+    });
+
+    FOnPubnubResponseNative GetStateCallback;
+    GetStateCallback.BindLambda([this, bGetStateOperationDone, ReceivedCombinedStateJson](FString JsonResponse)
+    {
+        *bGetStateOperationDone = true;
+        *ReceivedCombinedStateJson = JsonResponse;
+    });
+
+    // Set UserID first
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
+    {
+        PubnubSubsystem->SetUserID(TestUserID);
+    }, 0.1f));
+
+    // Subscribe to Channel 1
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name]()
+    {
+        PubnubSubsystem->SubscribeToChannel(TestChannel1Name);
+    }, 0.2f));
+
+    // Subscribe to Channel 2
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name]()
+    {
+        PubnubSubsystem->SubscribeToChannel(TestChannel2Name);
+    }, 0.5f));
+
+    // Set State for Channel 1
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name, State1Json]()
+    {
+        PubnubSubsystem->SetState(TestChannel1Name, State1Json);
+    }, 0.3f));
+
+    // Set State for Channel 2
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name, State2Json]()
+    {
+        PubnubSubsystem->SetState(TestChannel2Name, State2Json);
+    }, 0.3f));
+
+    // Get Combined State for Channel 1 and Channel 2
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, CombinedChannelsString, TestUserID, GetStateCallback, bGetStateOperationDone, ReceivedCombinedStateJson]()
+    {
+        *bGetStateOperationDone = false;
+        ReceivedCombinedStateJson->Empty();
+        PubnubSubsystem->GetState(CombinedChannelsString, TEXT(""), TestUserID, GetStateCallback);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetStateOperationDone]() { return *bGetStateOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name, State1Json, TestChannel2Name, State2Json, ReceivedCombinedStateJson]()
+    {
+        TestTrue(TEXT("GetState (combined) operation should have completed (received a response)."), !ReceivedCombinedStateJson->IsEmpty());
+        if (ReceivedCombinedStateJson->IsEmpty()) { return; }
+
+        TSharedPtr<FJsonObject> FullResponseObject;
+        if (!UPubnubJsonUtilities::StringToJsonObject(*ReceivedCombinedStateJson, FullResponseObject) || !FullResponseObject.IsValid())
+        {
+            AddError(FString::Printf(TEXT("GetState (combined) response JSON could not be deserialized: %s"), **ReceivedCombinedStateJson));
+            return;
+        }
+
+        const TSharedPtr<FJsonObject>* PayloadObjectPtr;
+        if (!FullResponseObject->TryGetObjectField(TEXT("payload"), PayloadObjectPtr) || !PayloadObjectPtr || !(*PayloadObjectPtr).IsValid())
+        {
+            AddError(TEXT("GetState (combined) response JSON does not contain a valid 'payload' object."));
+            return;
+        }
+
+        const TSharedPtr<FJsonObject>* ChannelsObjectPtr;
+        if (!(*PayloadObjectPtr)->TryGetObjectField(TEXT("channels"), ChannelsObjectPtr) || !ChannelsObjectPtr || !(*ChannelsObjectPtr).IsValid())
+        {
+            AddError(TEXT("GetState (combined) payload does not contain a valid 'channels' object."));
+            return;
+        }
+        const TSharedPtr<FJsonObject>& ChannelsObject = *ChannelsObjectPtr;
+
+        // Verify State for Channel 1
+        const TSharedPtr<FJsonObject>* Channel1StateObjectPtr;
+        if (ChannelsObject->TryGetObjectField(TestChannel1Name, Channel1StateObjectPtr) && Channel1StateObjectPtr && (*Channel1StateObjectPtr).IsValid())
+        {
+            FString ExtractedChannel1StateString = UPubnubJsonUtilities::JsonObjectToString(*Channel1StateObjectPtr);
+            bool bState1Matches = UPubnubJsonUtilities::AreJsonObjectStringsEqual(ExtractedChannel1StateString, State1Json);
+            TestTrue(FString::Printf(TEXT("State for '%s' should match"), *TestChannel1Name), bState1Matches);
+            if (!bState1Matches)
+            {
+                AddError(FString::Printf(TEXT("State for '%s' mismatch. Expected: %s, Got: %s"), *TestChannel1Name, *State1Json, *ExtractedChannel1StateString));
+            }
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("State for channel '%s' not found in combined response."), *TestChannel1Name));
+        }
+
+        // Verify State for Channel 2
+        const TSharedPtr<FJsonObject>* Channel2StateObjectPtr;
+        if (ChannelsObject->TryGetObjectField(TestChannel2Name, Channel2StateObjectPtr) && Channel2StateObjectPtr && (*Channel2StateObjectPtr).IsValid())
+        {
+            FString ExtractedChannel2StateString = UPubnubJsonUtilities::JsonObjectToString(*Channel2StateObjectPtr);
+            bool bState2Matches = UPubnubJsonUtilities::AreJsonObjectStringsEqual(ExtractedChannel2StateString, State2Json);
+            TestTrue(FString::Printf(TEXT("State for '%s' should match"), *TestChannel2Name), bState2Matches);
+            if (!bState2Matches)
+            {
+                AddError(FString::Printf(TEXT("State for '%s' mismatch. Expected: %s, Got: %s"), *TestChannel2Name, *State2Json, *ExtractedChannel2StateString));
+            }
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("State for channel '%s' not found in combined response."), *TestChannel2Name));
+        }
+    }, 0.1f));
+    
+    // Unsubscribe from channels
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name]()
+    {
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannel1Name);
+    }, 0.2f));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name]()
+    {
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannel2Name);
     }, 0.2f));
 
     CleanUp();
