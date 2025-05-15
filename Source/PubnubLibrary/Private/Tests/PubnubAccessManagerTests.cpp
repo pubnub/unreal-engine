@@ -11,6 +11,7 @@ using namespace PubnubTests;
 //This is an Unit test, but it still requires getting Pubnub subsystem, that's why it's here, not with other Unit tests
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantTokenStructureToJsonStringUnitTest, FPubnubAutomationTestBase, "Pubnub.Unit.AccessManager.GrantTokenStructureToJsonString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantAndParseTokenTest, FPubnubAutomationTestBase, "Pubnub.E2E.AccessManager.GrantAndParseToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRevokeTokenTest, FPubnubAutomationTestBase, "Pubnub.E2E.AccessManager.RevokeToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // Helper function to calculate expected bitmask for FPubnubChannelPermissions
 int CalculateChannelPermissionsBitmask(const FPubnubChannelPermissions& Perms)
@@ -270,8 +271,6 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
     return true;
 }
 
-
-
 bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
 {
     // Initial variables
@@ -387,10 +386,16 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
 
     // --- Test Execution ---
 
-    // Set UserID (required for some PubNub operations, though Grant is admin-side typically)
+    // Set UserID
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestAuthUser]()
     {
         PubnubSubsystem->SetUserID(TestAuthUser); 
+    }, 0.1f));
+
+    // Set secret key is needed for Token operations
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestAuthUser]()
+    {
+        PubnubSubsystem->SetSecretKey(); 
     }, 0.1f));
 
     // Step 1: Grant Token
@@ -480,6 +485,129 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
             } else { AddError(FString::Printf(TEXT("UUID resource '%s' not found in parsed token res.uuid."), *TestTargetResourceUID)); }
         } else { AddWarning(FString::Printf(TEXT("No 'uuid' resource key found in parsed token res (expected for %s)."), *TestTargetResourceUID)); }
         
+    }, 0.1f));
+
+    CleanUp();
+    return true;
+}
+
+bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
+{
+    // Initial variables
+    const FString TestAuthUserForGrant = SDK_PREFIX + TEXT("auth_user_revoke_test");
+    const FString TestChannelForGrant = SDK_PREFIX + TEXT("channel_revoke_test");
+    const int TestTTLForGrant = 5; // Short TTL for the token to be revoked
+
+    TSharedPtr<FString> GrantedToken = MakeShared<FString>();
+    TSharedPtr<bool> bGrantTokenSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bGrantTokenCallbackReceived = MakeShared<bool>(false);
+    TSharedPtr<bool> bRevokeErrorOccurred = MakeShared<bool>(false);
+
+    if (!InitTest())
+    {
+        AddError(TEXT("TestInitialization failed for FPubnubRevokeTokenTest"));
+        return false;
+    }
+
+    // General error handler
+    // We are primarily interested in errors *after* RevokeToken is called, but this will catch any.
+    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this, bRevokeErrorOccurred](FString ErrorMessage, EPubnubErrorType ErrorType)
+    {
+        // Only set the flag if an error occurs. We will check its state later.
+        *bRevokeErrorOccurred = true;
+        AddError(FString::Printf(TEXT("Pubnub Error in FPubnubRevokeTokenTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+    });
+
+    // Prepare GrantTokenStructure for a temporary token
+    FPubnubGrantTokenStructure TokenStructure;
+    TokenStructure.TTLMinutes = TestTTLForGrant;
+    TokenStructure.AuthorizedUser = TestAuthUserForGrant;
+    FPubnubChannelPermissions ChanPerms; ChanPerms.Read = true;
+    TokenStructure.Channels.Add(TestChannelForGrant);
+    TokenStructure.ChannelPermissions.Add(ChanPerms);
+
+    bool bJsonConversionSuccess = false;
+    FString PermissionObjectJson = PubnubSubsystem->GrantTokenStructureToJsonString(TokenStructure, bJsonConversionSuccess);
+    if (!bJsonConversionSuccess)
+    {
+        AddError(TEXT("Failed to convert GrantTokenStructure to JSON for RevokeTest."));
+        CleanUp();
+        return false;
+    }
+
+    // GrantToken callback (copied from GrantAndParse, simplified as we just need the token string)
+    FOnPubnubResponseNative GrantTokenCallback;
+    GrantTokenCallback.BindLambda([this, GrantedToken, bGrantTokenSuccess, bGrantTokenCallbackReceived](FString RawTokenString)
+    {
+        *bGrantTokenCallbackReceived = true;
+        if (!RawTokenString.IsEmpty())
+        {
+            *GrantedToken = RawTokenString;
+            *bGrantTokenSuccess = true;
+        }
+        else
+        {
+            AddError(TEXT("GrantToken response was empty in RevokeTest. Expected a token string."));
+            *bGrantTokenSuccess = false;
+        }
+    });
+
+    // --- Test Execution ---
+
+    // Set UserID
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestAuthUserForGrant]()
+    {
+        PubnubSubsystem->SetUserID(TestAuthUserForGrant); 
+    }, 0.1f));
+    
+    // Set secret key is needed for Token operations
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
+    {
+        PubnubSubsystem->SetSecretKey(); 
+    }, 0.1f));
+
+    // Step 1: Grant a temporary token
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, PermissionObjectJson, GrantTokenCallback]()
+    {
+        PubnubSubsystem->GrantToken(PermissionObjectJson, GrantTokenCallback);
+    }, 0.2f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGrantTokenCallbackReceived](){ return *bGrantTokenCallbackReceived; }, MAX_WAIT_TIME));
+
+    // Step 2: If token granted, Revoke it
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bGrantTokenSuccess, GrantedToken, bRevokeErrorOccurred]()
+    {
+        TestTrue(TEXT("GrantToken operation for RevokeTest was successful"), *bGrantTokenSuccess);
+        if (*bGrantTokenSuccess && !GrantedToken->IsEmpty())
+        {
+            // Reset error flag before calling RevokeToken to isolate errors from this operation
+            *bRevokeErrorOccurred = false; 
+            PubnubSubsystem->RevokeToken(*GrantedToken);
+            // No direct callback for RevokeToken success/failure, we rely on OnPubnubErrorNative
+        }
+        else
+        {
+            AddError(TEXT("Cannot proceed to RevokeToken: GrantToken failed or token is empty."));
+            // To prevent waiting indefinitely if grant failed
+            *bRevokeErrorOccurred = true; // Mark as error to skip further checks if grant failed
+        }
+    }, 0.1f));
+
+    // Step 3: Wait a moment for any async errors from RevokeToken to be processed
+    // This duration might need adjustment based on typical network/server response times for errors.
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); 
+
+    // Step 4: Verify no errors occurred during/after RevokeToken
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRevokeErrorOccurred, bGrantTokenSuccess]()
+    {
+        if(*bGrantTokenSuccess) // Only perform this check if grant was successful
+        {
+            TestFalse(TEXT("No PubNub errors should have occurred during or after RevokeToken call."), *bRevokeErrorOccurred);
+            if(*bRevokeErrorOccurred)
+            {
+                AddError(TEXT("An error was flagged by OnPubnubErrorNative, potentially related to RevokeToken."));
+            }
+        }
+        // If grant failed, an error would have already been added.
     }, 0.1f));
 
     CleanUp();
