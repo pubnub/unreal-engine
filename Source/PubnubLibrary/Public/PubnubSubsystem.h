@@ -347,6 +347,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
 	void GrantToken(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
+	void GrantToken(FString PermissionObject, FOnPubnubResponseNative NativeCallback);
 
 	/**
 	 * Revokes a previously granted access token.
@@ -378,6 +379,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
 	void ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse);
+	void ParseToken(FString Token, FOnPubnubResponseNative NativeCallback);
 
 	/**
 	 * This method is used by the client devices to update the authentication token granted by the server.
@@ -969,9 +971,9 @@ private:
 	void SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative OnGetStateResponse);
 	void Heartbeat_priv(FString Channel, FString ChannelGroup);
-	void GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
+	void GrantToken_priv(FString PermissionObject, FOnPubnubResponseNative OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token);
-	void ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse);
+	void ParseToken_priv(FString Token, FOnPubnubResponseNative OnParseTokenResponse);
 	FString FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_JSON_priv(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());

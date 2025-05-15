@@ -362,12 +362,23 @@ void UPubnubSubsystem::Heartbeat(FString Channel, FString ChannelGroup)
 
 void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse)
 {
+	FOnPubnubResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGrantTokenResponse](FString JsonResponse)
+	{
+		OnGrantTokenResponse.ExecuteIfBound(JsonResponse);
+	});
+
+	GrantToken(PermissionObject, NativeCallback);
+}
+
+void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnPubnubResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, PermissionObject, OnGrantTokenResponse]
+	QuickActionThread->AddFunctionToQueue( [this, PermissionObject, NativeCallback]
 	{
-		GrantToken_priv(PermissionObject, OnGrantTokenResponse);
+		GrantToken_priv(PermissionObject, NativeCallback);
 	});
 }
 
@@ -384,12 +395,23 @@ void UPubnubSubsystem::RevokeToken(FString Token)
 
 void UPubnubSubsystem::ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse)
 {
+	FOnPubnubResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnParseTokenResponse](FString JsonResponse)
+	{
+		OnParseTokenResponse.ExecuteIfBound(JsonResponse);
+	});
+
+	ParseToken(Token, NativeCallback);
+}
+
+void UPubnubSubsystem::ParseToken(FString Token, FOnPubnubResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Token, OnParseTokenResponse]
+	QuickActionThread->AddFunctionToQueue( [this, Token, NativeCallback]
 	{
-		ParseToken_priv(Token, OnParseTokenResponse);
+		ParseToken_priv(Token, NativeCallback);
 	});
 }
 
@@ -874,42 +896,42 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 	
 	if(TokenStructure.Channels.Num() != TokenStructure.ChannelPermissions.Num() && TokenStructure.ChannelPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPermissions and Channels (or only 1 ChannelPermission).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPermissions and Channels (or only 1 ChannelPermission).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.ChannelGroups.Num() != TokenStructure.ChannelGroupPermissions.Num() && TokenStructure.ChannelGroupPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPermissions and ChannelGroups (or only 1 ChannelGroupPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPermissions and ChannelGroups (or only 1 ChannelGroupPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.Users.Num() != TokenStructure.UserPermissions.Num() && TokenStructure.UserPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPermissions and Users (or only 1 UserPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPermissions and Users (or only 1 UserPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.ChannelPatterns.Num() != TokenStructure.ChannelPatternPermissions.Num() && TokenStructure.ChannelPatternPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPatternPermissions and ChannelsPatterns (or only 1 ChannelPatternPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPatternPermissions and ChannelsPatterns (or only 1 ChannelPatternPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.ChannelGroupPatterns.Num() != TokenStructure.ChannelGroupPatternPermissions.Num() && TokenStructure.ChannelGroupPatternPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPatternPermissions and ChannelGroupsPatterns (or only 1 ChannelGroupPatternPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPatternPermissions and ChannelGroupsPatterns (or only 1 ChannelGroupPatternPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.UserPatterns.Num() != TokenStructure.UserPatternPermissions.Num() && TokenStructure.UserPatternPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPatternPermissions and UsersPatterns (or only 1 UserPatternPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPatternPermissions and UsersPatterns (or only 1 UserPatternPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
@@ -962,6 +984,7 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 	PermissionsJsonObject->SetStringField("authorized_uuid", TokenStructure.AuthorizedUser);
 	PermissionsJsonObject->SetObjectField("permissions", TokenStructureJsonObject);
 
+	success = true;
 	//Convert created Json object to string
 	return UPubnubJsonUtilities::JsonObjectToString(PermissionsJsonObject);
 }
@@ -1676,16 +1699,12 @@ void UPubnubSubsystem::Heartbeat_priv(FString Channel, FString ChannelGroup)
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(Channel.IsEmpty() && ChannelGroup.IsEmpty())
-	{
-		PubnubError("Warning: Can't use Heartbeat function. At least one of: ChannelGroup, Channel can't be empty", EPubnubErrorType::PET_Warning);
-		return;
-	}
-
 	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+
+	GetLastResponse(ctx_pub);
 }
 
-void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubResponseNative OnGrantTokenResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1737,7 +1756,7 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token)
 	}
 }
 
-void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse)
+void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponseNative OnParseTokenResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
