@@ -196,9 +196,6 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 		Settings.MaxPerChannel = 10;
 		Settings.IncludeUserID = true;
 
-		AddInfo(Settings.End);
-		AddInfo(Settings.Start);
-
 		PubnubSubsystem->FetchHistory(TestChannel, FetchHistoryCallback, Settings);
 	}, 1.5f));
 
