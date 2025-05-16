@@ -830,7 +830,7 @@ public:
 	 * Retrieves message actions for a specified channel within a given time range.
 	 * 
 	 * @param Channel The ID of the channel.
-	 * @param Start The starting timetoken for the range.
+	 * @param Start The starting timetoken for the range. Has to be greater (newer) than the End timetoken.
 	 * @param End The ending timetoken for the range.
 	 * @param SizeLimit The maximum number of actions to retrieve.
 	 * @param OnGetMessageActionsResponse The callback function used to handle the result.

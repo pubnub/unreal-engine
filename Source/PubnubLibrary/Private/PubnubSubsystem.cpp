@@ -1861,6 +1861,8 @@ void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FO
 	
 	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Timetoken));
 
+	pubnub_await(ctx_pub);
+
 	int MessageCountsNumber = 0;
 	pubnub_get_message_counts(ctx_pub, TCHAR_TO_ANSI(*Channel), &MessageCountsNumber);
 
