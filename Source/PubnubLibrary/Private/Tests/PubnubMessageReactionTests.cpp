@@ -5,11 +5,16 @@
 #include "Tests/PubnubTestsUtils.h"
 #include "FunctionLibraries/PubnubTimetokenUtilities.h"
 #include "Tests/AutomationCommon.h"
+#include "Dom/JsonObject.h"
+#include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 
 using namespace PubnubTests;
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubAddAndGetMessageActionsTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessageReactions.AddAndGetMessageActions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveMessageActionTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessageReactions.RemoveMessageAction", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubReceiveMessageActionEventTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessageReactions.ReceiveMessageActionEvent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
 {
@@ -198,6 +203,171 @@ bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
              AddError(FString::Printf(TEXT("Expected at least 2 actions, found %d. Action1 found: %d, Action2 found: %d"), ReceivedActionsArray->Num(), bFoundAction1, bFoundAction2));
         }
 
+    }, 0.1f));
+
+    CleanUp();
+    return true;
+}
+
+bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
+{
+    const FString TestUser = SDK_PREFIX + TEXT("user_msg_action_event");
+    const FString TestChannel = SDK_PREFIX + TEXT("chan_msg_action_event");
+    const FString TestMessageContent = TEXT("\"Hello Message Action Event Test!\"");
+    const FString TestActionType = TEXT("reaction");
+    const FString TestActionValue = TEXT("event_heart");
+
+    TSharedPtr<bool> bMessagePublishedAndTimetokenCaptured = MakeShared<bool>(false);
+    TSharedPtr<FString> PublishedMessageTimetoken = MakeShared<FString>();
+
+    TSharedPtr<bool> bAddActionDone = MakeShared<bool>(false);
+    TSharedPtr<FString> AddedActionTimetoken = MakeShared<FString>();
+
+    TSharedPtr<bool> bMessageActionEventReceived = MakeShared<bool>(false);
+    TSharedPtr<FString> ReceivedEventActionTimetoken = MakeShared<FString>();
+    TSharedPtr<FString> ReceivedEventMessageTimetoken = MakeShared<FString>();
+    TSharedPtr<FString> ReceivedEventActionType = MakeShared<FString>();
+    TSharedPtr<FString> ReceivedEventActionValue = MakeShared<FString>();
+    TSharedPtr<FString> ReceivedEventUserID = MakeShared<FString>();
+
+    if (!InitTest())
+    {
+        AddError(TEXT("TestInitialization failed for FPubnubReceiveMessageActionEventTest"));
+        return false;
+    }
+
+    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+    {
+        AddError(FString::Printf(TEXT("Pubnub Error in FPubnubReceiveMessageActionEventTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+    });
+
+    PubnubSubsystem->SetUserID(TestUser);
+
+    // Listener for both initial published message and the subsequent message action event
+    PubnubSubsystem->OnMessageReceivedNative.AddLambda(
+        [this, TestChannel, TestMessageContent, PublishedMessageTimetoken, bMessagePublishedAndTimetokenCaptured,
+         bMessageActionEventReceived, ReceivedEventActionTimetoken, ReceivedEventMessageTimetoken,
+         ReceivedEventActionType, ReceivedEventActionValue, ReceivedEventUserID]
+        (FPubnubMessageData ReceivedMessage)
+        {
+            if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.MessageType == EPubnubMessageType::PMT_Published && ReceivedMessage.Message == TestMessageContent)
+            {
+                *PublishedMessageTimetoken = ReceivedMessage.Timetoken;
+                *bMessagePublishedAndTimetokenCaptured = true;
+            }
+            else if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.MessageType == EPubnubMessageType::PMT_Action)
+            {
+                TSharedPtr<FJsonObject> JsonObject;
+                if (UPubnubJsonUtilities::StringToJsonObject(ReceivedMessage.Message, JsonObject))
+                {
+                    const TSharedPtr<FJsonObject>* DataObject;
+                    if (JsonObject->TryGetObjectField(TEXT("data"), DataObject))
+                    {
+                        (*DataObject)->TryGetStringField(TEXT("actionTimetoken"), *ReceivedEventActionTimetoken);
+                        (*DataObject)->TryGetStringField(TEXT("messageTimetoken"), *ReceivedEventMessageTimetoken);
+                        (*DataObject)->TryGetStringField(TEXT("type"), *ReceivedEventActionType);
+                        (*DataObject)->TryGetStringField(TEXT("value"), *ReceivedEventActionValue);
+                        *ReceivedEventUserID = ReceivedMessage.UserID;
+                        *bMessageActionEventReceived = true;
+                    }
+                    else
+                    {
+                        AddError(TEXT("Received PMT_MessageAction event JSON does not contain 'data' field."));
+                    }
+                }
+                else
+                {
+                    AddError(FString::Printf(TEXT("Failed to parse PMT_MessageAction event JSON: %s"), *ReceivedMessage.Message));
+                }
+            }
+        });
+
+    // Callback for AddMessageAction
+    FOnAddMessageActionsResponseNative AddActionCallback;
+    AddActionCallback.BindLambda([this, bAddActionDone, AddedActionTimetoken](FString ActionTimetoken)
+    {
+        *AddedActionTimetoken = ActionTimetoken;
+        *bAddActionDone = true;
+    });
+
+    // Step 1: Subscribe to Channel
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+    {
+        PubnubSubsystem->SubscribeToChannel(TestChannel);
+    }, 0.1f));
+
+    // Step 2: Publish Message
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessageContent]()
+    {
+        FPubnubPublishSettings PublishSettings;
+        PublishSettings.StoreInHistory = true; // Ensure it can have actions
+        PubnubSubsystem->PublishMessage(TestChannel, TestMessageContent, PublishSettings);
+    }, 0.5f));
+
+    // Wait for message to be published and its timetoken captured
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessagePublishedAndTimetokenCaptured, PublishedMessageTimetoken]()
+    {
+        return *bMessagePublishedAndTimetokenCaptured && !PublishedMessageTimetoken->IsEmpty();
+    }, MAX_WAIT_TIME));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, PublishedMessageTimetoken]()
+    {
+        if (PublishedMessageTimetoken->IsEmpty())
+        {
+            AddError(TEXT("Failed to capture published message timetoken. Cannot proceed to add action."));
+        }
+    }, 0.1f));
+    
+    // Step 3: Add Message Action
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, PublishedMessageTimetoken, TestActionType, TestActionValue, AddActionCallback]()
+    {
+        if (PublishedMessageTimetoken->IsEmpty()) return; // Guard
+        PubnubSubsystem->AddMessageAction(TestChannel, *PublishedMessageTimetoken, TestActionType, TestActionValue, AddActionCallback);
+    }, 0.2f));
+
+    // Wait for AddMessageAction to complete and its timetoken captured
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddActionDone, AddedActionTimetoken]()
+    {
+        return *bAddActionDone && !AddedActionTimetoken->IsEmpty();
+    }, MAX_WAIT_TIME));
+    
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, AddedActionTimetoken]()
+    {
+        if (AddedActionTimetoken->IsEmpty())
+        {
+            AddError(TEXT("Failed to capture added action timetoken. Cannot verify event."));
+        }
+    }, 0.1f));
+
+    // Step 4: Wait for Message Action Event to be received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessageActionEventReceived]()
+    {
+        return *bMessageActionEventReceived;
+    }, MAX_WAIT_TIME));
+
+    // Step 5: Verify the received Message Action Event
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand(
+        [this, TestUser, TestActionType, TestActionValue, PublishedMessageTimetoken, AddedActionTimetoken,
+         bMessageActionEventReceived, ReceivedEventActionTimetoken, ReceivedEventMessageTimetoken,
+         ReceivedEventActionType, ReceivedEventActionValue, ReceivedEventUserID]()
+    {
+        TestTrue(TEXT("Message Action Event was received."), *bMessageActionEventReceived);
+        if (!*bMessageActionEventReceived)
+        {
+            AddError(TEXT("Message action event was NOT received."));
+            return;
+        }
+        if (PublishedMessageTimetoken->IsEmpty() || AddedActionTimetoken->IsEmpty())
+        {
+            AddError(TEXT("Cannot verify event due to missing published message timetoken or added action timetoken."));
+            return;
+        }
+
+        TestEqual(TEXT("Event: Action Timetoken matches"), *ReceivedEventActionTimetoken, *AddedActionTimetoken);
+        TestEqual(TEXT("Event: Message Timetoken matches"), *ReceivedEventMessageTimetoken, *PublishedMessageTimetoken);
+        TestEqual(TEXT("Event: Action Type matches"), *ReceivedEventActionType, TestActionType);
+        TestEqual(TEXT("Event: Action Value matches"), *ReceivedEventActionValue, TestActionValue);
+        TestEqual(TEXT("Event: User ID matches"), *ReceivedEventUserID, TestUser);
     }, 0.1f));
 
     CleanUp();

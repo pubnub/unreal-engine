@@ -13,6 +13,7 @@ using namespace PubnubTests;
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantTokenStructureToJsonStringUnitTest, FPubnubAutomationTestBase, "Pubnub.aUnit.AccessManager.GrantTokenStructureToJsonString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantAndParseTokenTest, FPubnubAutomationTestBase, "Pubnub.Integration.AccessManager.GrantAndParseToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRevokeTokenTest, FPubnubAutomationTestBase, "Pubnub.Integration.AccessManager.RevokeToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetAuthTokenSimpleTest, FPubnubAutomationTestBase, "Pubnub.Integration.AccessManager.SetAuthTokenSimple", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // Helper function to calculate expected bitmask for FPubnubChannelPermissions
 int CalculateChannelPermissionsBitmask(const FPubnubChannelPermissions& Perms)
@@ -605,6 +606,46 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
         }
         // If grant failed, an error would have already been added.
     }, 0.1f));
+
+    CleanUp();
+    return true;
+}
+
+bool FPubnubSetAuthTokenSimpleTest::RunTest(const FString& Parameters)
+{
+    const FString UserID = SDK_PREFIX + "AuthTokenUser";
+    const FString DummyToken = TEXT("pn-dummy-auth-token-for-simple-set-test");
+    TSharedPtr<bool> bErrorOccurred = MakeShared<bool>(false);
+
+    if (!InitTest())
+    {
+        AddError(TEXT("TestInitialization failed for FPubnubSetAuthTokenSimpleTest"));
+        return false;
+    }
+    
+    // Error handler for this test
+    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this, bErrorOccurred](FString ErrorMessage, EPubnubErrorType ErrorType)
+    {
+        *bErrorOccurred = true;
+        AddError(FString::Printf(TEXT("Pubnub Error in FPubnubSetAuthTokenSimpleTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+    });
+
+    // Set UserID
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID]()
+    {
+        PubnubSubsystem->SetUserID(UserID); 
+    }, 0.1f));
+
+    // Step 1: Set the Auth Token
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, DummyToken]()
+    {
+        PubnubSubsystem->SetAuthToken(DummyToken);
+        // No direct callback, this function is synchronous on the client-side.
+        // We are checking that it doesn't cause an immediate error logged via OnPubnubErrorNative.
+    }, 0.1f));
+
+    // Step 2: Wait a brief moment to catch any immediate asynchronous errors if they were to occur (though unlikely for SetAuthToken)
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(MAX_WAIT_TIME/2.0)); 
 
     CleanUp();
     return true;
