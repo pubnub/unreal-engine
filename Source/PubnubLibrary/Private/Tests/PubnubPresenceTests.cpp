@@ -406,8 +406,8 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
     const FString TestUserID = SDK_PREFIX + "test_user_multi_setget_state";
     const FString TestChannel1Name = SDK_PREFIX + "test_channel1_multi_setget_state";
     const FString TestChannel2Name = SDK_PREFIX + "test_channel2_multi_setget_state";
-    const FString State1Json = TEXT("{\"item\": \"potion\", \"quantity\": 5}");
-    const FString State2Json = TEXT("{\"status\": \"exploring\", \"location\": \"dungeon_level_3\"}");
+    const FString State1Json = "{\"item\": \"potion\", \"quantity\": 5}";
+    const FString State2Json = "{\"status\": \"exploring\", \"location\": \"dungeon_level_3\"}";
     const FString CombinedChannelsString = FString::Printf(TEXT("%s,%s"), *TestChannel1Name, *TestChannel2Name);
 
     TSharedPtr<bool> bGetStateOperationDone = MakeShared<bool>(false);

@@ -211,11 +211,11 @@ bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
 
 bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
 {
-    const FString TestUser = SDK_PREFIX + TEXT("user_msg_action_event");
-    const FString TestChannel = SDK_PREFIX + TEXT("chan_msg_action_event");
-    const FString TestMessageContent = TEXT("\"Hello Message Action Event Test!\"");
-    const FString TestActionType = TEXT("reaction");
-    const FString TestActionValue = TEXT("event_heart");
+    const FString TestUser = SDK_PREFIX + "user_msg_action_event";
+    const FString TestChannel = SDK_PREFIX + "chan_msg_action_event";
+    const FString TestMessageContent = "\"Hello Message Action Event Test!\"";
+    const FString TestActionType = "reaction";
+    const FString TestActionValue = "event_heart";
 
     TSharedPtr<bool> bMessagePublishedAndTimetokenCaptured = MakeShared<bool>(false);
     TSharedPtr<FString> PublishedMessageTimetoken = MakeShared<FString>();

@@ -27,7 +27,7 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     const FString TestUserProfileUrl = "https://example.com/avatar.png";
     const FString TestUserStatus = "Online";
     const FString TestUserType = "PremiumUser";
-    const FString TestUserCustomJson = TEXT("{\"mood\": \"elated\", \"points\": 1000}");
+    const FString TestUserCustomJson = "{\"mood\": \"elated\", \"points\": 1000}";
     
     const FString FullMetadataToSet = FString::Printf(TEXT("{")
         TEXT("\"name\":\"%s\",")
@@ -117,7 +117,7 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     // Step 1: SetUserMetadata
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, FullMetadataToSet]()
     {
-        PubnubSubsystem->SetUserMetadata(TestUserID, FullMetadataToSet, TEXT("custom,externalId,profileUrl,status,type")); 
+        PubnubSubsystem->SetUserMetadata(TestUserID, FullMetadataToSet, "custom,externalId,profileUrl,status,type"); 
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetUserMetadata to process
 
@@ -127,7 +127,7 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
         *bGetUserMetaDone = false;
         *bGetUserMetaSuccess = false;
         ReceivedUserData->UserID.Empty(); // Reset
-        PubnubSubsystem->GetUserMetadata(TestUserID, GetUserMetadataCallback, TEXT("custom,externalId,profileUrl,status,type"));
+        PubnubSubsystem->GetUserMetadata(TestUserID, GetUserMetadataCallback, "custom,externalId,profileUrl,status,type");
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetUserMetaDone]() { return *bGetUserMetaDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, TestUserName, TestUserEmail, TestUserExternalID, TestUserProfileUrl, TestUserStatus, TestUserType, TestUserCustomJson, ReceivedUserData, bGetUserMetaSuccess]()
@@ -240,7 +240,7 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     const FString TestChannelDescription = "This is a test channel for App Context E2E tests.";
     const FString TestChannelStatus = "Active";
     const FString TestChannelType = "PublicDiscussion";
-    const FString TestChannelCustomJson = TEXT("{\"topic\":\"testing\",\"moderated\":true}");
+    const FString TestChannelCustomJson = "{\"topic\":\"testing\",\"moderated\":true}";
 
     const FString FullChannelMetadataToSet = FString::Printf(TEXT("{")
         TEXT("\"name\":\"%s\",")
@@ -324,7 +324,7 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     // Step 1: SetChannelMetadata
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, FullChannelMetadataToSet]()
     {
-        PubnubSubsystem->SetChannelMetadata(TestChannelID, FullChannelMetadataToSet, TEXT("custom,status,type"));
+        PubnubSubsystem->SetChannelMetadata(TestChannelID, FullChannelMetadataToSet, "custom,status,type");
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetChannelMetadata to process
 
@@ -334,7 +334,7 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
         *bGetChannelMetaDone = false;
         *bGetChannelMetaSuccess = false;
         ReceivedChannelData->ChannelID.Empty(); // Reset
-        PubnubSubsystem->GetChannelMetadata(TestChannelID, GetChannelMetadataCallback, TEXT("custom,status,type"));
+        PubnubSubsystem->GetChannelMetadata(TestChannelID, GetChannelMetadataCallback, "custom,status,type");
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetChannelMetaDone]() { return *bGetChannelMetaDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, TestChannelName, TestChannelDescription, TestChannelStatus, TestChannelType, TestChannelCustomJson, ReceivedChannelData, bGetChannelMetaSuccess]()
@@ -438,35 +438,35 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
 
 bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Parameters)
 {
-    const FString TestRunPrefix = SDK_PREFIX + TEXT("gacm_opts_");
-    const FString TestUserID = TestRunPrefix + TEXT("user");
+    const FString TestRunPrefix = SDK_PREFIX + "gacm_opts_";
+    const FString TestUserID = TestRunPrefix + "user";
 
     // Channel A: For custom field filtering & specific include test
-    const FString ChannelAID = TestRunPrefix + TEXT("ChannelA");
-    const FString ChannelAName = TEXT("Channel A - Tech");
-    const FString ChannelACustom = TEXT("{\"category\":\"Tech\", \"priority\":1}");
-    const FString ChannelAStatus = TEXT("Active");
-    const FString ChannelAType = TEXT("TechnicalDiscussion");
+    const FString ChannelAID = TestRunPrefix + "ChannelA";
+    const FString ChannelAName = "Channel A - Tech";
+    const FString ChannelACustom = "{\"category\":\"Tech\", \"priority\":1}";
+    const FString ChannelAStatus = "Active";
+    const FString ChannelAType = "TechnicalDiscussion";
     const FString ChannelAMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *ChannelAName, *ChannelACustom, *ChannelAStatus, *ChannelAType);
 
     // Channel B: For custom field filtering (different category)
-    const FString ChannelBID = TestRunPrefix + TEXT("ChannelB");
-    const FString ChannelBName = TEXT("Channel B - Finance");
-    const FString ChannelBCustom = TEXT("{\"category\":\"Finance\", \"priority\":2}");
+    const FString ChannelBID = TestRunPrefix + "ChannelB";
+    const FString ChannelBName = "Channel B - Finance";
+    const FString ChannelBCustom = "{\"category\":\"Finance\", \"priority\":2}";
     const FString ChannelBMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s}"), *ChannelBName, *ChannelBCustom);
 
     // Channels for Sorting & Limit Test (Channel_Sort_X)
-    const FString ChannelSortPrefix = TestRunPrefix + TEXT("SortChan_");
-    const FString ChannelSortAID = ChannelSortPrefix + TEXT("Alpha");
-    const FString ChannelSortAName = TEXT("Sort Channel Alpha");
+    const FString ChannelSortPrefix = TestRunPrefix + "SortChan_";
+    const FString ChannelSortAID = ChannelSortPrefix + "Alpha";
+    const FString ChannelSortAName = "Sort Channel Alpha";
     const FString ChannelSortAMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *ChannelSortAName);
 
-    const FString ChannelSortBID = ChannelSortPrefix + TEXT("Beta");
-    const FString ChannelSortBName = TEXT("Sort Channel Beta");
+    const FString ChannelSortBID = ChannelSortPrefix + "Beta";
+    const FString ChannelSortBName = "Sort Channel Beta";
     const FString ChannelSortBMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *ChannelSortBName);
 
-    const FString ChannelSortCID = ChannelSortPrefix + TEXT("Gamma");
-    const FString ChannelSortCName = TEXT("Sort Channel Gamma");
+    const FString ChannelSortCID = ChannelSortPrefix + "Gamma";
+    const FString ChannelSortCName = "Sort Channel Gamma";
     const FString ChannelSortCMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *ChannelSortCName);
 
     TSharedPtr<bool> bGetAllDone = MakeShared<bool>(false);
@@ -507,7 +507,7 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
     });
 
     // Initial Setup: Set metadata for all test channels
-    auto SetMeta = [this](const FString& ChanID, const FString& Meta, const FString& IncludeFields = TEXT("custom"))
+    auto SetMeta = [this](const FString& ChanID, const FString& Meta, const FString& IncludeFields = "custom")
     {
         ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID, Meta, IncludeFields]()
         {
@@ -515,7 +515,7 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         }, 0.1f));
     };
 
-    SetMeta(ChannelAID, ChannelAMetadata, TEXT("custom,status,type"));
+    SetMeta(ChannelAID, ChannelAMetadata, "custom,status,type");
     SetMeta(ChannelBID, ChannelBMetadata);
     SetMeta(ChannelSortAID, ChannelSortAMetadata);
     SetMeta(ChannelSortBID, ChannelSortBMetadata);
@@ -527,7 +527,7 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedChannels->Empty();
         FPubnubGetAllInclude IncludeSettings; IncludeSettings.IncludeCustom = true;
-        FString Filter = TEXT("custom.category == 'Tech'");
+        FString Filter = "custom.category == 'Tech'";
         PubnubSubsystem->GetAllChannelMetadata(GetAllCallback, IncludeSettings, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
@@ -671,44 +671,44 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
 
 bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameters)
 {
-    const FString TestRunPrefix = SDK_PREFIX + TEXT("gaum_opts_");
-    const FString TestAdminUserID = TestRunPrefix + TEXT("admin_user");
+    const FString TestRunPrefix = SDK_PREFIX + "gaum_opts_";
+    const FString TestAdminUserID = TestRunPrefix + "admin_user";
 
     // User A: For custom field filtering & specific include test
-    const FString UserAID = TestRunPrefix + TEXT("UserA");
-    const FString UserAName = TEXT("User A - Engineering Dept");
-    const FString UserAEmail = TEXT("user.a@example.com");
-    const FString UserACustom = TEXT("{\"department\":\"Engineering\", \"level\":5, \"active_project\":\"ProjectPhoenix\"}");
-    const FString UserAStatus = TEXT("Active");
-    const FString UserAType = TEXT("Engineer");
+    const FString UserAID = TestRunPrefix + "UserA";
+    const FString UserAName = "User A - Engineering Dept";
+    const FString UserAEmail = "user.a@example.com";
+    const FString UserACustom = "{\"department\":\"Engineering\", \"level\":5, \"active_project\":\"ProjectPhoenix\"}";
+    const FString UserAStatus = "Active";
+    const FString UserAType = "Engineer";
     const FString UserAMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), 
         *UserAName, *UserAEmail, *UserACustom, *UserAStatus, *UserAType);
 
     // User B: For custom field filtering (different department)
-    const FString UserBID = TestRunPrefix + TEXT("UserB");
-    const FString UserBName = TEXT("User B - Marketing Dept");
-    const FString UserBEmail = TEXT("user.b@example.com");
-    const FString UserBCustom = TEXT("{\"department\":\"Marketing\", \"level\":3, \"campaign\":\"SummerSale\"}");
+    const FString UserBID = TestRunPrefix + "UserB";
+    const FString UserBName = "User B - Marketing Dept";
+    const FString UserBEmail = "user.b@example.com";
+    const FString UserBCustom = "{\"department\":\"Marketing\", \"level\":3, \"campaign\":\"SummerSale\"}";
     const FString UserBMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s}"), 
         *UserBName, *UserBEmail, *UserBCustom);
 
     // Users for Sorting & Limit Test (User_Sort_X)
-    const FString UserSortPrefix = TestRunPrefix + TEXT("SortUser_");
-    const FString UserSortAID = UserSortPrefix + TEXT("Charlie"); // Names chosen for easy sort verification
-    const FString UserSortAName = TEXT("Charlie Brown");
+    const FString UserSortPrefix = TestRunPrefix + "SortUser_";
+    const FString UserSortAID = UserSortPrefix + "Charlie"; // Names chosen for easy sort verification
+    const FString UserSortAName = "Charlie Brown";
     const FString UserSortAMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *UserSortAName);
 
-    const FString UserSortBID = UserSortPrefix + TEXT("Alice");
-    const FString UserSortBName = TEXT("Alice Wonderland");
+    const FString UserSortBID = UserSortPrefix + "Alice";
+    const FString UserSortBName = "Alice Wonderland";
     const FString UserSortBMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *UserSortBName);
 
-    const FString UserSortCID = UserSortPrefix + TEXT("Bob");
-    const FString UserSortCName = TEXT("Bob The Builder");
+    const FString UserSortCID = UserSortPrefix + "Bob";
+    const FString UserSortCName = "Bob The Builder";
     const FString UserSortCMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *UserSortCName);
     
     // User D and E for pagination testing (enough to require a second page with limit 2)
-    const FString UserSortDID = UserSortPrefix + TEXT("David");
-    const FString UserSortDName = TEXT("David Copperfield");
+    const FString UserSortDID = UserSortPrefix + "David";
+    const FString UserSortDName = "David Copperfield";
     const FString UserSortDMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *UserSortDName);
 
 
@@ -752,7 +752,7 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
     });
 
     // Initial Setup: Set metadata for all test users
-    auto SetMeta = [this](const FString& UserID, const FString& Meta, const FString& IncludeFields = TEXT("custom,status,type"))
+    auto SetMeta = [this](const FString& UserID, const FString& Meta, const FString& IncludeFields = "custom,status,type")
     {
         ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta, IncludeFields]()
         {
@@ -773,7 +773,7 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty();
         FPubnubGetAllInclude IncludeSettings; IncludeSettings.IncludeCustom = true;
-        FString Filter = TEXT("custom.department == 'Engineering'");
+        FString Filter = "custom.department == 'Engineering'";
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, IncludeSettings, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
@@ -978,32 +978,32 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
 
 bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Parameters)
 {
-    const FString TestRunPrefix = SDK_PREFIX + TEXT("memb_opts_");
-    const FString TestUserID = TestRunPrefix + TEXT("user_main");
-    const FString TestAdminUserID = TestRunPrefix + TEXT("admin_for_setuser"); // UserID for the PubnubSubsystem instance
+    const FString TestRunPrefix = SDK_PREFIX + "memb_opts_";
+    const FString TestUserID = TestRunPrefix + "user_main";
+    const FString TestAdminUserID = TestRunPrefix + "admin_for_setuser"; // UserID for the PubnubSubsystem instance
 
     // Channel Definitions
-    const FString ChannelAID = TestRunPrefix + TEXT("ChannelA_Docs");
-    const FString ChannelAName = TEXT("Documentation Central");
-    const FString ChannelACustomJson = TEXT("{\"topic\":\"sdk_docs\", \"priority\":\"high\"}");
-    const FString ChannelAStatusVal = TEXT("active");
+    const FString ChannelAID = TestRunPrefix + "ChannelA_Docs";
+    const FString ChannelAName = "Documentation Central";
+    const FString ChannelACustomJson = "{\"topic\":\"sdk_docs\", \"priority\":\"high\"}";
+    const FString ChannelAStatusVal = "active";
     const FString ChannelAMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelAName, *ChannelACustomJson, *ChannelAStatusVal);
 
-    const FString ChannelBID = TestRunPrefix + TEXT("ChannelB_Dev");
-    const FString ChannelBName = TEXT("Development Zone");
-    const FString ChannelBCustomJson = TEXT("{\"topic\":\"core_dev\", \"priority\":\"medium\"}");
-    const FString ChannelBStatusVal = TEXT("active");
+    const FString ChannelBID = TestRunPrefix + "ChannelB_Dev";
+    const FString ChannelBName = "Development Zone";
+    const FString ChannelBCustomJson = "{\"topic\":\"core_dev\", \"priority\":\"medium\"}";
+    const FString ChannelBStatusVal = "active";
     const FString ChannelBMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelBName, *ChannelBCustomJson, *ChannelBStatusVal);
 
-    const FString ChannelCID = TestRunPrefix + TEXT("ChannelC_General");
-    const FString ChannelCName = TEXT("General Discussion");
-    const FString ChannelCCustomJson = TEXT("{\"topic\":\"community\", \"priority\":\"low\"}");
-    const FString ChannelCStatusVal = TEXT("archived");
+    const FString ChannelCID = TestRunPrefix + "ChannelC_General";
+    const FString ChannelCName = "General Discussion";
+    const FString ChannelCCustomJson = "{\"topic\":\"community\", \"priority\":\"low\"}";
+    const FString ChannelCStatusVal = "archived";
     const FString ChannelCMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelCName, *ChannelCCustomJson, *ChannelCStatusVal);
     
-    const FString ChannelDID = TestRunPrefix + TEXT("ChannelD_Support");
-	const FString ChannelDName = TEXT("Support Hub");
-	const FString ChannelDCustomJson = TEXT("{\"topic\":\"user_support\", \"priority\":\"high\"}");
+    const FString ChannelDID = TestRunPrefix + "ChannelD_Support";
+	const FString ChannelDName = "Support Hub";
+	const FString ChannelDCustomJson = "{\"topic\":\"user_support\", \"priority\":\"high\"}";
     const FString ChannelDStatusVal = TEXT("active");
 	const FString ChannelDMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelDName, *ChannelDCustomJson, *ChannelDStatusVal);
 

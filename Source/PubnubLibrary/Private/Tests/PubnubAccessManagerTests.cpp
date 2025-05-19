@@ -58,21 +58,21 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
     // --- Test Case 1: Basic Valid Structure (similar to E2E test) ---
     {
-        const FString TestDescription = TEXT("Case 1: Basic Valid Structure");
+        const FString TestDescription = "Case 1: Basic Valid Structure";
         FPubnubGrantTokenStructure Ts;
         Ts.TTLMinutes = 60;
-        Ts.AuthorizedUser = SDK_PREFIX + TEXT("auth_user_unit_1");
+        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_1";
         
         FPubnubChannelPermissions ChanPerms; ChanPerms.Read = true; ChanPerms.Write = true; // Mask = 3
-        Ts.Channels.Add(SDK_PREFIX + TEXT("chan1"));
+        Ts.Channels.Add(SDK_PREFIX + "chan1");
         Ts.ChannelPermissions.Add(ChanPerms);
 
         FPubnubChannelGroupPermissions GroupPerms; GroupPerms.Read = true; GroupPerms.Manage = true; // Mask = 5
-        Ts.ChannelGroups.Add(SDK_PREFIX + TEXT("group1"));
+        Ts.ChannelGroups.Add(SDK_PREFIX + "group1");
         Ts.ChannelGroupPermissions.Add(GroupPerms);
 
         FPubnubUserPermissions UserResPerms; UserResPerms.Get = true; UserResPerms.Update = true; // Mask = 96
-        Ts.Users.Add(SDK_PREFIX + TEXT("uuid_res1"));
+        Ts.Users.Add(SDK_PREFIX + "uuid_res1");
         Ts.UserPermissions.Add(UserResPerms);
 
         bool bSuccess = false;
@@ -124,14 +124,14 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
     // --- Test Case 2: One Channel Permission for Multiple Channels ---
     {
-        const FString TestDescription = TEXT("Case 2: One Perm for Multiple Channels");
+        const FString TestDescription = "Case 2: One Perm for Multiple Channels";
         FPubnubGrantTokenStructure Ts;
         Ts.TTLMinutes = 10;
-        Ts.AuthorizedUser = SDK_PREFIX + TEXT("auth_user_unit_2");
+        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_2";
         
         FPubnubChannelPermissions ChanPerm; ChanPerm.Read = true; // Mask = 1
-        Ts.Channels.Add(SDK_PREFIX + TEXT("chanA"));
-        Ts.Channels.Add(SDK_PREFIX + TEXT("chanB"));
+        Ts.Channels.Add(SDK_PREFIX + "chanA");
+        Ts.Channels.Add(SDK_PREFIX + "chanB");
         Ts.ChannelPermissions.Add(ChanPerm); // Single permission object
 
         bool bSuccess = false;
@@ -153,15 +153,15 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
     // --- Test Case 3: Matching Channel Permissions for Multiple Channels ---
     {
-        const FString TestDescription = TEXT("Case 3: Matching Perms for Multiple Channels");
+        const FString TestDescription = "Case 3: Matching Perms for Multiple Channels";
         FPubnubGrantTokenStructure Ts;
         Ts.TTLMinutes = 10;
-        Ts.AuthorizedUser = SDK_PREFIX + TEXT("auth_user_unit_3");
+        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_3";
 
         FPubnubChannelPermissions ChanPermC; ChanPermC.Read = true; // Mask = 1
         FPubnubChannelPermissions ChanPermD; ChanPermD.Write = true; // Mask = 2
-        Ts.Channels.Add(SDK_PREFIX + TEXT("chanC"));
-        Ts.Channels.Add(SDK_PREFIX + TEXT("chanD"));
+        Ts.Channels.Add(SDK_PREFIX + "chanC");
+        Ts.Channels.Add(SDK_PREFIX + "chanD");
         Ts.ChannelPermissions.Add(ChanPermC);
         Ts.ChannelPermissions.Add(ChanPermD);
 
@@ -183,16 +183,16 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
     // --- Test Case 4: Mismatched Channel Permissions (Fail Case) ---
     {
-        const FString TestDescription = TEXT("Case 4: Mismatched Perms (3 chans, 2 perms)");
+        const FString TestDescription = "Case 4: Mismatched Perms (3 chans, 2 perms)";
         FPubnubGrantTokenStructure Ts;
         Ts.TTLMinutes = 10;
-        Ts.AuthorizedUser = SDK_PREFIX + TEXT("auth_user_unit_4");
+        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_4";
 
         FPubnubChannelPermissions ChanPermE; ChanPermE.Read = true;
         FPubnubChannelPermissions ChanPermF; ChanPermF.Write = true;
-        Ts.Channels.Add(SDK_PREFIX + TEXT("chanE"));
-        Ts.Channels.Add(SDK_PREFIX + TEXT("chanF"));
-        Ts.Channels.Add(SDK_PREFIX + TEXT("chanG"));
+        Ts.Channels.Add(SDK_PREFIX + "chanE");
+        Ts.Channels.Add(SDK_PREFIX + "chanF");
+        Ts.Channels.Add(SDK_PREFIX + "chanG");
         Ts.ChannelPermissions.Add(ChanPermE);
         Ts.ChannelPermissions.Add(ChanPermF); // 3 channels, 2 permissions
 
@@ -203,10 +203,10 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
     
     // --- Test Case 5: Empty Resources and Patterns ---
     {
-        const FString TestDescription = TEXT("Case 5: Empty Resources and Patterns");
+        const FString TestDescription = "Case 5: Empty Resources and Patterns";
         FPubnubGrantTokenStructure Ts;
         Ts.TTLMinutes = 5;
-        Ts.AuthorizedUser = SDK_PREFIX + TEXT("auth_user_unit_5");
+        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_5";
 
         bool bSuccess = false;
         FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
@@ -237,13 +237,13 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 
     // --- Test Case 6: Only Patterns ---
     {
-        const FString TestDescription = TEXT("Case 6: Only Patterns");
+        const FString TestDescription = "Case 6: Only Patterns";
         FPubnubGrantTokenStructure Ts;
         Ts.TTLMinutes = 15;
-        Ts.AuthorizedUser = SDK_PREFIX + TEXT("auth_user_unit_6");
+        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_6";
 
         FPubnubChannelPermissions ChanPatternPerms; ChanPatternPerms.Manage = true; // Mask = 4
-        Ts.ChannelPatterns.Add(SDK_PREFIX + TEXT("chan-pat-*"));
+        Ts.ChannelPatterns.Add(SDK_PREFIX + "chan-pat-*");
         Ts.ChannelPatternPermissions.Add(ChanPatternPerms);
 
         bool bSuccess = false;
@@ -276,10 +276,10 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
 bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
 {
     // Initial variables
-    const FString TestAuthUser = SDK_PREFIX + TEXT("auth_user_grant_parse");
-    const FString TestChannelName = SDK_PREFIX + TEXT("channel_grant_parse");
-    const FString TestGroupName = SDK_PREFIX + TEXT("group_grant_parse");
-    const FString TestTargetResourceUID = SDK_PREFIX + TEXT("target_uuid_grant_parse"); // For UUID-specific permissions
+    const FString TestAuthUser = SDK_PREFIX + "auth_user_grant_parse";
+    const FString TestChannelName = SDK_PREFIX + "channel_grant_parse";
+    const FString TestGroupName = SDK_PREFIX + "group_grant_parse";
+    const FString TestTargetResourceUID = SDK_PREFIX + "target_uuid_grant_parse"; // For UUID-specific permissions
     const int TestTTLMinutes = 60;
 
     TSharedPtr<FString> GrantedToken = MakeShared<FString>();
@@ -491,8 +491,8 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
 bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
 {
     // Initial variables
-    const FString TestAuthUserForGrant = SDK_PREFIX + TEXT("auth_user_revoke_test");
-    const FString TestChannelForGrant = SDK_PREFIX + TEXT("channel_revoke_test");
+    const FString TestAuthUserForGrant = SDK_PREFIX + "auth_user_revoke_test";
+    const FString TestChannelForGrant = SDK_PREFIX + "channel_revoke_test";
     const int TestTTLForGrant = 5; // Short TTL for the token to be revoked
 
     TSharedPtr<FString> GrantedToken = MakeShared<FString>();
@@ -614,12 +614,12 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
 bool FPubnubSetAuthTokenSimpleTest::RunTest(const FString& Parameters)
 {
     const FString UserID = SDK_PREFIX + "AuthTokenUser";
-    const FString DummyToken = TEXT("pn-dummy-auth-token-for-simple-set-test");
+    const FString DummyToken = "pn-dummy-auth-token-for-simple-set-test";
     TSharedPtr<bool> bErrorOccurred = MakeShared<bool>(false);
 
     if (!InitTest())
     {
-        AddError(TEXT("TestInitialization failed for FPubnubSetAuthTokenSimpleTest"));
+        AddError("TestInitialization failed for FPubnubSetAuthTokenSimpleTest");
         return false;
     }
     
