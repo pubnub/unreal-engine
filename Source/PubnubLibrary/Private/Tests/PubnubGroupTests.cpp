@@ -7,10 +7,10 @@
 
 using namespace PubnubTests;
 
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubAddChannelToGroupAndReceiveMessageTest, FPubnubAutomationTestBase, "Pubnub.E2E.ChannelGroups.AddChannelToGroupAndReceiveMessage", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelAddRemoveListGroupTest, FPubnubAutomationTestBase, "Pubnub.E2E.ChannelGroups.AddRemoveListChannelsInGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromGroupTest, FPubnubAutomationTestBase, "Pubnub.E2E.ChannelGroups.UnsubscribeFromGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAllTest, FPubnubAutomationTestBase, "Pubnub.E2E.ChannelGroups.UnsubscribeFromAll", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubAddChannelToGroupAndReceiveMessageTest, FPubnubAutomationTestBase, "Pubnub.Integration.ChannelGroups.AddChannelToGroupAndReceiveMessage", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelAddRemoveListGroupTest, FPubnubAutomationTestBase, "Pubnub.Integration.ChannelGroups.AddRemoveListChannelsInGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromGroupTest, FPubnubAutomationTestBase, "Pubnub.Integration.ChannelGroups.UnsubscribeFromGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAllTest, FPubnubAutomationTestBase, "Pubnub.Integration.ChannelGroups.UnsubscribeFromAll", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Parameters)
 {

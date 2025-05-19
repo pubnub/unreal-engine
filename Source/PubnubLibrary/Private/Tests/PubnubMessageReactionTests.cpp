@@ -8,8 +8,8 @@
 
 using namespace PubnubTests;
 
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubAddAndGetMessageActionsTest, FPubnubAutomationTestBase, "Pubnub.E2E.MessageReactions.AddAndGetMessageActions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveMessageActionTest, FPubnubAutomationTestBase, "Pubnub.E2E.MessageReactions.RemoveMessageAction", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubAddAndGetMessageActionsTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessageReactions.AddAndGetMessageActions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveMessageActionTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessageReactions.RemoveMessageAction", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
 {

@@ -57,10 +57,10 @@ FString UPubnubUtilities::MemberIncludeToString(const FPubnubMemberInclude& Memb
 	if(MemberInclude.IncludeCustom)			{FinalString.Append("custom,");}
 	if(MemberInclude.IncludeStatus)			{FinalString.Append("status,");}
 	if(MemberInclude.IncludeType)			{FinalString.Append("type,");}
-	if(MemberInclude.IncludeUser)			{FinalString.Append("user,");}
-	if(MemberInclude.IncludeUserCustom)		{FinalString.Append("user.custom,");}
-	if(MemberInclude.IncludeUserStatus)		{FinalString.Append("user.status,");}
-	if(MemberInclude.IncludeUserType)		{FinalString.Append("user.type,");}
+	if(MemberInclude.IncludeUser)			{FinalString.Append("uuid,");}
+	if(MemberInclude.IncludeUserCustom)		{FinalString.Append("uuid.custom,");}
+	if(MemberInclude.IncludeUserStatus)		{FinalString.Append("uuid.status,");}
+	if(MemberInclude.IncludeUserType)		{FinalString.Append("uuid.type,");}
 	//Total count is passed as a separate parameter, so it's not included directly in the final string
 
 	//If there was any include remove the last comma
@@ -118,15 +118,15 @@ FString UPubnubUtilities::MemberSortTypeToString(const EPubnubMemberSortType Sor
 	switch (SortType)
 	{
 	case EPubnubMemberSortType::PMeST_UserID:
-		return "user.id";
+		return "uuid.id";
 	case EPubnubMemberSortType::PMeST_UserName:
-		return "user.name";
+		return "uuid.name";
 	case EPubnubMemberSortType::PMeST_UserUpdated:
-		return "user.updated";
+		return "uuid.updated";
 	case EPubnubMemberSortType::PMeST_UserStatus:
-		return "user.status";
+		return "uuid.status";
 	case EPubnubMemberSortType::PMeST_UserType:
-		return "user.type";
+		return "uuid.type";
 	case EPubnubMemberSortType::PMeST_Updated:
 		return "updated";
 	case EPubnubMemberSortType::PMeST_Status:

@@ -9,11 +9,13 @@
 
 using namespace PubnubTests;
 
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUserMetadataFlowTest, FPubnubAutomationTestBase, "Pubnub.E2E.AppContext.UserMetadataFlow", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelMetadataFlowTest, FPubnubAutomationTestBase, "Pubnub.E2E.AppContext.ChannelMetadataFlow", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllChannelMetadataWithOptionsTest, FPubnubAutomationTestBase, "Pubnub.E2E.AppContext.GetAllChannelMetadataWithOptions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllUsersMetadataWithOptionsTest, FPubnubAutomationTestBase, "Pubnub.E2E.AppContext.GetAllUsersMetadataWithOptions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubMembershipManagementWithOptionsTest, FPubnubAutomationTestBase, "Pubnub.E2E.AppContext.MembershipManagementWithOptions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUserMetadataFlowTest, FPubnubAutomationTestBase, "Pubnub.Integration.AppContext.UserMetadataFlow", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelMetadataFlowTest, FPubnubAutomationTestBase, "Pubnub.Integration.AppContext.ChannelMetadataFlow", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllChannelMetadataWithOptionsTest, FPubnubAutomationTestBase, "Pubnub.Integration.AppContext.GetAllChannelMetadataWithOptions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllUsersMetadataWithOptionsTest, FPubnubAutomationTestBase, "Pubnub.Integration.AppContext.GetAllUsersMetadataWithOptions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubMembershipManagementWithOptionsTest, FPubnubAutomationTestBase, "Pubnub.Integration.AppContext.MembershipManagementWithOptions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelMembersManagementWithOptionsTest, FPubnubAutomationTestBase, "Pubnub.Integration.AppContext.ChannelMembersManagementWithOptions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
 
 bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
 {
@@ -1384,3 +1386,597 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
 }
 
 
+bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Parameters)
+{
+    const FString TestRunPrefix = SDK_PREFIX + TEXT("cm_opts_");
+    const FString TestAdminUserID = TestRunPrefix + TEXT("admin"); // User performing the operations
+    const FString TestChannelID = TestRunPrefix + TEXT("Channel_Main");
+
+    // User Definitions
+    const FString UserAID = TestRunPrefix + TEXT("UserA_Eng");
+    const FString UserAName = TEXT("Alice Engineer");
+    const FString UserAEmail = TEXT("alice.eng@example.com");
+    const FString UserACustomJson = TEXT("{\"department\":\"Engineering\", \"skill\":\"C++\"}");
+    const FString UserAStatus = TEXT("ActiveProject");
+    const FString UserAType = TEXT("SeniorDev");
+    const FString UserAMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserAName, *UserAEmail, *UserACustomJson, *UserAStatus, *UserAType);
+
+    const FString UserBID = TestRunPrefix + TEXT("UserB_Sales");
+    const FString UserBName = TEXT("Bob Salesman");
+    const FString UserBEmail = TEXT("bob.sales@example.com");
+    const FString UserBCustomJson = TEXT("{\"department\":\"Sales\", \"region\":\"North\"}");
+    const FString UserBStatus = TEXT("OnQuota");
+    const FString UserBType = TEXT("AccountExec");
+    const FString UserBMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserBName, *UserBEmail, *UserBCustomJson, *UserBStatus, *UserBType);
+
+    const FString UserCID = TestRunPrefix + TEXT("UserC_Support");
+    const FString UserCName = TEXT("Charlie Support");
+    const FString UserCEmail = TEXT("charlie.support@example.com");
+    const FString UserCCustomJson = TEXT("{\"department\":\"Support\", \"tier\":2}");
+    const FString UserCStatus = TEXT("Available"); 
+    const FString UserCType = TEXT("SupportAgent"); 
+    const FString UserCMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserCName, *UserCEmail, *UserCCustomJson, *UserCStatus, *UserCType);
+
+    const FString UserDID = TestRunPrefix + TEXT("UserD_Marketing");
+    const FString UserDName = TEXT("Diana Marketing");
+    const FString UserDEmail = TEXT("diana.marketing@example.com");
+    const FString UserDCustomJson = TEXT("{\"department\":\"Marketing\", \"focus\":\"Digital\"}");
+    const FString UserDStatus = TEXT("CampaignLive"); 
+    const FString UserDType = TEXT("Specialist"); 
+    const FString UserDMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserDName, *UserDEmail, *UserDCustomJson, *UserDStatus, *UserDType);
+    
+    const FString UserEID = TestRunPrefix + TEXT("UserE_Ops");
+	const FString UserEName = TEXT("Evan Operations");
+	const FString UserEEmail = TEXT("evan.ops@example.com");
+	const FString UserECustomJson = TEXT("{\"department\":\"Operations\", \"role\":\"Manager\"}");
+    const FString UserEStatus = TEXT("Overseeing"); 
+    const FString UserEType = TEXT("LeadManager"); 
+	const FString UserEMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserEName, *UserEEmail, *UserECustomJson, *UserEStatus, *UserEType);
+
+
+    TArray<FString> AllTestUserIDs = {UserAID, UserBID, UserCID, UserDID, UserEID};
+
+    // Member-specific data definitions
+    const FString MemberACustomJson = TEXT("{\"channel_role\":\"LeadDev\", \"join_date\":\"2024-01-01\"}");
+    const FString MemberAStatus = TEXT("ActiveInChannel");
+    const FString MemberAType = TEXT("PrimaryContributor");
+
+    const FString MemberBCustomJson = TEXT("{\"channel_role\":\"Participant\", \"last_active\":\"2024-01-15\"}");
+    const FString MemberBStatus_Membership = TEXT("Watching"); 
+    const FString MemberBType = TEXT("RegularMember");
+    
+    const FString MemberCCustomJson = TEXT("{\"channel_role\":\"Moderator\"}");
+    const FString MemberCStatus_Membership = TEXT("MonitoringChannel"); 
+    const FString MemberCType_Membership = TEXT("ChannelAdminAssist"); 
+
+    const FString MemberDCustomJson = TEXT("{\"channel_role\":\"Reader\"}");
+    const FString MemberDStatus_Membership = TEXT("Lurking");
+    const FString MemberDType_Membership = TEXT("SilentObserver");
+
+    const FString MemberECustomJson = TEXT("{\"channel_role\":\"Newbie\"}");
+    const FString MemberEStatus_Membership = TEXT("JustJoined");
+    const FString MemberEType_Membership = TEXT("FreshMeat");
+
+
+    TSharedPtr<bool> bGetMembersDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bGetMembersSuccess = MakeShared<bool>(false);
+    TSharedPtr<TArray<FPubnubGetChannelMembersWrapper>> ReceivedMembers = MakeShared<TArray<FPubnubGetChannelMembersWrapper>>();
+    TSharedPtr<FString> NextPage = MakeShared<FString>();
+    TSharedPtr<FString> PrevPage = MakeShared<FString>();
+
+    FOnGetChannelMembersResponseNative GetMembersCallback;
+    GetMembersCallback.BindLambda(
+        [this, bGetMembersDone, bGetMembersSuccess, ReceivedMembers, NextPage, PrevPage]
+        (int Status, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNextStr, FString PagePrevStr)
+    {
+        *bGetMembersDone = true;
+        *bGetMembersSuccess = (Status == 200);
+        if (*bGetMembersSuccess)
+        {
+            *ReceivedMembers = MembersData;
+            *NextPage = PageNextStr;
+            *PrevPage = PagePrevStr;
+        }
+        else
+        {
+            ReceivedMembers->Empty();
+            AddError(FString::Printf(TEXT("GetChannelMembers call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNextStr, *PagePrevStr));
+        }
+    });
+
+    if (!InitTest())
+    {
+        AddError("TestInitialization failed for FPubnubChannelMembersManagementWithOptionsTest");
+        return false;
+    }
+
+    PubnubSubsystem->SetUserID(TestAdminUserID);
+    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+    {
+        AddError(FString::Printf(TEXT("General Pubnub Error in ChannelMembersManagementTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+    });
+
+    // --- Initial Setup: Create User Metadata ---
+    auto CreateUserMeta = [this](const FString& UserID, const FString& Meta)
+    {
+        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta]()
+        {
+            PubnubSubsystem->SetUserMetadata(UserID, Meta, TEXT("custom,status,type")); 
+        }, 0.05f));
+    };
+    CreateUserMeta(UserAID, UserAMetadata);
+    CreateUserMeta(UserBID, UserBMetadata);
+    CreateUserMeta(UserCID, UserCMetadata);
+    CreateUserMeta(UserDID, UserDMetadata);
+    CreateUserMeta(UserEID, UserEMetadata);
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); 
+
+    // --- Scenario 1: SetChannelMembers (Initial members A, B) ---
+    const FString SetMembersJson_AB = FString::Printf(TEXT("[")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"} ")
+        TEXT("]"),
+        *UserAID, *MemberACustomJson, *MemberAStatus, *MemberAType,
+        *UserBID, *MemberBCustomJson, *MemberBStatus_Membership, *MemberBType
+    );
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembersJson_AB]()
+    {
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembersJson_AB);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+
+    // Verify A, B are members
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FPubnubMemberInclude IncludeAll; IncludeAll.IncludeCustom = true; IncludeAll.IncludeStatus = true; IncludeAll.IncludeType = true;
+        IncludeAll.IncludeUser = true; IncludeAll.IncludeUserCustom = true; IncludeAll.IncludeUserStatus = true; IncludeAll.IncludeUserType = true;
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeAll, 10);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID, UserAName, UserAStatus, UserAType, MemberACustomJson, MemberAStatus, MemberAType, UserBID, UserBName, UserBStatus, UserBType, MemberBCustomJson, MemberBStatus_Membership, MemberBType]()
+    {
+        TestTrue("S1: SetChannelMembers (A,B) & Get success.", *bGetMembersSuccess);
+        if (!*bGetMembersSuccess) return;
+        TestEqual("S1: Expected 2 members (A,B).", ReceivedMembers->Num(), 2);
+        bool bFoundA = false, bFoundB = false;
+        for (const auto& Member : *ReceivedMembers) {
+            if (Member.User.UserID == UserAID) { 
+                bFoundA = true;
+                TestEqual("S1_A: User Name", Member.User.UserName, UserAName);
+                TestEqual("S1_A: User Status", Member.User.Status, UserAStatus);
+                TestEqual("S1_A: User Type", Member.User.Type, UserAType);
+                TestTrue("S1_A: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberACustomJson));
+                TestEqual("S1_A: Member Status", Member.Status, MemberAStatus);
+                TestEqual("S1_A: Member Type", Member.Type, MemberAType);
+            } else if (Member.User.UserID == UserBID) { 
+                bFoundB = true;
+                TestEqual("S1_B: User Name", Member.User.UserName, UserBName);
+                TestEqual("S1_B: User Status", Member.User.Status, UserBStatus); 
+                TestEqual("S1_B: User Type", Member.User.Type, UserBType);     
+                TestTrue("S1_B: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberBCustomJson));
+                TestEqual("S1_B: Member Status", Member.Status, MemberBStatus_Membership);
+                TestEqual("S1_B: Member Type", Member.Type, MemberBType);
+            }
+        }
+        TestTrue("S1: Found Member A.", bFoundA);
+        TestTrue("S1: Found Member B.", bFoundB);
+    }, 0.1f));
+
+    // --- Scenario 1b: SetChannelMembers (Upserting UserC) ---
+    // Members are A, B. Set with C. Expect A, B, C.
+    const FString SetMembersJson_C = FString::Printf(TEXT("[")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}")
+        TEXT("]"),
+        *UserCID, *MemberCCustomJson, *MemberCStatus_Membership, *MemberCType_Membership
+    );
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembersJson_C]()
+    {
+        // This should ADD UserC because SetChannelMembers acts as an UPSERT
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembersJson_C);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+
+    // Verify A, B, C are members
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FPubnubMemberInclude IncludeAll; IncludeAll.IncludeCustom = true; IncludeAll.IncludeStatus = true; IncludeAll.IncludeType = true;
+        IncludeAll.IncludeUser = true; IncludeAll.IncludeUserCustom = true; IncludeAll.IncludeUserStatus = true; IncludeAll.IncludeUserType = true;
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeAll, 10);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID, UserBID, UserCID, UserCName, UserCStatus, UserCType, MemberCCustomJson, MemberCStatus_Membership, MemberCType_Membership]()
+    {
+        TestTrue("S1b: SetChannelMembers (Upsert C) & Get success.", *bGetMembersSuccess);
+        if (!*bGetMembersSuccess) return;
+        TestEqual("S1b: Expected 3 members (A,B,C).", ReceivedMembers->Num(), 3);
+        bool bFoundA = false, bFoundB = false, bFoundC = false;
+        for (const auto& Member : *ReceivedMembers) {
+            if(Member.User.UserID == UserAID) bFoundA = true;
+            else if(Member.User.UserID == UserBID) bFoundB = true;
+            else if (Member.User.UserID == UserCID) { 
+                bFoundC = true;
+                TestEqual("S1b_C: User Name", Member.User.UserName, UserCName);
+                TestEqual("S1b_C: User Status", Member.User.Status, UserCStatus);
+                TestEqual("S1b_C: User Type", Member.User.Type, UserCType);
+                TestTrue("S1b_C: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberCCustomJson));
+                TestEqual("S1b_C: Member Status", Member.Status, MemberCStatus_Membership);
+                TestEqual("S1b_C: Member Type", Member.Type, MemberCType_Membership);
+            }
+        }
+        TestTrue("S1b: UserA still member.", bFoundA);
+        TestTrue("S1b: UserB still member.", bFoundB);
+        TestTrue("S1b: Found Member C.", bFoundC);
+    }, 0.1f));
+
+
+    // --- Scenario 2: Explicit Remove (A,B) then Set (D,E) to achieve replacement ---
+    // Members are A, B, C. Remove A, B.
+    const FString RemoveMembersJson_AB = FString::Printf(TEXT("[")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}},")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}}") 
+        TEXT("]"), *UserAID, *UserBID);
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, RemoveMembersJson_AB]()
+    {
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, RemoveMembersJson_AB);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+
+    // Verify C is the only member
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, FPubnubMemberInclude(), 10);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserCID]()
+    {
+        TestTrue("S2.1: Remove (A,B) & Get success.", *bGetMembersSuccess);
+        if (!*bGetMembersSuccess) return;
+        TestEqual("S2.1: Expected 1 member (C).", ReceivedMembers->Num(), 1);
+        if (ReceivedMembers->Num() == 1) {
+            TestEqual("S2.1: Remaining member is C.", (*ReceivedMembers)[0].User.UserID, UserCID);
+        }
+    }, 0.1f));
+
+    // Now Set D, E. Members should become C, D, E (as Set is Upsert)
+    const FString SetMembersJson_DE = FString::Printf(TEXT("[")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"} ")
+        TEXT("]"),
+        *UserDID, *MemberDCustomJson, *MemberDStatus_Membership, *MemberDType_Membership,
+        *UserEID, *MemberECustomJson, *MemberEStatus_Membership, *MemberEType_Membership
+    );
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembersJson_DE]()
+    {
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembersJson_DE);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+
+    // Verify members are C, D, E
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FPubnubMemberInclude IncludeAll; IncludeAll.IncludeCustom = true; IncludeAll.IncludeStatus = true; IncludeAll.IncludeType = true;
+        IncludeAll.IncludeUser = true; IncludeAll.IncludeUserCustom = true; IncludeAll.IncludeUserStatus = true; IncludeAll.IncludeUserType = true;
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeAll, 10);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserCID, UserCName, UserCStatus, UserCType, MemberCCustomJson, MemberCStatus_Membership, MemberCType_Membership, UserDID, UserDName, UserDStatus, UserDType, MemberDCustomJson, MemberDStatus_Membership, MemberDType_Membership, UserEID, UserEName, UserEStatus, UserEType, MemberECustomJson, MemberEStatus_Membership, MemberEType_Membership]()
+    {
+        TestTrue("S2.2: Set (D,E) after Remove (A,B) & Get success.", *bGetMembersSuccess);
+        if (!*bGetMembersSuccess) return;
+        TestEqual("S2.2: Expected 3 members (C,D,E).", ReceivedMembers->Num(), 3);
+        bool bFoundC = false, bFoundD = false, bFoundE = false;
+        for (const auto& Member : *ReceivedMembers) {
+            if (Member.User.UserID == UserCID) { 
+                bFoundC = true; 
+                TestEqual("S2.2_C: User Name", Member.User.UserName, UserCName);
+                TestEqual("S2.2_C: Member Status", Member.Status, MemberCStatus_Membership);
+            } else if (Member.User.UserID == UserDID) { 
+                bFoundD = true;
+                TestEqual("S2.2_D: User Name", Member.User.UserName, UserDName);
+                TestEqual("S2.2_D: Member Status", Member.Status, MemberDStatus_Membership);
+            } else if (Member.User.UserID == UserEID) { 
+                bFoundE = true;
+                TestEqual("S2.2_E: User Name", Member.User.UserName, UserEName);
+                TestEqual("S2.2_E: Member Status", Member.Status, MemberEStatus_Membership);
+            }
+        }
+        TestTrue("S2.2: Found Member C.", bFoundC);
+        TestTrue("S2.2: Found Member D.", bFoundD);
+        TestTrue("S2.2: Found Member E.", bFoundE);
+    }, 0.1f));
+
+    // --- Scenario 3: GetChannelMembers with Include Options ---
+    // Members are C, D, E. Target UserD.
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, UserDID, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FPubnubMemberInclude IncludeOpts;
+        IncludeOpts.IncludeCustom = true;      
+        IncludeOpts.IncludeStatus = false;     
+        IncludeOpts.IncludeType = true;        
+        IncludeOpts.IncludeUser = true;        
+        IncludeOpts.IncludeUserCustom = false; 
+        IncludeOpts.IncludeUserStatus = true;  
+        IncludeOpts.IncludeUserType = false;   
+        FString Filter = FString::Printf(TEXT("uuid.id == '%s'"), *UserDID);
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeOpts, 1, Filter);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserDID, UserDName, UserDStatus, MemberDCustomJson, MemberDType_Membership]()
+    {
+        TestTrue("S3: GetChannelMembers with specific includes success.", *bGetMembersSuccess);
+        if (!*bGetMembersSuccess || ReceivedMembers->Num() != 1) {
+             if (*bGetMembersSuccess) AddError(FString::Printf(TEXT("S3: Expected 1 member for include test, got %d"), ReceivedMembers->Num()));
+             return;
+        }
+        const auto& Member = (*ReceivedMembers)[0];
+        TestEqual("S3: User ID", Member.User.UserID, UserDID);
+        TestEqual("S3: User Name (Included)", Member.User.UserName, UserDName);
+        TestTrue("S3: User Custom (NOT Included, should be empty)", Member.User.Custom.IsEmpty());
+        TestEqual("S3: User Status (Included)", Member.User.Status, UserDStatus);
+        TestTrue("S3: User Type (NOT Included, should be empty)", Member.User.Type.IsEmpty());
+        TestTrue("S3: Member Custom (Included)", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberDCustomJson));
+        TestTrue("S3: Member Status (NOT Included, should be empty)", Member.Status.IsEmpty()); 
+        TestEqual("S3: Member Type (Included)", Member.Type, MemberDType_Membership);
+    }, 0.1f));
+
+    // Setup for Filtering, Sorting, Pagination: Ensure all 5 users (A,B,C,D,E) are members for broader testing.
+    // Current members: C,D,E. We need to add A and B back.
+    const FString SetFiveMembersJson = FString::Printf(TEXT("[")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")   // A
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")   // B
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")   // C (update)
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")   // D (update)
+        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"} ")  // E (update)
+        TEXT("]"),
+        *UserAID, *MemberACustomJson, *MemberAStatus, *MemberAType,
+        *UserBID, *MemberBCustomJson, *MemberBStatus_Membership, *MemberBType,
+        *UserCID, *MemberCCustomJson, *MemberCStatus_Membership, *MemberCType_Membership,
+        *UserDID, *MemberDCustomJson, *MemberDStatus_Membership, *MemberDType_Membership,
+        *UserEID, *MemberECustomJson, *MemberEStatus_Membership, *MemberEType_Membership
+    );
+     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetFiveMembersJson]()
+    {
+        // SetChannelMembers with all 5, will add A,B and update C,D,E
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetFiveMembersJson);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.5f));
+
+    // Verify all 5 are present before proceeding to filter/sort/page tests
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, FPubnubMemberInclude(), 10);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess]() {
+        TestTrue("Setup_AllFive: GetChannelMembers success", *bGetMembersSuccess);
+        TestEqual("Setup_AllFive: Expected 5 members.", ReceivedMembers->Num(), 5);
+    }, 0.1f));
+
+    // --- Scenario 4: GetChannelMembers with Filtering ---
+    // Filter by member custom field
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FPubnubMemberInclude IncludeUserAndMemberCustom; 
+        IncludeUserAndMemberCustom.IncludeUser = true; 
+        IncludeUserAndMemberCustom.IncludeCustom = true; 
+        FString Filter = TEXT("custom.channel_role == 'Moderator'"); 
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUserAndMemberCustom, 10, Filter);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserCID]()
+    {
+        TestTrue("S4a: GetMembers filter by member custom.channel_role success.", *bGetMembersSuccess);
+        if (*bGetMembersSuccess)
+        {
+            TestEqual("S4a: Expected 1 member for custom.channel_role='Moderator'.", ReceivedMembers->Num(), 1);
+            if (ReceivedMembers->Num() == 1)
+            {
+                TestEqual("S4a: User ID for 'Moderator' role", (*ReceivedMembers)[0].User.UserID, UserCID);
+            }
+        }
+    }, 0.1f));
+    // Filter by user custom field
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FPubnubMemberInclude IncludeUserAll; 
+        IncludeUserAll.IncludeUser = true; IncludeUserAll.IncludeUserCustom = true; 
+        FString Filter = TEXT("uuid.custom.department == 'Engineering'"); 
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUserAll, 10, Filter);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID]()
+    {
+        TestTrue("S4b: GetMembers filter by uuid.custom.department success.", *bGetMembersSuccess);
+        if (*bGetMembersSuccess)
+        {
+            TestEqual("S4b: Expected 1 member for uuid.custom.department='Engineering'.", ReceivedMembers->Num(), 1);
+            if (ReceivedMembers->Num() == 1)
+            {
+                TestEqual("S4b: User ID for 'Engineering' dept", (*ReceivedMembers)[0].User.UserID, UserAID);
+            }
+        }
+    }, 0.1f));
+
+    // --- Scenario 5: GetChannelMembers with Sorting ---
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true; 
+        FPubnubMemberSort SortSettings; SortSettings.MemberSort.Add({EPubnubMemberSortType::PMeST_UserName, false /*asc*/});
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 10, TEXT(""), SortSettings);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID, UserAName, UserBID, UserBName, UserCID, UserCName, UserDID, UserDName, UserEID, UserEName]()
+    {
+        TestTrue("S5a: GetMembers sort by user.name:asc success.", *bGetMembersSuccess);
+        if (*bGetMembersSuccess && ReceivedMembers->Num() == 5)
+        {
+            TestEqual("S5a: Sort [0] ID (Alice)", (*ReceivedMembers)[0].User.UserID, UserAID); TestEqual("S5a: Sort [0] Name", (*ReceivedMembers)[0].User.UserName, UserAName);
+            TestEqual("S5a: Sort [1] ID (Bob)", (*ReceivedMembers)[1].User.UserID, UserBID); TestEqual("S5a: Sort [1] Name", (*ReceivedMembers)[1].User.UserName, UserBName);
+            TestEqual("S5a: Sort [2] ID (Charlie)", (*ReceivedMembers)[2].User.UserID, UserCID); TestEqual("S5a: Sort [2] Name", (*ReceivedMembers)[2].User.UserName, UserCName);
+            TestEqual("S5a: Sort [3] ID (Diana)", (*ReceivedMembers)[3].User.UserID, UserDID); TestEqual("S5a: Sort [3] Name", (*ReceivedMembers)[3].User.UserName, UserDName);
+            TestEqual("S5a: Sort [4] ID (Evan)", (*ReceivedMembers)[4].User.UserID, UserEID); TestEqual("S5a: Sort [4] Name", (*ReceivedMembers)[4].User.UserName, UserEName);
+        } else if (*bGetMembersSuccess) { AddError(FString::Printf(TEXT("S5a: Expected 5 members for sort, got %d"), ReceivedMembers->Num())); }
+    }, 0.1f));
+
+    // --- Scenario 6: GetChannelMembers with Pagination ---
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, NextPage, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty(); NextPage->Empty();
+        FPubnubMemberSort SortSettings; SortSettings.MemberSort.Add({EPubnubMemberSortType::PMeST_UserName, false});
+        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true; IncludeUser.IncludeTotalCount = true;
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 2, TEXT(""), SortSettings);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, NextPage, bGetMembersSuccess, UserAID, UserBID]()
+    {
+        TestTrue("S6a: GetMembers with Limit=2 (Page 1) success.", *bGetMembersSuccess);
+        if (*bGetMembersSuccess)
+        {
+            TestEqual("S6a: Page 1 count.", ReceivedMembers->Num(), 2);
+            if (ReceivedMembers->Num() == 2)
+            {
+                TestEqual("S6a: Page 1 Item [0] (Alice)", (*ReceivedMembers)[0].User.UserID, UserAID);
+                TestEqual("S6a: Page 1 Item [1] (Bob)", (*ReceivedMembers)[1].User.UserID, UserBID);
+            }
+            TestFalse("S6a: NextPage should be populated as more results exist.", NextPage->IsEmpty());
+        }
+    }, 0.1f));
+    // Fetch Page 2
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, NextPage, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        if (NextPage->IsEmpty()) { AddError("S6b: NextPage token is empty, cannot fetch page 2."); *bGetMembersDone = true; return; }
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FString PageTokenToUse = *NextPage; NextPage->Empty();
+        FPubnubMemberSort SortSettings; SortSettings.MemberSort.Add({EPubnubMemberSortType::PMeST_UserName, false});
+        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true;
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 2, TEXT(""), SortSettings, PageTokenToUse);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, NextPage, bGetMembersSuccess, UserCID, UserDID]()
+    {
+        TestTrue("S6b: GetMembers (Page 2) success.", *bGetMembersSuccess);
+        if (*bGetMembersSuccess)
+        {
+            TestEqual("S6b: Page 2 count.", ReceivedMembers->Num(), 2);
+             if (ReceivedMembers->Num() == 2)
+            {
+                TestEqual("S6b: Page 2 Item [0] (Charlie)", (*ReceivedMembers)[0].User.UserID, UserCID);
+                TestEqual("S6b: Page 2 Item [1] (Diana)", (*ReceivedMembers)[1].User.UserID, UserDID);
+            }
+            TestFalse("S6b: NextPage should be populated for page 3.", NextPage->IsEmpty());
+        }
+    }, 0.1f));
+     // Fetch Page 3
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, NextPage, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        if (NextPage->IsEmpty()) { AddError("S6c: NextPage token is empty, cannot fetch page 3."); *bGetMembersDone = true; return; }
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FString PageTokenToUse = *NextPage; NextPage->Empty();
+        FPubnubMemberSort SortSettings; SortSettings.MemberSort.Add({EPubnubMemberSortType::PMeST_UserName, false});
+        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true;
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 2, TEXT(""), SortSettings, PageTokenToUse);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, NextPage, bGetMembersSuccess, UserEID]()
+    {
+        TestTrue("S6c: GetChannelMembers (Page 3) success.", *bGetMembersSuccess);
+        if (*bGetMembersSuccess)
+        {
+            TestEqual("S6c: Page 3 count.", ReceivedMembers->Num(), 1); 
+             if (ReceivedMembers->Num() == 1)
+            {
+                TestEqual("S6c: Page 3 Item [0] (Evan)", (*ReceivedMembers)[0].User.UserID, UserEID);
+            }
+        }
+    }, 0.1f));
+
+
+    // --- Scenario 7: RemoveChannelMembers & Verification ---
+    // Current members: A,B,C,D,E. Remove UserA and UserD
+    const FString RemoveMembersJson_AD = FString::Printf(TEXT("[")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}},")
+        TEXT("{\"uuid\":{\"id\":\"%s\"}}") 
+        TEXT("]"), *UserAID, *UserDID);
+     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, RemoveMembersJson_AD]()
+    {
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, RemoveMembersJson_AD);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+
+    // Verify B, C, E remain
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true;
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 10);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID, UserBID, UserCID, UserDID, UserEID]()
+    {
+        TestTrue("S7: GetMembers after partial removal success.", *bGetMembersSuccess);
+        if (!*bGetMembersSuccess) return;
+        TestEqual("S7: Expected 3 members after removal (B, C, E).", ReceivedMembers->Num(), 3);
+        bool bFoundA = false, bFoundD = false;
+        bool bFoundB = false, bFoundC = false, bFoundE = false;
+        for (const auto& Member : *ReceivedMembers)
+        {
+            if (Member.User.UserID == UserAID) bFoundA = true;
+            else if (Member.User.UserID == UserBID) bFoundB = true;
+            else if (Member.User.UserID == UserCID) bFoundC = true;
+            else if (Member.User.UserID == UserDID) bFoundD = true;
+            else if (Member.User.UserID == UserEID) bFoundE = true;
+        }
+        TestFalse("S7: UserA should be removed.", bFoundA);
+        TestTrue("S7: UserB should still be a member.", bFoundB);
+        TestTrue("S7: UserC should still be a member.", bFoundC);
+        TestFalse("S7: UserD should be removed.", bFoundD);
+        TestTrue("S7: UserE should still be a member.", bFoundE);
+    }, 0.1f));
+
+    // Cleanup: Remove remaining members (B, C, E)
+    const FString FinalRemoveJson = FString::Printf(TEXT("[{\"uuid\":{\"id\":\"%s\"}}, {\"uuid\":{\"id\":\"%s\"}}, {\"uuid\":{\"id\":\"%s\"}}]"), *UserBID, *UserCID, *UserEID);
+     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, FinalRemoveJson]()
+    {
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, FinalRemoveJson);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    
+    // Final check: ensure channel is empty
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    {
+        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, FPubnubMemberInclude(), 10);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess]() {
+        TestTrue("Cleanup_FinalGet: GetChannelMembers success", *bGetMembersSuccess);
+        TestEqual("Cleanup_FinalGet: Expected 0 members.", ReceivedMembers->Num(), 0);
+    }, 0.1f));
+
+    // Cleanup: Remove user metadata
+    auto RemoveUserMeta = [this](const FString& UserID)
+    {
+        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID]()
+        {
+            PubnubSubsystem->RemoveUserMetadata(UserID);
+        }, 0.05f));
+    };
+    for(const FString& UserID : AllTestUserIDs)
+    {
+        RemoveUserMeta(UserID);
+    }
+    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f));
+
+
+    CleanUp();
+    return true;
+}

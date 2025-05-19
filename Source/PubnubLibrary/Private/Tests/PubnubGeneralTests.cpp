@@ -6,7 +6,7 @@
 
 using namespace PubnubTests;
 
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetGetUserIDTest, FPubnubAutomationTestBase, "Pubnub.E2E.General.SetGetUserID", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetGetUserIDTest, FPubnubAutomationTestBase, "Pubnub.Integration.General.SetGetUserID", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 
 bool FPubnubSetGetUserIDTest::RunTest(const FString& Parameters)

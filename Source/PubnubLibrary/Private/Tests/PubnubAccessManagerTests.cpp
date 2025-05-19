@@ -10,9 +10,9 @@
 using namespace PubnubTests;
 
 //This is an Unit test, but it still requires getting Pubnub subsystem, that's why it's here, not with other Unit tests
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantTokenStructureToJsonStringUnitTest, FPubnubAutomationTestBase, "Pubnub.Unit.AccessManager.GrantTokenStructureToJsonString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantAndParseTokenTest, FPubnubAutomationTestBase, "Pubnub.E2E.AccessManager.GrantAndParseToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRevokeTokenTest, FPubnubAutomationTestBase, "Pubnub.E2E.AccessManager.RevokeToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantTokenStructureToJsonStringUnitTest, FPubnubAutomationTestBase, "Pubnub.aUnit.AccessManager.GrantTokenStructureToJsonString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantAndParseTokenTest, FPubnubAutomationTestBase, "Pubnub.Integration.AccessManager.GrantAndParseToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRevokeTokenTest, FPubnubAutomationTestBase, "Pubnub.Integration.AccessManager.RevokeToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // Helper function to calculate expected bitmask for FPubnubChannelPermissions
 int CalculateChannelPermissionsBitmask(const FPubnubChannelPermissions& Perms)

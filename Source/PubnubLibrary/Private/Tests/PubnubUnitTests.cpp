@@ -7,24 +7,24 @@
 
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAddQuotesToStringUnitTest, "Pubnub.Unit.Utilities.AddQuotesToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMembershipIncludeToStringUnitTest, "Pubnub.Unit.Utilities.MembershipIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMemberIncludeToStringUnitTest, "Pubnub.Unit.Utilities.MemberIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllIncludeToStringUnitTest, "Pubnub.Unit.Utilities.GetAllIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMembershipSortToStringUnitTest, "Pubnub.Unit.Utilities.MembershipSortToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMemberSortToStringUnitTest, "Pubnub.Unit.Utilities.MemberSortToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllSortToStringUnitTest, "Pubnub.Unit.Utilities.GetAllSortToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FListChannelsFromGroupJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.ListChannelsFromGroupJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FListUserSubscribedChannelsJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.ListUserSubscribedChannelsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FListUsersFromChannelJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.ListUsersFromChannelJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFetchHistoryJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.FetchHistoryJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllUserMetadataJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.GetAllUserMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetUserMetadataJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.GetUserMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllChannelMetadataJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.GetAllChannelMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMetadataJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.GetChannelMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMessageActionsJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.GetMessageActionsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipsJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.GetMembershipsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMembersJsonToDataUnitTest, "Pubnub.Unit.JsonUtilities.GetChannelMembersJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAddQuotesToStringUnitTest, "Pubnub.aUnit.Utilities.AddQuotesToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMembershipIncludeToStringUnitTest, "Pubnub.aUnit.Utilities.MembershipIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMemberIncludeToStringUnitTest, "Pubnub.aUnit.Utilities.MemberIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllIncludeToStringUnitTest, "Pubnub.aUnit.Utilities.GetAllIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMembershipSortToStringUnitTest, "Pubnub.aUnit.Utilities.MembershipSortToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMemberSortToStringUnitTest, "Pubnub.aUnit.Utilities.MemberSortToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllSortToStringUnitTest, "Pubnub.aUnit.Utilities.GetAllSortToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FListChannelsFromGroupJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.ListChannelsFromGroupJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FListUserSubscribedChannelsJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.ListUserSubscribedChannelsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FListUsersFromChannelJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.ListUsersFromChannelJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFetchHistoryJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.FetchHistoryJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllUserMetadataJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetAllUserMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetUserMetadataJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetUserMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllChannelMetadataJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetAllChannelMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMetadataJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMessageActionsJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMessageActionsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipsJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMembersJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMembersJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 
 
 
@@ -92,7 +92,7 @@ bool FMemberIncludeToStringUnitTest::RunTest(const FString& Parameters)
 {
 	// Test all includes set to true
 	FPubnubMemberInclude MemberInclude1 = FPubnubMemberInclude::FromValue(true);
-	FString ExpectedValue1 = "custom,status,type,user,user.custom,user.status,user.type";
+	FString ExpectedValue1 = "custom,status,type,uuid,uuid.custom,uuid.status,uuid.type";
 	FString TestValue1 = UPubnubUtilities::MemberIncludeToString(MemberInclude1);
 	TestEqual("FMemberIncludeToString failed for all includes true", TestValue1, ExpectedValue1);
 
@@ -109,7 +109,7 @@ bool FMemberIncludeToStringUnitTest::RunTest(const FString& Parameters)
 		.IncludeUserType = true,
 		.IncludeTotalCount = false
 	};
-	FString ExpectedValue3 = "status,user,user.type";
+	FString ExpectedValue3 = "status,uuid,uuid.type";
 	FString TestValue3 = UPubnubUtilities::MemberIncludeToString(MemberInclude3);
 	TestEqual("FMemberIncludeToString failed for some includes true", TestValue3, ExpectedValue3);
 
@@ -238,7 +238,7 @@ bool FMemberSortToStringUnitTest::RunTest(const FString& Parameters)
 	SingleSortItem.SortOrder = false;
 	SingleSortAsc.MemberSort.Add(SingleSortItem);
 	
-	FString ExpectedValue2 = "user.id";
+	FString ExpectedValue2 = "uuid.id";
 	FString TestValue2 = UPubnubUtilities::MemberSortToString(SingleSortAsc);
 	TestEqual("FMemberSortToString failed for single ascending sort", TestValue2, ExpectedValue2);
 
@@ -247,7 +247,7 @@ bool FMemberSortToStringUnitTest::RunTest(const FString& Parameters)
 	SingleSortItem.SortOrder = true;
 	SingleSortDesc.MemberSort.Add(SingleSortItem);
 	
-	FString ExpectedValue3 = "user.id:desc";
+	FString ExpectedValue3 = "uuid.id:desc";
 	FString TestValue3 = UPubnubUtilities::MemberSortToString(SingleSortDesc);
 	TestEqual("FMemberSortToString failed for single descending sort", TestValue3, ExpectedValue3);
 
@@ -267,7 +267,7 @@ bool FMemberSortToStringUnitTest::RunTest(const FString& Parameters)
 	MultipleSorts.MemberSort.Add(SortItem2);
 	MultipleSorts.MemberSort.Add(SortItem3);
 	
-	FString ExpectedValue4 = "user.id,user.name:desc,user.status";
+	FString ExpectedValue4 = "uuid.id,uuid.name:desc,uuid.status";
 	FString TestValue4 = UPubnubUtilities::MemberSortToString(MultipleSorts);
 	TestEqual("FMemberSortToString failed for multiple sorts", TestValue4, ExpectedValue4);
 
@@ -283,7 +283,7 @@ bool FMemberSortToStringUnitTest::RunTest(const FString& Parameters)
 	SameTypeSorts.MemberSort.Add(SortItem4);
 	SameTypeSorts.MemberSort.Add(SortItem5);
 	
-	FString ExpectedValue5 = "user.id,user.id:desc";
+	FString ExpectedValue5 = "uuid.id,uuid.id:desc";
 	FString TestValue5 = UPubnubUtilities::MemberSortToString(SameTypeSorts);
 	TestEqual("FMemberSortToString failed for same type different orders", TestValue5, ExpectedValue5);
 

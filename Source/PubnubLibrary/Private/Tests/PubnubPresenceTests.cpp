@@ -8,10 +8,10 @@
 
 using namespace PubnubTests;
 
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUsersFromChannelTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.ListUsersFromChannel", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUserSubscribedChannelsTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.ListUserSubscribedChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.SetGetState", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateForMultipleTest, FPubnubAutomationTestBase, "Pubnub.E2E.Presence.SetGetStateMultipleChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUsersFromChannelTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.ListUsersFromChannel", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUserSubscribedChannelsTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.ListUserSubscribedChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.SetGetState", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateForMultipleTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.SetGetStateMultipleChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
 {

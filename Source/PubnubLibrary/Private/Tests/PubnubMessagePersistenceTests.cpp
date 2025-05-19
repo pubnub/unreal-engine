@@ -8,8 +8,8 @@
 
 using namespace PubnubTests;
 
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubMessageCountsTest, FPubnubAutomationTestBase, "Pubnub.E2E.MessagePersistence.MessageCounts", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubFetchHistoryTest, FPubnubAutomationTestBase, "Pubnub.E2E.MessagePersistence.FetchHistory", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubMessageCountsTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessagePersistence.MessageCounts", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubFetchHistoryTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessagePersistence.FetchHistory", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubMessageCountsTest::RunTest(const FString& Parameters)
 {
