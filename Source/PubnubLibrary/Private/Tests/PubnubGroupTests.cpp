@@ -11,6 +11,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubAddChannelToGroupAndReceiveMessag
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelAddRemoveListGroupTest, FPubnubAutomationTestBase, "Pubnub.Integration.ChannelGroups.AddRemoveListChannelsInGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromGroupTest, FPubnubAutomationTestBase, "Pubnub.Integration.ChannelGroups.UnsubscribeFromGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAllTest, FPubnubAutomationTestBase, "Pubnub.Integration.ChannelGroups.UnsubscribeFromAll", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveGroupTest, FPubnubAutomationTestBase, "Pubnub.Integration.ChannelGroups.RemoveGroup", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Parameters)
 {
@@ -422,6 +423,137 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 		PubnubSubsystem->RemoveChannelFromGroup(TestChannelInGroupForAll, TestGroupForAll);
 	}, 0.2f));
 
+	CleanUp();
+	return true;
+}
+
+bool FPubnubRemoveGroupTest::RunTest(const FString& Parameters)
+{
+	// Initial variables
+	const FString TestUser = SDK_PREFIX + "test_user_remove_group";
+	const FString TestGroup = SDK_PREFIX + "test_group_to_remove";
+	const FString TestChannel1 = SDK_PREFIX + "rg_ch1";
+	const FString TestChannel2 = SDK_PREFIX + "rg_ch2";
+
+	TSharedPtr<bool> bListOperationCompleted = MakeShared<bool>(false);
+	TSharedPtr<TArray<FString>> ListedChannels = MakeShared<TArray<FString>>();
+	TSharedPtr<bool> bListOperationSuccess = MakeShared<bool>(false);
+	TSharedPtr<int> ListOperationStatus = MakeShared<int>(0);
+
+	if(!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubRemoveGroupTest");
+		return false;
+	}
+	
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubRemoveGroupTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+	});
+	
+	PubnubSubsystem->SetUserID(TestUser);
+	
+	FOnListChannelsFromGroupResponseNative ListDelegate;
+	ListDelegate.BindLambda([this, bListOperationCompleted, ListedChannels, bListOperationSuccess, ListOperationStatus](bool Error, int Status, const TArray<FString>& Channels)
+	{
+		*bListOperationCompleted = true;
+		*ListOperationStatus = Status;
+		if (!Error)
+		{
+			*ListedChannels = Channels;
+			*bListOperationSuccess = true;
+		}
+		else
+		{
+			*bListOperationSuccess = false;
+			// This can be expected after group removal, so not an immediate AddError here.
+		}
+	});
+
+	// Pre-cleanup: Ensure the group doesn't exist from a previous failed run.
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubSubsystem->RemoveChannelGroup(TestGroup);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); // Wait for remove to process
+
+	// 1. Add Channel1 to Group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestGroup]()
+	{
+		PubnubSubsystem->AddChannelToGroup(TestChannel1, TestGroup);
+	}, 0.2f));
+
+	// 2. Add Channel2 to Group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2, TestGroup]()
+	{
+		PubnubSubsystem->AddChannelToGroup(TestChannel2, TestGroup);
+	}, 0.2f));
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); // Wait for add operations
+
+	// 3. List and Verify Channels are in the Group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels, ListOperationStatus]()
+	{
+		*bListOperationCompleted = false;
+		*bListOperationSuccess = false;
+		*ListOperationStatus = 0;
+		ListedChannels->Empty();
+		PubnubSubsystem->ListChannelsFromGroup(TestGroup, ListDelegate);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListOperationCompleted]() { return *bListOperationCompleted; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestChannel2, ListedChannels, bListOperationSuccess, ListOperationStatus]()
+	{
+		TestTrue(FString::Printf(TEXT("ListChannelsFromGroup (before removal) operation should be successful. Status: %d"), *ListOperationStatus), *bListOperationSuccess);
+		if(*bListOperationSuccess)
+		{
+			TestEqual("Number of channels before removal", ListedChannels->Num(), 2);
+			TestTrue(FString::Printf(TEXT("Channel1 ('%s') found in group before removal"), *TestChannel1), ListedChannels->Contains(TestChannel1));
+			TestTrue(FString::Printf(TEXT("Channel2 ('%s') found in group before removal"), *TestChannel2), ListedChannels->Contains(TestChannel2));
+		}
+	}, 0.1f));
+
+	// 4. Remove the entire Group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubSubsystem->RemoveChannelGroup(TestGroup);
+	}, 0.2f));
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Wait for remove group to process
+
+	// 5. Attempt to List Channels from the (now removed) Group and Verify
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels, ListOperationStatus]()
+	{
+		*bListOperationCompleted = false;
+		*bListOperationSuccess = true; 
+		*ListOperationStatus = 0;
+		ListedChannels->Empty();
+		PubnubSubsystem->ListChannelsFromGroup(TestGroup, ListDelegate);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListOperationCompleted]() { return *bListOperationCompleted; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ListedChannels, bListOperationSuccess, ListOperationStatus, TestGroup]()
+	{
+		bool bGroupSuccessfullyRemoved = false;
+		if (!(*bListOperationSuccess)) // ListChannelsFromGroup indicated an error
+		{
+			bGroupSuccessfullyRemoved = true;
+		}
+		else // ListChannelsFromGroup call was "successful" (no transport error, etc.)
+		{
+			if (ListedChannels->Num() == 0)
+			{
+				bGroupSuccessfullyRemoved = true;
+			}
+		}
+
+		TestTrue(FString::Printf(TEXT("Group '%s' should be removed. Verification: ListChannels (after remove) Error: %s, Status: %d, Listed Count: %d"),
+			*TestGroup, !(*bListOperationSuccess) ? TEXT("true") : TEXT("false"), *ListOperationStatus, ListedChannels->Num()), bGroupSuccessfullyRemoved);
+
+		if (!bGroupSuccessfullyRemoved)
+		{
+			AddError(FString::Printf(TEXT("Group '%s' NOT removed. List (after remove): Success=%s, Status=%d, Count=%d. Channels: %s"),
+				*TestGroup, *bListOperationSuccess ? TEXT("true") : TEXT("false"), *ListOperationStatus, ListedChannels->Num(), *FString::Join(*ListedChannels, TEXT(","))
+			));
+		}
+	}, 0.1f));
+	
 	CleanUp();
 	return true;
 }
