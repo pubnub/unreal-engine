@@ -1247,10 +1247,12 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPu
 	if(CheckIsFieldEmpty(Channel, "Channel", "PublishMessage") || CheckIsFieldEmpty(Message, "Message", "PublishMessage"))
 	{return;}
 
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message))
+	FString FinalMessage = Message;
+
+	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
 	{
-		PubnubError("Can't Publish Message, Message has to be a correct Json", EPubnubErrorType::PET_Warning);
-		return;
+		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
 	}
 	
 	//Convert all UE PublishSettings to Pubnub PublishOptions
@@ -1264,7 +1266,7 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPu
 	PubnubOptions.custom_message_type = TypeCharConverter.Get();
 	
 	PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
-	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message), PubnubOptions);
+	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*FinalMessage), PubnubOptions);
 
 	pubnub_res PublishResult = pubnub_await(ctx_pub);
 
@@ -2609,6 +2611,13 @@ FPubnubMessageData UPubnubSubsystem::UEMessageFromPubnub(pubnub_v2_message Pubnu
 {
 	FPubnubMessageData MessageData;
 	MessageData.Message = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.payload);
+
+	//If message was just a string, we need to deserialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(MessageData.Message, false))
+	{
+		MessageData.Message = UPubnubJsonUtilities::DeserializeString(MessageData.Message);
+	}
+	
 	MessageData.Channel = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.channel);
 	MessageData.UserID = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.publisher);
 	MessageData.Timetoken = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.tt);

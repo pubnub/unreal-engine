@@ -30,6 +30,54 @@ bool UPubnubJsonUtilities::StringToJsonArray(FString JsonString, TArray<TSharedP
 	return FJsonSerializer::Deserialize(JsonReader, OutArray);
 }
 
+FString UPubnubJsonUtilities::SerializeString(const FString& InString)
+{
+	FString Out = TEXT("\"");
+
+	for (const TCHAR& Ch : InString)
+	{
+		switch (Ch)
+		{
+		case '\"': Out += TEXT("\\\""); break;
+		case '\\': Out += TEXT("\\\\"); break;
+		case '\b': Out += TEXT("\\b"); break;
+		case '\f': Out += TEXT("\\f"); break;
+		case '\n': Out += TEXT("\\n"); break;
+		case '\r': Out += TEXT("\\r"); break;
+		case '\t': Out += TEXT("\\t"); break;
+		default:
+			if (Ch < 0x20)
+			{
+				Out += FString::Printf(TEXT("\\u%04x"), Ch);
+			}
+			else
+			{
+				Out += Ch;
+			}
+		}
+	}
+
+	Out += TEXT("\"");
+	return Out;
+}
+
+FString UPubnubJsonUtilities::DeserializeString(const FString InString)
+{
+	//Unreal Engine JsonSerializer doesn't work well with string JSON, but wrapping it into an array works as expected
+	FString JsonArray = "[" + InString + "]";
+
+	TArray<TSharedPtr<FJsonValue>> ParsedArray;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonArray);
+
+	FString Parsed = InString;
+	if (FJsonSerializer::Deserialize(Reader, ParsedArray) && ParsedArray.Num() > 0)
+	{
+		Parsed = ParsedArray[0]->AsString();
+	}
+
+	return Parsed;
+}
+
 bool UPubnubJsonUtilities::IsCorrectJsonString(const FString InString, bool AllowSimpleTypes)
 {
 	//A String is correct Json if it's a valid Json Object

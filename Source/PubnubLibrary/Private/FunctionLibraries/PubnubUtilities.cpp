@@ -15,6 +15,21 @@ FString UPubnubUtilities::AddQuotesToString(const FString InString, bool SkipIfH
 	return InString;
 }
 
+FString UPubnubUtilities::RemoveOuterQuotesFromString(const FString InString)
+{
+	FString FinalString = InString;
+	if(FinalString.Left(1) == "\"")
+	{
+		FinalString.RightChopInline(1);
+	}
+	if(FinalString.Right(1) == "\"")
+	{
+		FinalString.LeftChopInline(1);
+	}
+
+	return FinalString;
+}
+
 FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar)
 {
 	if(!PnChar.ptr)

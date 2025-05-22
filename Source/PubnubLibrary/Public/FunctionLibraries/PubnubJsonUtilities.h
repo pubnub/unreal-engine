@@ -26,6 +26,11 @@ public:
 	//Convert FString to JsonArray. Returns true if conversion was successful
 	static bool StringToJsonArray(FString JsonString, TArray<TSharedPtr<FJsonValue>>& OutArray);
 
+	//Converts literal string into serialized form adding all needed escapes
+	static FString SerializeString(const FString& InString);
+	//Converts serialized string into it's normal, literal form
+	static FString DeserializeString(const FString InString);
+
 	/**
 	 * Checks if gives string can be converted to a json
 	 * @param InString - String to check
