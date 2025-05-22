@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Tests/PubnubTestsUtils.h"
 #include "FunctionLibraries/PubnubTimetokenUtilities.h"
+#include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Tests/AutomationCommon.h"
 
 using namespace PubnubTests;
@@ -138,7 +139,8 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 	const FString TestUser = SDK_PREFIX + "user_fetch_history";
 	const FString TestChannel = SDK_PREFIX + "chan_fetch_history";
 	const FString TestMessage1Content = "\"History message one (oldest)\"";
-	const FString TestMessage2Content = "\"History message two (newest)\"";
+	const FString TestMessage2Content = "\"History message two (middle)\"";
+	const FString TestJsonMessageContent = "{\"key\":\"value\", \"number\":123, \"data\":{\"status\":\"active\"}}";
 
 	TSharedPtr<FString> TimetokenAtTestStart = MakeShared<FString>(UPubnubTimetokenUtilities::GetCurrentUnixTimetoken());
 
@@ -187,6 +189,12 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 		PubnubSubsystem->PublishMessage(TestChannel, TestMessage2Content);
 	}, 0.2f));
 	
+	// Step 4: Publish JSON Message (New)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestJsonMessageContent]()
+	{
+		PubnubSubsystem->PublishMessage(TestChannel, TestJsonMessageContent);
+	}, 0.2f));
+
 	// Step 6: Fetch History
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, FetchHistoryCallback, TimetokenAtTestStart]()
 	{
@@ -202,7 +210,7 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 	// Step 7: Verify History
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bFetchHistoryDone]() { return *bFetchHistoryDone; }, MAX_WAIT_TIME));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUser, TestMessage1Content, TestMessage2Content, ReceivedHistoryMessages, bFetchHistorySuccess]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUser, TestMessage1Content, TestMessage2Content, TestJsonMessageContent, ReceivedHistoryMessages, bFetchHistorySuccess]()
 	{
 		TestTrue("FetchHistory operation was reported as successful by callback.", *bFetchHistorySuccess);
 		if (!*bFetchHistorySuccess)
@@ -211,32 +219,39 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 			return;
 		}
 
-		TestEqual("Number of history messages received within the specified timetoken range.", ReceivedHistoryMessages->Num(), 2);
+		TestEqual("Number of history messages received within the specified timetoken range.", ReceivedHistoryMessages->Num(), 3);
 
-		if (ReceivedHistoryMessages->Num() == 2)
+		if (ReceivedHistoryMessages->Num() == 3)
 		{
 			TestEqual("History: Message 1 content.", (*ReceivedHistoryMessages)[0].Message, TestMessage1Content);
 			TestEqual("History: Message 1 UserID.", (*ReceivedHistoryMessages)[0].UserID, TestUser);
 			
 			TestEqual("History: Message 2 content.", (*ReceivedHistoryMessages)[1].Message, TestMessage2Content);
 			TestEqual("History: Message 2 UserID.", (*ReceivedHistoryMessages)[1].UserID, TestUser);
+
+			TestTrue(FString::Printf(TEXT("History: Message 3 (JSON) content. Expected: %s, Actual: %s"), *TestJsonMessageContent, *(*ReceivedHistoryMessages)[2].Message),
+				UPubnubJsonUtilities::AreJsonObjectStringsEqual(TestJsonMessageContent, (*ReceivedHistoryMessages)[2].Message));
+			TestEqual("History: Message 3 (JSON) UserID.", (*ReceivedHistoryMessages)[2].UserID, TestUser);
 		}
-		else if (ReceivedHistoryMessages->Num() > 2)
+		else if (ReceivedHistoryMessages->Num() > 3)
 		{
-			AddWarning("FetchHistory returned more than 2 messages. This might indicate pre-existing messages in the test channel within the timetoken range. Verification will be lenient.");
+			AddWarning(FString::Printf(TEXT("FetchHistory returned %d messages, expected 3. This might indicate pre-existing messages. Verification will be lenient."), ReceivedHistoryMessages->Num()));
 			bool bFoundMessage1 = false;
 			bool bFoundMessage2 = false;
+			bool bFoundJsonMessage = false;
 			for(const auto& Msg : *ReceivedHistoryMessages)
 			{
 				if(Msg.Message == TestMessage1Content && Msg.UserID == TestUser) bFoundMessage1 = true;
 				if(Msg.Message == TestMessage2Content && Msg.UserID == TestUser) bFoundMessage2 = true;
+				if(UPubnubJsonUtilities::AreJsonObjectStringsEqual(Msg.Message, TestJsonMessageContent) && Msg.UserID == TestUser) bFoundJsonMessage = true;
 			}
 			TestTrue("History: TestMessage1Content found.", bFoundMessage1);
 			TestTrue("History: TestMessage2Content found.", bFoundMessage2);
+			TestTrue("History: TestJsonMessageContent found.", bFoundJsonMessage);
 		}
 		else
 		{
-			AddError(FString::Printf(TEXT("Expected 2 history messages, but got %d."), ReceivedHistoryMessages->Num()));
+			AddError(FString::Printf(TEXT("Expected 3 history messages, but got %d."), ReceivedHistoryMessages->Num()));
 		}
 
 	}, 0.1f));

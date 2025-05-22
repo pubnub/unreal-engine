@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Tests/PubnubTestsUtils.h"
 #include "Tests/AutomationCommon.h"
+#include "FunctionLibraries/PubnubJsonUtilities.h"
 
 using namespace PubnubTests;
 
@@ -12,7 +13,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubPublishMessageWithSettingsTest, F
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSignalTest, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.SendSignal", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSignalWithSettingsTest, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.SendSignalWithSettings", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeTest, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.UnsubscribeFromChannel", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubPublishVariousMessageTypesTest, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.PublishVariousMessageTypes", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubPublishMessageTest::RunTest(const FString& Parameters)
 {
@@ -334,6 +335,132 @@ bool FPubnubUnsubscribeTest::RunTest(const FString& Parameters)
 	{
 		TestFalse("Message should NOT have been received on channel after unsubscribing.", *TestMessageReceivedAfterUnsubscribe);
 	}, 0.1f));
+
+	CleanUp();
+	return true;
+}
+
+// Helper struct for Publish test cases
+struct FMessageTestCase
+{
+	FString Description;
+	FString MessageToSend; // This is the JSON string payload
+	FString ExpectedReceivedMessage; // Usually the same as MessageToSend
+
+	FMessageTestCase(const FString& InDesc, const FString& InMsgSend, const FString& InMsgExpect)
+		: Description(InDesc), MessageToSend(InMsgSend), ExpectedReceivedMessage(InMsgExpect) {}
+	FMessageTestCase(const FString& InDesc, const FString& InMsg)
+		: Description(InDesc), MessageToSend(InMsg), ExpectedReceivedMessage(InMsg) {}
+};
+
+bool FPubnubPublishVariousMessageTypesTest::RunTest(const FString& Parameters)
+{
+	const FString TestUser = SDK_PREFIX + "test_user_various_msg";
+	const FString TestChannel = SDK_PREFIX + "test_channel_various_msg";
+
+	TArray<FMessageTestCase> TestCases;
+	TestCases.Add(FMessageTestCase("Simple String", "hello world"));
+	TestCases.Add(FMessageTestCase("Simple String as JSON String", "\"hello world\""));
+	TestCases.Add(FMessageTestCase("JSON Object", "{\"message\":\"this is an object\",\"count\":1}"));
+	TestCases.Add(FMessageTestCase("Integer Number as JSON Number", "789"));
+	TestCases.Add(FMessageTestCase("Floating Point Number as JSON Number", "123.456"));
+	TestCases.Add(FMessageTestCase("Boolean true as JSON Boolean", "true"));
+	TestCases.Add(FMessageTestCase("Boolean false as JSON Boolean", "false"));
+	TestCases.Add(FMessageTestCase("JSON Array", "[\"element1\", 2, {\"nested_key\":\"nested_val\"}, false]"));
+	TestCases.Add(FMessageTestCase("Empty String as JSON string", "\"\""));
+	TestCases.Add(FMessageTestCase("String with escapes as JSON string", "\"Text with \\\"quotes\\\", \\\\backslashes\\\\, a /slash, and a newline\\ncharacter.\""));
+	TestCases.Add(FMessageTestCase("JSON null", "null"));
+
+
+	if (!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubPublishVariousMessageTypesTest");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(FString::Printf(TEXT("Pubnub Error in FPubnubPublishVariousMessageTypesTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+	});
+
+	PubnubSubsystem->SetUserID(TestUser);
+
+	TSharedPtr<int32> CurrentTestCaseIndex = MakeShared<int32>(-1); // Start at -1, will be incremented before use
+	TSharedPtr<bool> bExpectedMessageReceived = MakeShared<bool>(false);
+	TSharedPtr<FPubnubMessageData> LastReceivedMessageData = MakeShared<FPubnubMessageData>();
+
+	PubnubSubsystem->OnMessageReceivedNative.AddLambda(
+		[this, TestCases, CurrentTestCaseIndex, bExpectedMessageReceived, LastReceivedMessageData, TestChannel](FPubnubMessageData ReceivedMessage)
+		{
+			if (*CurrentTestCaseIndex >= 0 && *CurrentTestCaseIndex < TestCases.Num() && ReceivedMessage.Channel == TestChannel)
+			{
+				// Only consider the message if we are actively waiting for one for the current test case
+				if (!(*bExpectedMessageReceived)) //Process only the first message received for the current test case
+				{
+					*LastReceivedMessageData = ReceivedMessage;
+					*bExpectedMessageReceived = true;
+				}
+			}
+		});
+	
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannel);
+	}, 0.1f));
+
+
+	for (int32 i = 0; i < TestCases.Num(); ++i)
+	{
+		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, CurrentTestCaseIndex, bExpectedMessageReceived, i]()
+		{
+			*CurrentTestCaseIndex = i;
+			*bExpectedMessageReceived = false;
+		}, 0.2f));
+		
+		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestCases, i]()
+		{
+			PubnubSubsystem->PublishMessage(TestChannel, TestCases[i].MessageToSend);
+		}, 0.2f));
+
+		ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bExpectedMessageReceived]() {
+			return *bExpectedMessageReceived;
+		}, MAX_WAIT_TIME));
+
+		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand(
+			[this, TestCases, i, bExpectedMessageReceived, LastReceivedMessageData, TestUser, TestChannel]()
+			{
+				if (!*bExpectedMessageReceived)
+				{
+					AddError(FString::Printf(TEXT("Test case '%s' (%d): Message was not received."), *TestCases[i].Description, i));
+					return;
+				}
+
+				const FMessageTestCase& CurrentCase = TestCases[i];
+				TestEqual(CurrentCase.Description + " - Channel", TestChannel, LastReceivedMessageData->Channel);
+				TestEqual(CurrentCase.Description + " - UserID", TestUser, LastReceivedMessageData->UserID);
+				TestEqual(CurrentCase.Description + " - MessageType", EPubnubMessageType::PMT_Published, LastReceivedMessageData->MessageType);
+
+				bool bIsJsonLike = CurrentCase.ExpectedReceivedMessage.StartsWith(TEXT("{")) || CurrentCase.ExpectedReceivedMessage.StartsWith(TEXT("["));
+				
+				if (bIsJsonLike)
+				{
+					bool bJsonStringsEqual = UPubnubJsonUtilities::AreJsonObjectStringsEqual(CurrentCase.ExpectedReceivedMessage, LastReceivedMessageData->Message);
+					if (!bJsonStringsEqual)
+					{
+						// Log more details if JSON comparison fails
+						AddError(FString::Printf(TEXT("Test case '%s' (%d): JSON content mismatch. Expected: %s, Actual: %s"), *CurrentCase.Description, i, *CurrentCase.ExpectedReceivedMessage, *LastReceivedMessageData->Message));
+					}
+					else
+					{
+						TestTrue(CurrentCase.Description + " - Content (JSON)", bJsonStringsEqual);
+					}
+				}
+				else
+				{
+					TestEqual(CurrentCase.Description + " - Content", CurrentCase.ExpectedReceivedMessage, LastReceivedMessageData->Message);
+				}
+			}, 0.1f));
+	}
 
 	CleanUp();
 	return true;
