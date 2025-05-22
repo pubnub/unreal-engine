@@ -1283,11 +1283,18 @@ void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FPubnubSign
 
 	if(CheckIsFieldEmpty(Channel, "Channel", "Signal") || CheckIsFieldEmpty(Message, "Message", "Signal"))
 	{return;}
+
+	FString FinalMessage = Message;
+	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
+	{
+		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
+	}
 	
 	pubnub_signal_options PubnubOptions = pubnub_signal_defopts();
 	auto CharConverter = StringCast<ANSICHAR>(*SignalSettings.CustomMessageType);
 	PubnubOptions.custom_message_type = SignalSettings.CustomMessageType.IsEmpty() ? NULL : CharConverter.Get();
-	pubnub_signal_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message), PubnubOptions);
+	pubnub_signal_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*FinalMessage), PubnubOptions);
 	
 	pubnub_res PublishResult = pubnub_await(ctx_pub);
 
