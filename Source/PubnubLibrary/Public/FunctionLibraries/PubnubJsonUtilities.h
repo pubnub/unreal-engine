@@ -26,6 +26,11 @@ public:
 	//Convert FString to JsonArray. Returns true if conversion was successful
 	static bool StringToJsonArray(FString JsonString, TArray<TSharedPtr<FJsonValue>>& OutArray);
 
+	//Converts literal string into serialized form adding all needed escapes
+	static FString SerializeString(const FString& InString);
+	//Converts serialized string into it's normal, literal form
+	static FString DeserializeString(const FString InString);
+
 	/**
 	 * Checks if gives string can be converted to a json
 	 * @param InString - String to check
@@ -33,6 +38,15 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static bool IsCorrectJsonString(const FString InString, bool AllowSimpleTypes = true);
+
+	/**
+	 * When comparing 2 Json Strings, sometimes they may have the same fields, but in different order
+	 * or with different syntax (no spaces, tabs, etc), so comparing strings may give false results.
+	 * This function compares if given 2 Json Strings have exactly the same fields with the same values.
+	 * Returns false if any Json conversion failed.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static bool AreJsonObjectStringsEqual(const FString JsonString1, const FString JsonString2);
 
 	/* JSON CONVERTERS*/
 	
