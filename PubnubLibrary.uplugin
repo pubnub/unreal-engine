@@ -33,6 +33,18 @@
 				"IOS",
 				"Linux"
 			]
+		},
+		{
+			"Name": "PubnubLibraryTests",
+			"Type": "DeveloperTool",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac",
+				"Android",
+				"IOS",
+				"Linux"
+			]
 		}
 	]
 }
