@@ -4,16 +4,21 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+#include "Misc/App.h"
 #include "Misc/AutomationTest.h"
 #include "Templates/Function.h"
 #include "PubnubSubsystem.h"
+
+
+class UPubnubSubsystem;
+class UGameInstance;
+
 
 namespace PubnubTests
 {
 	constexpr float MAX_WAIT_TIME = 10.0f;
 	const FString SDK_PREFIX = "UE_SDK_";
 }
-
 
 
 class FWaitUntilLatentCommand : public IAutomationLatentCommand

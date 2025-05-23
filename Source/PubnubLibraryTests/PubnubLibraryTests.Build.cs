@@ -14,7 +14,7 @@ public class PubnubLibraryTests : ModuleRules
 			new string[]
 			{
 				"Core",
-				"PubNubLibrary",
+				"PubnubLibrary",
 				"Projects"
 			}
 			);

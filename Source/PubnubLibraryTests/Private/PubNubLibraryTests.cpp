@@ -3,4 +3,4 @@
 #include "PubNubLibraryTests.h"
 #include "Modules/ModuleManager.h"
 
-IMPLEMENT_MODULE(FDefaultModuleImpl, PubNubLibraryTests);
+IMPLEMENT_MODULE(FDefaultModuleImpl, PubnubLibraryTests);

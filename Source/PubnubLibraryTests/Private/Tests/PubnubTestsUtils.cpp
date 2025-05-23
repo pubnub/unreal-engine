@@ -4,6 +4,9 @@
 
 #include "Tests/PubnubTestsUtils.h"
 #include "Tests/AutomationCommon.h"
+#include "PubnubSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "UnrealEngine.h"
 
 
 bool FPubnubAutomationTestBase::InitTest()

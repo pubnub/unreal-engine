@@ -5,6 +5,7 @@
 #include "PubnubStructLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "Json.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
