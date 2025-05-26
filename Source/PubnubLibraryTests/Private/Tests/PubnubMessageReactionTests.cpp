@@ -326,7 +326,7 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
     {
         if (PublishedMessageTimetoken->IsEmpty()) return; // Guard
         PubnubSubsystem->AddMessageAction(TestChannel, *PublishedMessageTimetoken, TestActionType, TestActionValue, AddActionCallback);
-    }, 0.2f));
+    }, 1.0f));
 
     // Wait for AddMessageAction to complete and its timetoken captured
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddActionDone, AddedActionTimetoken]()
