@@ -1,8 +1,27 @@
 name: unreal-engine
-version: 0.3.0
 schema: 1
+version: 0.3.1
 scm: github.com/pubnub/unreal-engine
-changelog: 
+changelog:
+  - date: 2025-05-27
+    version: v0.3.1
+    changes:
+      - type: feature
+        text: "Add new overloads, for all function that return data, with native (not dynamic) delegates that can be used with Lambdas."
+      - type: feature
+        text: "Add publish/signal message serialization and deserialization - now any string can be send by those methods."
+      - type: feature
+        text: "Add unit and integration tests for all end points."
+      - type: bug
+        text: "Fix bug that UserID was not set immediately."
+      - type: bug
+        text: "Fix bug that only published messages were received from subscription, but not signals and other types."
+      - type: bug
+        text: "Fix bugs that group operations were sometimes returning previous responses."
+      - type: bug
+        text: "Fix bug that MessageCounts function was not always returning correct count."
+      - type: bug
+        text: "Fix incorrect sort and include parameters related to users." 
   - date: 2025-04-29
     version: v0.3.0
     changes:
@@ -19,7 +38,7 @@ changelog:
      - type: bug
        text: "Fix bug that not all requested data was included in functions response when TotalCount was set."
   - date: 2025-02-12
-    version: 0.2.6
+    version: v0.2.6
     changes:
      - type: bug
        text: "Fix Auth Token related functions."
@@ -28,22 +47,22 @@ changelog:
      - type: bug
        text: "Fix 'PubnubLog: Error: Pubnub user ID is not set. Aborting operation.' false error."
   - date: 2025-02-06
-    version: 0.2.5
+    version: v0.2.5
     changes:
      - type: feature
        text: "Add plugin support for Linux and IOS projects."
   - date: 2025-01-21
-    version: 0.2.4
+    version: v0.2.4
     changes:
      - type: feature
        text: "Pass logs from c-core to UE sdk."
   - date: 2024-11-28
-    version: 0.2.3
+    version: v0.2.3
     changes:
      - type: bug
        text: "Fix incorrect memberships input object Json checks"
   - date: 2024-11-25
-    version: 0.2.2
+    version: v0.2.2
     changes:
      - type: feature
        text: "Add Unreal 5.5 support"
@@ -56,22 +75,22 @@ changelog:
      - type: improvement
        text: "Rename ChannelName to Channel in in function inputs."
   - date: 2024-09-16
-    version: 0.1.4
+    version: v0.1.4
     changes:
      - type: feature
        text: "Add proper MacOS static library"
   - date: 2024-09-13
-    version: 0.1.3
+    version: v0.1.3
     changes:
       - type: feature
         text: "fixes custom version of the C-core library"
   - date: 2024-09-11
-    version: 0.1.2
+    version: v0.1.2
     changes:
       - type: feature
         text: "Fixes for Unreal Engine Marketplace"
   - date: 2024-08-14
-    version: 0.1.0
+    version: v0.1.0
     changes:
       - type: feature
         text: "Initial PubNub Unreal Engine SDK release"

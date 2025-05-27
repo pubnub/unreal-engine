@@ -80,13 +80,10 @@ void UPubnubSubsystem::DeinitPubnub()
 
 void UPubnubSubsystem::SetUserID(FString UserID)
 {
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	if(!CheckIsPubnubInitialized())
 	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, UserID]
-	{
-		SetUserID_priv(UserID);
-	});
+
+	SetUserID_priv(UserID);
 }
 
 FString UPubnubSubsystem::GetUserID()
@@ -211,12 +208,23 @@ void UPubnubSubsystem::RemoveChannelFromGroup(FString Channel, FString ChannelGr
 
 void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
 {
+	FOnListChannelsFromGroupResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnListChannelsResponse](bool Error, int Status, const TArray<FString>& Channels)
+	{
+		OnListChannelsResponse.ExecuteIfBound(Error, Status, Channels);
+	});
+
+	ListChannelsFromGroup(ChannelGroup, NativeCallback);
+}
+
+void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, OnListChannelsResponse]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, NativeCallback]
 	{
-		ListChannelsFromGroup_DATA_priv(ChannelGroup, OnListChannelsResponse);
+		ListChannelsFromGroup_DATA_priv(ChannelGroup, NativeCallback);
 	});
 }
 
@@ -244,12 +252,23 @@ void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup)
 
 void UPubnubSubsystem::ListUsersFromChannel(FString Channel, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
+	FOnListUsersFromChannelResponseNative NativeCallback;
+	NativeCallback.BindLambda([ListUsersFromChannelResponse](int Status, FString Message, FPubnubListUsersFromChannelWrapper Data)
+	{
+		ListUsersFromChannelResponse.ExecuteIfBound(Status, Message, Data);
+	});
+
+	ListUsersFromChannel(Channel, NativeCallback, ListUsersFromChannelSettings);
+}
+
+void UPubnubSubsystem::ListUsersFromChannel(FString Channel, FOnListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, ListUsersFromChannelResponse, ListUsersFromChannelSettings]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback, ListUsersFromChannelSettings]
 	{
-		ListUsersFromChannel_DATA_priv(Channel, ListUsersFromChannelResponse, ListUsersFromChannelSettings);
+		ListUsersFromChannel_DATA_priv(Channel, NativeCallback, ListUsersFromChannelSettings);
 	});
 }
 
@@ -266,12 +285,23 @@ void UPubnubSubsystem::ListUsersFromChannel_JSON(FString Channel, FOnPubnubRespo
 
 void UPubnubSubsystem::ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse)
 {
+	FOnListUsersSubscribedChannelsResponseNative NativeCallback;
+	NativeCallback.BindLambda([ListUserSubscribedChannelsResponse](int Status, FString Message, const TArray<FString>& Channels)
+	{
+		ListUserSubscribedChannelsResponse.ExecuteIfBound(Status, Message, Channels);
+	});
+
+	ListUserSubscribedChannels(UserID, NativeCallback);
+}
+
+void UPubnubSubsystem::ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, UserID, ListUserSubscribedChannelsResponse]
+	QuickActionThread->AddFunctionToQueue( [this, UserID, NativeCallback]
 	{
-		ListUserSubscribedChannels_DATA_priv(UserID, ListUserSubscribedChannelsResponse);
+		ListUserSubscribedChannels_DATA_priv(UserID, NativeCallback);
 	});
 }
 
@@ -299,12 +329,23 @@ void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FPubnubSetSt
 
 void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
 {
+	FOnPubnubResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetStateResponse](FString JsonResponse)
+	{
+		OnGetStateResponse.ExecuteIfBound(JsonResponse);
+	});
+
+	GetState(Channel, ChannelGroup, UserID, NativeCallback);
+}
+
+void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelGroup, UserID, OnGetStateResponse]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelGroup, UserID, NativeCallback]
 	{
-		GetState_priv(Channel, ChannelGroup, UserID, OnGetStateResponse);
+		GetState_priv(Channel, ChannelGroup, UserID, NativeCallback);
 	});
 }
 
@@ -321,12 +362,23 @@ void UPubnubSubsystem::Heartbeat(FString Channel, FString ChannelGroup)
 
 void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse)
 {
+	FOnPubnubResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGrantTokenResponse](FString JsonResponse)
+	{
+		OnGrantTokenResponse.ExecuteIfBound(JsonResponse);
+	});
+
+	GrantToken(PermissionObject, NativeCallback);
+}
+
+void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnPubnubResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, PermissionObject, OnGrantTokenResponse]
+	QuickActionThread->AddFunctionToQueue( [this, PermissionObject, NativeCallback]
 	{
-		GrantToken_priv(PermissionObject, OnGrantTokenResponse);
+		GrantToken_priv(PermissionObject, NativeCallback);
 	});
 }
 
@@ -343,12 +395,23 @@ void UPubnubSubsystem::RevokeToken(FString Token)
 
 void UPubnubSubsystem::ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse)
 {
+	FOnPubnubResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnParseTokenResponse](FString JsonResponse)
+	{
+		OnParseTokenResponse.ExecuteIfBound(JsonResponse);
+	});
+
+	ParseToken(Token, NativeCallback);
+}
+
+void UPubnubSubsystem::ParseToken(FString Token, FOnPubnubResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Token, OnParseTokenResponse]
+	QuickActionThread->AddFunctionToQueue( [this, Token, NativeCallback]
 	{
-		ParseToken_priv(Token, OnParseTokenResponse);
+		ParseToken_priv(Token, NativeCallback);
 	});
 }
 
@@ -369,12 +432,23 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 
 void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
 {
+	FOnFetchHistoryResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnFetchHistoryResponse](bool Error, int Status, FString ErrorMessage, const TArray<FPubnubHistoryMessageData>& Messages)
+	{
+		OnFetchHistoryResponse.ExecuteIfBound(Error, Status, ErrorMessage, Messages);
+	});
+
+	FetchHistory(Channel, NativeCallback, FetchHistorySettings);
+}
+
+void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponseNative NativeCallback, FPubnubFetchHistorySettings FetchHistorySettings)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, OnFetchHistoryResponse, FetchHistorySettings]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback, FetchHistorySettings]
 	{
-		FetchHistory_DATA_priv(Channel, OnFetchHistoryResponse, FetchHistorySettings);
+		FetchHistory_DATA_priv(Channel, NativeCallback, FetchHistorySettings);
 	});
 }
 
@@ -391,30 +465,55 @@ void UPubnubSubsystem::FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFe
 
 void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse)
 {
+	FOnPubnubIntResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnMessageCountsResponse](int IntValue)
+	{
+		OnMessageCountsResponse.ExecuteIfBound(IntValue);
+	});
+
+	MessageCounts(Channel, Timetoken, NativeCallback);
+}
+
+void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Timetoken, OnMessageCountsResponse]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, Timetoken, NativeCallback]
 	{
-		MessageCounts_priv(Channel, Timetoken, OnMessageCountsResponse);
+		MessageCounts_priv(Channel, Timetoken, NativeCallback);
 	});
 }
 
 void UPubnubSubsystem::GetAllUserMetadataRaw(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
+	FOnGetAllUserMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetAllUserMetadataResponse](int Status, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+	{
+		OnGetAllUserMetadataResponse.ExecuteIfBound(Status, UsersData, PageNext, PagePrev);
+	});
+	GetAllUserMetadataRaw(NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+}
+
+void UPubnubSubsystem::GetAllUserMetadataRaw(FOnGetAllUserMetadataResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, OnGetAllUserMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	QuickActionThread->AddFunctionToQueue( [this, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetAllUserMetadata_DATA_priv(OnGetAllUserMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetAllUserMetadata_DATA_priv(NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse,
-	FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
 {
 	GetAllUserMetadataRaw(OnGetAllUserMetadataResponse, UPubnubUtilities::GetAllIncludeToString(Include), Limit, Filter, UPubnubUtilities::GetAllSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubSubsystem::GetAllUserMetadata(FOnGetAllUserMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
+{
+	GetAllUserMetadataRaw(NativeCallback, UPubnubUtilities::GetAllIncludeToString(Include), Limit, Filter, UPubnubUtilities::GetAllSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::GetAllUserMetadata_JSON(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
@@ -441,12 +540,22 @@ void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FS
 
 void UPubnubSubsystem::GetUserMetadata(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
 {
+	FOnGetUserMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetUserMetadataResponse](int Status, FPubnubUserData UserData)
+	{
+		OnGetUserMetadataResponse.ExecuteIfBound(Status, UserData);
+	});
+	GetUserMetadata(User, NativeCallback, Include);
+}
+
+void UPubnubSubsystem::GetUserMetadata(FString User, FOnGetUserMetadataResponseNative NativeCallback, FString Include)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, User, OnGetUserMetadataResponse, Include]
+	QuickActionThread->AddFunctionToQueue( [this, User, NativeCallback, Include]
 	{
-		GetUserMetadata_DATA_priv(User, OnGetUserMetadataResponse, Include);
+		GetUserMetadata_DATA_priv(User, NativeCallback, Include);
 	});
 }
 
@@ -474,19 +583,33 @@ void UPubnubSubsystem::RemoveUserMetadata(FString User)
 
 void UPubnubSubsystem::GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
+	FOnGetAllChannelMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetAllChannelMetadataResponse](int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+	{
+		OnGetAllChannelMetadataResponse.ExecuteIfBound(Status, ChannelsData, PageNext, PagePrev);
+	});
+	GetAllChannelMetadataRaw(NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+}
+
+void UPubnubSubsystem::GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, OnGetAllChannelMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	QuickActionThread->AddFunctionToQueue( [this, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetAllChannelMetadata_DATA_priv(OnGetAllChannelMetadataResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetAllChannelMetadata_DATA_priv(NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
-void UPubnubSubsystem::GetAllChannelMetadata(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse,
-	FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::GetAllChannelMetadata(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
 {
 	GetAllChannelMetadataRaw(OnGetAllChannelMetadataResponse, UPubnubUtilities::GetAllIncludeToString(Include), Limit, Filter, UPubnubUtilities::GetAllSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubSubsystem::GetAllChannelMetadata(FOnGetAllChannelMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
+{
+	GetAllChannelMetadataRaw(NativeCallback, UPubnubUtilities::GetAllIncludeToString(Include), Limit, Filter, UPubnubUtilities::GetAllSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::GetAllChannelMetadata_JSON(FOnPubnubResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
@@ -513,13 +636,25 @@ void UPubnubSubsystem::SetChannelMetadata(FString Channel, FString ChannelMetada
 
 void UPubnubSubsystem::GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include)
 {
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
-	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, OnGetChannelMetadataResponse, Include]
-	{
-		GetChannelMetadata_DATA_priv(Channel, OnGetChannelMetadataResponse, Include);
-	});
+    FOnGetChannelMetadataResponseNative NativeCallback;
+    NativeCallback.BindLambda([OnGetChannelMetadataResponse](int Status, FPubnubChannelData ChannelData)
+    {
+        OnGetChannelMetadataResponse.ExecuteIfBound(Status, ChannelData);
+    });
+    GetChannelMetadata(Channel, NativeCallback, Include);
+}
+
+void UPubnubSubsystem::GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponseNative NativeCallback, FString Include)
+{
+    if (!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+    {
+        return;
+    }
+
+    QuickActionThread->AddFunctionToQueue([this, Channel, NativeCallback, Include]
+    {
+        GetChannelMetadata_DATA_priv(Channel, NativeCallback, Include);
+    });
 }
 
 void UPubnubSubsystem::GetChannelMetadata_JSON(FString Channel, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include)
@@ -546,18 +681,34 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString Channel)
 
 void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
+	FOnGetMembershipsResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetMembershipResponse](int Status, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev)
+	{
+		OnGetMembershipResponse.ExecuteIfBound(Status, MembershipsData, PageNext, PagePrev);
+	});
+
+	GetMembershipsRaw(User, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+}
+
+void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, User, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	QuickActionThread->AddFunctionToQueue( [this, User, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
 	{
-		GetMemberships_DATA_priv(User, OnGetMembershipResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+		GetMemberships_DATA_priv(User, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
 	});
 }
 
 void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
 {
 	GetMembershipsRaw(User, OnGetMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+{
+	GetMembershipsRaw(User, NativeCallback, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::GetMemberships_JSON(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
@@ -595,30 +746,46 @@ void UPubnubSubsystem::RemoveMemberships(FString User, FString RemoveObj, FStrin
 
 void UPubnubSubsystem::GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
-	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
-	{
-		GetChannelMembers_DATA_priv(Channel, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
-	});
+    FOnGetChannelMembersResponseNative NativeCallback;
+    NativeCallback.BindLambda([OnGetMembersResponse](int Status, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev)
+    {
+        OnGetMembersResponse.ExecuteIfBound(Status, MembersData, PageNext, PagePrev);
+    });
+    GetChannelMembersRaw(Channel, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 }
 
-void UPubnubSubsystem::GetChannelMembers(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse,
-	FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
-	GetChannelMembersRaw(Channel, OnGetMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+    if (!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+    {
+        return;
+    }
+
+    QuickActionThread->AddFunctionToQueue([this, Channel, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count]
+    {
+        GetChannelMembers_DATA_priv(Channel, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+    });
+}
+
+void UPubnubSubsystem::GetChannelMembers(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+{
+    GetChannelMembersRaw(Channel, OnGetMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubSubsystem::GetChannelMembers(FString Channel, FOnGetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+{
+    GetChannelMembersRaw(Channel, NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::GetChannelMembers_JSON(FString Channel, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
-	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
-	{
-		GetChannelMembers_JSON_priv(Channel, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
-	});
+    {return;}
+    
+    QuickActionThread->AddFunctionToQueue( [this, Channel, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+    {
+        GetChannelMembers_JSON_priv(Channel, OnGetMembersResponse, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count);
+    });
 }
 
 void UPubnubSubsystem::AddChannelMembers(FString Channel, FString AddObj, FString Include)
@@ -656,23 +823,43 @@ void UPubnubSubsystem::RemoveChannelMembers(FString Channel, FString RemoveObj, 
 
 void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse)
 {
+	FOnAddMessageActionsResponseNative NativeCallback;
+	NativeCallback.BindLambda([AddActionResponse](FString MessageActionTimetoken)
+	{
+		AddActionResponse.ExecuteIfBound(MessageActionTimetoken);
+	});
+	AddMessageAction(Channel, MessageTimetoken, ActionType, Value, NativeCallback);
+}
+
+void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, MessageTimetoken, ActionType, Value, AddActionResponse]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, MessageTimetoken, ActionType, Value, NativeCallback]
 	{
-		AddMessageAction_priv(Channel, MessageTimetoken, ActionType, Value, AddActionResponse);
+		AddMessageAction_priv(Channel, MessageTimetoken, ActionType, Value, NativeCallback);
 	});
 }
 
 void UPubnubSubsystem::GetMessageActions(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
 {
+	FOnGetMessageActionsResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetMessageActionsResponse](int Status, const TArray<FPubnubMessageActionData>& MessageActions)
+	{
+		OnGetMessageActionsResponse.ExecuteIfBound(Status, MessageActions);
+	});
+	GetMessageActions(Channel, Start, End, SizeLimit, NativeCallback);
+}
+
+void UPubnubSubsystem::GetMessageActions(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponseNative NativeCallback)
+{
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Start, End, SizeLimit, OnGetMessageActionsResponse]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, Start, End, SizeLimit, NativeCallback]
 	{
-		GetMessageActions_DATA_priv(Channel, Start, End, SizeLimit, OnGetMessageActionsResponse);
+		GetMessageActions_DATA_priv(Channel, Start, End, SizeLimit, NativeCallback);
 	});
 }
 
@@ -720,42 +907,42 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 	
 	if(TokenStructure.Channels.Num() != TokenStructure.ChannelPermissions.Num() && TokenStructure.ChannelPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPermissions and Channels (or only 1 ChannelPermission).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPermissions and Channels (or only 1 ChannelPermission).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.ChannelGroups.Num() != TokenStructure.ChannelGroupPermissions.Num() && TokenStructure.ChannelGroupPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPermissions and ChannelGroups (or only 1 ChannelGroupPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPermissions and ChannelGroups (or only 1 ChannelGroupPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.Users.Num() != TokenStructure.UserPermissions.Num() && TokenStructure.UserPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPermissions and Users (or only 1 UserPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPermissions and Users (or only 1 UserPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.ChannelPatterns.Num() != TokenStructure.ChannelPatternPermissions.Num() && TokenStructure.ChannelPatternPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPatternPermissions and ChannelsPatterns (or only 1 ChannelPatternPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPatternPermissions and ChannelsPatterns (or only 1 ChannelPatternPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.ChannelGroupPatterns.Num() != TokenStructure.ChannelGroupPatternPermissions.Num() && TokenStructure.ChannelGroupPatternPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPatternPermissions and ChannelGroupsPatterns (or only 1 ChannelGroupPatternPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPatternPermissions and ChannelGroupsPatterns (or only 1 ChannelGroupPatternPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
 
 	if(TokenStructure.UserPatterns.Num() != TokenStructure.UserPatternPermissions.Num() && TokenStructure.UserPatternPermissions.Num() != 1)
 	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPatternPermissions and UsersPatterns (or only 1 UserPatternPermissions).");
+		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPatternPermissions and UsersPatterns (or only 1 UserPatternPermissions).", EPubnubErrorType::PET_Warning);
 		success = false;
 		return TokenJsonString;
 	}
@@ -808,6 +995,7 @@ FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStruc
 	PermissionsJsonObject->SetStringField("authorized_uuid", TokenStructure.AuthorizedUser);
 	PermissionsJsonObject->SetObjectField("permissions", TokenStructureJsonObject);
 
+	success = true;
 	//Convert created Json object to string
 	return UPubnubJsonUtilities::JsonObjectToString(PermissionsJsonObject);
 }
@@ -867,7 +1055,7 @@ void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorT
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnPubnubError.Broadcast(ErrorMessage, ErrorType);
-		OnPubnubErrorLambda.Broadcast(ErrorMessage, ErrorType);
+		OnPubnubErrorNative.Broadcast(ErrorMessage, ErrorType);
 	});
 	
 }
@@ -886,7 +1074,7 @@ void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString Er
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
-		OnPubnubErrorLambda.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
+		OnPubnubErrorNative.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
 	});
 }
 
@@ -909,7 +1097,7 @@ void UPubnubSubsystem::PubnubPublishError()
 	{
 		//Broadcast bound delegate with JsonResponse
 		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
-		OnPubnubErrorLambda.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
+		OnPubnubErrorNative.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
 	});
 }
 
@@ -969,8 +1157,8 @@ FString UPubnubSubsystem::GetUserIDInternal()
 		FString UserIDString(UserIDChar);
 		return UserIDString;
 	}
-	else
-	{return "";}
+
+	return "";
 }
 
 bool UPubnubSubsystem::CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName)
@@ -1059,10 +1247,12 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPu
 	if(CheckIsFieldEmpty(Channel, "Channel", "PublishMessage") || CheckIsFieldEmpty(Message, "Message", "PublishMessage"))
 	{return;}
 
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message))
+	FString FinalMessage = Message;
+
+	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
 	{
-		PubnubError("Can't Publish Message, Message has to be a correct Json", EPubnubErrorType::PET_Warning);
-		return;
+		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
 	}
 	
 	//Convert all UE PublishSettings to Pubnub PublishOptions
@@ -1076,7 +1266,7 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPu
 	PubnubOptions.custom_message_type = TypeCharConverter.Get();
 	
 	PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
-	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message), PubnubOptions);
+	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*FinalMessage), PubnubOptions);
 
 	pubnub_res PublishResult = pubnub_await(ctx_pub);
 
@@ -1093,11 +1283,18 @@ void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FPubnubSign
 
 	if(CheckIsFieldEmpty(Channel, "Channel", "Signal") || CheckIsFieldEmpty(Message, "Message", "Signal"))
 	{return;}
+
+	FString FinalMessage = Message;
+	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
+	{
+		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
+	}
 	
 	pubnub_signal_options PubnubOptions = pubnub_signal_defopts();
 	auto CharConverter = StringCast<ANSICHAR>(*SignalSettings.CustomMessageType);
 	PubnubOptions.custom_message_type = SignalSettings.CustomMessageType.IsEmpty() ? NULL : CharConverter.Get();
-	pubnub_signal_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Message), PubnubOptions);
+	pubnub_signal_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*FinalMessage), PubnubOptions);
 	
 	pubnub_res PublishResult = pubnub_await(ctx_pub);
 
@@ -1137,6 +1334,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FPubnubSubscribe
 			if(ThisSubsystem)
 			{
 				ThisSubsystem->OnMessageReceived.Broadcast(MessageData);
+				ThisSubsystem->OnMessageReceivedNative.Broadcast(MessageData);
 			}
 		});
 	};
@@ -1185,6 +1383,7 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName, FPubnubSubscribe
 			if(ThisSubsystem)
 			{
 				ThisSubsystem->OnMessageReceived.Broadcast(MessageData);
+				ThisSubsystem->OnMessageReceivedNative.Broadcast(MessageData);
 			}
 		});
 	};
@@ -1274,6 +1473,8 @@ void UPubnubSubsystem::AddChannelToGroup_priv(FString Channel, FString ChannelGr
 	{return;}
 	
 	pubnub_add_channel_to_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+
+	GetLastResponse(ctx_pub);
 }
 
 void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup)
@@ -1285,6 +1486,8 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString Chan
 	{return;}
 
 	pubnub_remove_channel_from_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+
+	GetLastResponse(ctx_pub);
 }
 
 FString UPubnubSubsystem::ListChannelsFromGroup_pn(FString ChannelGroup)
@@ -1311,7 +1514,7 @@ void UPubnubSubsystem::ListChannelsFromGroup_JSON_priv(FString ChannelGroup, FOn
 	});
 }
 
-void UPubnubSubsystem::ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
+void UPubnubSubsystem::ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOnListChannelsFromGroupResponseNative OnListChannelsResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1344,6 +1547,8 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
 	{return;}
 
 	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
+	
+	GetLastResponse(ctx_pub);
 }
 
 FString UPubnubSubsystem::ListUsersFromChannel_pn(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
@@ -1379,7 +1584,7 @@ void UPubnubSubsystem::ListUsersFromChannel_JSON_priv(FString Channel, FOnPubnub
 	});
 }
 
-void UPubnubSubsystem::ListUsersFromChannel_DATA_priv(FString Channel, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+void UPubnubSubsystem::ListUsersFromChannel_DATA_priv(FString Channel, FOnListUsersFromChannelResponseNative ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1427,7 +1632,7 @@ void UPubnubSubsystem::ListUserSubscribedChannels_JSON_priv(FString UserID, FOnP
 	});
 }
 
-void UPubnubSubsystem::ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse)
+void UPubnubSubsystem::ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponseNative ListUserSubscribedChannelsResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1436,7 +1641,7 @@ void UPubnubSubsystem::ListUserSubscribedChannels_DATA_priv(FString UserID, FOnL
 	{return;}
 
 	FString JsonResponse = ListUserSubscribedChannels_pn(UserID);
-	
+
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, ListUserSubscribedChannelsResponse, JsonResponse]()
 	{
@@ -1487,7 +1692,7 @@ void UPubnubSubsystem::SetState_priv(FString Channel, FString StateJson, FPubnub
 	pubnub_get(ctx_pub);
 }
 
-void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
+void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative OnGetStateResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1514,16 +1719,12 @@ void UPubnubSubsystem::Heartbeat_priv(FString Channel, FString ChannelGroup)
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(Channel.IsEmpty() && ChannelGroup.IsEmpty())
-	{
-		PubnubError("Warning: Can't use Heartbeat function. At least one of: ChannelGroup, Channel can't be empty", EPubnubErrorType::PET_Warning);
-		return;
-	}
-
 	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+
+	GetLastResponse(ctx_pub);
 }
 
-void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubResponseNative OnGrantTokenResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1575,7 +1776,7 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token)
 	}
 }
 
-void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponse OnParseTokenResponse)
+void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponseNative OnParseTokenResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1634,7 +1835,7 @@ void UPubnubSubsystem::FetchHistory_JSON_priv(FString Channel, FOnPubnubResponse
 	});
 }
 
-void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1643,14 +1844,14 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 	{return;}
 	
 	FString JsonResponse = FetchHistory_pn(Channel, FetchHistorySettings);
-
+	
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnFetchHistoryResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		bool Error;
-		int Status;
-		FString ErrorMessage;
+		bool Error = false;
+		int Status = 0;
+		FString ErrorMessage = "";
 		TArray<FPubnubHistoryMessageData> Messages;
 		UPubnubJsonUtilities::FetchHistoryJsonToData(JsonResponse, Error, Status, ErrorMessage, Messages);
 				
@@ -1659,7 +1860,7 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 	});
 }
 
-void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubIntResponseNative OnMessageCountsResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1668,6 +1869,8 @@ void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FO
 	{return;}
 	
 	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Timetoken));
+
+	pubnub_await(ctx_pub);
 
 	int MessageCountsNumber = 0;
 	pubnub_get_message_counts(ctx_pub, TCHAR_TO_ANSI(*Channel), &MessageCountsNumber);
@@ -1716,7 +1919,7 @@ void UPubnubSubsystem::GetAllUserMetadata_JSON_priv(FOnPubnubResponse OnGetAllUs
 	});
 }
 
-void UPubnubSubsystem::GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1786,7 +1989,7 @@ void UPubnubSubsystem::GetUserMetadata_JSON_priv(FString User, FOnPubnubResponse
 	});
 }
 
-void UPubnubSubsystem::GetUserMetadata_DATA_priv(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
+void UPubnubSubsystem::GetUserMetadata_DATA_priv(FString User, FOnGetUserMetadataResponseNative OnGetUserMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1862,7 +2065,7 @@ void UPubnubSubsystem::GetAllChannelMetadata_JSON_priv(FOnPubnubResponse OnGetAl
 	});
 }
 
-void UPubnubSubsystem::GetAllChannelMetadata_DATA_priv(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetAllChannelMetadata_DATA_priv(FOnGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1932,7 +2135,7 @@ void UPubnubSubsystem::GetChannelMetadata_JSON_priv(FString Channel, FOnPubnubRe
 	});
 }
 
-void UPubnubSubsystem::GetChannelMetadata_DATA_priv(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include)
+void UPubnubSubsystem::GetChannelMetadata_DATA_priv(FString Channel, FOnGetChannelMetadataResponseNative OnGetChannelMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2015,8 +2218,7 @@ void UPubnubSubsystem::GetMemberships_JSON_priv(FString User, FOnPubnubResponse 
 	});
 }
 
-void UPubnubSubsystem::GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit,
-	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponseNative OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2128,7 +2330,7 @@ void UPubnubSubsystem::GetChannelMembers_JSON_priv(FString Channel, FOnPubnubRes
 	});
 }
 
-void UPubnubSubsystem::GetChannelMembers_DATA_priv(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include, int Limit,
+void UPubnubSubsystem::GetChannelMembers_DATA_priv(FString Channel, FOnGetChannelMembersResponseNative OnGetMembersResponse, FString Include, int Limit,
 	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
@@ -2224,7 +2426,7 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString Channel, FString Remove
 	}
 }
 
-void UPubnubSubsystem::AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse)
+void UPubnubSubsystem::AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative AddActionResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2334,7 +2536,7 @@ void UPubnubSubsystem::GetMessageActions_JSON_priv(FString Channel, FString Star
 	});
 }
 
-void UPubnubSubsystem::GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
+void UPubnubSubsystem::GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2416,6 +2618,13 @@ FPubnubMessageData UPubnubSubsystem::UEMessageFromPubnub(pubnub_v2_message Pubnu
 {
 	FPubnubMessageData MessageData;
 	MessageData.Message = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.payload);
+
+	//If message was just a string, we need to deserialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(MessageData.Message, false))
+	{
+		MessageData.Message = UPubnubJsonUtilities::DeserializeString(MessageData.Message);
+	}
+	
 	MessageData.Channel = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.channel);
 	MessageData.UserID = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.publisher);
 	MessageData.Timetoken = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.tt);
@@ -2538,7 +2747,7 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddUserPermissionsToJson(TArray<FStrin
 void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data)
 {
 	//Don't waste resources to translate data if there is no delegate bound to it
-	if(!OnSubscriptionStatusChanged.IsBound())
+	if(!OnSubscriptionStatusChanged.IsBound() && !OnSubscriptionStatusChangedNative.IsBound())
 	{return;}
 
 	FPubnubSubscriptionStatusData SubscriptionStatusData;
@@ -2554,7 +2763,6 @@ void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscripti
 		ChannelGroups.ParseIntoArray(SubscriptionStatusData.ChannelGroups, TEXT(","));
 	}
 	
-
-
 	OnSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
+	OnSubscriptionStatusChangedNative.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
 }

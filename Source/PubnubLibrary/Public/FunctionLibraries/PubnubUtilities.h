@@ -19,6 +19,7 @@ class PUBNUBLIBRARY_API UPubnubUtilities : public UBlueprintFunctionLibrary
 public:
 
 	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
+	static FString RemoveOuterQuotesFromString(const FString InString);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
 	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);
 	static FString MemberIncludeToString(const FPubnubMemberInclude& MemberInclude);
