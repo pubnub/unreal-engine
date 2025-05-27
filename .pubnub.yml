@@ -2,7 +2,20 @@ name: unreal-engine
 version: 0.3.0
 schema: 1
 scm: github.com/pubnub/unreal-engine
-changelog: 
+changelog:
+  - date: 2025-05-27
+    version: v0.3.1
+    changes:
+      - type: bug
+        text: "Add(callbacks): add new overloads, for all function that return data, with native (not dynamic) delegates that can be used with Lambdas.   add(tests): add unit and integration tests for all end points. add(publish): add publish/signal message serialization and deserialization - now any string can be send by those methods."
+      - type: bug
+        text: "Fix bug that only published messages were received from subscription, but not signals and other types."
+      - type: bug
+        text: "Fix bugs that group operations were sometimes returning previous responses."
+      - type: bug
+        text: "Fix bug that MessageCounts function was not always returning correct count."
+      - type: bug
+        text: "Fix incorrect sort and include parameters related to users." 
   - date: 2025-04-29
     version: 0.3.0
     changes:
