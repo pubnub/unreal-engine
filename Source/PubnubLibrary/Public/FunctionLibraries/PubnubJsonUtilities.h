@@ -73,7 +73,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void FetchHistoryJsonToData(FString ResponseJson, bool &Error, int &Status, FString &ErrorMessage, TArray<FPubnubHistoryMessageData> &Messages);
-
+	
 	/**
 	 * Converter from GetAllUserMetadata_Json response to actual types
 	 */
@@ -127,4 +127,11 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FPubnubChannelData GetChannelDataFromJson(FString ResponseJson);
+
+	/**
+	 * Get Operation result from Json string
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubOperationResult GetOperationResultFromJson(FString ResponseJson);
+
 };

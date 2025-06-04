@@ -452,6 +452,29 @@ void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponseNati
 	});
 }
 
+void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
+{
+	FOnDeleteMessagesResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnDeleteMessagesResponse](FPubnubOperationResult Result)
+	{
+		OnDeleteMessagesResponse.ExecuteIfBound(Result);
+	});
+
+	DeleteMessages(Channel, NativeCallback, DeleteMessagesSettings);
+}
+
+void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponseNative NativeCallback, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
+{
+
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback, DeleteMessagesSettings]
+	{
+		DeleteMessages_priv(Channel, NativeCallback, DeleteMessagesSettings);
+	});
+}
+
 void UPubnubSubsystem::FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
@@ -883,6 +906,17 @@ void UPubnubSubsystem::RemoveMessageAction(FString Channel, FString MessageTimet
 	{
 		RemoveMessageAction_priv(Channel, MessageTimetoken, ActionTimetoken);
 	});
+}
+
+void UPubnubSubsystem::ReconnectSubscriptions()
+{
+	pubnub_reconnect(ctx_ee, nullptr);
+}
+
+
+void UPubnubSubsystem::DisconnectSubscriptions()
+{
+	pubnub_disconnect(ctx_ee);
 }
 
 /* DISABLED 
@@ -1844,6 +1878,14 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 	{return;}
 	
 	FString JsonResponse = FetchHistory_pn(Channel, FetchHistorySettings);
+
+	//If response is empty, there was server error. 
+	if(JsonResponse.IsEmpty())
+	{
+		pubnub_char_mem_block LastServerResponse;
+		pubnub_last_http_response_body(ctx_pub, &LastServerResponse);
+		JsonResponse = LastServerResponse.ptr;
+	}
 	
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnFetchHistoryResponse, JsonResponse]()
@@ -1857,6 +1899,41 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 				
 		//Broadcast bound delegate with parsed response
 		OnFetchHistoryResponse.ExecuteIfBound(Error, Status, ErrorMessage, Messages);
+	});
+}
+
+void UPubnubSubsystem::DeleteMessages_priv(FString Channel, FOnDeleteMessagesResponseNative OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(Channel, "Channel", "DeleteMessages"))
+	{return;}
+
+	pubnub_delete_messages_options DeleteMessagesOptions = pubnub_delete_messages_defopts();
+	auto StartCharConverter = StringCast<ANSICHAR>(*DeleteMessagesSettings.Start);
+	DeleteMessagesOptions.start = StartCharConverter.Get();
+	auto EndCharConverter = StringCast<ANSICHAR>(*DeleteMessagesSettings.End);
+	DeleteMessagesOptions.end = EndCharConverter.Get();
+
+	pubnub_delete_messages(ctx_pub, TCHAR_TO_ANSI(*Channel), DeleteMessagesOptions);
+
+	pubnub_await(ctx_pub);
+	
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//If response is empty, there was server error. 
+	if(JsonResponse.IsEmpty())
+	{
+		pubnub_char_mem_block LastServerResponse;
+		pubnub_last_http_response_body(ctx_pub, &LastServerResponse);
+		JsonResponse = LastServerResponse.ptr;
+	}
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnDeleteMessagesResponse, JsonResponse]()
+	{
+		OnDeleteMessagesResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse));
 	});
 }
 
