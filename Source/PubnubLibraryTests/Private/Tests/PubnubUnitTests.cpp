@@ -29,6 +29,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMetadataJsonToDataUnitTest, "Pubnub.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMessageActionsJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMessageActionsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipsJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMembersJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMembersJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetOperationResultFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetOperationResultFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 
 
 
@@ -1279,6 +1280,50 @@ bool FGetChannelMembersJsonToDataUnitTest::RunTest(const FString& Parameters)
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestInvalidJson, Status, MembersData, PageNext, PagePrev);
 	
 	TestEqual("Should have 0 members for invalid JSON", MembersData.Num(), 0);
+
+	return true;
+}
+
+bool FGetOperationResultFromJsonUnitTest::RunTest(const FString& Parameters)
+{
+	// Test successful response
+	FString TestJsonSuccess = "{\"status\": 200, \"error\": false, \"error_message\": \"\"}";
+	FPubnubOperationResult ResultSuccess = UPubnubJsonUtilities::GetOperationResultFromJson(TestJsonSuccess);
+
+	TestEqual("Successful response: Status should be 200", ResultSuccess.Status, 200);
+	TestFalse("Successful response: Error should be false", ResultSuccess.Error);
+	TestEqual("Successful response: ErrorMessage should be empty", ResultSuccess.ErrorMessage, "");
+
+	// Test error response
+	FString TestJsonError = "{\"status\": 400, \"error\": true, \"error_message\": \"Invalid Arguments\"}";
+	FPubnubOperationResult ResultError = UPubnubJsonUtilities::GetOperationResultFromJson(TestJsonError);
+
+	TestEqual("Error response: Status should be 400", ResultError.Status, 400);
+	TestTrue("Error response: Error should be true", ResultError.Error);
+	TestEqual("Error response: ErrorMessage should be 'Invalid Arguments'", ResultError.ErrorMessage, "Invalid Arguments");
+
+	// Test invalid JSON
+	FString TestJsonInvalid = "this is not a valid json";
+	FPubnubOperationResult ResultInvalid = UPubnubJsonUtilities::GetOperationResultFromJson(TestJsonInvalid);
+
+	// Default values for FPubnubOperationResult are 0 for Status, false for Error, and empty for ErrorMessage
+	TestEqual("Invalid JSON: Status should be 0 (default)", ResultInvalid.Status, 0);
+	TestFalse("Invalid JSON: Error should be false (default)", ResultInvalid.Error);
+	TestEqual("Invalid JSON: ErrorMessage should be empty (default)", ResultInvalid.ErrorMessage, "");
+	
+	// Test partial JSON - e.g. status is present but error fields are missing
+	FString TestJsonPartial = "{\"status\": 202}";
+	FPubnubOperationResult ResultPartial = UPubnubJsonUtilities::GetOperationResultFromJson(TestJsonPartial);
+	TestEqual("Partial JSON: Status should be 202", ResultPartial.Status, 202);
+	TestFalse("Partial JSON: Error should be false (default)", ResultPartial.Error);
+	TestEqual("Partial JSON: ErrorMessage should be empty (default)", ResultPartial.ErrorMessage, "");
+
+	// Test partial JSON - e.g. error is present but status field is missing
+	FString TestJsonPartialError = "{\"error\": true, \"error_message\": \"A specific error\" }";
+	FPubnubOperationResult ResultPartialError = UPubnubJsonUtilities::GetOperationResultFromJson(TestJsonPartialError);
+	TestEqual("Partial JSON Error: Status should be 0 (default)", ResultPartialError.Status, 0);
+	TestTrue("Partial JSON Error: Error should be true", ResultPartialError.Error);
+	TestEqual("Partial JSON Error: ErrorMessage should be 'A specific error'", ResultPartialError.ErrorMessage, "A specific error");
 
 	return true;
 }
