@@ -2,7 +2,9 @@
 
 #include "PubnubSubsystem.h"
 
-#include "Json.h"
+#include "Async/Async.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
@@ -2548,28 +2550,26 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString Message
 	if(CheckIsFieldEmpty(Channel, "Channel", "RemoveMessageAction") || CheckIsFieldEmpty(MessageTimetoken, "MessageTimetoken", "RemoveMessageAction")
 		|| CheckIsFieldEmpty(ActionTimetoken, "ActionTimetoken", "RemoveMessageAction"))
 	{return;}
-
+	
 	//Add quotes to these fields as they are required by C-Core
 	FString FinalMessageTimetoken = UPubnubUtilities::AddQuotesToString(MessageTimetoken);
 	FString FinalActionTimetoken = UPubnubUtilities::AddQuotesToString(ActionTimetoken);
 
-	auto MessageTimetokenConverter = StringCast<ANSICHAR>(*FinalMessageTimetoken);
-	auto ActionTimetokenConverter = StringCast<ANSICHAR>(*FinalActionTimetoken);
+	FTCHARToUTF8 MessageConverter(*FinalMessageTimetoken);
+	FTCHARToUTF8 ActionConverter(*FinalActionTimetoken);
 
-	// Allocate memory for message_timetoken_char and copy the content
-	char* message_timetoken_char = new char[FinalMessageTimetoken.Len() + 1];
-	std::strcpy(message_timetoken_char, MessageTimetokenConverter.Get());
+	TArray<ANSICHAR> MessageTimetokenArray;
+	MessageTimetokenArray.Append(MessageConverter.Get(), MessageConverter.Length() + 1);
 
-	pubnub_chamebl_t message_timetoken_chamebl;
-	message_timetoken_chamebl.ptr = message_timetoken_char;
+	TArray<ANSICHAR> ActionTimetokenArray;
+	ActionTimetokenArray.Append(ActionConverter.Get(), ActionConverter.Length() + 1);
+	
+	pubnub_char_mem_block message_timetoken_chamebl;
+	message_timetoken_chamebl.ptr = MessageTimetokenArray.GetData();
 	message_timetoken_chamebl.size = FinalMessageTimetoken.Len();
 	
-	// Allocate memory for action_timetoken_char and copy the content
-	char* action_timetoken_char = new char[FinalActionTimetoken.Len() + 1];
-	std::strcpy(action_timetoken_char, ActionTimetokenConverter.Get());
-
-	pubnub_chamebl_t action_timetoken_chamebl;
-	action_timetoken_chamebl.ptr = action_timetoken_char;
+	pubnub_char_mem_block action_timetoken_chamebl;
+	action_timetoken_chamebl.ptr = ActionTimetokenArray.GetData();
 	action_timetoken_chamebl.size = FinalActionTimetoken.Len();
 	
 	pubnub_remove_message_action(ctx_pub, TCHAR_TO_ANSI(*Channel), message_timetoken_chamebl, action_timetoken_chamebl);
@@ -2582,10 +2582,6 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString Message
 	{
 		PubnubResponseError(PubnubResponse, "Failed to Remove Message Action.");
 	}
-
-	// Clean up allocated memory
-	delete[] message_timetoken_char;
-	delete[] action_timetoken_char;
 }
 
 FString UPubnubSubsystem::GetMessageActions_pn(FString Channel, FString Start, FString End, int SizeLimit)

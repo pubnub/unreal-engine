@@ -6,7 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubTimetokenUtilities.h"
-#include "Json.h"
+#include "Dom/JsonObject.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
