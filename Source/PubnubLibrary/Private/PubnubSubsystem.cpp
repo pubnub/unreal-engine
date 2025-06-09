@@ -18,7 +18,7 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	//Load all settings from plugin config
 	LoadPluginSettings();
-	if(PubnubSettings->InitializeAutomatically)
+	if(PubnubPluginSettings->InitializeAutomatically)
 	{
 		InitPubnub();
 	}
@@ -33,13 +33,20 @@ void UPubnubSubsystem::Deinitialize()
 
 void UPubnubSubsystem::InitPubnub()
 {
+	InitPubnubWithConfig(UPubnubUtilities::PubnubConfigFromPluginSettings(PubnubPluginSettings));
+}
+
+void UPubnubSubsystem::InitPubnubWithConfig(FPubnubConfig Config)
+{
 	if(IsInitialized)
 	{
-		PubnubError("Pubnub is already initialized", EPubnubErrorType::PET_Warning);
+		PubnubError("Pubnub is already initialized. Disable InitializeAutomatically in Pubnub SDK Project Settings to be able to Init Pubnub manually", EPubnubErrorType::PET_Warning);
 		return;
 	}
 
-	InitPubnub_priv();
+	SavePubnubConfig(Config);
+
+	InitPubnub_priv(Config);
 
 	//If initialized correctly, create required thread.
 	if(IsInitialized)
@@ -47,7 +54,6 @@ void UPubnubSubsystem::InitPubnub()
 		//Create new thread to queue all pubnub sync operations
 		QuickActionThread = new FPubnubFunctionThread;
 	}
-	
 }
 
 void UPubnubSubsystem::DeinitPubnub()
@@ -78,6 +84,7 @@ void UPubnubSubsystem::DeinitPubnub()
 	
 	ChannelSubscriptions.Empty();
 	ChannelGroupSubscriptions.Empty();
+	IsUserIDSet = false;
 }
 
 void UPubnubSubsystem::SetUserID(FString UserID)
@@ -1140,12 +1147,17 @@ void UPubnubSubsystem::PubnubPublishError()
 void UPubnubSubsystem::LoadPluginSettings()
 {
 	//Save all settings
-	PubnubSettings = GetMutableDefault<UPubnubSettings>();
+	PubnubPluginSettings = GetMutableDefault<UPubnubSettings>();
+}
+
+void UPubnubSubsystem::SavePubnubConfig(const FPubnubConfig& Config)
+{
+	PubnubConfig = Config;
 	
 	//Copy memory for chars containing keys
-	FMemory::Memcpy(PublishKey, TCHAR_TO_ANSI(*PubnubSettings->PublishKey), PublishKeySize);
-	FMemory::Memcpy(SubscribeKey, TCHAR_TO_ANSI(*PubnubSettings->SubscribeKey), PublishKeySize);
-	FMemory::Memcpy(SecretKey, TCHAR_TO_ANSI(*PubnubSettings->SecretKey), SecretKeySize);
+	FMemory::Memcpy(PublishKey, TCHAR_TO_ANSI(*Config.PublishKey), PublishKeySize);
+	FMemory::Memcpy(SubscribeKey, TCHAR_TO_ANSI(*Config.SubscribeKey), PublishKeySize);
+	FMemory::Memcpy(SecretKey, TCHAR_TO_ANSI(*Config.SecretKey), SecretKeySize);
 	PublishKey[PublishKeySize] = '\0';
 	SubscribeKey[PublishKeySize] = '\0';
 	SecretKey[SecretKeySize] = '\0';
@@ -1212,7 +1224,7 @@ bool UPubnubSubsystem::CheckIsFieldEmpty(FString Field, FString FieldName, FStri
 
 /* PRIV FUNCTIONS */
 
-void UPubnubSubsystem::InitPubnub_priv()
+void UPubnubSubsystem::InitPubnub_priv(const FPubnubConfig& Config)
 {
 	if(IsInitialized)
 	{return;}
@@ -1254,8 +1266,13 @@ void UPubnubSubsystem::InitPubnub_priv()
 	pubnub_subscribe_add_status_listener(ctx_ee, Callback, this);
 	
 	IsInitialized = true;
+
+	if(!Config.UserID.IsEmpty())
+	{
+		this->SetUserID(Config.UserID);
+	}
 	
-	if(PubnubSettings->SetSecretKeyAutomatically)
+	if(PubnubConfig.SetSecretKeyAutomatically)
 	{
 		SetSecretKey();
 	}

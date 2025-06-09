@@ -8,6 +8,29 @@
 
 
 USTRUCT(BlueprintType)
+struct FPubnubConfig
+{
+	GENERATED_BODY()
+
+	/** Specifies the Publish Key to be used for publishing messages to a channel. You can get one from the PubNub Admin Portal. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PublishKey = "demo";
+	/** Specifies the Subscribe Key to be used for subscribing to a channel. You can get one from the PubNub Admin Portal. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SubscribeKey = "demo";
+	/** Secret key from Admin Portal. When set, it gives user root permissions for Access Manager.
+	 * To use it set SetSecretKeyAutomatically to true or call SetSecretKey function.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SecretKey = "";
+	/** Identify the user or the device that connects to PubNub. Necessary for all PubNub operations. If provided, this UsedID will be set automatically.
+	 * If you keep this field empty, use SetUserID before the first PubNub operation.
+	 * It's a UTF-8 encoded string of up to 92 alphanumeric characters.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
+	/** If true SecretKey will be set during Initialization phase. Secret key gives user root permissions for Access Manager */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool SetSecretKeyAutomatically = false;
+	
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubPublishSettings
 {
 	GENERATED_BODY()

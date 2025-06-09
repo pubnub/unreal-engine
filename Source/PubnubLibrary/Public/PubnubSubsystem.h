@@ -100,11 +100,20 @@ public:
 	//These functions don't have actual logic, they just call corresponding private functions on Pubnub threads
 
 	/**
-	 * Initializes PubNub systems. Needs to be called before starting using any other PubNub features.
+	 * Initializes PubNub systems with data provided in plug settings. Needs to be called before starting using any other PubNub features.
 	 * Don't call it manually if "InitializeAutomatically" in plugin settings is set to true.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
 	void InitPubnub();
+
+	/**
+	 * Initializes PubNub systems with provided Config. Needs to be called before starting using any other PubNub features.
+	 * Don't call it manually if "InitializeAutomatically" in plugin settings is set to true.
+	 *
+	 * @param Config Configuration settings for the PubNub Systems
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
+	void InitPubnubWithConfig(FPubnubConfig Config);
 
 	/**
 	 * Deinitializes PubNub systems. Call it only if you want to  manually stop all PubNub systems.
@@ -942,12 +951,16 @@ private:
 
 #pragma endregion
 
-#pragma region PLUGIN SETTINGS
+#pragma region PUBNUB CONFIG
 	
-	/* PLUGIN SETTINGS */
-	
-	TObjectPtr<UPubnubSettings> PubnubSettings = nullptr;
+	/* PUBNUB CONFIG */
 
+	//Plugin settings from ProjectSettings
+	TObjectPtr<UPubnubSettings> PubnubPluginSettings = nullptr;
+
+	//Container for all configuration settings
+	FPubnubConfig PubnubConfig;
+	
 	//Containers for keys stored from settings
 	static const int PublishKeySize = 42;
 	static const int SecretKeySize = 54;
@@ -956,6 +969,7 @@ private:
 	char SecretKey[SecretKeySize + 1];
 	
 	void LoadPluginSettings();
+	void SavePubnubConfig(const FPubnubConfig &Config);
 
 #pragma endregion
 
@@ -974,7 +988,7 @@ private:
 	/* PRIVATE FUNCTIONS */
 	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 	
-	void InitPubnub_priv();
+	void InitPubnub_priv(const FPubnubConfig& Config);
 	void SetUserID_priv(FString UserID);
 	void PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
