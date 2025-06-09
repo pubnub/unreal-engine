@@ -16,12 +16,11 @@
  * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
  * before performing any PubNub operations.
  *
- * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
- * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
- *
  * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
  * (e.g., in GameInstance or at login) before making your first PubNub request.
- *
+ * 
+ * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
+ * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
 
