@@ -11,7 +11,7 @@
 #include "PubnubSampleBase.h"
 #include "Sample_PubSub.generated.h"
 
-// Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
+
 UCLASS()
 class PUBNUBLIBRARYTESTS_API ASample_PubSub : public APubnubSampleBase
 {
@@ -53,6 +53,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void OnMessageReceived_SubscribeSample(FPubnubMessageData Message);
+	
+	// snippet.subscribe_with_lambda
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void SubscribeWithLambdaSample();
 
 	// snippet.subscribe_to_group
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
@@ -63,10 +67,25 @@ public:
 
 	// snippet.subscribe_with_presence
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
-	void SubscribeWitPresenceSample();
+	void SubscribeWithPresenceSample();
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
-	void OnMessageReceived_SubscribeWitPresenceSample(FPubnubMessageData Message);
+	void OnMessageReceived_SubscribeWithPresenceSample(FPubnubMessageData Message);
+
+	// snippet.unsubscribe_from_channel
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void UnsubscribeFromChannelSample();
+	
+	// snippet.unsubscribe_from_channel
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void UnsubscribeFromGroupSample();
+
+	// snippet.unsubscribe_from_all
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void UnsubscribeFromAllSample();
+	
 	// snippet.end
 	
 };
+
+
