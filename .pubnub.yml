@@ -3,6 +3,11 @@ schema: 1
 version: 0.3.1
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2025-06-10
+    version: v0.3.2
+    changes:
+      - type: bug
+        text: "Add(persistence): add function `DeleteMessages` Add function `DeleteMessages` which can be used to delete messages from the history. add(config): add function `InitPubnubWithConfig` Add function `InitPubnubWithConfig` which can be used to initialize `PubnubSubsystem` with custom config, separate from Project Settings. add(sample): add PubSub samples."
   - date: 2025-05-27
     version: v0.3.1
     changes:
