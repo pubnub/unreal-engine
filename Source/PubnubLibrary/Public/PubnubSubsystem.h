@@ -43,6 +43,8 @@ DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersFromChannelResponse, int, Statu
 DECLARE_DELEGATE_ThreeParams(FOnListUsersFromChannelResponseNative, int Status, FString Message, FPubnubListUsersFromChannelWrapper Data);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnFetchHistoryResponse, bool, Error, int, Status, FString, ErrorMessage, const TArray<FPubnubHistoryMessageData>&, Messages);
 DECLARE_DELEGATE_FourParams(FOnFetchHistoryResponseNative, bool Error, int Status, FString ErrorMessage, const TArray<FPubnubHistoryMessageData>& Messages);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnDeleteMessagesResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnDeleteMessagesResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllUserMetadataResponse, int, Status, const TArray<FPubnubUserData>&, UsersData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnGetAllUserMetadataResponseNative, int Status, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetUserMetadataResponse, int, Status, FPubnubUserData, UserData);
@@ -98,11 +100,20 @@ public:
 	//These functions don't have actual logic, they just call corresponding private functions on Pubnub threads
 
 	/**
-	 * Initializes PubNub systems. Needs to be called before starting using any other PubNub features.
+	 * Initializes PubNub systems with data provided in plug settings. Needs to be called before starting using any other PubNub features.
 	 * Don't call it manually if "InitializeAutomatically" in plugin settings is set to true.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
 	void InitPubnub();
+
+	/**
+	 * Initializes PubNub systems with provided Config. Needs to be called before starting using any other PubNub features.
+	 * Don't call it manually if "InitializeAutomatically" in plugin settings is set to true.
+	 *
+	 * @param Config Configuration settings for the PubNub Systems
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
+	void InitPubnubWithConfig(FPubnubConfig Config);
 
 	/**
 	 * Deinitializes PubNub systems. Call it only if you want to  manually stop all PubNub systems.
@@ -404,6 +415,22 @@ public:
 	void FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory(FString Channel, FOnFetchHistoryResponseNative NativeCallback, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 
+	/**
+	 * Deletes historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * @Note Requires Enable Delete-From-History in Message Persistence tab for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to delete messages from.
+	 * @param OnDeleteMessagesResponse The callback function used to handle the result.
+	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
+	 * See FPubnubDeleteMessagesSettings for more details.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta = (AutoCreateRefTerm = "OnDeleteMessagesResponse"))
+	void DeleteMessages(FString Channel, FOnDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
+	void DeleteMessages(FString Channel, FOnDeleteMessagesResponseNative NativeCallback = nullptr, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
+
+	
 	/**
 	 * Fetches historical messages from a specified channel using Message Persistence.
 	 * 
@@ -865,6 +892,13 @@ public:
 	//UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
 	//void GetMessageActionsContinue(FOnPubnubResponse OnGetMessageActionsContinueResponse);
 
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	void ReconnectSubscriptions();
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	void DisconnectSubscriptions();
+
 #pragma endregion
 
 	/**
@@ -917,12 +951,16 @@ private:
 
 #pragma endregion
 
-#pragma region PLUGIN SETTINGS
+#pragma region PUBNUB CONFIG
 	
-	/* PLUGIN SETTINGS */
-	
-	TObjectPtr<UPubnubSettings> PubnubSettings = nullptr;
+	/* PUBNUB CONFIG */
 
+	//Plugin settings from ProjectSettings
+	TObjectPtr<UPubnubSettings> PubnubPluginSettings = nullptr;
+
+	//Container for all configuration settings
+	FPubnubConfig PubnubConfig;
+	
 	//Containers for keys stored from settings
 	static const int PublishKeySize = 42;
 	static const int SecretKeySize = 54;
@@ -931,6 +969,7 @@ private:
 	char SecretKey[SecretKeySize + 1];
 	
 	void LoadPluginSettings();
+	void SavePubnubConfig(const FPubnubConfig &Config);
 
 #pragma endregion
 
@@ -949,7 +988,7 @@ private:
 	/* PRIVATE FUNCTIONS */
 	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 	
-	void InitPubnub_priv();
+	void InitPubnub_priv(const FPubnubConfig& Config);
 	void SetUserID_priv(FString UserID);
 	void PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
@@ -979,6 +1018,7 @@ private:
 	FString FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_JSON_priv(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void DeleteMessages_priv(FString Channel, FOnDeleteMessagesResponseNative OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 	void MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubIntResponseNative OnMessageCountsResponse);
 	FString GetAllUserMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllUserMetadata_JSON_priv(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);

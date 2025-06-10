@@ -2,7 +2,9 @@
 
 #include "PubnubSubsystem.h"
 
-#include "Json.h"
+#include "Async/Async.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
@@ -16,7 +18,7 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	//Load all settings from plugin config
 	LoadPluginSettings();
-	if(PubnubSettings->InitializeAutomatically)
+	if(PubnubPluginSettings->InitializeAutomatically)
 	{
 		InitPubnub();
 	}
@@ -31,13 +33,20 @@ void UPubnubSubsystem::Deinitialize()
 
 void UPubnubSubsystem::InitPubnub()
 {
+	InitPubnubWithConfig(UPubnubUtilities::PubnubConfigFromPluginSettings(PubnubPluginSettings));
+}
+
+void UPubnubSubsystem::InitPubnubWithConfig(FPubnubConfig Config)
+{
 	if(IsInitialized)
 	{
-		PubnubError("Pubnub is already initialized", EPubnubErrorType::PET_Warning);
+		PubnubError("Pubnub is already initialized. Disable InitializeAutomatically in Pubnub SDK Project Settings to be able to Init Pubnub manually", EPubnubErrorType::PET_Warning);
 		return;
 	}
 
-	InitPubnub_priv();
+	SavePubnubConfig(Config);
+
+	InitPubnub_priv(Config);
 
 	//If initialized correctly, create required thread.
 	if(IsInitialized)
@@ -45,7 +54,6 @@ void UPubnubSubsystem::InitPubnub()
 		//Create new thread to queue all pubnub sync operations
 		QuickActionThread = new FPubnubFunctionThread;
 	}
-	
 }
 
 void UPubnubSubsystem::DeinitPubnub()
@@ -76,6 +84,7 @@ void UPubnubSubsystem::DeinitPubnub()
 	
 	ChannelSubscriptions.Empty();
 	ChannelGroupSubscriptions.Empty();
+	IsUserIDSet = false;
 }
 
 void UPubnubSubsystem::SetUserID(FString UserID)
@@ -449,6 +458,29 @@ void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponseNati
 	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback, FetchHistorySettings]
 	{
 		FetchHistory_DATA_priv(Channel, NativeCallback, FetchHistorySettings);
+	});
+}
+
+void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
+{
+	FOnDeleteMessagesResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnDeleteMessagesResponse](FPubnubOperationResult Result)
+	{
+		OnDeleteMessagesResponse.ExecuteIfBound(Result);
+	});
+
+	DeleteMessages(Channel, NativeCallback, DeleteMessagesSettings);
+}
+
+void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponseNative NativeCallback, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
+{
+
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback, DeleteMessagesSettings]
+	{
+		DeleteMessages_priv(Channel, NativeCallback, DeleteMessagesSettings);
 	});
 }
 
@@ -885,6 +917,17 @@ void UPubnubSubsystem::RemoveMessageAction(FString Channel, FString MessageTimet
 	});
 }
 
+void UPubnubSubsystem::ReconnectSubscriptions()
+{
+	pubnub_reconnect(ctx_ee, nullptr);
+}
+
+
+void UPubnubSubsystem::DisconnectSubscriptions()
+{
+	pubnub_disconnect(ctx_ee);
+}
+
 /* DISABLED 
 void UPubnubSubsystem::GetMessageActionsContinue(FOnPubnubResponse OnGetMessageActionsContinueResponse)
 {
@@ -1104,12 +1147,17 @@ void UPubnubSubsystem::PubnubPublishError()
 void UPubnubSubsystem::LoadPluginSettings()
 {
 	//Save all settings
-	PubnubSettings = GetMutableDefault<UPubnubSettings>();
+	PubnubPluginSettings = GetMutableDefault<UPubnubSettings>();
+}
+
+void UPubnubSubsystem::SavePubnubConfig(const FPubnubConfig& Config)
+{
+	PubnubConfig = Config;
 	
 	//Copy memory for chars containing keys
-	FMemory::Memcpy(PublishKey, TCHAR_TO_ANSI(*PubnubSettings->PublishKey), PublishKeySize);
-	FMemory::Memcpy(SubscribeKey, TCHAR_TO_ANSI(*PubnubSettings->SubscribeKey), PublishKeySize);
-	FMemory::Memcpy(SecretKey, TCHAR_TO_ANSI(*PubnubSettings->SecretKey), SecretKeySize);
+	FMemory::Memcpy(PublishKey, TCHAR_TO_ANSI(*Config.PublishKey), PublishKeySize);
+	FMemory::Memcpy(SubscribeKey, TCHAR_TO_ANSI(*Config.SubscribeKey), PublishKeySize);
+	FMemory::Memcpy(SecretKey, TCHAR_TO_ANSI(*Config.SecretKey), SecretKeySize);
 	PublishKey[PublishKeySize] = '\0';
 	SubscribeKey[PublishKeySize] = '\0';
 	SecretKey[SecretKeySize] = '\0';
@@ -1176,7 +1224,7 @@ bool UPubnubSubsystem::CheckIsFieldEmpty(FString Field, FString FieldName, FStri
 
 /* PRIV FUNCTIONS */
 
-void UPubnubSubsystem::InitPubnub_priv()
+void UPubnubSubsystem::InitPubnub_priv(const FPubnubConfig& Config)
 {
 	if(IsInitialized)
 	{return;}
@@ -1218,8 +1266,13 @@ void UPubnubSubsystem::InitPubnub_priv()
 	pubnub_subscribe_add_status_listener(ctx_ee, Callback, this);
 	
 	IsInitialized = true;
+
+	if(!Config.UserID.IsEmpty())
+	{
+		this->SetUserID(Config.UserID);
+	}
 	
-	if(PubnubSettings->SetSecretKeyAutomatically)
+	if(PubnubConfig.SetSecretKeyAutomatically)
 	{
 		SetSecretKey();
 	}
@@ -1844,6 +1897,14 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 	{return;}
 	
 	FString JsonResponse = FetchHistory_pn(Channel, FetchHistorySettings);
+
+	//If response is empty, there was server error. 
+	if(JsonResponse.IsEmpty())
+	{
+		pubnub_char_mem_block LastServerResponse;
+		pubnub_last_http_response_body(ctx_pub, &LastServerResponse);
+		JsonResponse = LastServerResponse.ptr;
+	}
 	
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnFetchHistoryResponse, JsonResponse]()
@@ -1857,6 +1918,41 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 				
 		//Broadcast bound delegate with parsed response
 		OnFetchHistoryResponse.ExecuteIfBound(Error, Status, ErrorMessage, Messages);
+	});
+}
+
+void UPubnubSubsystem::DeleteMessages_priv(FString Channel, FOnDeleteMessagesResponseNative OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
+{
+	if(!CheckIsUserIDSet())
+	{return;}
+
+	if(CheckIsFieldEmpty(Channel, "Channel", "DeleteMessages"))
+	{return;}
+
+	pubnub_delete_messages_options DeleteMessagesOptions = pubnub_delete_messages_defopts();
+	auto StartCharConverter = StringCast<ANSICHAR>(*DeleteMessagesSettings.Start);
+	DeleteMessagesOptions.start = StartCharConverter.Get();
+	auto EndCharConverter = StringCast<ANSICHAR>(*DeleteMessagesSettings.End);
+	DeleteMessagesOptions.end = EndCharConverter.Get();
+
+	pubnub_delete_messages(ctx_pub, TCHAR_TO_ANSI(*Channel), DeleteMessagesOptions);
+
+	pubnub_await(ctx_pub);
+	
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//If response is empty, there was server error. 
+	if(JsonResponse.IsEmpty())
+	{
+		pubnub_char_mem_block LastServerResponse;
+		pubnub_last_http_response_body(ctx_pub, &LastServerResponse);
+		JsonResponse = LastServerResponse.ptr;
+	}
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnDeleteMessagesResponse, JsonResponse]()
+	{
+		OnDeleteMessagesResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse));
 	});
 }
 
@@ -2471,28 +2567,26 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString Message
 	if(CheckIsFieldEmpty(Channel, "Channel", "RemoveMessageAction") || CheckIsFieldEmpty(MessageTimetoken, "MessageTimetoken", "RemoveMessageAction")
 		|| CheckIsFieldEmpty(ActionTimetoken, "ActionTimetoken", "RemoveMessageAction"))
 	{return;}
-
+	
 	//Add quotes to these fields as they are required by C-Core
 	FString FinalMessageTimetoken = UPubnubUtilities::AddQuotesToString(MessageTimetoken);
 	FString FinalActionTimetoken = UPubnubUtilities::AddQuotesToString(ActionTimetoken);
 
-	auto MessageTimetokenConverter = StringCast<ANSICHAR>(*FinalMessageTimetoken);
-	auto ActionTimetokenConverter = StringCast<ANSICHAR>(*FinalActionTimetoken);
+	FTCHARToUTF8 MessageConverter(*FinalMessageTimetoken);
+	FTCHARToUTF8 ActionConverter(*FinalActionTimetoken);
 
-	// Allocate memory for message_timetoken_char and copy the content
-	char* message_timetoken_char = new char[FinalMessageTimetoken.Len() + 1];
-	std::strcpy(message_timetoken_char, MessageTimetokenConverter.Get());
+	TArray<ANSICHAR> MessageTimetokenArray;
+	MessageTimetokenArray.Append(MessageConverter.Get(), MessageConverter.Length() + 1);
 
-	pubnub_chamebl_t message_timetoken_chamebl;
-	message_timetoken_chamebl.ptr = message_timetoken_char;
+	TArray<ANSICHAR> ActionTimetokenArray;
+	ActionTimetokenArray.Append(ActionConverter.Get(), ActionConverter.Length() + 1);
+	
+	pubnub_char_mem_block message_timetoken_chamebl;
+	message_timetoken_chamebl.ptr = MessageTimetokenArray.GetData();
 	message_timetoken_chamebl.size = FinalMessageTimetoken.Len();
 	
-	// Allocate memory for action_timetoken_char and copy the content
-	char* action_timetoken_char = new char[FinalActionTimetoken.Len() + 1];
-	std::strcpy(action_timetoken_char, ActionTimetokenConverter.Get());
-
-	pubnub_chamebl_t action_timetoken_chamebl;
-	action_timetoken_chamebl.ptr = action_timetoken_char;
+	pubnub_char_mem_block action_timetoken_chamebl;
+	action_timetoken_chamebl.ptr = ActionTimetokenArray.GetData();
 	action_timetoken_chamebl.size = FinalActionTimetoken.Len();
 	
 	pubnub_remove_message_action(ctx_pub, TCHAR_TO_ANSI(*Channel), message_timetoken_chamebl, action_timetoken_chamebl);
@@ -2505,10 +2599,6 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString Message
 	{
 		PubnubResponseError(PubnubResponse, "Failed to Remove Message Action.");
 	}
-
-	// Clean up allocated memory
-	delete[] message_timetoken_char;
-	delete[] action_timetoken_char;
 }
 
 FString UPubnubSubsystem::GetMessageActions_pn(FString Channel, FString Start, FString End, int SizeLimit)

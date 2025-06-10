@@ -1,8 +1,19 @@
 name: unreal-engine
 schema: 1
-version: 0.3.1
+version: v0.3.2
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2025-06-10
+    version: v0.3.2
+    changes:
+      - type: feature
+        text: "Add function DeleteMessages which can be used to delete messages from the history."
+      - type: feature
+        text: "Add function InitPubnubWithConfig which can be used to initialize PubnubSubsystem with custom config, separate from Project Settings."
+      - type: improvement
+        text: "Add PubSub samples"
+      - type: improvement
+        text: "Fix compilation warnings"
   - date: 2025-05-27
     version: v0.3.1
     changes:
@@ -119,27 +130,27 @@ sdks:
                     runtime-version:
                       - Unreal Engine 5
                     minimum-os-version:
-                      - Ubuntu 12.04
-                    maximum-os-version:
                       - Ubuntu 20.04 LTS
+                    maximum-os-version:
+                      - Ubuntu 24.04 LTS
                     target-architecture:
                       - x86-64
                   macOS:
                     runtime-version:
                       - Unreal Engine 5
                     minimum-os-version:
-                      - macOS 10.12
+                      - macOS 12.5
                     maximum-os-version:
-                      - macOS 11.0.1
+                      - macOS 15.5
                     target-architecture:
                       - x86-64
                   Windows:
                     runtime-version:
                       - Unreal Engine 5
                     minimum-os-version:
-                      - Windows Vista Ultimate
-                    maximum-os-version:
                       - Windows 10 Home
+                    maximum-os-version:
+                      - Windows 11 Pro
                     target-architecture:
                       - x86-64
   - 
@@ -166,27 +177,27 @@ sdks:
                     runtime-version:
                       - Unreal Engine 5
                     minimum-os-version:
-                      - Ubuntu 12.04
-                    maximum-os-version:
                       - Ubuntu 20.04 LTS
+                    maximum-os-version:
+                      - Ubuntu 24.04 LTS
                     target-architecture:
                       - x86-64
                   macOS:
                     runtime-version:
                       - Unreal Engine 5
                     minimum-os-version:
-                      - macOS 10.12
+                      - macOS 12.5
                     maximum-os-version:
-                      - macOS 11.0.1
+                      - macOS 15.5
                     target-architecture:
                       - x86-64
                   Windows:
                     runtime-version:
                       - Unreal Engine 5
                     minimum-os-version:
-                      - Windows Vista Ultimate
-                    maximum-os-version:
                       - Windows 10 Home
+                    maximum-os-version:
+                      - Windows 11 Pro
                     target-architecture:
                       - x86-64
 features:

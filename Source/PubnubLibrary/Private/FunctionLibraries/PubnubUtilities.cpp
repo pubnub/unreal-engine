@@ -2,8 +2,20 @@
 
 
 #include "FunctionLibraries/PubnubUtilities.h"
+#include "Config/PubnubSettings.h"
 #include "Runtime/Launch/Resources/Version.h"
-#include "Json.h"
+
+
+FPubnubConfig UPubnubUtilities::PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings)
+{
+	FPubnubConfig Config;
+	Config.PublishKey = PubnubSettings->PublishKey;
+	Config.SubscribeKey = PubnubSettings->SubscribeKey;
+	Config.SecretKey = PubnubSettings->SecretKey;
+	Config.SetSecretKeyAutomatically = PubnubSettings->SetSecretKeyAutomatically;
+
+	return Config;
+}
 
 FString UPubnubUtilities::AddQuotesToString(const FString InString, bool SkipIfHasQuotes)
 {

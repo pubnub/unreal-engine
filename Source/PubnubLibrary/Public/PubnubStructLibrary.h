@@ -8,6 +8,29 @@
 
 
 USTRUCT(BlueprintType)
+struct FPubnubConfig
+{
+	GENERATED_BODY()
+
+	/** Specifies the Publish Key to be used for publishing messages to a channel. You can get one from the PubNub Admin Portal. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PublishKey = "demo";
+	/** Specifies the Subscribe Key to be used for subscribing to a channel. You can get one from the PubNub Admin Portal. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SubscribeKey = "demo";
+	/** Secret key from Admin Portal. When set, it gives user root permissions for Access Manager.
+	 * To use it set SetSecretKeyAutomatically to true or call SetSecretKey function.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SecretKey = "";
+	/** Identify the user or the device that connects to PubNub. Necessary for all PubNub operations. If provided, this UsedID will be set automatically.
+	 * If you keep this field empty, use SetUserID before the first PubNub operation.
+	 * It's a UTF-8 encoded string of up to 92 alphanumeric characters.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
+	/** If true SecretKey will be set during Initialization phase. Secret key gives user root permissions for Access Manager */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool SetSecretKeyAutomatically = false;
+	
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubPublishSettings
 {
 	GENERATED_BODY()
@@ -116,22 +139,22 @@ struct FPubnubFetchHistorySettings
 	 * timeline is traversed newest to oldest. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Reverse = false;
 	/** If provided (not NULL), lets you select a "start date", in
-	 * Timetoken format. If not provided, it will default to current
+	 * 17-digit Unix timetoken format. If not provided, it will default to current
 	 * time. Page through results by providing a start OR end time
 	 * token. Retrieve a slice of the time line by providing both a
 	 * start AND end time token. Start is "exclusive" – that is, the
 	 * first item returned will be the one immediately after the start
-	 * Timetoken value. Default is NULL.
+	 * Timetoken value. Default is empty String.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Start = "";
 	/** If provided (not NULL), lets you select an "end date", in
-	 * Timetoken format. If not provided, it will provide up to the
+	 * 17-digit Unix timetoken format. If not provided, it will provide up to the
 	 * number of messages defined in the "count" parameter. Page
 	 * through results by providing a start OR end time
 	 * token. Retrieve a slice of the time line by providing both a
 	 * start AND end time token. End is "inclusive" – that is, if a
 	 * message is associated exactly with the end Timetoken, it will
-	 * be included in the result. Default is NULL.
+	 * be included in the result. Default is empty String.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString End = "";
 	/** If true to recieve metadata with each history
@@ -158,6 +181,20 @@ struct FPubnubFetchHistorySettings
 	Message / signal and file messages may contain user-provided type.
 	*/
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeCustomMessageType = false;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubDeleteMessagesSettings
+{
+	GENERATED_BODY()
+	/**
+	 * 17-digit Unix timetoken delimiting the start of time slice (exclusive) to delete messages from.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Start = "";
+	/**
+	 * 17-digit Unix timetoken delimiting the end of time slice (inclusive) to delete messages to.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString End = "";
 };
 
 USTRUCT(BlueprintType)
@@ -562,4 +599,17 @@ struct FPubnubSubscriptionStatusData
 	/** All currently subscribed channel groups */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroups;
 	
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubOperationResult
+{
+	GENERATED_BODY()
+
+	/**Status of the operation. 200 if operation succeeded */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Status = 0;
+	/**General check whether operation succeeded */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Error = false;
+	/**In case of error should contain useful information about the error */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ErrorMessage = "";
 };

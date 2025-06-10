@@ -2,7 +2,12 @@
 
 
 #include "FunctionLibraries/PubnubJsonUtilities.h"
-#include "Json.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
+#include "Policies/CondensedJsonPrintPolicy.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
 
 FString UPubnubJsonUtilities::JsonObjectToString(TSharedPtr<FJsonObject> JsonObject)
 {
@@ -592,5 +597,23 @@ FPubnubChannelData UPubnubJsonUtilities::GetChannelDataFromJson(FString Response
 	}
 
 	return ChannelData;
+}
+
+FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson(FString ResponseJson)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return FPubnubOperationResult();
+	}
+
+	FPubnubOperationResult OperationResult;
+
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), OperationResult.Status);
+	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), OperationResult.Error);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("error_message"), OperationResult.ErrorMessage);
+
+	return OperationResult;
 }
 

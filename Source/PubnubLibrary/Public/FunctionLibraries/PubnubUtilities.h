@@ -9,6 +9,8 @@
 #include "PubnubUtilities.generated.h"
 
 
+class UPubnubSettings;
+
 /**
  * 
  */
@@ -18,12 +20,22 @@ class PUBNUBLIBRARY_API UPubnubUtilities : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 public:
 
+	static FPubnubConfig PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings);
+	
+	/* STRING OPERATIONS */
+	
 	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
 	static FString RemoveOuterQuotesFromString(const FString InString);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
+
+	/* CONVERTING INCLUDES */
+	
 	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);
 	static FString MemberIncludeToString(const FPubnubMemberInclude& MemberInclude);
 	static FString GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude);
+
+	/* CONVERTING SORTS */
+	
 	static FString MembershipSortTypeToString(const EPubnubMembershipSortType SortType);
 	static FString MemberSortTypeToString(const EPubnubMemberSortType SortType);
 	static FString GetAllSortTypeToString(const EPubnubGetAllSortType SortType);
