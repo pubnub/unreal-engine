@@ -23,6 +23,8 @@
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+
 
 //Internal function, don't copy it with the samples
 void ASample_PubSub::RunSamples()
@@ -52,6 +54,7 @@ ASample_PubSub::ASample_PubSub()
 /* SAMPLE FUNCTIONS */
 
 // snippet.simple_publish
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SimplePublishSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -69,6 +72,7 @@ void ASample_PubSub::SimplePublishSample()
 }
 
 // snippet.advance_publish
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::AdvancedPublishSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -93,6 +97,7 @@ void ASample_PubSub::AdvancedPublishSample()
 }
 
 // snippet.publish_with_ttl
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::PublishWithTTLSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -116,6 +121,7 @@ void ASample_PubSub::PublishWithTTLSample()
 }
 
 // snippet.simple_signal
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SimpleSignalSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -133,6 +139,7 @@ void ASample_PubSub::SimpleSignalSample()
 }
 
 // snippet.signal_with_settings
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SignalWithSettingsSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -156,6 +163,7 @@ void ASample_PubSub::SignalWithSettingsSample()
 }
 
 // snippet.subscribe
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -167,7 +175,7 @@ void ASample_PubSub::SubscribeSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
-	//Important: Replace ASample_PubSub with name of your Actor
+	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeSample);
 
 	//Subscribe to the Channel
@@ -175,12 +183,14 @@ void ASample_PubSub::SubscribeSample()
 	PubnubSubsystem->SubscribeToChannel(Channel);
 }
 
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::OnMessageReceived_SubscribeSample(FPubnubMessageData Message)
 {
 	UE_LOG(LogTemp, Log, TEXT("Message reveived on Channel: %s, Message Content: %s"), *Message.Channel, *Message.Message);
 }
 
 // snippet.subscribe_with_lambda
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeWithLambdaSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -203,6 +213,7 @@ void ASample_PubSub::SubscribeWithLambdaSample()
 }
 
 // snippet.subscribe_to_group
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeToGroupSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -214,7 +225,7 @@ void ASample_PubSub::SubscribeToGroupSample()
 	PubnubSubsystem->SetUserID(UserID);
 	
 	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
-	//Important: Replace ASample_PubSub with name of your Actor
+	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeToGroupSample);
 
 	//Subscribe to the Channel
@@ -222,12 +233,14 @@ void ASample_PubSub::SubscribeToGroupSample()
 	PubnubSubsystem->SubscribeToGroup(Group);
 }
 
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::OnMessageReceived_SubscribeToGroupSample(FPubnubMessageData Message)
 {
 	UE_LOG(LogTemp, Log, TEXT("Message reveived on Channel: %s, Message Content: %s"), *Message.Channel, *Message.Message);
 }
 
 // snippet.subscribe_with_presence
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeWithPresenceSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -239,7 +252,7 @@ void ASample_PubSub::SubscribeWithPresenceSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
-	//Important: Replace ASample_PubSub with name of your Actor
+	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeWithPresenceSample);
 
 	//Create additional subscribe settings
@@ -251,12 +264,14 @@ void ASample_PubSub::SubscribeWithPresenceSample()
 	PubnubSubsystem->SubscribeToChannel(Channel, SubscribeSettings);
 }
 
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::OnMessageReceived_SubscribeWithPresenceSample(FPubnubMessageData Message)
 {
 	UE_LOG(LogTemp, Log, TEXT("Message reveived on Channel: %s, Message Content: %s"), *Message.Channel, *Message.Message);
 }
 
 // snippet.unsubscribe_from_channel
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::UnsubscribeFromChannelSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -273,6 +288,7 @@ void ASample_PubSub::UnsubscribeFromChannelSample()
 }
 
 // snippet.unsubscribe_from_group
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::UnsubscribeFromGroupSample()
 {
 	//Get PubnubSubsystem from GameInstance
@@ -289,6 +305,7 @@ void ASample_PubSub::UnsubscribeFromGroupSample()
 }
 
 // snippet.unsubscribe_from_all
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::UnsubscribeFromAllSample()
 {
 	//Get PubnubSubsystem from GameInstance
