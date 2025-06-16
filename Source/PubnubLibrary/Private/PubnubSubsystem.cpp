@@ -1620,7 +1620,11 @@ void UPubnubSubsystem::AddChannelToGroup_priv(FString Channel, FString ChannelGr
 	
 	pubnub_add_channel_to_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
 
-	GetLastResponse(ctx_pub);
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//FString httpResponse = pubnub_last_http_response_body(ctx_pub);
+
+	UE_LOG(LogTemp, Log, TEXT("AddChannelToGroup: %s"), *JsonResponse);
+	//UE_LOG(LogTemp, Log, TEXT("AddChannelToGroup HTTP Response: %s"), *httpResponse);
 }
 
 void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup)
