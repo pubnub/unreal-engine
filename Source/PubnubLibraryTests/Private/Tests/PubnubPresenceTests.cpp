@@ -328,7 +328,7 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
             TSharedPtr<FJsonObject> JsonObject;
             if(UPubnubJsonUtilities::StringToJsonObject(*ReceivedStateJson, JsonObject))
             {
-                const TSharedPtr<FJsonObject>* PayloadObjectPtr;
+                const TSharedPtr<FJsonObject>* PayloadObjectPtr = nullptr;
                 if (JsonObject->TryGetObjectField(TEXT("payload"), PayloadObjectPtr) && PayloadObjectPtr && (*PayloadObjectPtr).IsValid())
                 {
                     FString ExtractedPayloadJson = UPubnubJsonUtilities::JsonObjectToString(*PayloadObjectPtr);
@@ -374,7 +374,7 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
             TSharedPtr<FJsonObject> JsonObject;
             if(UPubnubJsonUtilities::StringToJsonObject(*ReceivedStateJson, JsonObject))
             {
-                const TSharedPtr<FJsonObject>* PayloadObjectPtr;
+                const TSharedPtr<FJsonObject>* PayloadObjectPtr = nullptr;
                 if (JsonObject->TryGetObjectField(TEXT("payload"), PayloadObjectPtr) && PayloadObjectPtr && (*PayloadObjectPtr).IsValid())
                 {
                     FString ExtractedPayloadJson = UPubnubJsonUtilities::JsonObjectToString(*PayloadObjectPtr);
@@ -488,14 +488,14 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
             return;
         }
 
-        const TSharedPtr<FJsonObject>* PayloadObjectPtr;
+        const TSharedPtr<FJsonObject>* PayloadObjectPtr = nullptr;
         if (!FullResponseObject->TryGetObjectField(TEXT("payload"), PayloadObjectPtr) || !PayloadObjectPtr || !(*PayloadObjectPtr).IsValid())
         {
             AddError("GetState (combined) response JSON does not contain a valid 'payload' object.");
             return;
         }
 
-        const TSharedPtr<FJsonObject>* ChannelsObjectPtr;
+        const TSharedPtr<FJsonObject>* ChannelsObjectPtr = nullptr;
         if (!(*PayloadObjectPtr)->TryGetObjectField(TEXT("channels"), ChannelsObjectPtr) || !ChannelsObjectPtr || !(*ChannelsObjectPtr).IsValid())
         {
             AddError("GetState (combined) payload does not contain a valid 'channels' object.");
@@ -504,7 +504,7 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
         const TSharedPtr<FJsonObject>& ChannelsObject = *ChannelsObjectPtr;
 
         // Verify State for Channel 1
-        const TSharedPtr<FJsonObject>* Channel1StateObjectPtr;
+        const TSharedPtr<FJsonObject>* Channel1StateObjectPtr = nullptr;
         if (ChannelsObject->TryGetObjectField(TestChannel1Name, Channel1StateObjectPtr) && Channel1StateObjectPtr && (*Channel1StateObjectPtr).IsValid())
         {
             FString ExtractedChannel1StateString = UPubnubJsonUtilities::JsonObjectToString(*Channel1StateObjectPtr);
@@ -521,7 +521,7 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
         }
 
         // Verify State for Channel 2
-        const TSharedPtr<FJsonObject>* Channel2StateObjectPtr;
+        const TSharedPtr<FJsonObject>* Channel2StateObjectPtr = nullptr;
         if (ChannelsObject->TryGetObjectField(TestChannel2Name, Channel2StateObjectPtr) && Channel2StateObjectPtr && (*Channel2StateObjectPtr).IsValid())
         {
             FString ExtractedChannel2StateString = UPubnubJsonUtilities::JsonObjectToString(*Channel2StateObjectPtr);

@@ -263,7 +263,7 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
                 TSharedPtr<FJsonObject> JsonObject;
                 if (UPubnubJsonUtilities::StringToJsonObject(ReceivedMessage.Message, JsonObject))
                 {
-                    const TSharedPtr<FJsonObject>* DataObject;
+                    const TSharedPtr<FJsonObject>* DataObject = nullptr;
                     if (JsonObject->TryGetObjectField(TEXT("data"), DataObject))
                     {
                         (*DataObject)->TryGetStringField(TEXT("actionTimetoken"), *ReceivedEventActionTimetoken);
