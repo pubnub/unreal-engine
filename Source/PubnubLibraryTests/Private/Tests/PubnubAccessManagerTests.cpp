@@ -95,34 +95,34 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
                 TestEqual(TestDescription + " - TTL", RootObject->GetIntegerField(TEXT("ttl")), Ts.TTLMinutes);
                 TestEqual(TestDescription + " - Auth User", RootObject->GetStringField(TEXT("authorized_uuid")), Ts.AuthorizedUser);
 
-                const TSharedPtr<FJsonObject>* PermissionsObjectPtr;
+                const TSharedPtr<FJsonObject>* PermissionsObjectPtr = nullptr;
                 TestTrue(TestDescription + " - Has 'permissions' object", RootObject->TryGetObjectField(TEXT("permissions"), PermissionsObjectPtr) && PermissionsObjectPtr && (*PermissionsObjectPtr).IsValid());
                 if (PermissionsObjectPtr && (*PermissionsObjectPtr).IsValid())
                 {
-                    const TSharedPtr<FJsonObject>* ResourcesObjectPtr;
+                    const TSharedPtr<FJsonObject>* ResourcesObjectPtr = nullptr;
                     TestTrue(TestDescription + " - Has 'resources' object", (*PermissionsObjectPtr)->TryGetObjectField(TEXT("resources"), ResourcesObjectPtr) && ResourcesObjectPtr && (*ResourcesObjectPtr).IsValid());
                     if (ResourcesObjectPtr && (*ResourcesObjectPtr).IsValid())
                     {
-                        const TSharedPtr<FJsonObject>* ChannelsObjectPtr;
+                        const TSharedPtr<FJsonObject>* ChannelsObjectPtr = nullptr;
                         TestTrue(TestDescription + " - Resources has 'channels'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("channels"), ChannelsObjectPtr) && ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid());
                         if (ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid())
                         {
                             TestEqual(TestDescription + " - Channel Perms", (*ChannelsObjectPtr)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPerms));
                         }
-                        const TSharedPtr<FJsonObject>* GroupsObjectPtr;
+                        const TSharedPtr<FJsonObject>* GroupsObjectPtr = nullptr;
                         TestTrue(TestDescription + " - Resources has 'groups'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("groups"), GroupsObjectPtr) && GroupsObjectPtr && (*GroupsObjectPtr).IsValid());
                         if (GroupsObjectPtr && (*GroupsObjectPtr).IsValid())
                         {
                              TestEqual(TestDescription + " - Group Perms", (*GroupsObjectPtr)->GetIntegerField(Ts.ChannelGroups[0]), CalculateChannelGroupPermissionsBitmask(GroupPerms));
                         }
-                        const TSharedPtr<FJsonObject>* UuidsObjectPtr;
+                        const TSharedPtr<FJsonObject>* UuidsObjectPtr = nullptr;
                         TestTrue(TestDescription + " - Resources has 'uuids'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("uuids"), UuidsObjectPtr) && UuidsObjectPtr && (*UuidsObjectPtr).IsValid());
                         if (UuidsObjectPtr && (*UuidsObjectPtr).IsValid())
                         {
                             TestEqual(TestDescription + " - UUID Resource Perms", (*UuidsObjectPtr)->GetIntegerField(Ts.Users[0]), CalculateUserPermissionsBitmask(UserResPerms));
                         }
                     }
-                     const TSharedPtr<FJsonObject>* PatternsObjectPtr;
+                     const TSharedPtr<FJsonObject>* PatternsObjectPtr = nullptr;
                      TestTrue(TestDescription + " - Has 'patterns' object", (*PermissionsObjectPtr)->TryGetObjectField(TEXT("patterns"), PatternsObjectPtr) && PatternsObjectPtr && (*PatternsObjectPtr).IsValid());
                 }
             }
@@ -149,7 +149,9 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
             TSharedPtr<FJsonObject> RootObject;
             TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
             // ... (basic TTL, AuthUser checks) ...
-            const TSharedPtr<FJsonObject>* PermsObj, *ResObj, *ChansObj;
+            const TSharedPtr<FJsonObject>* PermsObj = nullptr;
+            const TSharedPtr<FJsonObject>* ResObj = nullptr;
+            const TSharedPtr<FJsonObject>* ChansObj = nullptr;
             if (RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && (*ResObj)->TryGetObjectField(TEXT("channels"), ChansObj))
             {
                 TestEqual(TestDescription + " - ChanA Perms", (*ChansObj)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPerm));
@@ -179,7 +181,9 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
         {
             TSharedPtr<FJsonObject> RootObject;
             TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
-            const TSharedPtr<FJsonObject>* PermsObj, *ResObj, *ChansObj;
+            const TSharedPtr<FJsonObject>* PermsObj = nullptr;
+            const TSharedPtr<FJsonObject>* ResObj = nullptr;
+            const TSharedPtr<FJsonObject>* ChansObj = nullptr;
             if (RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && (*ResObj)->TryGetObjectField(TEXT("channels"), ChansObj))
             {
                 TestEqual(TestDescription + " - ChanC Perms", (*ChansObj)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPermC));
@@ -226,15 +230,15 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
             {
                  TestEqual(TestDescription + " - TTL", RootObject->GetIntegerField(TEXT("ttl")), Ts.TTLMinutes);
                  TestEqual(TestDescription + " - Auth User", RootObject->GetStringField(TEXT("authorized_uuid")), Ts.AuthorizedUser);
-                 const TSharedPtr<FJsonObject>* PermsObj;
+                 const TSharedPtr<FJsonObject>* PermsObj = nullptr;
                  TestTrue(TestDescription + " - Has 'permissions' object", RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && PermsObj && (*PermsObj).IsValid());
                  if(PermsObj && (*PermsObj).IsValid())
                  {
-                    const TSharedPtr<FJsonObject>* ResObj;
+                    const TSharedPtr<FJsonObject>* ResObj = nullptr;
                     TestTrue(TestDescription + " - Perms has 'resources' object", (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && ResObj && (*ResObj).IsValid());
                     if(ResObj && (*ResObj).IsValid()) TestEqual(TestDescription + " - Resources is empty", (*ResObj)->Values.Num(), 0);
                     
-                    const TSharedPtr<FJsonObject>* PatObj;
+                    const TSharedPtr<FJsonObject>* PatObj = nullptr;
                     TestTrue(TestDescription + " - Perms has 'patterns' object", (*PermsObj)->TryGetObjectField(TEXT("patterns"), PatObj) && PatObj && (*PatObj).IsValid());
                     if(PatObj && (*PatObj).IsValid()) TestEqual(TestDescription + " - Patterns is empty", (*PatObj)->Values.Num(), 0);
                  }
@@ -263,7 +267,10 @@ bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Para
             if (RootObject.IsValid())
             {
                 // ... (basic TTL, AuthUser checks) ...
-                const TSharedPtr<FJsonObject>* PermsObj, *ResObj, *PatObj, *ChanPatObj;
+                const TSharedPtr<FJsonObject>* PermsObj = nullptr;
+                const TSharedPtr<FJsonObject>* ResObj = nullptr;
+                const TSharedPtr<FJsonObject>* PatObj = nullptr;
+                const TSharedPtr<FJsonObject>* ChanPatObj = nullptr;
                 if (RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) &&
                     (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) &&
                     (*PermsObj)->TryGetObjectField(TEXT("patterns"), PatObj) &&
@@ -448,7 +455,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
              TestEqual("Parsed token TTL matches granted TTL", ParsedTTL, TestTTLMinutes);
         } else { AddError("Parsed token JSON does not contain 'ttl' field."); }
         
-        const TSharedPtr<FJsonObject>* ResourcesObjectPtr; // This will now point to the "res" object
+        const TSharedPtr<FJsonObject>* ResourcesObjectPtr = nullptr; // This will now point to the "res" object
         if (!ParsedTokenObject->TryGetObjectField(TEXT("res"), ResourcesObjectPtr) || !ResourcesObjectPtr || !(*ResourcesObjectPtr).IsValid())
         {
             AddError("Parsed token JSON does not contain 'res' (resources) object.");
@@ -457,7 +464,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
         const TSharedPtr<FJsonObject>& ResourcesObject = *ResourcesObjectPtr;
 
         // Channel Permissions
-        const TSharedPtr<FJsonObject>* ChannelsObjectPtr;
+        const TSharedPtr<FJsonObject>* ChannelsObjectPtr = nullptr;
         if (ResourcesObject->TryGetObjectField(TEXT("chan"), ChannelsObjectPtr) && ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid())
         {
             int ActualChannelPerms = 0;
@@ -468,7 +475,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
         } else { AddWarning(FString::Printf(TEXT("No 'chan' found in parsed token res (expected for %s)."), *TestChannelName)); }
 
         // Group Permissions
-        const TSharedPtr<FJsonObject>* GroupsObjectPtr;
+        const TSharedPtr<FJsonObject>* GroupsObjectPtr = nullptr;
         if (ResourcesObject->TryGetObjectField(TEXT("grp"), GroupsObjectPtr) && GroupsObjectPtr && (*GroupsObjectPtr).IsValid())
         {
             int ActualGroupPerms = 0;
@@ -479,7 +486,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
         } else { AddWarning(FString::Printf(TEXT("No 'grp' found in parsed token res (expected for %s)."),*TestGroupName)); }
         
         // UUID (User Resource) Permissions
-        const TSharedPtr<FJsonObject>* UuidsObjectPtr;
+        const TSharedPtr<FJsonObject>* UuidsObjectPtr = nullptr;
         if (ResourcesObject->TryGetObjectField(TEXT("uuid"), UuidsObjectPtr) && UuidsObjectPtr && (*UuidsObjectPtr).IsValid()) // "uuid" here is the key for uuid-specific permissions inside "res"
         {
             int ActualUserResourcePerms = 0;

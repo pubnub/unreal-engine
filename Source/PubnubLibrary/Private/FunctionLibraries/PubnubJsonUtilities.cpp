@@ -288,7 +288,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 			FPubnubHistoryMessageData CurrentMessage;
 			if(!MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message))
 			{
-				const TSharedPtr<FJsonObject>* MetaJsonObject;
+				const TSharedPtr<FJsonObject>* MetaJsonObject = nullptr;
 				if(MessageValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("message"), MetaJsonObject))
 				{
 					CurrentMessage.Message = JsonObjectToString(*MetaJsonObject);
@@ -300,7 +300,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 			MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("custom_message_type"), CurrentMessage.CustomMessageType);
 			if(!MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("meta"), CurrentMessage.Meta))
 			{
-				const TSharedPtr<FJsonObject>* MetaJsonObject;
+				const TSharedPtr<FJsonObject>* MetaJsonObject = nullptr;
 				if(MessageValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("meta"), MetaJsonObject))
 				{
 					CurrentMessage.Meta = JsonObjectToString(*MetaJsonObject);
@@ -308,7 +308,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Er
 			}
 
 			//Iterate through all message actions from the message
-			const TSharedPtr<FJsonObject>* MessageActionsJsonObject;
+			const TSharedPtr<FJsonObject>* MessageActionsJsonObject = nullptr;
 			if(MessageValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("actions"), MessageActionsJsonObject))
 			{
 				FPubnubMessageActionData CurrentMessageAction;
@@ -374,7 +374,7 @@ void UPubnubJsonUtilities::GetUserMetadataJsonToData(FString ResponseJson, int& 
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{
-		const TSharedPtr<FJsonObject> *DataJsonObject;
+		const TSharedPtr<FJsonObject> *DataJsonObject = nullptr;
 		if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("data"), DataJsonObject))
 		{
 			UserData = GetUserDataFromJson(JsonObjectToString(*DataJsonObject));
@@ -420,7 +420,7 @@ void UPubnubJsonUtilities::GetChannelMetadataJsonToData(FString ResponseJson, in
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{
-		const TSharedPtr<FJsonObject> *DataJsonObject;
+		const TSharedPtr<FJsonObject> *DataJsonObject = nullptr;
 		if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("data"), DataJsonObject))
 		{
 			ChannelData = GetChannelDataFromJson(JsonObjectToString(*DataJsonObject));
@@ -477,13 +477,13 @@ void UPubnubJsonUtilities::GetMembershipsJsonToData(FString ResponseJson, int& S
 		for(auto MembershipJsonValue : MembershipsJsonValue)
 		{
 			FPubnubGetMembershipsWrapper CurrentMembership;
-			const TSharedPtr<FJsonObject>* ChannelJsonObject;
+			const TSharedPtr<FJsonObject>* ChannelJsonObject = nullptr;
 			if(MembershipJsonValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("channel"), ChannelJsonObject))
 			{
 				CurrentMembership.Channel = GetChannelDataFromJson(JsonObjectToString(*ChannelJsonObject));
 			}
 			
-			const TSharedPtr<FJsonObject>* CustomJsonObject;
+			const TSharedPtr<FJsonObject>* CustomJsonObject = nullptr;
 			if(MembershipJsonValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
 			{
 				CurrentMembership.Custom = JsonObjectToString(*CustomJsonObject);
@@ -519,13 +519,13 @@ void UPubnubJsonUtilities::GetChannelMembersJsonToData(FString ResponseJson, int
 		for(auto MembershipJsonValue : MembershipsJsonValue)
 		{
 			FPubnubGetChannelMembersWrapper CurrentMembership;
-			const TSharedPtr<FJsonObject>* UserJsonObject;
+			const TSharedPtr<FJsonObject>* UserJsonObject = nullptr;
 			if(MembershipJsonValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("uuid"), UserJsonObject))
 			{
 				CurrentMembership.User = GetUserDataFromJson(JsonObjectToString(*UserJsonObject));
 			}
 			
-			const TSharedPtr<FJsonObject>* CustomJsonObject;
+			const TSharedPtr<FJsonObject>* CustomJsonObject = nullptr;
 			if(MembershipJsonValue->AsObject()->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
 			{
 				CurrentMembership.Custom = JsonObjectToString(*CustomJsonObject);
@@ -562,7 +562,7 @@ FPubnubUserData UPubnubJsonUtilities::GetUserDataFromJson(FString ResponseJson)
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("updated"), UserData.Updated);
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("eTag"), UserData.ETag);
 
-	const TSharedPtr<FJsonObject> *CustomJsonObject;
+	const TSharedPtr<FJsonObject> *CustomJsonObject = nullptr;
 	if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
 	{
 		UserData.Custom = JsonObjectToString(*CustomJsonObject);
@@ -590,7 +590,7 @@ FPubnubChannelData UPubnubJsonUtilities::GetChannelDataFromJson(FString Response
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("updated"), ChannelData.Updated);
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("eTag"), ChannelData.ETag);
 
-	const TSharedPtr<FJsonObject> *CustomJsonObject;
+	const TSharedPtr<FJsonObject> *CustomJsonObject = nullptr;
 	if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
 	{
 		ChannelData.Custom = JsonObjectToString(*CustomJsonObject);

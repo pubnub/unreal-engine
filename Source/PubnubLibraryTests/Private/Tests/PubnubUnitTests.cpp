@@ -73,12 +73,7 @@ bool FMembershipIncludeToStringUnitTest::RunTest(const FString& Parameters)
 	TestEqual("FMembershipIncludeToString failed for all includes empty", TestValue2, ExpectedValue2);
 
 	// Test some values set to true
-	FPubnubMembershipInclude MembershipInclude3{
-		.IncludeType = true,
-		.IncludeChannel = true,
-		.IncludeChannelStatus = true,
-		.IncludeTotalCount = true
-	};
+	FPubnubMembershipInclude MembershipInclude3{false, false, true, true, false, true, false, true};
 	FString ExpectedValue3 = "type,channel,channel.status";
 	FString TestValue3 = UPubnubUtilities::MembershipIncludeToString(MembershipInclude3);
 	TestEqual("FMembershipIncludeToString failed for some includes true", TestValue3, ExpectedValue3);
@@ -108,12 +103,8 @@ bool FMemberIncludeToStringUnitTest::RunTest(const FString& Parameters)
 	TestEqual("FMemberIncludeToString failed for all includes empty", TestValue2, ExpectedValue2);
 
 	// Test some values set to true
-	FPubnubMemberInclude MemberInclude3{
-		.IncludeStatus = true,
-		.IncludeUser = true,
-		.IncludeUserType = true,
-		.IncludeTotalCount = false
-	};
+	FPubnubMemberInclude MemberInclude3{false, true, false, true, false, false, true, false};
+
 	FString ExpectedValue3 = "status,uuid,uuid.type";
 	FString TestValue3 = UPubnubUtilities::MemberIncludeToString(MemberInclude3);
 	TestEqual("FMemberIncludeToString failed for some includes true", TestValue3, ExpectedValue3);
@@ -143,10 +134,7 @@ bool FGetAllIncludeToStringUnitTest::RunTest(const FString& Parameters)
 	TestEqual("FGetAllIncludeToString failed for all includes empty", TestValue2, ExpectedValue2);
 
 	// Test some values set to true
-	FPubnubGetAllInclude GetAllInclude3{
-		.IncludeCustom = true,
-		.IncludeType = true
-	};
+	FPubnubGetAllInclude GetAllInclude3{true, false, true, false};
 	FString ExpectedValue3 = "custom,type";
 	FString TestValue3 = UPubnubUtilities::GetAllIncludeToString(GetAllInclude3);
 	TestEqual("FGetAllIncludeToString failed for some includes true", TestValue3, ExpectedValue3);
