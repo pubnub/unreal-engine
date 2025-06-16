@@ -35,6 +35,10 @@ DECLARE_DELEGATE_OneParam(FOnPubnubResponseNative, FString JsonResponse);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
 DECLARE_DELEGATE_OneParam(FOnPubnubIntResponseNative, int IntValue);
 
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, const FPubnubOperationResult&, Result, const FPubnubMessageData&, PublishedMessage);
+DECLARE_DELEGATE_TwoParams(FOnPublishMessageResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSignalResponse, const FPubnubOperationResult&, Result, const FPubnubMessageData&, SignalMessage);
+DECLARE_DELEGATE_TwoParams(FOnSignalResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponse, bool, Error, int, Status, const TArray<FString>&, Channels);
 DECLARE_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponseNative, bool Error, int Status, const TArray<FString>& Channels);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponse, int, Status, FString, Message, const TArray<FString>&, Channels);
@@ -150,19 +154,62 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to publish the message to.
 	 * @param Message The message to publish. This message can be any data type that can be serialized into JSON.
+	 * @param OnPublishMessageResponse Optional delegate to listen for the publish result.
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish")
-	void PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish", meta = (AutoCreateRefTerm = "OnPublishMessageResponse"))
+	void PublishMessage(FString Channel, FString Message, FOnPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+
+	/**
+	 * Publishes a message to a specified channel.
+	 * 
+	 * @param Channel The ID of the channel to publish the message to.
+	 * @param Message The message to publish. This message can be any data type that can be serialized into JSON.
+	 * @param NativeCallback Optional delegate to listen for the publish result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if publish result is not needed.
+	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
+	 */
+	void PublishMessage(FString Channel, FString Message, FOnPublishMessageResponseNative NativeCallback = nullptr, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+
+	/**
+	 * Publishes a message to a specified channel. Overload without delegate to get publish result.
+	 * 
+	 * @param Channel The ID of the channel to publish the message to.
+	 * @param Message The message to publish. This message can be any data type that can be serialized into JSON.
+	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
+	 */
+	void PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings);
 
 	/**
 	 * Sends a signal to a specified channel.
 	 * 
 	 * @param Channel The ID of the channel to send the signal to.
 	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
+	 * @param OnSignalResponse Optional delegate to listen for the signal result.
+	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish")
-	void Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish", meta = (AutoCreateRefTerm = "OnSignalResponse"))
+	void Signal(FString Channel, FString Message, FOnSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+
+	/**
+	 * Sends a signal to a specified channel.
+	 * 
+	 * @param Channel The ID of the channel to send the signal to.
+	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
+	 * @param NativeCallback Optional delegate to listen for the signal result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if signal result is not needed.
+	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
+	 */
+	void Signal(FString Channel, FString Message, FOnSignalResponseNative NativeCallback = nullptr, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+	
+	/**
+	 * Sends a signal to a specified channel. Overload without delegate to get signal result.
+	 * 
+	 * @param Channel The ID of the channel to send the signal to.
+	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
+	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
+	 */
+	void Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings);
 
 	/**
 	 * Subscribes to a specified channel - start listening for messages on that channel.
@@ -990,8 +1037,8 @@ private:
 	
 	void InitPubnub_priv(const FPubnubConfig& Config);
 	void SetUserID_priv(FString UserID);
-	void PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
-	void Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+	void PublishMessage_priv(FString Channel, FString Message, FOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	void Signal_priv(FString Channel, FString Message, FOnSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 	void SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void SubscribeToGroup_priv(FString GroupName, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void UnsubscribeFromChannel_priv(FString Channel);

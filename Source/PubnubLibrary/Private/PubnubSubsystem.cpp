@@ -116,6 +116,28 @@ void UPubnubSubsystem::SetSecretKey()
 	pubnub_set_secret_key(ctx_ee, SecretKey);
 }
 
+void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FOnPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
+{
+	FOnPublishMessageResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnPublishMessageResponse](FPubnubOperationResult Result, FPubnubMessageData PublishedMessage)
+	{
+		OnPublishMessageResponse.ExecuteIfBound(Result, PublishedMessage);
+	});
+
+	PublishMessage(Channel, Message, NativeCallback, PublishSettings);
+}
+
+void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FOnPublishMessageResponseNative NativeCallback, FPubnubPublishSettings PublishSettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, NativeCallback, PublishSettings]
+	{
+		PublishMessage_priv(Channel, Message, NativeCallback, PublishSettings);
+	});
+}
+
 void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
@@ -123,7 +145,29 @@ void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FPubnubP
 	
 	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, PublishSettings]
 	{
-		PublishMessage_priv(Channel, Message, PublishSettings);
+		PublishMessage_priv(Channel, Message, nullptr, PublishSettings);
+	});
+}
+
+void UPubnubSubsystem::Signal(FString Channel, FString Message, FOnSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings)
+{
+	FOnSignalResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSignalResponse](const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
+	{
+		OnSignalResponse.ExecuteIfBound(Result, SignalMessage);
+	});
+
+	Signal(Channel, Message, NativeCallback, SignalSettings);
+}
+
+void UPubnubSubsystem::Signal(FString Channel, FString Message, FOnSignalResponseNative NativeCallback, FPubnubSignalSettings SignalSettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, NativeCallback, SignalSettings]
+	{
+		Signal_priv(Channel, Message, NativeCallback, SignalSettings);
 	});
 }
 
@@ -134,7 +178,7 @@ void UPubnubSubsystem::Signal(FString Channel, FString Message, FPubnubSignalSet
 	
 	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, SignalSettings]
 	{
-		Signal_priv(Channel, Message, SignalSettings);
+		Signal_priv(Channel, Message, nullptr, SignalSettings);
 	});
 }
 
@@ -1292,7 +1336,7 @@ void UPubnubSubsystem::SetUserID_priv(FString UserID)
 	IsUserIDSet = true;
 }
 
-void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
+void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1321,15 +1365,41 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FPu
 	PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
 	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*FinalMessage), PubnubOptions);
 
-	pubnub_res PublishResult = pubnub_await(ctx_pub);
+	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
 
-	if(PublishResult != PNR_OK)
+	
+	FPubnubMessageData PublishedMessage;
+	FPubnubOperationResult PublishResult;
+
+	//Fill data about Publish Result
+	PublishResult.Status = pubnub_last_http_code(ctx_pub);
+	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
+	PublishResult.Error = PublishResultStatus != PNR_OK;
+	
+	if(PublishResultStatus == PNR_OK)
+	{
+		//If result is ok, fill all data about published message
+		PublishedMessage.Message = Message;
+		PublishedMessage.Channel = Channel;
+		PublishedMessage.UserID = GetUserIDInternal();
+		PublishedMessage.Timetoken = pubnub_last_publish_timetoken(ctx_pub);
+		PublishedMessage.Metadata = PublishSettings.MetaData;
+		PublishedMessage.MessageType = EPubnubMessageType::PMT_Published;
+		PublishedMessage.CustomMessageType = PublishSettings.CustomMessageType;
+	}
+	else
 	{
 		PubnubPublishError();
 	}
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnPublishMessageResponse, PublishResult, PublishedMessage]()
+	{
+		OnPublishMessageResponse.ExecuteIfBound(PublishResult, PublishedMessage);
+	});
 }
 
-void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
+void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FOnSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1349,12 +1419,35 @@ void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FPubnubSign
 	PubnubOptions.custom_message_type = SignalSettings.CustomMessageType.IsEmpty() ? NULL : CharConverter.Get();
 	pubnub_signal_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*FinalMessage), PubnubOptions);
 	
-	pubnub_res PublishResult = pubnub_await(ctx_pub);
+	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
 
-	if(PublishResult != PNR_OK)
+	FPubnubMessageData SignalMessage;
+	FPubnubOperationResult PublishResult;
+
+	PublishResult.Status = pubnub_last_http_code(ctx_pub);
+	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
+	PublishResult.Error = PublishResultStatus != PNR_OK;
+
+	if(PublishResultStatus == PNR_OK)
+	{
+		SignalMessage.Message = Message;
+		SignalMessage.Channel = Channel;
+		SignalMessage.UserID = GetUserIDInternal();
+		SignalMessage.Timetoken = pubnub_last_publish_timetoken(ctx_pub);
+		SignalMessage.Metadata = ""; // Signals don't have metadata
+		SignalMessage.MessageType = EPubnubMessageType::PMT_Signal;
+		SignalMessage.CustomMessageType = SignalSettings.CustomMessageType;
+	}
+	else
 	{
 		PubnubPublishError();
 	}
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnSignalResponse, PublishResult, SignalMessage]()
+	{
+		OnSignalResponse.ExecuteIfBound(PublishResult, SignalMessage);
+	});
 }
 
 void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings)

@@ -9,7 +9,7 @@
 #include "PubnubSampleBase.h"
 #include "Sample_PubSubFull.generated.h"
 
-// Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
+// ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
 UCLASS()
 class PUBNUBLIBRARYTESTS_API ASample_PubSubFull : public AActor
 {
