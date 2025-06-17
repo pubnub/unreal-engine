@@ -34,6 +34,7 @@ public:
 	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);
 	static FString MemberIncludeToString(const FPubnubMemberInclude& MemberInclude);
 	static FString GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude);
+	static FString GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude);
 
 	/* CONVERTING SORTS */
 	

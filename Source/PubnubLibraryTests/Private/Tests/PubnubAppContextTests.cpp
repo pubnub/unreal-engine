@@ -122,7 +122,7 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     // Step 1: SetUserMetadata
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, FullMetadataToSet]()
     {
-        PubnubSubsystem->SetUserMetadata(TestUserID, FullMetadataToSet, "custom,externalId,profileUrl,status,type"); 
+        PubnubSubsystem->SetUserMetadata(TestUserID, FullMetadataToSet, FPubnubGetMetadataInclude::FromValue(true)); 
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetUserMetadata to process
 
@@ -757,11 +757,11 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
     });
 
     // Initial Setup: Set metadata for all test users
-    auto SetMeta = [this](const FString& UserID, const FString& Meta, const FString& IncludeFields = "custom,status,type")
+    auto SetMeta = [this](const FString& UserID, const FString& Meta)
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta, IncludeFields]()
+        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta]()
         {
-            PubnubSubsystem->SetUserMetadata(UserID, Meta, IncludeFields);
+            PubnubSubsystem->SetUserMetadata(UserID, Meta, FPubnubGetMetadataInclude::FromValue(true));
         }, 0.05f)); // Shorter delay for setup
     };
 
@@ -1506,7 +1506,7 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
     {
         ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta]()
         {
-            PubnubSubsystem->SetUserMetadata(UserID, Meta, TEXT("custom,status,type")); 
+            PubnubSubsystem->SetUserMetadata(UserID, Meta, FPubnubGetMetadataInclude::FromValue(true)); 
         }, 0.05f));
     };
     CreateUserMeta(UserAID, UserAMetadata);

@@ -505,11 +505,11 @@ struct FPubnubGetAllInclude
 {
 	GENERATED_BODY()
 
-	/* Include Membership Custom field */
+	/* Include Object Custom field */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeCustom = false;
-	/* Include Membership Status field */
+	/* Include Object Status field */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeStatus = false;
-	/* Include Membership Type field */
+	/* Include Object Type field */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeType = false;
 	/* Include Total Count */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeTotalCount = false;
@@ -517,7 +517,26 @@ struct FPubnubGetAllInclude
 	/* Set all Includes to the given bool Value */
 	static FPubnubGetAllInclude FromValue(bool Value)
 	{
-		return FPubnubGetAllInclude{Value, Value, Value};
+		return FPubnubGetAllInclude{Value, Value, Value, Value};
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetMetadataInclude
+{
+	GENERATED_BODY()
+
+	/* Include Object Custom field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeCustom = false;
+	/* Include Object Status field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeStatus = false;
+	/* Include Object Type field */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeType = false;
+
+	/* Set all Includes to the given bool Value */
+	static FPubnubGetMetadataInclude FromValue(bool Value)
+	{
+		return FPubnubGetMetadataInclude{Value, Value, Value};
 	}
 };
 

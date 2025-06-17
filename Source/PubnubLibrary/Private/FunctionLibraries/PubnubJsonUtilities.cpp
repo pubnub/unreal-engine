@@ -612,7 +612,40 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson(FString 
 
 	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), OperationResult.Status);
 	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), OperationResult.Error);
+	
+
+	//In some endpoints this field is called "error_message" and in some "message"
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("error_message"), OperationResult.ErrorMessage);
+	if(OperationResult.ErrorMessage.IsEmpty())
+	{
+		JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), OperationResult.ErrorMessage);
+	}
+
+	return OperationResult;
+}
+
+FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AccessManager(FString ResponseJson)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return FPubnubOperationResult();
+	}
+
+	FPubnubOperationResult OperationResult;
+
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), OperationResult.Status);
+	if(OperationResult.Status == 200)
+	{
+		OperationResult.Error = false;
+		OperationResult.ErrorMessage = "Success";
+	}
+	else
+	{
+		OperationResult.Error = true;
+		JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), OperationResult.ErrorMessage);
+	}
 
 	return OperationResult;
 }

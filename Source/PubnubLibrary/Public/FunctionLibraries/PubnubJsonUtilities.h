@@ -134,4 +134,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FPubnubOperationResult GetOperationResultFromJson(FString ResponseJson);
 
+	/**
+	 * Get Operation result from Json string in AccessManager operation
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubOperationResult GetOperationResultFromJson_AccessManager(FString ResponseJson);
+
 };

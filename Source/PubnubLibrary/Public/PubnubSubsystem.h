@@ -51,6 +51,10 @@ DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponse, int
 DECLARE_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponseNative, int Status, FString Message, const TArray<FString>& Channels);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersFromChannelResponse, int, Status, FString, Message, FPubnubListUsersFromChannelWrapper, Data);
 DECLARE_DELEGATE_ThreeParams(FOnListUsersFromChannelResponseNative, int Status, FString Message, FPubnubListUsersFromChannelWrapper Data);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnSetStateResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnSetStateResponseNative, const FPubnubOperationResult& Result);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRevokeTokenResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnRevokeTokenResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnFetchHistoryResponse, bool, Error, int, Status, FString, ErrorMessage, const TArray<FPubnubHistoryMessageData>&, Messages);
 DECLARE_DELEGATE_FourParams(FOnFetchHistoryResponseNative, bool Error, int Status, FString ErrorMessage, const TArray<FPubnubHistoryMessageData>& Messages);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnDeleteMessagesResponse, const FPubnubOperationResult&, Result);
@@ -408,10 +412,34 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to set the state on.
 	 * @param StateJson The JSON string representing the state to set.
+	 * 
 	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void SetState(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta = (AutoCreateRefTerm = "OnSetStateResponse"))
+	void SetState(FString Channel, FString StateJson, FOnSetStateResponse OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+
+	/**
+	 * Sets the presence state for the current user on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to set the state on.
+	 * @param StateJson The JSON string representing the state to set.
+	 * @param NativeCallback Optional delegate to listen for the set state result. Delegate in native form that can accept lambdas.
+	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
+	 */
+	void SetState(FString Channel, FString StateJson, FOnSetStateResponseNative NativeCallback = nullptr, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+
+	/**
+	 * Sets the presence state for the current user on a specified channel. Overload without delegate to get result.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to set the state on.
+	 * @param StateJson The JSON string representing the state to set.
+	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
+	 */
+	void SetState(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings);
 
 	/**
 	 * Gets the presence state for a specified user on a specified channel.
@@ -458,9 +486,21 @@ public:
 	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Token The access token to revoke.
+	 * @param OnRevokeTokenResponse Optional delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
-	void RevokeToken(FString Token);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta = (AutoCreateRefTerm = "OnRevokeTokenResponse"))
+	void RevokeToken(FString Token, FOnRevokeTokenResponse OnRevokeTokenResponse);
+
+	/**
+	 * Revokes a previously granted access token.
+	 * 
+	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Token The access token to revoke.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 */
+	void RevokeToken(FString Token, FOnRevokeTokenResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Parses an access token and retrieves information about its permissions.
@@ -614,7 +654,7 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void SetUserMetadata(FString User, FString UserMetadataObj, FString Include = "");
+	void SetUserMetadata(FString User, FString UserMetadataObj, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
@@ -1100,11 +1140,11 @@ private:
 	FString ListUserSubscribedChannels_pn(FString UserID);
 	void ListUserSubscribedChannels_JSON_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
 	void ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponseNative ListUserSubscribedChannelsResponse);
-	void SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+	void SetState_priv(FString Channel, FString StateJson, FOnSetStateResponseNative OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative OnGetStateResponse);
 	void Heartbeat_priv(FString Channel, FString ChannelGroup);
 	void GrantToken_priv(FString PermissionObject, FOnPubnubResponseNative OnGrantTokenResponse);
-	void RevokeToken_priv(FString Token);
+	void RevokeToken_priv(FString Token, FOnRevokeTokenResponseNative OnRevokeTokenResponse);
 	void ParseToken_priv(FString Token, FOnPubnubResponseNative OnParseTokenResponse);
 	FString FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_JSON_priv(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());

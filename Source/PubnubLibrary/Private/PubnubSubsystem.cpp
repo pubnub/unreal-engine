@@ -399,6 +399,27 @@ void UPubnubSubsystem::ListUserSubscribedChannels_JSON(FString UserID, FOnPubnub
 	});
 }
 
+void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FOnSetStateResponse OnSetStateResponse, FPubnubSetStateSettings SetStateSettings)
+{
+	FOnSetStateResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSetStateResponse](const FPubnubOperationResult& Result)
+	{
+		OnSetStateResponse.ExecuteIfBound(Result);
+	});
+	SetState(Channel, StateJson, NativeCallback, SetStateSettings);
+}
+
+void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FOnSetStateResponseNative NativeCallback, FPubnubSetStateSettings SetStateSettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, StateJson, NativeCallback, SetStateSettings]
+	{
+		SetState_priv(Channel, StateJson, NativeCallback, SetStateSettings);
+	});
+}
+
 void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
@@ -406,7 +427,7 @@ void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FPubnubSetSt
 	
 	QuickActionThread->AddFunctionToQueue( [this, Channel, StateJson, SetStateSettings]
 	{
-		SetState_priv(Channel, StateJson, SetStateSettings);
+		SetState_priv(Channel, StateJson, nullptr, SetStateSettings);
 	});
 }
 
@@ -465,14 +486,24 @@ void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnPubnubResponseNat
 	});
 }
 
-void UPubnubSubsystem::RevokeToken(FString Token)
+void UPubnubSubsystem::RevokeToken(FString Token, FOnRevokeTokenResponse OnRevokeTokenResponse)
+{
+	FOnRevokeTokenResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRevokeTokenResponse](const FPubnubOperationResult& Result)
+	{
+		OnRevokeTokenResponse.ExecuteIfBound(Result);
+	});
+	RevokeToken(Token, NativeCallback);
+}
+
+void UPubnubSubsystem::RevokeToken(FString Token, FOnRevokeTokenResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Token]
+	QuickActionThread->AddFunctionToQueue( [this, Token, NativeCallback]
 	{
-		RevokeToken_priv(Token);
+		RevokeToken_priv(Token, NativeCallback);
 	});
 }
 
@@ -633,14 +664,14 @@ void UPubnubSubsystem::GetAllUserMetadata_JSON(FOnPubnubResponse OnGetAllUserMet
 	});
 }
 
-void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FString Include)
+void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FPubnubGetMetadataInclude Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, User, UserMetadataObj, Include]
 	{
-		SetUserMetadata_priv(User, UserMetadataObj, Include);
+		SetUserMetadata_priv(User, UserMetadataObj, UPubnubUtilities::GetMetadataIncludeToString(Include));
 	});
 }
 
@@ -1859,7 +1890,7 @@ void UPubnubSubsystem::ListUserSubscribedChannels_DATA_priv(FString UserID, FOnL
 	});
 }
 
-void UPubnubSubsystem::SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings)
+void UPubnubSubsystem::SetState_priv(FString Channel, FString StateJson, FOnSetStateResponseNative OnSetStateResponse, FPubnubSetStateSettings SetStateSettings)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1886,13 +1917,16 @@ void UPubnubSubsystem::SetState_priv(FString Channel, FString StateJson, FPubnub
 	
 	pubnub_set_state_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*StateJson), SetStateOptions);
 	
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if (PNR_OK != PubnubResponse) {
-		PubnubResponseError(PubnubResponse, "Failed to set state.");
-	}
+	//This is just to clear the C-Core response buffer, but it doesn't return the server response
+	GetLastResponse(ctx_pub);
+	//So we need to get the response separately
+	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	
-	//Clean up the responses
-	pubnub_get(ctx_pub);
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnSetStateResponse, JsonResponse]()
+	{
+		OnSetStateResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse));
+	});
 }
 
 void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative OnGetStateResponse)
@@ -1962,7 +1996,7 @@ void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubRespon
 	
 }
 
-void UPubnubSubsystem::RevokeToken_priv(FString Token)
+void UPubnubSubsystem::RevokeToken_priv(FString Token, FOnRevokeTokenResponseNative OnRevokeTokenResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1972,11 +2006,19 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token)
 	
 	pubnub_revoke_token(ctx_pub, TCHAR_TO_ANSI(*Token));
 
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
+	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	//If response is empty, there was server error. 
+	if(JsonResponse.IsEmpty())
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Revoke Token.");
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnRevokeTokenResponse, JsonResponse]()
+	{
+		OnRevokeTokenResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson_AccessManager(JsonResponse));
+	});
 }
 
 void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponseNative OnParseTokenResponse)
@@ -2194,9 +2236,9 @@ void UPubnubSubsystem::SetUserMetadata_priv(FString User, FString UserMetadataOb
 		PubnubError("Can't Set User Metadata, UserMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
 		return;
 	}
-
+	
 	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*User), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UserMetadataObj));
-
+	
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
 	{

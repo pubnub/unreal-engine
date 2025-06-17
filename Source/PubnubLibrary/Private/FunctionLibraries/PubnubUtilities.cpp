@@ -123,6 +123,22 @@ FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetA
 	return FinalString;
 }
 
+FString UPubnubUtilities::GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude)
+{
+	FString FinalString = "";
+	if(GetMetadataInclude.IncludeCustom)			{FinalString.Append("custom,");}
+	if(GetMetadataInclude.IncludeStatus)			{FinalString.Append("status,");}
+	if(GetMetadataInclude.IncludeType)			{FinalString.Append("type,");}
+
+	//If there was any include remove the last comma
+	if(!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
 FString UPubnubUtilities::MembershipSortTypeToString(const EPubnubMembershipSortType SortType)
 {
 	switch (SortType)
