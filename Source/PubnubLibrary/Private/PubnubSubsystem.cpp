@@ -237,25 +237,45 @@ void UPubnubSubsystem::UnsubscribeFromAll()
 	});
 }
 
-void UPubnubSubsystem::AddChannelToGroup(FString Channel, FString ChannelGroup)
+void UPubnubSubsystem::AddChannelToGroup(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponse OnAddChannelToGroupResponse)
+{
+	FOnAddChannelToGroupResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnAddChannelToGroupResponse](const FPubnubOperationResult& Result)
+	{
+		OnAddChannelToGroupResponse.ExecuteIfBound(Result);
+	});
+	AddChannelToGroup(Channel, ChannelGroup, NativeCallback);
+}
+
+void UPubnubSubsystem::AddChannelToGroup(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelGroup]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelGroup, NativeCallback]
 	{
-		AddChannelToGroup_priv(Channel, ChannelGroup);
+		AddChannelToGroup_priv(Channel, ChannelGroup, NativeCallback);
 	});
 }
 
-void UPubnubSubsystem::RemoveChannelFromGroup(FString Channel, FString ChannelGroup)
+void UPubnubSubsystem::RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse)
+{
+	FOnRemoveChannelFromGroupResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRemoveChannelFromGroupResponse](const FPubnubOperationResult& Result)
+	{
+		OnRemoveChannelFromGroupResponse.ExecuteIfBound(Result);
+	});
+	RemoveChannelFromGroup(Channel, ChannelGroup, NativeCallback);
+}
+
+void UPubnubSubsystem::RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelGroup]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelGroup, NativeCallback]
 	{
-		RemoveChannelFromGroup_priv(Channel, ChannelGroup);
+		RemoveChannelFromGroup_priv(Channel, ChannelGroup, NativeCallback);
 	});
 }
 
@@ -292,14 +312,24 @@ void UPubnubSubsystem::ListChannelsFromGroup_JSON(FString ChannelGroup, FOnPubnu
 	});
 }
 
-void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup)
+void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse)
+{
+	FOnRemoveChannelGroupResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRemoveChannelGroupResponse](const FPubnubOperationResult& Result)
+	{
+		OnRemoveChannelGroupResponse.ExecuteIfBound(Result);
+	});
+	RemoveChannelGroup(ChannelGroup, NativeCallback);
+}
+
+void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannelGroupResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup]
+	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, NativeCallback]
 	{
-		RemoveChannelGroup_priv(ChannelGroup);
+		RemoveChannelGroup_priv(ChannelGroup, NativeCallback);
 	});
 }
 
@@ -1610,7 +1640,7 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv()
 	ChannelGroupSubscriptions.Empty();
 }
 
-void UPubnubSubsystem::AddChannelToGroup_priv(FString Channel, FString ChannelGroup)
+void UPubnubSubsystem::AddChannelToGroup_priv(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponseNative OnAddChannelToGroupResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1620,14 +1650,19 @@ void UPubnubSubsystem::AddChannelToGroup_priv(FString Channel, FString ChannelGr
 	
 	pubnub_add_channel_to_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
 
-	FString JsonResponse = GetLastResponse(ctx_pub);
-	//FString httpResponse = pubnub_last_http_response_body(ctx_pub);
-
-	UE_LOG(LogTemp, Log, TEXT("AddChannelToGroup: %s"), *JsonResponse);
-	//UE_LOG(LogTemp, Log, TEXT("AddChannelToGroup HTTP Response: %s"), *httpResponse);
+	//This is just to clear the C-Core response buffer, but it doesn't return the server response
+	GetLastResponse(ctx_pub);
+	//So we need to get the response separately
+	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnAddChannelToGroupResponse, JsonResponse]()
+	{
+		OnAddChannelToGroupResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse));
+	});
 }
 
-void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup)
+void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1637,7 +1672,16 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString Chan
 
 	pubnub_remove_channel_from_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
 
+	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
+	//So we need to get the response separately
+	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnRemoveChannelFromGroupResponse, JsonResponse]()
+	{
+		OnRemoveChannelFromGroupResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse));
+	});
 }
 
 FString UPubnubSubsystem::ListChannelsFromGroup_pn(FString ChannelGroup)
@@ -1688,7 +1732,7 @@ void UPubnubSubsystem::ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOn
 	});
 }
 
-void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
+void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup, FOnRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -1698,7 +1742,16 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup)
 
 	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
 	
+	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
+	//So we need to get the response separately
+	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnRemoveChannelGroupResponse, JsonResponse]()
+	{
+		OnRemoveChannelGroupResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse));
+	});
 }
 
 FString UPubnubSubsystem::ListUsersFromChannel_pn(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
@@ -1998,9 +2051,7 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 	//If response is empty, there was server error. 
 	if(JsonResponse.IsEmpty())
 	{
-		pubnub_char_mem_block LastServerResponse;
-		pubnub_last_http_response_body(ctx_pub, &LastServerResponse);
-		JsonResponse = LastServerResponse.ptr;
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
 	//Delegate needs to be executed back on Game Thread
@@ -2033,17 +2084,13 @@ void UPubnubSubsystem::DeleteMessages_priv(FString Channel, FOnDeleteMessagesRes
 	DeleteMessagesOptions.end = EndCharConverter.Get();
 
 	pubnub_delete_messages(ctx_pub, TCHAR_TO_ANSI(*Channel), DeleteMessagesOptions);
-
-	pubnub_await(ctx_pub);
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
 
 	//If response is empty, there was server error. 
 	if(JsonResponse.IsEmpty())
 	{
-		pubnub_char_mem_block LastServerResponse;
-		pubnub_last_http_response_body(ctx_pub, &LastServerResponse);
-		JsonResponse = LastServerResponse.ptr;
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
 	//Delegate needs to be executed back on Game Thread

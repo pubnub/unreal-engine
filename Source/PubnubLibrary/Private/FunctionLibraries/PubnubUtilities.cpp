@@ -17,6 +17,13 @@ FPubnubConfig UPubnubUtilities::PubnubConfigFromPluginSettings(UPubnubSettings* 
 	return Config;
 }
 
+FString UPubnubUtilities::PubnubGetLastServerHttpResponse(pubnub_t* Context)
+{
+	pubnub_char_mem_block LastServerResponse;
+	pubnub_last_http_response_body(Context, &LastServerResponse);
+	return FString(LastServerResponse.ptr);
+}
+
 FString UPubnubUtilities::AddQuotesToString(const FString InString, bool SkipIfHasQuotes)
 {
 	if(InString.Left(1) != "\"" || InString.Right(1) != "\"" || !SkipIfHasQuotes)

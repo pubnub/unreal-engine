@@ -21,6 +21,7 @@ class PUBNUBLIBRARY_API UPubnubUtilities : public UBlueprintFunctionLibrary
 public:
 
 	static FPubnubConfig PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings);
+	static FString PubnubGetLastServerHttpResponse(pubnub_t* Context);
 	
 	/* STRING OPERATIONS */
 	

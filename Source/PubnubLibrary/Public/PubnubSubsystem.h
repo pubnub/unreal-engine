@@ -39,8 +39,14 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, const FPubnubOpera
 DECLARE_DELEGATE_TwoParams(FOnPublishMessageResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSignalResponse, const FPubnubOperationResult&, Result, const FPubnubMessageData&, SignalMessage);
 DECLARE_DELEGATE_TwoParams(FOnSignalResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddChannelToGroupResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnAddChannelToGroupResponseNative, const FPubnubOperationResult& Result);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelFromGroupResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnRemoveChannelFromGroupResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponse, bool, Error, int, Status, const TArray<FString>&, Channels);
 DECLARE_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponseNative, bool Error, int Status, const TArray<FString>& Channels);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelGroupResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnRemoveChannelGroupResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponse, int, Status, FString, Message, const TArray<FString>&, Channels);
 DECLARE_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponseNative, int Status, FString Message, const TArray<FString>& Channels);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersFromChannelResponse, int, Status, FString, Message, FPubnubListUsersFromChannelWrapper, Data);
@@ -258,9 +264,22 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to add to the channel group.
 	 * @param ChannelGroup The name of the channel group to add the channel to.
+	 * @param OnAddChannelToGroupResponse Optional delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
-	void AddChannelToGroup(FString Channel, FString ChannelGroup);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnAddChannelToGroupResponse"))
+	void AddChannelToGroup(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponse OnAddChannelToGroupResponse);
+
+	/**
+	 * Adds a channel to a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to add to the channel group.
+	 * @param ChannelGroup The name of the channel group to add the channel to.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if operation result is not needed.
+	 */
+	void AddChannelToGroup(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Removes a channel from a specified channel group.
@@ -269,9 +288,22 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to remove from the channel group.
 	 * @param ChannelGroup The name of the channel group to remove the channel from.
+	 * @param OnRemoveChannelFromGroupResponse Optional delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
-	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelFromGroupResponse"))
+	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
+
+	/**
+	 * Removes a channel from a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to remove from the channel group.
+	 * @param ChannelGroup The name of the channel group to remove the channel from.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if operation result is not needed.
+	 */
+	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Lists the channels that belong to a specified channel group.
@@ -303,9 +335,21 @@ public:
 	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
 	 * 
 	 * @param ChannelGroup The name of the channel group to remove.
+	 * @param OnRemoveChannelGroupResponse Optional delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
-	void RemoveChannelGroup(FString ChannelGroup);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelGroupResponse"))
+	void RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
+
+	/**
+	 * Removes a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ChannelGroup The name of the channel group to remove.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if operation result is not needed.
+	 */
+	void RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannelGroupResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Lists the users currently present on a specified channel.
@@ -1044,12 +1088,12 @@ private:
 	void UnsubscribeFromChannel_priv(FString Channel);
 	void UnsubscribeFromGroup_priv(FString GroupName);
 	void UnsubscribeFromAll_priv();
-	void AddChannelToGroup_priv(FString Channel, FString ChannelGroup);
-	void RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup);
+	void AddChannelToGroup_priv(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponseNative OnAddChannelToGroupResponse);
+	void RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse);
 	FString ListChannelsFromGroup_pn(FString ChannelGroup);
 	void ListChannelsFromGroup_JSON_priv(FString ChannelGroup, FOnPubnubResponse OnListChannelsResponse);
 	void ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOnListChannelsFromGroupResponseNative OnListChannelsResponse);
-	void RemoveChannelGroup_priv(FString ChannelGroup);
+	void RemoveChannelGroup_priv(FString ChannelGroup, FOnRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse);
 	FString ListUsersFromChannel_pn(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 	void ListUsersFromChannel_JSON_priv(FString Channel, FOnPubnubResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 	void ListUsersFromChannel_DATA_priv(FString Channel, FOnListUsersFromChannelResponseNative ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
