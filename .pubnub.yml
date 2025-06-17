@@ -1,8 +1,13 @@
 name: unreal-engine
 schema: 1
-version: v0.3.2
+version: v0.3.3
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2025-06-16
+    version: v0.3.3
+    changes:
+      - type: bug
+        text: "Fix compilation errors that were present in UE 5.1 and UE 5.2 versions."
   - date: 2025-06-10
     version: v0.3.2
     changes:
