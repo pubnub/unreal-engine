@@ -45,12 +45,12 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
 
     // ListUsersFromChannel callback handler
     FOnListUsersFromChannelResponseNative ListUsersCallback;
-    ListUsersCallback.BindLambda([this, bListUsersOperationDone, bListUsersOperationSuccess, CurrentListedUserIDs, CurrentOccupancy](int ResponseStatus, FString ResponseMessage, FPubnubListUsersFromChannelWrapper ResponseData)
+    ListUsersCallback.BindLambda([this, bListUsersOperationDone, bListUsersOperationSuccess, CurrentListedUserIDs, CurrentOccupancy](FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper ResponseData)
     {
         *bListUsersOperationDone = true;
         CurrentListedUserIDs->Empty();
         *CurrentOccupancy = ResponseData.Occupancy;
-        if (ResponseStatus == 200) 
+        if (Result.Status == 200) 
         {
             *bListUsersOperationSuccess = true;
             ResponseData.UsersState.GetKeys(*CurrentListedUserIDs);
@@ -58,7 +58,7 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
         else
         {
             *bListUsersOperationSuccess = false;
-            AddError(FString::Printf(TEXT("ListUsersFromChannel failed. Status: %d"), ResponseStatus));
+            AddError(FString::Printf(TEXT("ListUsersFromChannel failed. Status: %d"), Result.Status));
         }
     });
 
@@ -147,10 +147,10 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     });
 
     FOnListUsersSubscribedChannelsResponseNative ListChannelsCallback;
-    ListChannelsCallback.BindLambda([this, bListChannelsOpDone, bListChannelsOpSuccess, ReceivedSubscribedChannels](int Status, FString Message, const TArray<FString>& Channels)
+    ListChannelsCallback.BindLambda([this, bListChannelsOpDone, bListChannelsOpSuccess, ReceivedSubscribedChannels](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
     {
         *bListChannelsOpDone = true;
-        *bListChannelsOpSuccess = (Status == 200);
+        *bListChannelsOpSuccess = (Result.Status == 200);
         if (*bListChannelsOpSuccess)
         {
             *ReceivedSubscribedChannels = Channels;
@@ -158,7 +158,7 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
         else
         {
             ReceivedSubscribedChannels->Empty();
-            AddError(FString::Printf(TEXT("ListUserSubscribedChannels failed. Status: %d"), Status));
+            AddError(FString::Printf(TEXT("ListUserSubscribedChannels failed. Status: %d"), Result.Status));
         }
     });
 

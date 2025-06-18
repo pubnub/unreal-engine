@@ -436,17 +436,16 @@ bool FListUserSubscribedChannelsJsonToDataUnitTest::RunTest(const FString& Param
 {
 	//Test successful response
 	FString TestJson = "{\"status\": 200, \"message\": \"OK\", \"payload\": {\"channels\": [\"my_channel\"]}, \"service\": \"Presence\"}";
-	int Status = 0;
-	FString Message;
+	FPubnubOperationResult Result;
 	TArray<FString> Channels;
 	
-	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(TestJson, Status, Message, Channels);
+	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(TestJson, Result, Channels);
 	
 	//Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	//Verify message
-	TestEqual("Message should be 'OK'", Message, "OK");
+	TestEqual("Message should be 'OK'", Result.ErrorMessage, "OK");
 	
 	//Verify channels array
 	TestEqual("Channels array should have 1 element", Channels.Num(), 1);
@@ -454,17 +453,17 @@ bool FListUserSubscribedChannelsJsonToDataUnitTest::RunTest(const FString& Param
 
 	//Test multiple channels response
 	FString TestMultipleChannelsJson = "{\"status\": 200, \"message\": \"OK\", \"payload\": {\"channels\": [\"my_channel\", \"my_channel2\", \"my_channel3\"]}, \"service\": \"Presence\"}";
-	Status = 0;
-	Message.Empty();
+	Result.Status = 0;
+	Result.ErrorMessage.Empty();
 	Channels.Empty();
 	
-	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(TestMultipleChannelsJson, Status, Message, Channels);
+	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(TestMultipleChannelsJson, Result, Channels);
 	
 	//Verify status code
-	TestEqual("Status code should be 200 for multiple channels", Status, 200);
+	TestEqual("Status code should be 200 for multiple channels", Result.Status, 200);
 	
 	//Verify message
-	TestEqual("Message should be 'OK' for multiple channels", Message, "OK");
+	TestEqual("Message should be 'OK' for multiple channels", Result.ErrorMessage, "OK");
 	
 	//Verify channels array
 	TestEqual("Channels array should have 3 elements", Channels.Num(), 3);
@@ -474,28 +473,28 @@ bool FListUserSubscribedChannelsJsonToDataUnitTest::RunTest(const FString& Param
 
 	//Test error response
 	FString TestErrorJson = "{\"status\": 400, \"message\": \"Bad Request\", \"payload\": {\"channels\": []}, \"service\": \"Presence\"}";
-	Status = 0;
-	Message.Empty();
+	Result.Status = 0;
+	Result.ErrorMessage.Empty();
 	Channels.Empty();
 	
-	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(TestErrorJson, Status, Message, Channels);
+	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(TestErrorJson, Result, Channels);
 	
 	//Verify status code
-	TestEqual("Status code should be 400 for error response", Status, 400);
+	TestEqual("Status code should be 400 for error response", Result.Status, 400);
 	
 	//Verify message
-	TestEqual("Message should be 'Bad Request' for error response", Message, "Bad Request");
+	TestEqual("Message should be 'Bad Request' for error response", Result.ErrorMessage, "Bad Request");
 	
 	//Verify channels array is empty
 	TestEqual("Channels array should be empty for error response", Channels.Num(), 0);
 
 	//Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
-	Message.Empty();
+	Result.Status = 0;
+	Result.ErrorMessage.Empty();
 	Channels.Empty();
 	
-	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(TestInvalidJson, Status, Message, Channels);
+	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(TestInvalidJson, Result, Channels);
 	
 	//Verify channels array is empty
 	TestEqual("Channels array should be empty for invalid JSON", Channels.Num(), 0);
@@ -507,17 +506,16 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	//Test basic response with user list
 	FString TestBasicJson = "{\"status\": 200, \"message\": \"OK\", \"occupancy\": 2, \"uuids\": [\"User2\", \"User1\"], \"service\": \"Presence\"}";
-	int Status = 0;
-	FString Message;
+	FPubnubOperationResult Result;
 	FPubnubListUsersFromChannelWrapper Data;
 	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestBasicJson, Status, Message, Data);
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestBasicJson, Result, Data);
 	
 	//Verify status code
-	TestEqual("Status code should be 200 for basic response", Status, 200);
+	TestEqual("Status code should be 200 for basic response", Result.Status, 200);
 	
 	//Verify message
-	TestEqual("Message should be 'OK' for basic response", Message, "OK");
+	TestEqual("Message should be 'OK' for basic response", Result.ErrorMessage, "OK");
 	
 	//Verify occupancy
 	TestEqual("Occupancy should be 2 for basic response", Data.Occupancy, 2);
@@ -531,17 +529,17 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	//Test response with user states
 	FString TestStatesJson = "{\"status\": 200, \"message\": \"OK\", \"occupancy\": 2, \"uuids\": [{\"uuid\": \"User2\"}, {\"uuid\": \"User1\", \"state\": {\"state\": \"new state\"}}], \"service\": \"Presence\"}";
-	Status = 0;
-	Message.Empty();
+	Result.Status = 0;
+	Result.ErrorMessage.Empty();
 	Data = FPubnubListUsersFromChannelWrapper();
 	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestStatesJson, Status, Message, Data);
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestStatesJson, Result, Data);
 	
 	//Verify status code
-	TestEqual("Status code should be 200 for states response", Status, 200);
+	TestEqual("Status code should be 200 for states response", Result.Status, 200);
 	
 	//Verify message
-	TestEqual("Message should be 'OK' for states response", Message, "OK");
+	TestEqual("Message should be 'OK' for states response", Result.ErrorMessage, "OK");
 	
 	//Verify occupancy
 	TestEqual("Occupancy should be 2 for states response", Data.Occupancy, 2);
@@ -555,17 +553,17 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	//Test response with disabled UUIDs
 	FString TestDisabledUuidsJson = "{\"status\": 200, \"message\": \"OK\", \"occupancy\": 2, \"service\": \"Presence\"}";
-	Status = 0;
-	Message.Empty();
+	Result.Status = 0;
+	Result.ErrorMessage.Empty();
 	Data = FPubnubListUsersFromChannelWrapper();
 	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestDisabledUuidsJson, Status, Message, Data);
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestDisabledUuidsJson, Result, Data);
 	
 	//Verify status code
-	TestEqual("Status code should be 200 for disabled UUIDs response", Status, 200);
+	TestEqual("Status code should be 200 for disabled UUIDs response", Result.Status, 200);
 	
 	//Verify message
-	TestEqual("Message should be 'OK' for disabled UUIDs response", Message, "OK");
+	TestEqual("Message should be 'OK' for disabled UUIDs response", Result.ErrorMessage, "OK");
 	
 	//Verify occupancy
 	TestEqual("Occupancy should be 2 for disabled UUIDs response", Data.Occupancy, 2);
@@ -575,17 +573,17 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	//Test error response
 	FString TestErrorJson = "{\"status\": 400, \"message\": \"Bad Request\", \"occupancy\": 0, \"service\": \"Presence\"}";
-	Status = 0;
-	Message.Empty();
+	Result.Status = 0;
+	Result.ErrorMessage.Empty();
 	Data = FPubnubListUsersFromChannelWrapper();
 	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestErrorJson, Status, Message, Data);
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestErrorJson, Result, Data);
 	
 	//Verify status code
-	TestEqual("Status code should be 400 for error response", Status, 400);
+	TestEqual("Status code should be 400 for error response", Result.Status, 400);
 	
 	//Verify message
-	TestEqual("Message should be 'Bad Request' for error response", Message, "Bad Request");
+	TestEqual("Message should be 'Bad Request' for error response", Result.ErrorMessage, "Bad Request");
 	
 	//Verify occupancy
 	TestEqual("Occupancy should be 0 for error response", Data.Occupancy, 0);
@@ -595,11 +593,11 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	//Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
-	Message.Empty();
+	Result.Status = 0;
+	Result.ErrorMessage.Empty();
 	Data = FPubnubListUsersFromChannelWrapper();
 	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestInvalidJson, Status, Message, Data);
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestInvalidJson, Result, Data);
 	
 	//Verify users state map is empty
 	TestEqual("UsersState map should be empty for invalid JSON", Data.UsersState.Num(), 0);
@@ -611,21 +609,19 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test basic response with simple message
 	FString TestBasicJson = "{\"status\": 200, \"channels\": {\"my_channel\": [{\"message\": {\"text\": \"This is my message\"}, \"timetoken\": \"17302160534651740\", \"message_type\": null, \"custom_message_type\": \"some_type\", \"meta\": \"\", \"uuid\": \"android_user\"}]}, \"error_message\": \"\", \"error\": false}";
-	bool Error = true;
-	int Status = 0;
-	FString ErrorMessage;
+	FPubnubOperationResult Result;
 	TArray<FPubnubHistoryMessageData> Messages;
 	
-	UPubnubJsonUtilities::FetchHistoryJsonToData(TestBasicJson, Error, Status, ErrorMessage, Messages);
+	UPubnubJsonUtilities::FetchHistoryJsonToData(TestBasicJson, Result, Messages);
 	
 	// Verify error flag
-	TestTrue("Error flag should be false", !Error);
+	TestTrue("Error flag should be false", !Result.Error);
 	
 	// Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify error message
-	TestEqual("Error message should be empty", ErrorMessage, "");
+	TestEqual("Error message should be empty", Result.ErrorMessage, "");
 	
 	// Verify messages array
 	TestEqual("Messages array should have 1 element", Messages.Num(), 1);
@@ -639,21 +635,21 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test response with message actions
 	FString TestActionsJson = "{\"status\": 200, \"channels\": {\"my_channel\": [{\"timetoken\": \"17302756128241865\", \"meta\": \"some meta\", \"uuid\": \"User1\", \"message\": \"message from unreal to history\", \"message_type\": null, \"custom_message_type\": null, \"actions\": {\"edit\": {\"editted message\": [{\"uuid\": \"User2\", \"actionTimetoken\": \"17302814493954180\"}, {\"uuid\": \"User1\", \"actionTimetoken\": \"17302756806526160\"}]}, \"another type\": {\"bla bla\": [{\"uuid\": \"User1\", \"actionTimetoken\": \"17302763502280660\"}]}}}]}, \"error_message\": \"\", \"error\": false}";
-	Error = true;
-	Status = 0;
-	ErrorMessage = "";
+	Result.Error = true;
+	Result.Status = 0;
+	Result.ErrorMessage = "";
 	Messages.Empty();
 	
-	UPubnubJsonUtilities::FetchHistoryJsonToData(TestActionsJson, Error, Status, ErrorMessage, Messages);
+	UPubnubJsonUtilities::FetchHistoryJsonToData(TestActionsJson, Result, Messages);
 	
 	// Verify error flag
-	TestTrue("Error flag should be false for actions response", !Error);
+	TestTrue("Error flag should be false for actions response", !Result.Error);
 	
 	// Verify status code
-	TestEqual("Status code should be 200 for actions response", Status, 200);
+	TestEqual("Status code should be 200 for actions response", Result.Status, 200);
 	
 	// Verify error message
-	TestEqual("Error message should be empty for actions response", ErrorMessage, "");
+	TestEqual("Error message should be empty for actions response", Result.ErrorMessage, "");
 	
 	// Verify messages array
 	TestEqual("Messages array should have 1 element for actions response", Messages.Num(), 1);
@@ -687,33 +683,33 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test error response
 	FString TestErrorJson = "{\"status\": 400, \"channels\": {}, \"error_message\": \"Invalid channel\", \"error\": true}";
-	Error = false;
-	Status = 0;
-	ErrorMessage = "";
+	Result.Error = false;
+	Result.Status = 0;
+	Result.ErrorMessage = "";
 	Messages.Empty();
 	
-	UPubnubJsonUtilities::FetchHistoryJsonToData(TestErrorJson, Error, Status, ErrorMessage, Messages);
+	UPubnubJsonUtilities::FetchHistoryJsonToData(TestErrorJson, Result, Messages);
 	
 	// Verify error flag
-	TestTrue("Error flag should be true for error response", Error);
+	TestTrue("Error flag should be true for error response", Result.Error);
 	
 	// Verify status code
-	TestEqual("Status code should be 400 for error response", Status, 400);
+	TestEqual("Status code should be 400 for error response", Result.Status, 400);
 	
 	// Verify error message
-	TestEqual("Error message should be 'Invalid channel'", ErrorMessage, "Invalid channel");
+	TestEqual("Error message should be 'Invalid channel'", Result.ErrorMessage, "Invalid channel");
 	
 	// Verify messages array is empty
 	TestEqual("Messages array should be empty for error response", Messages.Num(), 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Error = false;
-	Status = 0;
-	ErrorMessage = "";
+	Result.Error = false;
+	Result.Status = 0;
+	Result.ErrorMessage = "";
 	Messages.Empty();
 	
-	UPubnubJsonUtilities::FetchHistoryJsonToData(TestInvalidJson, Error, Status, ErrorMessage, Messages);
+	UPubnubJsonUtilities::FetchHistoryJsonToData(TestInvalidJson, Result, Messages);
 	
 	// Verify messages array is empty
 	TestEqual("Messages array should be empty for invalid JSON", Messages.Num(), 0);

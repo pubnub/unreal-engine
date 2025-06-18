@@ -47,16 +47,16 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListChannelsFromGroupResponse, const FPubn
 DECLARE_DELEGATE_TwoParams(FOnListChannelsFromGroupResponseNative, const FPubnubOperationResult& Result, const TArray<FString>& Channels);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelGroupResponse, const FPubnubOperationResult&, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveChannelGroupResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponse, int, Status, FString, Message, const TArray<FString>&, Channels);
-DECLARE_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponseNative, int Status, FString Message, const TArray<FString>& Channels);
-DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersFromChannelResponse, int, Status, FString, Message, FPubnubListUsersFromChannelWrapper, Data);
-DECLARE_DELEGATE_ThreeParams(FOnListUsersFromChannelResponseNative, int Status, FString Message, FPubnubListUsersFromChannelWrapper Data);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListUsersSubscribedChannelsResponse, const FPubnubOperationResult&, Result, const TArray<FString>&, Channels);
+DECLARE_DELEGATE_TwoParams(FOnListUsersSubscribedChannelsResponseNative, const FPubnubOperationResult& Result, const TArray<FString>& Channels);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListUsersFromChannelResponse, const FPubnubOperationResult&, Result, FPubnubListUsersFromChannelWrapper, Data);
+DECLARE_DELEGATE_TwoParams(FOnListUsersFromChannelResponseNative, const FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper Data);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnSetStateResponse, const FPubnubOperationResult&, Result);
 DECLARE_DELEGATE_OneParam(FOnSetStateResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRevokeTokenResponse, const FPubnubOperationResult&, Result);
 DECLARE_DELEGATE_OneParam(FOnRevokeTokenResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnFetchHistoryResponse, bool, Error, int, Status, FString, ErrorMessage, const TArray<FPubnubHistoryMessageData>&, Messages);
-DECLARE_DELEGATE_FourParams(FOnFetchHistoryResponseNative, bool Error, int Status, FString ErrorMessage, const TArray<FPubnubHistoryMessageData>& Messages);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnFetchHistoryResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubHistoryMessageData>&, Messages);
+DECLARE_DELEGATE_TwoParams(FOnFetchHistoryResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnDeleteMessagesResponse, const FPubnubOperationResult&, Result);
 DECLARE_DELEGATE_OneParam(FOnDeleteMessagesResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllUserMetadataResponse, int, Status, const TArray<FPubnubUserData>&, UsersData, FString, PageNext, FString, PagePrev);
@@ -319,6 +319,15 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
 	void ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
+
+	/**
+	 * Lists the channels that belong to a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ChannelGroup The name of the channel group to list channels from.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 */
 	void ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponseNative NativeCallback);
 
 	/**
@@ -366,6 +375,16 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void ListUsersFromChannel(FString Channel, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+
+	/**
+	 * Lists the users currently present on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to list users from.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details. 
+	 */
 	void ListUsersFromChannel(FString Channel, FOnListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	/**
@@ -391,6 +410,15 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
+	
+	/**
+	 * Lists the channels that a specified user is currently subscribed to.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 	
+	 * @param UserID The user ID to list subscribed channels for.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 */
 	void ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponseNative NativeCallback);
 
 	/**
@@ -522,6 +550,25 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
 	void ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse);
+
+	/**
+	 * Parses an access token and retrieves information about its permissions.
+	 * 
+	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * Permissions are written in bit mask int:
+	 * READ = 1
+	 * WRITE = 2
+	 * MANAGE = 4
+	 * DELETE = 8
+	 * CREATE = 16
+	 * GET = 32
+	 * UPDATE = 64
+	 * JOIN = 128
+	 * 
+	 * @param Token The access token to parse.
+	 * @param NativeCallback The callback function used to handle the result in JSON format. Delegate in native form that can accept lambdas.
+	 */
 	void ParseToken(FString Token, FOnPubnubResponseNative NativeCallback);
 
 	/**
@@ -544,6 +591,16 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
 	void FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+
+	/**
+	 * Fetches historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to fetch messages from.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
+	 */
 	void FetchHistory(FString Channel, FOnFetchHistoryResponseNative NativeCallback, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 
 	/**

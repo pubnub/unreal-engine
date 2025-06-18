@@ -336,9 +336,9 @@ void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannel
 void UPubnubSubsystem::ListUsersFromChannel(FString Channel, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
 	FOnListUsersFromChannelResponseNative NativeCallback;
-	NativeCallback.BindLambda([ListUsersFromChannelResponse](int Status, FString Message, FPubnubListUsersFromChannelWrapper Data)
+	NativeCallback.BindLambda([ListUsersFromChannelResponse](const FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper Data)
 	{
-		ListUsersFromChannelResponse.ExecuteIfBound(Status, Message, Data);
+		ListUsersFromChannelResponse.ExecuteIfBound(Result, Data);
 	});
 
 	ListUsersFromChannel(Channel, NativeCallback, ListUsersFromChannelSettings);
@@ -369,9 +369,9 @@ void UPubnubSubsystem::ListUsersFromChannel_JSON(FString Channel, FOnPubnubRespo
 void UPubnubSubsystem::ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse)
 {
 	FOnListUsersSubscribedChannelsResponseNative NativeCallback;
-	NativeCallback.BindLambda([ListUserSubscribedChannelsResponse](int Status, FString Message, const TArray<FString>& Channels)
+	NativeCallback.BindLambda([ListUserSubscribedChannelsResponse](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
-		ListUserSubscribedChannelsResponse.ExecuteIfBound(Status, Message, Channels);
+		ListUserSubscribedChannelsResponse.ExecuteIfBound(Result, Channels);
 	});
 
 	ListUserSubscribedChannels(UserID, NativeCallback);
@@ -547,9 +547,9 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
 {
 	FOnFetchHistoryResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnFetchHistoryResponse](bool Error, int Status, FString ErrorMessage, const TArray<FPubnubHistoryMessageData>& Messages)
+	NativeCallback.BindLambda([OnFetchHistoryResponse](const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages)
 	{
-		OnFetchHistoryResponse.ExecuteIfBound(Error, Status, ErrorMessage, Messages);
+		OnFetchHistoryResponse.ExecuteIfBound(Result, Messages);
 	});
 
 	FetchHistory(Channel, NativeCallback, FetchHistorySettings);
@@ -1831,13 +1831,12 @@ void UPubnubSubsystem::ListUsersFromChannel_DATA_priv(FString Channel, FOnListUs
 	AsyncTask(ENamedThreads::GameThread, [this, ListUsersFromChannelResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		int Status;
-		FString Message;
+		FPubnubOperationResult Result;
 		FPubnubListUsersFromChannelWrapper Data;
-		UPubnubJsonUtilities::ListUsersFromChannelJsonToData(JsonResponse, Status, Message, Data);
+		UPubnubJsonUtilities::ListUsersFromChannelJsonToData(JsonResponse, Result, Data);
 		
 		//Broadcast bound delegate with parsed response
-		ListUsersFromChannelResponse.ExecuteIfBound(Status, Message, Data);
+		ListUsersFromChannelResponse.ExecuteIfBound(Result, Data);
 	});
 }
 
@@ -1879,13 +1878,12 @@ void UPubnubSubsystem::ListUserSubscribedChannels_DATA_priv(FString UserID, FOnL
 	AsyncTask(ENamedThreads::GameThread, [this, ListUserSubscribedChannelsResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		int Status;
-		FString Message;
+		FPubnubOperationResult Result;
 		TArray<FString> Channels;
-		UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(JsonResponse, Status, Message, Channels);
+		UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(JsonResponse, Result, Channels);
 		
 		//Broadcast bound delegate with parsed response
-		ListUserSubscribedChannelsResponse.ExecuteIfBound(Status, Message, Channels);
+		ListUserSubscribedChannelsResponse.ExecuteIfBound(Result, Channels);
 	});
 }
 
@@ -2099,14 +2097,12 @@ void UPubnubSubsystem::FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryRe
 	AsyncTask(ENamedThreads::GameThread, [this, OnFetchHistoryResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		bool Error = false;
-		int Status = 0;
-		FString ErrorMessage = "";
+		FPubnubOperationResult Result;
 		TArray<FPubnubHistoryMessageData> Messages;
-		UPubnubJsonUtilities::FetchHistoryJsonToData(JsonResponse, Error, Status, ErrorMessage, Messages);
+		UPubnubJsonUtilities::FetchHistoryJsonToData(JsonResponse, Result, Messages);
 				
 		//Broadcast bound delegate with parsed response
-		OnFetchHistoryResponse.ExecuteIfBound(Error, Status, ErrorMessage, Messages);
+		OnFetchHistoryResponse.ExecuteIfBound(Result, Messages);
 	});
 }
 

@@ -157,10 +157,10 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 
 	// Callback Definition
 	FOnFetchHistoryResponseNative FetchHistoryCallback;
-	FetchHistoryCallback.BindLambda([this, bFetchHistoryDone, bFetchHistorySuccess, ReceivedHistoryMessages](bool Error, int Status, FString ErrorMessage, const TArray<FPubnubHistoryMessageData>& Messages)
+	FetchHistoryCallback.BindLambda([this, bFetchHistoryDone, bFetchHistorySuccess, ReceivedHistoryMessages](const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages)
 	{
 		*bFetchHistoryDone = true;
-		if (!Error && Status == 200)
+		if (!Result.Error && Result.Status == 200)
 		{
 			*bFetchHistorySuccess = true;
 			*ReceivedHistoryMessages = Messages;
@@ -168,7 +168,7 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 		else
 		{
 			*bFetchHistorySuccess = false;
-			AddError(FString::Printf(TEXT("FetchHistory failed. Error: %s, Status: %d, Message: %s"), Error ? TEXT("true") : TEXT("false"), Status, *ErrorMessage));
+			AddError(FString::Printf(TEXT("FetchHistory failed. Error: %s, Status: %d, Message: %s"), Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
 		}
 	});
 
@@ -315,11 +315,11 @@ bool FPubnubDeleteMessagesTest::RunTest(const FString& Parameters)
 
 	// Define other Callbacks
 	FOnFetchHistoryResponseNative FetchHistoryCallback;
-	FetchHistoryCallback.BindLambda([this, bFetchHistoryDone, bFetchHistorySuccess, ReceivedHistoryMessages](bool Error, int Status, FString ErrorMessage, const TArray<FPubnubHistoryMessageData>& Messages) {
+	FetchHistoryCallback.BindLambda([this, bFetchHistoryDone, bFetchHistorySuccess, ReceivedHistoryMessages](const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages) {
 		*bFetchHistoryDone = true;
-		*bFetchHistorySuccess = !Error && (Status == 200);
+		*bFetchHistorySuccess = !Result.Error && (Result.Status == 200);
 		*ReceivedHistoryMessages = Messages;
-		if (Error || Status != 200) AddError(FString::Printf(TEXT("FetchHistory Error: %s, Status: %d, Msg: %s"), Error ? TEXT("true") : TEXT("false"), Status, *ErrorMessage));
+		if (Result.Error || Result.Status != 200) AddError(FString::Printf(TEXT("FetchHistory Error: %s, Status: %d, Msg: %s"), Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
 	});
 
 	FOnDeleteMessagesResponseNative DeleteMessagesCallback;

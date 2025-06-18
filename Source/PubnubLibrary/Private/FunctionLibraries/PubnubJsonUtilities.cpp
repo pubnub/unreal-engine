@@ -195,7 +195,7 @@ void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson,
 	}
 }
 
-void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString ResponseJson, int& Status, FString& Message, TArray<FString>& Channels)
+void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FString>& Channels)
 {
 	Channels.Empty();
 	
@@ -203,11 +203,13 @@ void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString Response
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Message);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Result.Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Result.ErrorMessage);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{
@@ -227,17 +229,19 @@ void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString Response
 	}
 }
 
-void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, int& Status, FString& Message, FPubnubListUsersFromChannelWrapper &Data)
+void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper &Data)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Message);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Result.Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Result.ErrorMessage);
 	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), Data.Occupancy);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
@@ -260,18 +264,20 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 	}
 }
 
-void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, bool& Error, int& Status, FString& ErrorMessage, TArray<FPubnubHistoryMessageData> &Messages)
+void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubHistoryMessageData> &Messages)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 
-	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), Error);
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("error_message"), ErrorMessage);
+	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), Result.Error);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Result.Status);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("error_message"), Result.ErrorMessage);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("channels")))
 	{
