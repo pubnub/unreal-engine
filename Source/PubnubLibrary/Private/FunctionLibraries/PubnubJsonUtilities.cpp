@@ -160,7 +160,7 @@ bool UPubnubJsonUtilities::AreJsonObjectStringsEqual(const FString JsonString1, 
 	return true;
 }
 
-void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson, bool& Error, int& Status, TArray<FString>& Channels)
+void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FString>& Channels)
 {
 	Channels.Empty();
 	
@@ -168,12 +168,14 @@ void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson,
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
-		Error = true;
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
-	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), Error);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Result.Status);
+	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), Result.Error);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Result.ErrorMessage);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{

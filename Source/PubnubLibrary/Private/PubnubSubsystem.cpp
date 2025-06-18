@@ -282,9 +282,9 @@ void UPubnubSubsystem::RemoveChannelFromGroup(FString Channel, FString ChannelGr
 void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse)
 {
 	FOnListChannelsFromGroupResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnListChannelsResponse](bool Error, int Status, const TArray<FString>& Channels)
+	NativeCallback.BindLambda([OnListChannelsResponse](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
-		OnListChannelsResponse.ExecuteIfBound(Error, Status, Channels);
+		OnListChannelsResponse.ExecuteIfBound(Result, Channels);
 	});
 
 	ListChannelsFromGroup(ChannelGroup, NativeCallback);
@@ -1753,13 +1753,12 @@ void UPubnubSubsystem::ListChannelsFromGroup_DATA_priv(FString ChannelGroup, FOn
 	AsyncTask(ENamedThreads::GameThread, [this, OnListChannelsResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		bool Error;
-		int Status;
+		FPubnubOperationResult Result;
 		TArray<FString> Channels;
-		UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(JsonResponse, Error, Status, Channels);
+		UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(JsonResponse, Result, Channels);
 		
 		//Broadcast bound delegate with parsed response
-		OnListChannelsResponse.ExecuteIfBound(Error, Status, Channels);
+		OnListChannelsResponse.ExecuteIfBound(Result, Channels);
 	});
 }
 

@@ -54,7 +54,7 @@ public:
 	 * Converter from ListChannelsFromGroup_Json response to actual types
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void ListChannelsFromGroupJsonToData(FString ResponseJson, bool &Error, int &Status, TArray<FString>& Channels);
+	static void ListChannelsFromGroupJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FString>& Channels);
 
 	/**
 	 * Converter from ListUserSubscribedChannels_Json response to actual types

@@ -43,8 +43,8 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddChannelToGroupResponse, const FPubnubOpe
 DECLARE_DELEGATE_OneParam(FOnAddChannelToGroupResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelFromGroupResponse, const FPubnubOperationResult&, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveChannelFromGroupResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponse, bool, Error, int, Status, const TArray<FString>&, Channels);
-DECLARE_DELEGATE_ThreeParams(FOnListChannelsFromGroupResponseNative, bool Error, int Status, const TArray<FString>& Channels);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListChannelsFromGroupResponse, const FPubnubOperationResult&, Result, const TArray<FString>&, Channels);
+DECLARE_DELEGATE_TwoParams(FOnListChannelsFromGroupResponseNative, const FPubnubOperationResult& Result, const TArray<FString>& Channels);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelGroupResponse, const FPubnubOperationResult&, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveChannelGroupResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnListUsersSubscribedChannelsResponse, int, Status, FString, Message, const TArray<FString>&, Channels);

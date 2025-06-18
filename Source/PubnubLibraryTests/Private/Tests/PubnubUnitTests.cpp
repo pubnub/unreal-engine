@@ -382,17 +382,16 @@ bool FListChannelsFromGroupJsonToDataUnitTest::RunTest(const FString& Parameters
 {
 	//Test successful response
 	FString TestJson = "{\"error\":false,\"payload\":{\"channels\":[\"my_channel\",\"my_channel2\"],\"group\":\"my_group\"},\"service\":\"channel-registry\",\"status\":200}";
-	bool Error = true;
-	int Status = 0;
+	FPubnubOperationResult Result;
 	TArray<FString> Channels;
 	
-	UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(TestJson, Error, Status, Channels);
+	UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(TestJson, Result, Channels);
 	
 	//Verify error flag
-	TestTrue("Error flag should be false", !Error);
+	TestTrue("Error flag should be false", !Result.Error);
 	
 	//Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	//Verify channels array
 	TestEqual("Channels array should have 2 elements", Channels.Num(), 2);
@@ -401,31 +400,31 @@ bool FListChannelsFromGroupJsonToDataUnitTest::RunTest(const FString& Parameters
 
 	//Test error response
 	FString TestErrorJson = "{\"error\":true,\"payload\":{\"channels\":[],\"group\":\"my_group\"},\"service\":\"channel-registry\",\"status\":400}";
-	Error = false;
-	Status = 0;
+	Result.Error = false;
+	Result.Status = 0;
 	Channels.Empty();
 	
-	UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(TestErrorJson, Error, Status, Channels);
+	UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(TestErrorJson, Result, Channels);
 	
 	//Verify error flag
-	TestTrue("Error flag should be true", Error);
+	TestTrue("Error flag should be true", Result.Error);
 	
 	//Verify status code
-	TestEqual("Status code should be 400", Status, 400);
+	TestEqual("Status code should be 400", Result.Status, 400);
 	
 	//Verify channels array is empty
 	TestEqual("Channels array should be empty", Channels.Num(), 0);
 
 	//Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Error = false;
-	Status = 0;
+	Result.Error = false;
+	Result.Status = 0;
 	Channels.Empty();
 	
-	UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(TestInvalidJson, Error, Status, Channels);
+	UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(TestInvalidJson,Result, Channels);
 	
 	//Verify error flag
-	TestTrue("Error flag should be true for invalid JSON", Error);
+	TestTrue("Error flag should be true for invalid JSON", Result.Error);
 	
 	//Verify channels array is empty
 	TestEqual("Channels array should be empty for invalid JSON", Channels.Num(), 0);

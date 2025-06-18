@@ -135,10 +135,10 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	PubnubSubsystem->SetUserID(TestUser);
 	
 	FOnListChannelsFromGroupResponseNative ListDelegate;
-	ListDelegate.BindLambda([this, bListOperationCompleted, ListedChannels, bListOperationSuccess](bool Error, int Status, const TArray<FString>& Channels)
+	ListDelegate.BindLambda([this, bListOperationCompleted, ListedChannels, bListOperationSuccess](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		*bListOperationCompleted = true;
-		if (!Error)
+		if (!Result.Error)
 		{
 			*ListedChannels = Channels;
 			*bListOperationSuccess = true;
@@ -146,7 +146,7 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 		else
 		{
 			*bListOperationSuccess = false;
-			AddError(FString::Printf(TEXT("ListChannelsInGroup for group failed. Status: %d"), Status));
+			AddError(FString::Printf(TEXT("ListChannelsInGroup for group failed. Status: %d"), Result.Status));
 		}
 	});
 
@@ -460,11 +460,11 @@ bool FPubnubRemoveGroupTest::RunTest(const FString& Parameters)
 	PubnubSubsystem->SetUserID(TestUser);
 	
 	FOnListChannelsFromGroupResponseNative ListDelegate;
-	ListDelegate.BindLambda([this, bListOperationCompleted, ListedChannels, bListOperationSuccess, ListOperationStatus](bool Error, int Status, const TArray<FString>& Channels)
+	ListDelegate.BindLambda([this, bListOperationCompleted, ListedChannels, bListOperationSuccess, ListOperationStatus](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		*bListOperationCompleted = true;
-		*ListOperationStatus = Status;
-		if (!Error)
+		*ListOperationStatus = Result.Status;
+		if (!Result.Error)
 		{
 			*ListedChannels = Channels;
 			*bListOperationSuccess = true;
