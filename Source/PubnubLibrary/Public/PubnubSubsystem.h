@@ -59,8 +59,8 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnFetchHistoryResponse, const FPubnubOperati
 DECLARE_DELEGATE_TwoParams(FOnFetchHistoryResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnDeleteMessagesResponse, const FPubnubOperationResult&, Result);
 DECLARE_DELEGATE_OneParam(FOnDeleteMessagesResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllUserMetadataResponse, int, Status, const TArray<FPubnubUserData>&, UsersData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnGetAllUserMetadataResponseNative, int Status, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllUserMetadataResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubUserData>&, UsersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetAllUserMetadataResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetUserMetadataResponse, int, Status, FPubnubUserData, UserData);
 DECLARE_DELEGATE_TwoParams(FOnGetUserMetadataResponseNative, int Status, FPubnubUserData UserData);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, int, Status, const TArray<FPubnubChannelData>&, ChannelsData, FString, PageNext, FString, PagePrev);
@@ -612,10 +612,23 @@ public:
 	 * @param Channel The ID of the channel to delete messages from.
 	 * @param OnDeleteMessagesResponse The callback function used to handle the result.
 	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
-	 * See FPubnubDeleteMessagesSettings for more details.
+	 *								 See FPubnubDeleteMessagesSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta = (AutoCreateRefTerm = "OnDeleteMessagesResponse"))
 	void DeleteMessages(FString Channel, FOnDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
+
+	/**
+	 * Deletes historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * @Note Requires Enable Delete-From-History in Message Persistence tab for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to delete messages from.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
+	 *						 See FPubnubDeleteMessagesSettings for more details.
+	 */
 	void DeleteMessages(FString Channel, FOnDeleteMessagesResponseNative NativeCallback = nullptr, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
 
 	
@@ -645,6 +658,18 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
 	void MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
+
+	/**
+	 * Returns the number of messages published on one or more channels since a given time.
+	 * The count returned is the number of messages in history with a Timetoken value greater
+	 * than or equal to than the passed value in the Timetoken parameter.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to count messages for.
+	 * @param Timetoken The timetoken to start counting messages from.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 */
 	void MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponseNative NativeCallback);
 
 	/**
@@ -664,6 +689,22 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetAllUserMetadataRaw(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
+	 * (Generally the same as GetAllUserMetadata just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.  For example: "id" or "name:desc" or "id:desc,status".
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
 	void GetAllUserMetadataRaw(FOnGetAllUserMetadataResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -681,6 +722,20 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+
+	/**
+	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
 	void GetAllUserMetadata(FOnGetAllUserMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**

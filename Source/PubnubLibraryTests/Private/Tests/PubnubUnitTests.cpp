@@ -721,15 +721,15 @@ bool FGetAllUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with user data
 	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"user1\",\"name\":\"User One\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"custom\":{\"age\":30,\"location\":\"New York\"},\"status\":\"active\",\"type\":\"premium\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"},{\"id\":\"user2\",\"name\":\"User Two\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"custom\":{\"age\":25,\"location\":\"London\"},\"status\":\"inactive\",\"type\":\"basic\",\"updated\":\"2024-10-29T10:15:45.123456Z\",\"eTag\":\"BdzU2Prvrf41Eh\"}],\"next\":\"MQ\",\"prev\":\"LQ\"}";
-	int Status = 0;
+	FPubnubOperationResult Result;
 	TArray<FPubnubUserData> UsersData;
 	FString PageNext;
 	FString PagePrev;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestJson, Status, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestJson, Result, UsersData, PageNext, PagePrev);
 	
 	// Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
 	TestEqual("Next page token should be 'MQ'", PageNext, "MQ");
@@ -764,38 +764,38 @@ bool FGetAllUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test empty data array
 	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
-	Status = 0;
+	Result.Status = 0;
 	UsersData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestEmptyJson, Status, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestEmptyJson, Result, UsersData, PageNext, PagePrev);
 	
-	TestEqual("Status code should be 200 for empty data", Status, 200);
+	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 users for empty data", UsersData.Num(), 0);
 	TestEqual("Next page token should be empty", PageNext, "");
 	TestEqual("Previous page token should be empty", PagePrev, "");
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
-	Status = 0;
+	Result.Status = 0;
 	UsersData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestErrorJson, Status, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestErrorJson, Result, UsersData, PageNext, PagePrev);
 	
-	TestEqual("Status code should be 400 for error", Status, 400);
+	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 users for error", UsersData.Num(), 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
+	Result.Status = 0;
 	UsersData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestInvalidJson, Status, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestInvalidJson, Result, UsersData, PageNext, PagePrev);
 	
 	TestEqual("Should have 0 users for invalid JSON", UsersData.Num(), 0);
 

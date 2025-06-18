@@ -625,9 +625,9 @@ void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnPubn
 void UPubnubSubsystem::GetAllUserMetadataRaw(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	FOnGetAllUserMetadataResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetAllUserMetadataResponse](int Status, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+	NativeCallback.BindLambda([OnGetAllUserMetadataResponse](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
 	{
-		OnGetAllUserMetadataResponse.ExecuteIfBound(Status, UsersData, PageNext, PagePrev);
+		OnGetAllUserMetadataResponse.ExecuteIfBound(Result, UsersData, PageNext, PagePrev);
 	});
 	GetAllUserMetadataRaw(NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 }
@@ -2178,7 +2178,14 @@ FString UPubnubSubsystem::GetAllUserMetadata_pn(FString Include, int Limit, FStr
 	
 	pubnub_getall_uuidmetadata_ex(ctx_pub, PubnubOptions);
 
-	return GetLastResponse(ctx_pub);
+	FString Response = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(Response.IsEmpty())
+	{
+		Response = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	return Response;
 }
 
 void UPubnubSubsystem::GetAllUserMetadata_JSON_priv(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
@@ -2207,14 +2214,14 @@ void UPubnubSubsystem::GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataRespons
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllUserMetadataResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		int Status;
+		FPubnubOperationResult Result;
 		TArray<FPubnubUserData> UsersData;
 		FString PageNext;
 		FString PagePrev;
-		UPubnubJsonUtilities::GetAllUserMetadataJsonToData(JsonResponse, Status, UsersData, PageNext, PagePrev);
+		UPubnubJsonUtilities::GetAllUserMetadataJsonToData(JsonResponse, Result, UsersData, PageNext, PagePrev);
 						
 		//Broadcast bound delegate with parsed response
-		OnGetAllUserMetadataResponse.ExecuteIfBound(Status, UsersData, PageNext, PagePrev);
+		OnGetAllUserMetadataResponse.ExecuteIfBound(Result, UsersData, PageNext, PagePrev);
 	});
 }
 

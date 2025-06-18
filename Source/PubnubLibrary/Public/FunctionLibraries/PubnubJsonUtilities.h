@@ -78,7 +78,7 @@ public:
 	 * Converter from GetAllUserMetadata_Json response to actual types
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void GetAllUserMetadataJsonToData(FString ResponseJson, int &Status, TArray<FPubnubUserData> &UsersData, FString &PageNext, FString &PagePrev);
+	static void GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData> &UsersData, FString &PageNext, FString &PagePrev);
 
 	/**
 	 * Converter from GetUserMetadata_Json response to actual types
@@ -135,9 +135,21 @@ public:
 	static FPubnubOperationResult GetOperationResultFromJson(FString ResponseJson);
 
 	/**
+	 * Get Operation result from Json object
+	 */
+	static FPubnubOperationResult GetOperationResultFromJsonObject(TSharedPtr<FJsonObject> JsonObject);
+	
+
+	/**
 	 * Get Operation result from Json string in AccessManager operation
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubOperationResult GetOperationResultFromJson_AccessManager(TSharedPtr<FJsonObject> JsonObject);
 	static FPubnubOperationResult GetOperationResultFromJson_AccessManager(FString ResponseJson);
 
+	/**
+	 * Get error message from App Context operation result Json Object. 
+	 */
+	static FPubnubOperationResult GetOperationResultFromJson_AppContext(TSharedPtr<FJsonObject> JsonObject);
+
 };
+

@@ -80,17 +80,17 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     });
 
     FOnGetAllUserMetadataResponseNative GetAllUserMetadataCallback;
-    GetAllUserMetadataCallback.BindLambda([this, bGetAllUserMetaDone, bGetAllUserMetaSuccess, ReceivedAllUsersData](int Status, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+    GetAllUserMetadataCallback.BindLambda([this, bGetAllUserMetaDone, bGetAllUserMetaSuccess, ReceivedAllUsersData](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
     {
         *bGetAllUserMetaDone = true;
-        *bGetAllUserMetaSuccess = (Status == 200);
+        *bGetAllUserMetaSuccess = (Result.Status == 200);
         if (*bGetAllUserMetaSuccess)
         {
             *ReceivedAllUsersData = UsersData;
         }
         else
         {
-            AddError(FString::Printf(TEXT("GetAllUserMetadata failed. Status: %d. Next: %s, Prev: %s"), Status, *PageNext, *PagePrev));
+            AddError(FString::Printf(TEXT("GetAllUserMetadata failed. Status: %d. Next: %s, Prev: %s"), Result.Status, *PageNext, *PagePrev));
         }
     });
     
@@ -727,10 +727,10 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
 
     // Callback
     FOnGetAllUserMetadataResponseNative GetAllCallback;
-    GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedUsers, NextPage, PrevPage](int Status, const TArray<FPubnubUserData>& UsersData, FString PageNextStr, FString PagePrevStr)
+    GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedUsers, NextPage, PrevPage](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNextStr, FString PagePrevStr)
     {
         *bGetAllDone = true;
-        *bGetAllSuccess = (Status == 200);
+        *bGetAllSuccess = (Result.Status == 200);
         if (*bGetAllSuccess)
         {
             *ReceivedUsers = UsersData;
@@ -740,7 +740,7 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
         else
         {
             ReceivedUsers->Empty();
-            AddError(FString::Printf(TEXT("GetAllUserMetadata call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNextStr, *PagePrevStr));
+            AddError(FString::Printf(TEXT("GetAllUserMetadata call failed. Status: %d. Next: '%s', Prev: '%s'"), Result.Status, *PageNextStr, *PagePrevStr));
         }
     });
 

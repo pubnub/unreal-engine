@@ -172,10 +172,8 @@ void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson,
 		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
-	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Result.Status);
-	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), Result.Error);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Result.ErrorMessage);
+
+	Result = GetOperationResultFromJsonObject(JsonObject);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{
@@ -207,9 +205,8 @@ void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString Response
 		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
-	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Result.Status);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Result.ErrorMessage);
+	Result = GetOperationResultFromJsonObject(JsonObject);
+	Result.Error = Result.Status != 200;
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{
@@ -240,8 +237,9 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 		return;
 	}
 
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Result.Status);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), Result.ErrorMessage);
+	Result = GetOperationResultFromJsonObject(JsonObject);
+	Result.Error = Result.Status != 200;
+	
 	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), Data.Occupancy);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
@@ -275,9 +273,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, FPubnubO
 		return;
 	}
 
-	JsonObject->TryGetBoolField(ANSI_TO_TCHAR("error"), Result.Error);
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Result.Status);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("error_message"), Result.ErrorMessage);
+	Result = GetOperationResultFromJsonObject(JsonObject);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("channels")))
 	{
@@ -344,16 +340,19 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, FPubnubO
 	}
 }
 
-void UPubnubJsonUtilities::GetAllUserMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	Result = GetOperationResultFromJson_AppContext(JsonObject);
+	
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
 
@@ -615,6 +614,16 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson(FString 
 	{
 		return FPubnubOperationResult();
 	}
+	
+	return GetOperationResultFromJsonObject(JsonObject);
+}
+
+FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJsonObject(TSharedPtr<FJsonObject> JsonObject)
+{
+	if(!JsonObject)
+	{
+		return FPubnubOperationResult();
+	}
 
 	FPubnubOperationResult OperationResult;
 
@@ -632,11 +641,9 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson(FString 
 	return OperationResult;
 }
 
-FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AccessManager(FString ResponseJson)
+FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AccessManager(TSharedPtr<FJsonObject> JsonObject)
 {
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-
-	if(!StringToJsonObject(ResponseJson, JsonObject))
+	if(!JsonObject)
 	{
 		return FPubnubOperationResult();
 	}
@@ -658,3 +665,43 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AccessMa
 	return OperationResult;
 }
 
+FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AccessManager(FString ResponseJson)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return FPubnubOperationResult();
+	}
+	
+	return GetOperationResultFromJson_AccessManager(JsonObject);
+}
+
+FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(TSharedPtr<FJsonObject> JsonObject)
+{
+	if(!JsonObject)
+	{
+		return FPubnubOperationResult();
+	}
+	
+	FPubnubOperationResult Result = GetOperationResultFromJsonObject(JsonObject);
+	if(Result.Status != 200)
+	{
+		Result.Error = true;
+		//Don't override message when it's not empty. This could be the case in Access Denied from PAM, as then error message is in "message" field 
+		if(Result.ErrorMessage.IsEmpty())
+		{
+			//App Context error message is returned as Json Object in "error" field
+			if(JsonObject->HasField(ANSI_TO_TCHAR("error")))
+			{
+				const TSharedPtr<FJsonObject> *DataJsonObject = nullptr;
+				if(JsonObject->TryGetObjectField(ANSI_TO_TCHAR("error"), DataJsonObject))
+				{
+					Result.ErrorMessage =  JsonObjectToString(*DataJsonObject);
+				}
+			}
+		}
+	}
+
+	return Result;
+}
