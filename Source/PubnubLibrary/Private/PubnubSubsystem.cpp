@@ -664,28 +664,48 @@ void UPubnubSubsystem::GetAllUserMetadata_JSON(FOnPubnubResponse OnGetAllUserMet
 	});
 }
 
-void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FPubnubGetMetadataInclude Include)
+void UPubnubSubsystem::SetUserMetadataRaw(FString User, FString UserMetadataObj, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FString Include)
+{
+	FOnSetUserMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSetUserMetadataResponse](const FPubnubOperationResult& Result, FPubnubUserData UserData)
+	{
+		OnSetUserMetadataResponse.ExecuteIfBound(Result, UserData);
+	});
+	SetUserMetadataRaw(User, UserMetadataObj, NativeCallback, Include);
+}
+
+void UPubnubSubsystem::SetUserMetadataRaw(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative NativeCallback, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, User, UserMetadataObj, Include]
+	QuickActionThread->AddFunctionToQueue( [this, User, UserMetadataObj, NativeCallback, Include]
 	{
-		SetUserMetadata_priv(User, UserMetadataObj, UPubnubUtilities::GetMetadataIncludeToString(Include));
+		SetUserMetadata_priv(User, UserMetadataObj, NativeCallback, Include);
 	});
 }
 
-void UPubnubSubsystem::GetUserMetadata(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
+void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
+{
+	SetUserMetadataRaw(User, UserMetadataObj, OnSetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+{
+	SetUserMetadataRaw(User, UserMetadataObj, NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubSubsystem::GetUserMetadataRaw(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
 {
 	FOnGetUserMetadataResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetUserMetadataResponse](int Status, FPubnubUserData UserData)
+	NativeCallback.BindLambda([OnGetUserMetadataResponse](const FPubnubOperationResult& Result, FPubnubUserData UserData)
 	{
-		OnGetUserMetadataResponse.ExecuteIfBound(Status, UserData);
+		OnGetUserMetadataResponse.ExecuteIfBound(Result, UserData);
 	});
-	GetUserMetadata(User, NativeCallback, Include);
+	GetUserMetadataRaw(User, NativeCallback, Include);
 }
 
-void UPubnubSubsystem::GetUserMetadata(FString User, FOnGetUserMetadataResponseNative NativeCallback, FString Include)
+void UPubnubSubsystem::GetUserMetadataRaw(FString User, FOnGetUserMetadataResponseNative NativeCallback, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
@@ -694,6 +714,16 @@ void UPubnubSubsystem::GetUserMetadata(FString User, FOnGetUserMetadataResponseN
 	{
 		GetUserMetadata_DATA_priv(User, NativeCallback, Include);
 	});
+}
+
+void UPubnubSubsystem::GetUserMetadata(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include)
+{
+	GetUserMetadataRaw(User, OnGetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubSubsystem::GetUserMetadata(FString User, FOnGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+{
+	GetUserMetadataRaw(User, NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubSubsystem::GetUserMetadata_JSON(FString User, FOnPubnubResponse OnGetUserMetadataResponse, FString Include)
@@ -707,14 +737,24 @@ void UPubnubSubsystem::GetUserMetadata_JSON(FString User, FOnPubnubResponse OnGe
 	});
 }
 
-void UPubnubSubsystem::RemoveUserMetadata(FString User)
+void UPubnubSubsystem::RemoveUserMetadata(FString User, FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse)
+{
+	FOnRemoveUserMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRemoveUserMetadataResponse](const FPubnubOperationResult& Result)
+	{
+		OnRemoveUserMetadataResponse.ExecuteIfBound(Result);
+	});
+	RemoveUserMetadata(User, NativeCallback);
+}
+
+void UPubnubSubsystem::RemoveUserMetadata(FString User, FOnRemoveUserMetadataResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, User]
+	QuickActionThread->AddFunctionToQueue( [this, User, NativeCallback]
 	{
-		RemoveUserMetadata_priv(User);
+		RemoveUserMetadata_priv(User, NativeCallback);
 	});
 }
 
@@ -1205,7 +1245,6 @@ void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorT
 		OnPubnubError.Broadcast(ErrorMessage, ErrorType);
 		OnPubnubErrorNative.Broadcast(ErrorMessage, ErrorType);
 	});
-	
 }
 
 void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage)
@@ -2225,7 +2264,7 @@ void UPubnubSubsystem::GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataRespons
 	});
 }
 
-void UPubnubSubsystem::SetUserMetadata_priv(FString User, FString UserMetadataObj, FString Include)
+void UPubnubSubsystem::SetUserMetadata_priv(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative OnSetUserMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2240,19 +2279,39 @@ void UPubnubSubsystem::SetUserMetadata_priv(FString User, FString UserMetadataOb
 	}
 	
 	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*User), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UserMetadataObj));
-	
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Set User Metadata.");
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnSetUserMetadataResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		FPubnubOperationResult Result;
+		FPubnubUserData UserData;
+		UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, Result, UserData);
+								
+		//Broadcast bound delegate with parsed response
+		OnSetUserMetadataResponse.ExecuteIfBound(Result, UserData);
+	});
 }
 
 FString UPubnubSubsystem::GetUserMetadata_pn(FString User, FString Include)
 {
 	pubnub_get_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*User));
 
-	return GetLastResponse(ctx_pub);
+	FString Response = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(Response.IsEmpty())
+	{
+		Response = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	return Response;
 }
 
 void UPubnubSubsystem::GetUserMetadata_JSON_priv(FString User, FOnPubnubResponse OnGetUserMetadataResponse, FString Include)
@@ -2287,16 +2346,16 @@ void UPubnubSubsystem::GetUserMetadata_DATA_priv(FString User, FOnGetUserMetadat
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetUserMetadataResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		int Status;
+		FPubnubOperationResult Result;
 		FPubnubUserData UserData;
-		UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, Status, UserData);
+		UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, Result, UserData);
 								
 		//Broadcast bound delegate with parsed response
-		OnGetUserMetadataResponse.ExecuteIfBound(Status, UserData);
+		OnGetUserMetadataResponse.ExecuteIfBound(Result, UserData);
 	});
 }
 
-void UPubnubSubsystem::RemoveUserMetadata_priv(FString User)
+void UPubnubSubsystem::RemoveUserMetadata_priv(FString User, FOnRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2306,11 +2365,19 @@ void UPubnubSubsystem::RemoveUserMetadata_priv(FString User)
 	
 	pubnub_remove_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*User));
 
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Remove User Metadata.");
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnRemoveUserMetadataResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with parsed response
+		OnRemoveUserMetadataResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse));
+	});
 }
 
 FString UPubnubSubsystem::GetAllChannelMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)

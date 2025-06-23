@@ -61,8 +61,12 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnDeleteMessagesResponse, const FPubnubOperat
 DECLARE_DELEGATE_OneParam(FOnDeleteMessagesResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllUserMetadataResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubUserData>&, UsersData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnGetAllUserMetadataResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetUserMetadataResponse, int, Status, FPubnubUserData, UserData);
-DECLARE_DELEGATE_TwoParams(FOnGetUserMetadataResponseNative, int Status, FPubnubUserData UserData);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetUserMetadataResponse, const FPubnubOperationResult&, Result, FPubnubUserData, UserData);
+DECLARE_DELEGATE_TwoParams(FOnGetUserMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubUserData UserData);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSetUserMetadataResponse, const FPubnubOperationResult&, Result, FPubnubUserData, UserData);
+DECLARE_DELEGATE_TwoParams(FOnSetUserMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubUserData UserData);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveUserMetadataResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnRemoveUserMetadataResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, int, Status, const TArray<FPubnubChannelData>&, ChannelsData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnGetAllChannelMetadataResponseNative, int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetChannelMetadataResponse, int, Status, FPubnubChannelData, ChannelData);
@@ -440,7 +444,7 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to set the state on.
 	 * @param StateJson The JSON string representing the state to set.
-	 * 
+	 * @param OnSetStateResponse Optional delegate to listen for the operation result.
 	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta = (AutoCreateRefTerm = "OnSetStateResponse"))
@@ -758,16 +762,58 @@ public:
 
 	/**
 	 * Sets metadata for a specified User in the PubNub App Context.
+	 * (Generally the same as SetUserMetadata just using raw string as Include input)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param User The user ID for whom to set metadata.
 	 * @param UserMetadataObj A JSON string representing the metadata to set.
+	 * @param OnSetUserMetadataResponse Optional delegate to listen for the operation result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void SetUserMetadata(FString User, FString UserMetadataObj, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
+	void SetUserMetadataRaw(FString User, FString UserMetadataObj, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FString Include = "");
 
+	/**
+	 * Sets metadata for a specified User in the PubNub App Context.
+	 * (Generally the same as SetUserMetadata just using raw string as Include input)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to set metadata.
+	 * @param UserMetadataObj A JSON string representing the metadata to set.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 */
+	void SetUserMetadataRaw(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative NativeCallback = nullptr, FString Include = "");
+	
+	/**
+	 * Sets metadata for a specified User in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to set metadata.
+	 * @param UserMetadataObj A JSON string representing the metadata to set.
+	 * @param OnSetUserMetadataResponse Optional delegate to listen for the operation result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
+	void SetUserMetadata(FString User, FString UserMetadataObj, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
+	 * Sets metadata for a specified User in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to set metadata.
+	 * @param UserMetadataObj A JSON string representing the metadata to set.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 * @param Include (Optional) List of property names to include in the response.
+	 */
+	void SetUserMetadata(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
 	 * 
@@ -778,8 +824,41 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void GetUserMetadata(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include = "");
-	void GetUserMetadata(FString User, FOnGetUserMetadataResponseNative NativeCallback, FString Include = "");
+	void GetUserMetadataRaw(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include = "");
+
+	/**
+	 * Retrieves metadata for a specified User from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to retrieve metadata.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 */
+	void GetUserMetadataRaw(FString User, FOnGetUserMetadataResponseNative NativeCallback, FString Include = "");
+
+	/**
+	 * Retrieves metadata for a specified User from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to retrieve metadata.
+	 * @param OnGetUserMetadataResponse The callback function used to handle the result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	void GetUserMetadata(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
+	 * Retrieves metadata for a specified User from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to retrieve metadata.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) List of property names to include in the response.
+	 */
+	void GetUserMetadata(FString User, FOnGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
@@ -800,9 +879,21 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param User The user ID for whom to remove metadata.
+	 * @param OnRemoveUserMetadataResponse Optional delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void RemoveUserMetadata(FString User);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveUserMetadataResponse"))
+	void RemoveUserMetadata(FString User, FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse);
+
+	/**
+	 * Removes all metadata associated with a specified User from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to remove metadata.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 */
+	void RemoveUserMetadata(FString User, FOnRemoveUserMetadataResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
@@ -1266,11 +1357,11 @@ private:
 	FString GetAllUserMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllUserMetadata_JSON_priv(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetUserMetadata_priv(FString User, FString UserMetadataObj, FString Include);
+	void SetUserMetadata_priv(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative OnSetUserMetadataResponse,FString Include);
 	FString GetUserMetadata_pn(FString User, FString Include);
 	void GetUserMetadata_JSON_priv(FString User, FOnPubnubResponse OnGetUserMetadataResponse, FString Include);
 	void GetUserMetadata_DATA_priv(FString User, FOnGetUserMetadataResponseNative OnGetUserMetadataResponse, FString Include);
-	void RemoveUserMetadata_priv(FString User);
+	void RemoveUserMetadata_priv(FString User, FOnRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse);
 	FString GetAllChannelMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllChannelMetadata_JSON_priv(FOnPubnubResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllChannelMetadata_DATA_priv(FOnGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);

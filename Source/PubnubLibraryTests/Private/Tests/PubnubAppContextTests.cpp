@@ -65,17 +65,17 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
 
     // Callbacks
     FOnGetUserMetadataResponseNative GetUserMetadataCallback;
-    GetUserMetadataCallback.BindLambda([this, bGetUserMetaDone, bGetUserMetaSuccess, ReceivedUserData](int Status, FPubnubUserData UserData)
+    GetUserMetadataCallback.BindLambda([this, bGetUserMetaDone, bGetUserMetaSuccess, ReceivedUserData](FPubnubOperationResult Result, FPubnubUserData UserData)
     {
         *bGetUserMetaDone = true;
-        *bGetUserMetaSuccess = (Status == 200);
+        *bGetUserMetaSuccess = (Result.Status == 200);
         if (*bGetUserMetaSuccess)
         {
             *ReceivedUserData = UserData;
         }
         else
         {
-            AddError(FString::Printf(TEXT("GetUserMetadata failed. Status: %d"), Status));
+            AddError(FString::Printf(TEXT("GetUserMetadata failed. Status: %d"), Result.Status));
         }
     });
 
@@ -95,12 +95,11 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     });
     
     FOnGetUserMetadataResponseNative GetUserMetadataCallback_AfterRemove;
-    GetUserMetadataCallback_AfterRemove.BindLambda([this, bGetUserMetaAfterRemoveDone, GetUserMetaAfterRemoveStatus](int Status, FPubnubUserData UserData)
+    GetUserMetadataCallback_AfterRemove.BindLambda([this, bGetUserMetaAfterRemoveDone, GetUserMetaAfterRemoveStatus](FPubnubOperationResult Result, FPubnubUserData UserData)
     {
         *bGetUserMetaAfterRemoveDone = true;
-        *GetUserMetaAfterRemoveStatus = Status; // We expect this to be non-200 for a removed user
+        *GetUserMetaAfterRemoveStatus = Result.Status; // We expect this to be non-200 for a removed user
     });
-
 
     if (!InitTest())
     {
@@ -122,7 +121,7 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     // Step 1: SetUserMetadata
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, FullMetadataToSet]()
     {
-        PubnubSubsystem->SetUserMetadata(TestUserID, FullMetadataToSet, FPubnubGetMetadataInclude::FromValue(true)); 
+        PubnubSubsystem->SetUserMetadata(TestUserID, FullMetadataToSet, nullptr, FPubnubGetMetadataInclude::FromValue(true)); 
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetUserMetadata to process
 
@@ -132,7 +131,7 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
         *bGetUserMetaDone = false;
         *bGetUserMetaSuccess = false;
         ReceivedUserData->UserID.Empty(); // Reset
-        PubnubSubsystem->GetUserMetadata(TestUserID, GetUserMetadataCallback, "custom,externalId,profileUrl,status,type");
+        PubnubSubsystem->GetUserMetadata(TestUserID, GetUserMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetUserMetaDone]() { return *bGetUserMetaDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, TestUserName, TestUserEmail, TestUserExternalID, TestUserProfileUrl, TestUserStatus, TestUserType, TestUserCustomJson, ReceivedUserData, bGetUserMetaSuccess]()
@@ -761,7 +760,7 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
     {
         ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta]()
         {
-            PubnubSubsystem->SetUserMetadata(UserID, Meta, FPubnubGetMetadataInclude::FromValue(true));
+            PubnubSubsystem->SetUserMetadata(UserID, Meta, nullptr, FPubnubGetMetadataInclude::FromValue(true));
         }, 0.05f)); // Shorter delay for setup
     };
 
@@ -1506,7 +1505,7 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
     {
         ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta]()
         {
-            PubnubSubsystem->SetUserMetadata(UserID, Meta, FPubnubGetMetadataInclude::FromValue(true)); 
+            PubnubSubsystem->SetUserMetadata(UserID, Meta, nullptr, FPubnubGetMetadataInclude::FromValue(true)); 
         }, 0.05f));
     };
     CreateUserMeta(UserAID, UserAMetadata);

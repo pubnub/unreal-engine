@@ -173,7 +173,7 @@ void UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(FString ResponseJson,
 		return;
 	}
 
-	Result = GetOperationResultFromJsonObject(JsonObject);
+	Result = GetOperationResultFromJson(JsonObject);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{
@@ -205,7 +205,7 @@ void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString Response
 		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
-	Result = GetOperationResultFromJsonObject(JsonObject);
+	Result = GetOperationResultFromJson(JsonObject);
 	Result.Error = Result.Status != 200;
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("payload")))
@@ -237,7 +237,7 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 		return;
 	}
 
-	Result = GetOperationResultFromJsonObject(JsonObject);
+	Result = GetOperationResultFromJson(JsonObject);
 	Result.Error = Result.Status != 200;
 	
 	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), Data.Occupancy);
@@ -273,7 +273,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, FPubnubO
 		return;
 	}
 
-	Result = GetOperationResultFromJsonObject(JsonObject);
+	Result = GetOperationResultFromJson(JsonObject);
 
 	if(!JsonObject->HasField(ANSI_TO_TCHAR("channels")))
 	{
@@ -368,16 +368,18 @@ void UPubnubJsonUtilities::GetAllUserMetadataJsonToData(FString ResponseJson, FP
 	}
 }
 
-void UPubnubJsonUtilities::GetUserMetadataJsonToData(FString ResponseJson, int& Status, FPubnubUserData& UserData)
+void UPubnubJsonUtilities::GetUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubUserData& UserData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
-	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+
+	Result = GetOperationResultFromJson_AppContext(JsonObject);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{
@@ -615,10 +617,10 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson(FString 
 		return FPubnubOperationResult();
 	}
 	
-	return GetOperationResultFromJsonObject(JsonObject);
+	return GetOperationResultFromJson(JsonObject);
 }
 
-FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJsonObject(TSharedPtr<FJsonObject> JsonObject)
+FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson(TSharedPtr<FJsonObject> JsonObject)
 {
 	if(!JsonObject)
 	{
@@ -684,7 +686,7 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AppConte
 		return FPubnubOperationResult();
 	}
 	
-	FPubnubOperationResult Result = GetOperationResultFromJsonObject(JsonObject);
+	FPubnubOperationResult Result = GetOperationResultFromJson(JsonObject);
 	if(Result.Status != 200)
 	{
 		Result.Error = true;
@@ -704,4 +706,16 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AppConte
 	}
 
 	return Result;
+}
+
+FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(FString ResponseJson)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		return FPubnubOperationResult();
+	}
+	
+	return GetOperationResultFromJson_AppContext(JsonObject);
 }

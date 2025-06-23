@@ -806,13 +806,13 @@ bool FGetUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with user data including custom field
 	FString TestJson = "{\"status\":200,\"data\":{\"id\":\"User1\",\"name\":\"abcd\",\"externalId\":null,\"profileUrl\":null,\"email\":null,\"custom\":{\"mood\":\"happy\"},\"updated\":\"2024-10-25T12:41:00.380856Z\",\"eTag\":\"ccdeed63d229d17107ccc624cbfe6aab\"}}";
-	int Status = 0;
+	FPubnubOperationResult Result;
 	FPubnubUserData UserData;
 	
-	UPubnubJsonUtilities::GetUserMetadataJsonToData(TestJson, Status, UserData);
+	UPubnubJsonUtilities::GetUserMetadataJsonToData(TestJson, Result, UserData);
 	
 	// Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify user data
 	TestEqual("User ID should be 'User1'", UserData.UserID, "User1");
@@ -826,32 +826,32 @@ bool FGetUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test response with empty custom field
 	FString TestEmptyCustomJson = "{\"status\":200,\"data\":{\"id\":\"User2\",\"name\":\"efgh\",\"externalId\":null,\"profileUrl\":null,\"email\":null,\"custom\":{},\"updated\":\"2024-10-26T12:41:00.380856Z\",\"eTag\":\"dddeed63d229d17107ccc624cbfe6aab\"}}";
-	Status = 0;
+	Result.Status = 0;
 	UserData = FPubnubUserData();
 	
-	UPubnubJsonUtilities::GetUserMetadataJsonToData(TestEmptyCustomJson, Status, UserData);
+	UPubnubJsonUtilities::GetUserMetadataJsonToData(TestEmptyCustomJson, Result, UserData);
 	
-	TestEqual("Status code should be 200 for empty custom", Status, 200);
+	TestEqual("Status code should be 200 for empty custom", Result.Status, 200);
 	TestEqual("User ID should be 'User2'", UserData.UserID, "User2");
 	TestEqual("User name should be 'efgh'", UserData.UserName, "efgh");
 	TestEqual("User custom data should be empty", UserData.Custom, "{}");
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":{}}";
-	Status = 0;
+	Result.Status = 0;
 	UserData = FPubnubUserData();
 	
-	UPubnubJsonUtilities::GetUserMetadataJsonToData(TestErrorJson, Status, UserData);
+	UPubnubJsonUtilities::GetUserMetadataJsonToData(TestErrorJson, Result, UserData);
 	
-	TestEqual("Status code should be 400 for error", Status, 400);
+	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("User ID should be empty for error", UserData.UserID, "");
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
+	Result.Status = 0;
 	UserData = FPubnubUserData();
 	
-	UPubnubJsonUtilities::GetUserMetadataJsonToData(TestInvalidJson, Status, UserData);
+	UPubnubJsonUtilities::GetUserMetadataJsonToData(TestInvalidJson, Result, UserData);
 	
 	TestEqual("User ID should be empty for invalid JSON", UserData.UserID, "");
 
