@@ -862,15 +862,15 @@ bool FGetAllChannelMetadataJsonToDataUnitTest::RunTest(const FString& Parameters
 {
 	// Test successful response with multiple channels
 	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":null,\"updated\":\"2024-10-25T13:00:19.963635Z\",\"eTag\":\"31b6f9075656544560fabdd8db0d444b\"},{\"id\":\"my_test_channel2\",\"name\":null,\"description\":null,\"updated\":\"2024-10-11T09:41:48.926019Z\",\"eTag\":\"483589bc29065816d2ff4b32b64abc6a\"},{\"id\":\"test_channel\",\"name\":null,\"description\":null,\"updated\":\"2024-09-30T07:48:48.503855Z\",\"eTag\":\"e5672a948a68853b2b3a47de043d2b56\"}],\"next\":\"Mw\"}";
-	int Status = 0;
+	FPubnubOperationResult Result;
 	TArray<FPubnubChannelData> ChannelsData;
 	FString PageNext;
 	FString PagePrev;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestJson, Status, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestJson, Result, ChannelsData, PageNext, PagePrev);
 	
 	// Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
 	TestEqual("Next page token should be 'Mw'", PageNext, "Mw");
@@ -902,38 +902,38 @@ bool FGetAllChannelMetadataJsonToDataUnitTest::RunTest(const FString& Parameters
 
 	// Test empty data array
 	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
-	Status = 0;
+	Result.Status = 0;
 	ChannelsData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestEmptyJson, Status, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestEmptyJson, Result, ChannelsData, PageNext, PagePrev);
 	
-	TestEqual("Status code should be 200 for empty data", Status, 200);
+	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 channels for empty data", ChannelsData.Num(), 0);
 	TestEqual("Next page token should be empty", PageNext, "");
 	TestEqual("Previous page token should be empty", PagePrev, "");
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
-	Status = 0;
+	Result.Status = 0;
 	ChannelsData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestErrorJson, Status, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestErrorJson, Result, ChannelsData, PageNext, PagePrev);
 	
-	TestEqual("Status code should be 400 for error", Status, 400);
+	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 channels for error", ChannelsData.Num(), 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
+	Result.Status = 0;
 	ChannelsData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestInvalidJson, Status, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestInvalidJson, Result, ChannelsData, PageNext, PagePrev);
 	
 	TestEqual("Should have 0 channels for invalid JSON", ChannelsData.Num(), 0);
 
@@ -944,13 +944,13 @@ bool FGetChannelMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with channel data including custom field
 	FString TestJson = "{\"status\":200,\"data\":{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":null,\"custom\":{\"premium\":\"ForSure\"},\"updated\":\"2024-10-25T13:00:19.963635Z\",\"eTag\":\"31b6f9075656544560fabdd8db0d444b\"}}";
-	int Status = 0;
+	FPubnubOperationResult Result;
 	FPubnubChannelData ChannelData;
 	
-	UPubnubJsonUtilities::GetChannelMetadataJsonToData(TestJson, Status, ChannelData);
+	UPubnubJsonUtilities::GetChannelMetadataJsonToData(TestJson, Result, ChannelData);
 	
 	// Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify channel data
 	TestEqual("Channel ID should be 'my_channel'", ChannelData.ChannelID, "my_channel");
@@ -962,30 +962,30 @@ bool FGetChannelMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test response with empty custom field
 	FString TestEmptyCustomJson = "{\"status\":200,\"data\":{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":null,\"custom\":null,\"updated\":\"2024-10-25T13:00:19.963635Z\",\"eTag\":\"31b6f9075656544560fabdd8db0d444b\"}}";
-	Status = 0;
+	Result.Status = 0;
 	ChannelData = FPubnubChannelData();
 	
-	UPubnubJsonUtilities::GetChannelMetadataJsonToData(TestEmptyCustomJson, Status, ChannelData);
+	UPubnubJsonUtilities::GetChannelMetadataJsonToData(TestEmptyCustomJson, Result, ChannelData);
 	
-	TestEqual("Status code should be 200 for empty custom", Status, 200);
+	TestEqual("Status code should be 200 for empty custom", Result.Status, 200);
 	TestEqual("Channel custom field should be empty", ChannelData.Custom, "");
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":{}}";
-	Status = 0;
+	Result.Status = 0;
 	ChannelData = FPubnubChannelData();
 	
-	UPubnubJsonUtilities::GetChannelMetadataJsonToData(TestErrorJson, Status, ChannelData);
+	UPubnubJsonUtilities::GetChannelMetadataJsonToData(TestErrorJson, Result, ChannelData);
 	
-	TestEqual("Status code should be 400 for error", Status, 400);
+	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Channel ID should be empty for error", ChannelData.ChannelID, "");
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
+	Result.Status = 0;
 	ChannelData = FPubnubChannelData();
 	
-	UPubnubJsonUtilities::GetChannelMetadataJsonToData(TestInvalidJson, Status, ChannelData);
+	UPubnubJsonUtilities::GetChannelMetadataJsonToData(TestInvalidJson, Result, ChannelData);
 	
 	TestEqual("Channel ID should be empty for invalid JSON", ChannelData.ChannelID, "");
 

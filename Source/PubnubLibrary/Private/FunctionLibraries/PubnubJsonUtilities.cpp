@@ -391,16 +391,19 @@ void UPubnubJsonUtilities::GetUserMetadataJsonToData(FString ResponseJson, FPubn
 	}
 }
 
-void UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(FString ResponseJson, int& Status, TArray<FPubnubChannelData>& ChannelsData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData>& ChannelsData, FString& PageNext, FString& PagePrev)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	Result = GetOperationResultFromJson_AppContext(JsonObject);
+	
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
 
@@ -416,16 +419,18 @@ void UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(FString ResponseJson,
 	}
 }
 
-void UPubnubJsonUtilities::GetChannelMetadataJsonToData(FString ResponseJson, int& Status, FPubnubChannelData& ChannelData)
+void UPubnubJsonUtilities::GetChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubChannelData& ChannelData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	Result = GetOperationResultFromJson_AppContext(JsonObject);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{

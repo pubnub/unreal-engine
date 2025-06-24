@@ -90,13 +90,13 @@ public:
 	 * Converter from GetAllChannelMetadata_Json response to actual types
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void GetAllChannelMetadataJsonToData(FString ResponseJson, int &Status, TArray<FPubnubChannelData> &ChannelsData, FString &PageNext, FString &PagePrev);
+	static void GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData> &ChannelsData, FString &PageNext, FString &PagePrev);
 
 	/**
 	 * Converter from GetChannelMetadata_Json response to actual types
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void GetChannelMetadataJsonToData(FString ResponseJson, int &Status, FPubnubChannelData &ChannelData);
+	static void GetChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubChannelData &ChannelData);
 
 	/**
 	 * Converter from GetMessageActions_Json response to actual types

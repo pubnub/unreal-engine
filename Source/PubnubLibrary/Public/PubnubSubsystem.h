@@ -67,10 +67,14 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSetUserMetadataResponse, const FPubnubOper
 DECLARE_DELEGATE_TwoParams(FOnSetUserMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubUserData UserData);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveUserMetadataResponse, const FPubnubOperationResult&, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveUserMetadataResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, int, Status, const TArray<FPubnubChannelData>&, ChannelsData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnGetAllChannelMetadataResponseNative, int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetChannelMetadataResponse, int, Status, FPubnubChannelData, ChannelData);
-DECLARE_DELEGATE_TwoParams(FOnGetChannelMetadataResponseNative, int Status, FPubnubChannelData ChannelData);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubChannelData>&, ChannelsData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetAllChannelMetadataResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetChannelMetadataResponse, const FPubnubOperationResult&, Result, FPubnubChannelData, ChannelData);
+DECLARE_DELEGATE_TwoParams(FOnGetChannelMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubChannelData ChannelData);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSetChannelMetadataResponse, const FPubnubOperationResult&, Result, FPubnubChannelData, ChannelData);
+DECLARE_DELEGATE_TwoParams(FOnSetChannelMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubChannelData ChannelData);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelMetadataResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnRemoveChannelMetadataResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, int, Status, const TArray<FPubnubMessageActionData>&, MessageActions);
 DECLARE_DELEGATE_TwoParams(FOnGetMessageActionsResponseNative, int Status, const TArray<FPubnubMessageActionData>& MessageActions);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddMessageActionsResponse, FString, MessageActionTimetoken);
@@ -911,6 +915,22 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
+	 * (Generally the same as GetAllChannelMetadata just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.  For example: "id" or "name:desc" or "id:desc,status".
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
 	void GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -928,6 +948,20 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetAllChannelMetadata(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+
+	/**
+	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
 	void GetAllChannelMetadata(FOnGetAllChannelMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
@@ -950,28 +984,103 @@ public:
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
+	 * (Generally the same as SetChannelMetadata just using raw string as Include input)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
-	 * @param Channel The user ID for whom to set metadata.
+	 * @param Channel The channel ID for which to set metadata.
 	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
+	 * @param OnSetChannelMetadataResponse Optional delegate to listen for the operation result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FString Include = "");
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
+	void SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FString Include = "");
+
+	/**
+	 * Sets metadata for a specified Channel in the PubNub App Context.
+	 * (Generally the same as SetChannelMetadata just using raw string as Include input)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to set metadata.
+	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 */
+	void SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative NativeCallback = nullptr, FString Include = "");
+
+	/**
+	 * Sets metadata for a specified Channel in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to set metadata.
+	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
+	 * @param OnSetChannelMetadataResponse Optional delegate to listen for the operation result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
+	void SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
+	 * Sets metadata for a specified Channel in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to set metadata.
+	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 * @param Include (Optional) List of property names to include in the response.
+	 */
+	void SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
-	 * @param Channel The user ID for whom to retrieve metadata.
+	 * @param Channel The channel ID for which to retrieve metadata.
 	 * @param OnGetChannelMetadataResponse The callback function used to handle the result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include = "");
-	void GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponseNative NativeCallback, FString Include = "");
+	void GetChannelMetadataRaw(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include = "");
+
+	/**
+	 * Retrieves metadata for a specified Channel from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to retrieve metadata.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 */
+	void GetChannelMetadataRaw(FString Channel, FOnGetChannelMetadataResponseNative NativeCallback, FString Include = "");
+
+	/**
+	 * Retrieves metadata for a specified Channel from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to retrieve metadata.
+	 * @param OnGetChannelMetadataResponse The callback function used to handle the result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	void GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
+	 * Retrieves metadata for a specified Channel from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to retrieve metadata.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) List of property names to include in the response.
+	 */
+	void GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
@@ -991,10 +1100,22 @@ public:
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
-	 * @param Channel The user ID for whom to remove metadata.
+	 * @param Channel The channel ID for which to remove metadata.
+	 * @param OnRemoveChannelMetadataResponse Optional delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void RemoveChannelMetadata(FString Channel);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveChannelMetadataResponse"))
+	void RemoveChannelMetadata(FString Channel, FOnRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse);
+
+	/**
+	 * Removes all metadata associated with a specified Channel from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to remove metadata.
+	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 */
+	void RemoveChannelMetadata(FString Channel, FOnRemoveChannelMetadataResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -1357,7 +1478,7 @@ private:
 	FString GetAllUserMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllUserMetadata_JSON_priv(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetUserMetadata_priv(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative OnSetUserMetadataResponse,FString Include);
+	void SetUserMetadata_priv(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative OnSetUserMetadataResponse, FString Include);
 	FString GetUserMetadata_pn(FString User, FString Include);
 	void GetUserMetadata_JSON_priv(FString User, FOnPubnubResponse OnGetUserMetadataResponse, FString Include);
 	void GetUserMetadata_DATA_priv(FString User, FOnGetUserMetadataResponseNative OnGetUserMetadataResponse, FString Include);
@@ -1365,11 +1486,11 @@ private:
 	FString GetAllChannelMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllChannelMetadata_JSON_priv(FOnPubnubResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllChannelMetadata_DATA_priv(FOnGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FString Include);
+	void SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative OnSetChannelMetadataResponse, FString Include);
 	FString GetChannelMetadata_pn(FString Channel, FString Include);
 	void GetChannelMetadata_JSON_priv(FString Channel, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include);
 	void GetChannelMetadata_DATA_priv(FString Channel, FOnGetChannelMetadataResponseNative OnGetChannelMetadataResponse, FString Include);
-	void RemoveChannelMetadata_priv(FString Channel);
+	void RemoveChannelMetadata_priv(FString Channel, FOnRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse);
 	FString GetMemberships_pn(FString User, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetMemberships_JSON_priv(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponseNative OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);

@@ -761,9 +761,9 @@ void UPubnubSubsystem::RemoveUserMetadata(FString User, FOnRemoveUserMetadataRes
 void UPubnubSubsystem::GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	FOnGetAllChannelMetadataResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetAllChannelMetadataResponse](int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+	NativeCallback.BindLambda([OnGetAllChannelMetadataResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
 	{
-		OnGetAllChannelMetadataResponse.ExecuteIfBound(Status, ChannelsData, PageNext, PagePrev);
+		OnGetAllChannelMetadataResponse.ExecuteIfBound(Result, ChannelsData, PageNext, PagePrev);
 	});
 	GetAllChannelMetadataRaw(NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 }
@@ -800,28 +800,48 @@ void UPubnubSubsystem::GetAllChannelMetadata_JSON(FOnPubnubResponse OnGetAllChan
 	});
 }
 
-void UPubnubSubsystem::SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FString Include)
+void UPubnubSubsystem::SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FString Include)
+{
+	FOnSetChannelMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSetChannelMetadataResponse](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
+	{
+		OnSetChannelMetadataResponse.ExecuteIfBound(Result, ChannelData);
+	});
+	SetChannelMetadataRaw(Channel, ChannelMetadataObj, NativeCallback, Include);
+}
+
+void UPubnubSubsystem::SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative NativeCallback, FString Include)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelMetadataObj, Include]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, ChannelMetadataObj, NativeCallback, Include]
 	{
-		SetChannelMetadata_priv(Channel, ChannelMetadataObj, Include);
+		SetChannelMetadata_priv(Channel, ChannelMetadataObj, NativeCallback, Include);
 	});
 }
 
-void UPubnubSubsystem::GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include)
+void UPubnubSubsystem::SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-    FOnGetChannelMetadataResponseNative NativeCallback;
-    NativeCallback.BindLambda([OnGetChannelMetadataResponse](int Status, FPubnubChannelData ChannelData)
-    {
-        OnGetChannelMetadataResponse.ExecuteIfBound(Status, ChannelData);
-    });
-    GetChannelMetadata(Channel, NativeCallback, Include);
+	SetChannelMetadataRaw(Channel, ChannelMetadataObj, OnSetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
-void UPubnubSubsystem::GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponseNative NativeCallback, FString Include)
+void UPubnubSubsystem::SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+{
+	SetChannelMetadataRaw(Channel, ChannelMetadataObj, NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubSubsystem::GetChannelMetadataRaw(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include)
+{
+    FOnGetChannelMetadataResponseNative NativeCallback;
+    NativeCallback.BindLambda([OnGetChannelMetadataResponse](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
+    {
+        OnGetChannelMetadataResponse.ExecuteIfBound(Result, ChannelData);
+    });
+    GetChannelMetadataRaw(Channel, NativeCallback, Include);
+}
+
+void UPubnubSubsystem::GetChannelMetadataRaw(FString Channel, FOnGetChannelMetadataResponseNative NativeCallback, FString Include)
 {
     if (!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
     {
@@ -832,6 +852,16 @@ void UPubnubSubsystem::GetChannelMetadata(FString Channel, FOnGetChannelMetadata
     {
         GetChannelMetadata_DATA_priv(Channel, NativeCallback, Include);
     });
+}
+
+void UPubnubSubsystem::GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
+{
+	GetChannelMetadataRaw(Channel, OnGetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubSubsystem::GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+{
+	GetChannelMetadataRaw(Channel, NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubSubsystem::GetChannelMetadata_JSON(FString Channel, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include)
@@ -845,14 +875,24 @@ void UPubnubSubsystem::GetChannelMetadata_JSON(FString Channel, FOnPubnubRespons
 	});
 }
 
-void UPubnubSubsystem::RemoveChannelMetadata(FString Channel)
+void UPubnubSubsystem::RemoveChannelMetadata(FString Channel, FOnRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse)
+{
+	FOnRemoveChannelMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRemoveChannelMetadataResponse](const FPubnubOperationResult& Result)
+	{
+		OnRemoveChannelMetadataResponse.ExecuteIfBound(Result);
+	});
+	RemoveChannelMetadata(Channel, NativeCallback);
+}
+
+void UPubnubSubsystem::RemoveChannelMetadata(FString Channel, FOnRemoveChannelMetadataResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback]
 	{
-		RemoveChannelMetadata_priv(Channel);
+		RemoveChannelMetadata_priv(Channel, NativeCallback);
 	});
 }
 
@@ -2398,7 +2438,14 @@ FString UPubnubSubsystem::GetAllChannelMetadata_pn(FString Include, int Limit, F
 	
 	pubnub_getall_channelmetadata_ex(ctx_pub, PubnubOptions);
 
-	return GetLastResponse(ctx_pub);
+	FString Response = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(Response.IsEmpty())
+	{
+		Response = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	return Response;
 }
 
 void UPubnubSubsystem::GetAllChannelMetadata_JSON_priv(FOnPubnubResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
@@ -2427,18 +2474,18 @@ void UPubnubSubsystem::GetAllChannelMetadata_DATA_priv(FOnGetAllChannelMetadataR
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetAllChannelMetadataResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		int Status;
+		FPubnubOperationResult Result;
 		TArray<FPubnubChannelData> ChannelsData;
 		FString PageNext;
 		FString PagePrev;
-		UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(JsonResponse, Status, ChannelsData, PageNext, PagePrev);
+		UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(JsonResponse, Result, ChannelsData, PageNext, PagePrev);
 								
 		//Broadcast bound delegate with parsed response
-		OnGetAllChannelMetadataResponse.ExecuteIfBound(Status, ChannelsData, PageNext, PagePrev);
+		OnGetAllChannelMetadataResponse.ExecuteIfBound(Result, ChannelsData, PageNext, PagePrev);
 	});
 }
 
-void UPubnubSubsystem::SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FString Include)
+void UPubnubSubsystem::SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative OnSetChannelMetadataResponse, FString Include)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2454,18 +2501,38 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString Channel, FString ChannelM
 	
 	pubnub_set_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*ChannelMetadataObj));
 
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Set Channel Metadata.");
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnSetChannelMetadataResponse, JsonResponse]()
+	{
+		//Parse Json response into data
+		FPubnubOperationResult Result;
+		FPubnubChannelData ChannelData;
+		UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, Result, ChannelData);
+								
+		//Broadcast bound delegate with parsed response
+		OnSetChannelMetadataResponse.ExecuteIfBound(Result, ChannelData);
+	});
 }
 
 FString UPubnubSubsystem::GetChannelMetadata_pn(FString Channel, FString Include)
 {
 	pubnub_get_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*Channel));
 
-	return GetLastResponse(ctx_pub);
+	FString Response = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(Response.IsEmpty())
+	{
+		Response = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	return Response;
 }
 
 void UPubnubSubsystem::GetChannelMetadata_JSON_priv(FString Channel, FOnPubnubResponse OnGetChannelMetadataResponse, FString Include)
@@ -2500,16 +2567,16 @@ void UPubnubSubsystem::GetChannelMetadata_DATA_priv(FString Channel, FOnGetChann
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetChannelMetadataResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		int Status;
+		FPubnubOperationResult Result;
 		FPubnubChannelData ChannelData;
-		UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, Status, ChannelData);
+		UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, Result, ChannelData);
 								
 		//Broadcast bound delegate with parsed response
-		OnGetChannelMetadataResponse.ExecuteIfBound(Status, ChannelData);
+		OnGetChannelMetadataResponse.ExecuteIfBound(Result, ChannelData);
 	});
 }
 
-void UPubnubSubsystem::RemoveChannelMetadata_priv(FString Channel)
+void UPubnubSubsystem::RemoveChannelMetadata_priv(FString Channel, FOnRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2519,11 +2586,19 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString Channel)
 
 	pubnub_remove_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Channel));
 
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Remove Channel Metadata.");
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
+	
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnRemoveChannelMetadataResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with parsed response
+		OnRemoveChannelMetadataResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse));
+	});
 }
 
 FString UPubnubSubsystem::GetMemberships_pn(FString User, FString Include, int Limit,

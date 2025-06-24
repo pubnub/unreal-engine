@@ -272,40 +272,40 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
 
     // Callbacks
     FOnGetChannelMetadataResponseNative GetChannelMetadataCallback;
-    GetChannelMetadataCallback.BindLambda([this, bGetChannelMetaDone, bGetChannelMetaSuccess, ReceivedChannelData](int Status, FPubnubChannelData ChannelData)
+    GetChannelMetadataCallback.BindLambda([this, bGetChannelMetaDone, bGetChannelMetaSuccess, ReceivedChannelData](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
     {
         *bGetChannelMetaDone = true;
-        *bGetChannelMetaSuccess = (Status == 200);
+        *bGetChannelMetaSuccess = (Result.Status == 200);
         if (*bGetChannelMetaSuccess)
         {
             *ReceivedChannelData = ChannelData;
         }
         else
         {
-            AddError(FString::Printf(TEXT("GetChannelMetadata failed. Status: %d"), Status));
+            AddError(FString::Printf(TEXT("GetChannelMetadata failed. Status: %d"), Result.Status));
         }
     });
 
     FOnGetAllChannelMetadataResponseNative GetAllChannelMetadataCallback;
-    GetAllChannelMetadataCallback.BindLambda([this, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData](int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+    GetAllChannelMetadataCallback.BindLambda([this, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
     {
         *bGetAllChannelMetaDone = true;
-        *bGetAllChannelMetaSuccess = (Status == 200);
+        *bGetAllChannelMetaSuccess = (Result.Status == 200);
         if (*bGetAllChannelMetaSuccess)
         {
             *ReceivedAllChannelsData = ChannelsData;
         }
         else
         {
-            AddError(FString::Printf(TEXT("GetAllChannelMetadata failed. Status: %d. Next: %s, Prev: %s"), Status, *PageNext, *PagePrev));
+            AddError(FString::Printf(TEXT("GetAllChannelMetadata failed. Status: %d. Next: %s, Prev: %s"), Result.Status, *PageNext, *PagePrev));
         }
     });
 
     FOnGetChannelMetadataResponseNative GetChannelMetadataCallback_AfterRemove;
-    GetChannelMetadataCallback_AfterRemove.BindLambda([this, bGetChannelMetaAfterRemoveDone, GetChannelMetaAfterRemoveStatus](int Status, FPubnubChannelData ChannelData)
+    GetChannelMetadataCallback_AfterRemove.BindLambda([this, bGetChannelMetaAfterRemoveDone, GetChannelMetaAfterRemoveStatus](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
     {
         *bGetChannelMetaAfterRemoveDone = true;
-        *GetChannelMetaAfterRemoveStatus = Status;
+        *GetChannelMetaAfterRemoveStatus = Result.Status;
     });
 
     if (!InitTest())
@@ -328,7 +328,7 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     // Step 1: SetChannelMetadata
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, FullChannelMetadataToSet]()
     {
-        PubnubSubsystem->SetChannelMetadata(TestChannelID, FullChannelMetadataToSet, "custom,status,type");
+        PubnubSubsystem->SetChannelMetadata(TestChannelID, FullChannelMetadataToSet, nullptr, FPubnubGetMetadataInclude::FromValue(true));
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetChannelMetadata to process
 
@@ -338,7 +338,7 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
         *bGetChannelMetaDone = false;
         *bGetChannelMetaSuccess = false;
         ReceivedChannelData->ChannelID.Empty(); // Reset
-        PubnubSubsystem->GetChannelMetadata(TestChannelID, GetChannelMetadataCallback, "custom,status,type");
+        PubnubSubsystem->GetChannelMetadata(TestChannelID, GetChannelMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetChannelMetaDone]() { return *bGetChannelMetaDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, TestChannelName, TestChannelDescription, TestChannelStatus, TestChannelType, TestChannelCustomJson, ReceivedChannelData, bGetChannelMetaSuccess]()
@@ -481,10 +481,10 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
 
     // Callback
     FOnGetAllChannelMetadataResponseNative GetAllCallback;
-    GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedChannels, NextPage, PrevPage](int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNextStr, FString PagePrevStr)
+    GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedChannels, NextPage, PrevPage](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNextStr, FString PagePrevStr)
     {
         *bGetAllDone = true;
-        *bGetAllSuccess = (Status == 200);
+        *bGetAllSuccess = (Result.Status == 200);
         if (*bGetAllSuccess)
         {
             *ReceivedChannels = ChannelsData;
@@ -494,7 +494,7 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         else
         {
             ReceivedChannels->Empty();
-            AddError(FString::Printf(TEXT("GetAllChannelMetadata call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNextStr, *PagePrevStr));
+            AddError(FString::Printf(TEXT("GetAllChannelMetadata call failed. Status: %d. Next: '%s', Prev: '%s'"), Result.Status, *PageNextStr, *PagePrevStr));
         }
     });
 
@@ -511,15 +511,15 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
     });
 
     // Initial Setup: Set metadata for all test channels
-    auto SetMeta = [this](const FString& ChanID, const FString& Meta, const FString& IncludeFields = "custom")
+    auto SetMeta = [this](const FString& ChanID, const FString& Meta, const FPubnubGetMetadataInclude IncludeFields = FPubnubGetMetadataInclude(true, false, false))
     {
         ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID, Meta, IncludeFields]()
         {
-            PubnubSubsystem->SetChannelMetadata(ChanID, Meta, IncludeFields);
+            PubnubSubsystem->SetChannelMetadata(ChanID, Meta, nullptr, IncludeFields);
         }, 0.1f));
     };
 
-    SetMeta(ChannelAID, ChannelAMetadata, "custom,status,type");
+    SetMeta(ChannelAID, ChannelAMetadata, FPubnubGetMetadataInclude::FromValue(true));
     SetMeta(ChannelBID, ChannelBMetadata);
     SetMeta(ChannelSortAID, ChannelSortAMetadata);
     SetMeta(ChannelSortBID, ChannelSortBMetadata);
@@ -1071,7 +1071,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
     {
         ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID, Meta]()
         {
-            PubnubSubsystem->SetChannelMetadata(ChanID, Meta, TEXT("custom,status,type"));
+            PubnubSubsystem->SetChannelMetadata(ChanID, Meta, nullptr, FPubnubGetMetadataInclude::FromValue(true));
         }, 0.05f));
     };
     CreateChannelMeta(ChannelAID, ChannelAMetadata);
