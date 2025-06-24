@@ -996,13 +996,13 @@ bool FGetMessageActionsJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with multiple message actions
 	FString TestJson = "{\"status\": 200, \"data\": [{\"messageTimetoken\": \"17302756128241865\", \"type\": \"edit\", \"uuid\": \"User1\", \"value\": \"editted message\", \"actionTimetoken\": \"17302756806526160\"}, {\"messageTimetoken\": \"17302756128241865\", \"type\": \"another type\", \"uuid\": \"User1\", \"value\": \"bla bla\", \"actionTimetoken\": \"17302763502280660\"}]}";
-	int Status = 0;
+	FPubnubOperationResult Result;
 	TArray<FPubnubMessageActionData> MessageActions;
 	
-	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestJson, Status, MessageActions);
+	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestJson, Result, MessageActions);
 	
 	// Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify number of message actions
 	TestEqual("Should have 2 message actions", MessageActions.Num(), 2);
@@ -1023,30 +1023,30 @@ bool FGetMessageActionsJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test empty data array
 	FString TestEmptyJson = "{\"status\":200,\"data\":[]}";
-	Status = 0;
+	Result.Status = 0;
 	MessageActions.Empty();
 	
-	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestEmptyJson, Status, MessageActions);
+	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestEmptyJson, Result, MessageActions);
 	
-	TestEqual("Status code should be 200 for empty data", Status, 200);
+	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 message actions for empty data", MessageActions.Num(), 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[]}";
-	Status = 0;
+	Result.Status = 0;
 	MessageActions.Empty();
 	
-	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestErrorJson, Status, MessageActions);
+	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestErrorJson, Result, MessageActions);
 	
-	TestEqual("Status code should be 400 for error", Status, 400);
+	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 message actions for error", MessageActions.Num(), 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
+	Result.Status = 0;
 	MessageActions.Empty();
 	
-	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestInvalidJson, Status, MessageActions);
+	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestInvalidJson, Result, MessageActions);
 	
 	TestEqual("Should have 0 message actions for invalid JSON", MessageActions.Num(), 0);
 

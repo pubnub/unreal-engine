@@ -1124,17 +1124,17 @@ void UPubnubSubsystem::RemoveChannelMembers(FString Channel, FString RemoveObj, 
     RemoveChannelMembersRaw(Channel, RemoveObj, NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
 }
 
-void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse)
+void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponse OnAddMessageActionResponse)
 {
-	FOnAddMessageActionsResponseNative NativeCallback;
-	NativeCallback.BindLambda([AddActionResponse](FString MessageActionTimetoken)
+	FOnAddMessageActionResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnAddMessageActionResponse](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
 	{
-		AddActionResponse.ExecuteIfBound(MessageActionTimetoken);
+		OnAddMessageActionResponse.ExecuteIfBound(Result, MessageActionData);
 	});
 	AddMessageAction(Channel, MessageTimetoken, ActionType, Value, NativeCallback);
 }
 
-void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative NativeCallback)
+void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
@@ -1145,24 +1145,24 @@ void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoke
 	});
 }
 
-void UPubnubSubsystem::GetMessageActions(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
+void UPubnubSubsystem::GetMessageActions(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
 {
 	FOnGetMessageActionsResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetMessageActionsResponse](int Status, const TArray<FPubnubMessageActionData>& MessageActions)
+	NativeCallback.BindLambda([OnGetMessageActionsResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
 	{
-		OnGetMessageActionsResponse.ExecuteIfBound(Status, MessageActions);
+		OnGetMessageActionsResponse.ExecuteIfBound(Result, MessageActions);
 	});
-	GetMessageActions(Channel, Start, End, SizeLimit, NativeCallback);
+	GetMessageActions(Channel, Start, End, Limit, NativeCallback);
 }
 
-void UPubnubSubsystem::GetMessageActions(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponseNative NativeCallback)
+void UPubnubSubsystem::GetMessageActions(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Start, End, SizeLimit, NativeCallback]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, Start, End, Limit, NativeCallback]
 	{
-		GetMessageActions_DATA_priv(Channel, Start, End, SizeLimit, NativeCallback);
+		GetMessageActions_DATA_priv(Channel, Start, End, Limit, NativeCallback);
 	});
 }
 
@@ -1177,26 +1177,25 @@ void UPubnubSubsystem::GetMessageActions_JSON(FString Channel, FString Start, FS
 	});
 }
 
-void UPubnubSubsystem::RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken)
+void UPubnubSubsystem::RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponse OnRemoveMessageActionResponse)
+{
+	FOnRemoveMessageActionResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRemoveMessageActionResponse](const FPubnubOperationResult& Result)
+	{
+		OnRemoveMessageActionResponse.ExecuteIfBound(Result);
+	});
+	RemoveMessageAction(Channel, MessageTimetoken, ActionTimetoken, NativeCallback);
+}
+
+void UPubnubSubsystem::RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, MessageTimetoken, ActionTimetoken]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, MessageTimetoken, ActionTimetoken, NativeCallback]
 	{
-		RemoveMessageAction_priv(Channel, MessageTimetoken, ActionTimetoken);
+		RemoveMessageAction_priv(Channel, MessageTimetoken, ActionTimetoken, NativeCallback);
 	});
-}
-
-void UPubnubSubsystem::ReconnectSubscriptions()
-{
-	pubnub_reconnect(ctx_ee, nullptr);
-}
-
-
-void UPubnubSubsystem::DisconnectSubscriptions()
-{
-	pubnub_disconnect(ctx_ee);
 }
 
 /* DISABLED 
@@ -1211,6 +1210,17 @@ void UPubnubSubsystem::GetMessageActionsContinue(FOnPubnubResponse OnGetMessageA
 	});
 }
 */
+
+void UPubnubSubsystem::ReconnectSubscriptions()
+{
+	pubnub_reconnect(ctx_ee, nullptr);
+}
+
+
+void UPubnubSubsystem::DisconnectSubscriptions()
+{
+	pubnub_disconnect(ctx_ee);
+}
 
 FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStructure TokenStructure, bool &success)
 {
@@ -3073,7 +3083,7 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString Channel, FString Remove
 	});
 }
 
-void UPubnubSubsystem::AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative AddActionResponse)
+void UPubnubSubsystem::AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponseNative AddMessageActionResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -3086,31 +3096,27 @@ void UPubnubSubsystem::AddMessageAction_priv(FString Channel, FString MessageTim
 	FString FinalValue = UPubnubUtilities::AddQuotesToString(Value);
 	
 	pubnub_add_message_action_str(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*MessageTimetoken), TCHAR_TO_ANSI(*FinalActionType),  TCHAR_TO_ANSI(*FinalValue));
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
+	
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Add Message Action.");
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
-	pubnub_chamebl_t AddMessageActionResponse = pubnub_get_message_action_timetoken(ctx_pub);
-
-	if(!AddMessageActionResponse.ptr)
-	{
-		return;
-	}
-	FString ActionTimetoken(AddMessageActionResponse.ptr);
-	//C-Core returns action timetoken in format: "17303705496647270"}} so we need to clean it up and get pure timetoken
-	ActionTimetoken = ActionTimetoken.RightChop(1);
-	ActionTimetoken = ActionTimetoken.LeftChop(3);
 	
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, AddActionResponse, ActionTimetoken]()
+	AsyncTask(ENamedThreads::GameThread, [this, AddMessageActionResponse, JsonResponse]()
 	{
+		FPubnubOperationResult Result;
+		FPubnubMessageActionData MessageActionData;
+		
 		//Broadcast bound delegate with JsonResponse
-		AddActionResponse.ExecuteIfBound(ActionTimetoken);
+		UPubnubJsonUtilities::AddMessageActionJsonToData(JsonResponse, Result, MessageActionData);
+		AddMessageActionResponse.ExecuteIfBound(Result, MessageActionData);
 	});
 }
 
-void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken)
+void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative OnRemoveMessageActionResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -3142,21 +3148,33 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString Message
 	
 	pubnub_remove_message_action(ctx_pub, TCHAR_TO_ANSI(*Channel), message_timetoken_chamebl, action_timetoken_chamebl);
 
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-
 	FString JsonResponse = GetLastResponse(ctx_pub);
-
-	if(PubnubResponse != PNR_OK)
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Remove Message Action.");
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
+
+	//Delegate needs to be executed back on Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, OnRemoveMessageActionResponse, JsonResponse]()
+	{
+		//Broadcast bound delegate with JsonResponse
+		OnRemoveMessageActionResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse));
+	});
 }
 
-FString UPubnubSubsystem::GetMessageActions_pn(FString Channel, FString Start, FString End, int SizeLimit)
+FString UPubnubSubsystem::GetMessageActions_pn(FString Channel, FString Start, FString End, int Limit)
 {
-	pubnub_get_message_actions(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), SizeLimit);
+	pubnub_get_message_actions(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), Limit);
 	
-	return GetLastResponse(ctx_pub);
+	FString Response = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(Response.IsEmpty())
+	{
+		Response = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	return Response;
 }
 
 void UPubnubSubsystem::GetMessageActions_JSON_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse)
@@ -3191,12 +3209,12 @@ void UPubnubSubsystem::GetMessageActions_DATA_priv(FString Channel, FString Star
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetMessageActionsResponse, JsonResponse]()
 	{
 		//Parse Json response into data
-		int Status;
+		FPubnubOperationResult Result;
 		TArray<FPubnubMessageActionData> MessageActions;
-		UPubnubJsonUtilities::GetMessageActionsJsonToData(JsonResponse, Status, MessageActions);
+		UPubnubJsonUtilities::GetMessageActionsJsonToData(JsonResponse, Result, MessageActions);
 										
 		//Broadcast bound delegate with parsed response
-		OnGetMessageActionsResponse.ExecuteIfBound(Status, MessageActions);
+		OnGetMessageActionsResponse.ExecuteIfBound(Result, MessageActions);
 	});
 }
 

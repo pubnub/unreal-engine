@@ -70,27 +70,27 @@ bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
         });
 
     // First Message Action Callback
-    FOnAddMessageActionsResponseNative AddAction1Callback;
-    AddAction1Callback.BindLambda([this, bAddAction1Done, ReceivedAction1Timetoken](FString ActionTimetoken)
+    FOnAddMessageActionResponseNative AddAction1Callback;
+    AddAction1Callback.BindLambda([this, bAddAction1Done, ReceivedAction1Timetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
     {
-        *ReceivedAction1Timetoken = ActionTimetoken;
+        *ReceivedAction1Timetoken = MessageActionData.ActionTimetoken;
         *bAddAction1Done = true;
     });
 
     // Second Message Action Callback
-    FOnAddMessageActionsResponseNative AddAction2Callback;
-    AddAction2Callback.BindLambda([this, bAddAction2Done, ReceivedAction2Timetoken](FString ActionTimetoken)
+    FOnAddMessageActionResponseNative AddAction2Callback;
+    AddAction2Callback.BindLambda([this, bAddAction2Done, ReceivedAction2Timetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
     {
-        *ReceivedAction2Timetoken = ActionTimetoken;
+        *ReceivedAction2Timetoken = MessageActionData.ActionTimetoken;
         *bAddAction2Done = true;
     });
 
     // Get Message Actions Callback
     FOnGetMessageActionsResponseNative GetActionsCallback;
-    GetActionsCallback.BindLambda([this, bGetActionsDone, bGetActionsSuccess, ReceivedActionsArray](int Status, const TArray<FPubnubMessageActionData>& MessageActions)
+    GetActionsCallback.BindLambda([this, bGetActionsDone, bGetActionsSuccess, ReceivedActionsArray](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
     {
         *bGetActionsDone = true;
-        if (Status == 200)
+        if (Result.Status == 200)
         {
             *ReceivedActionsArray = MessageActions;
             *bGetActionsSuccess = true;
@@ -98,7 +98,7 @@ bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
         else
         {
             *bGetActionsSuccess = false;
-            AddError(FString::Printf(TEXT("GetMessageActions failed. Status: %d"), Status));
+            AddError(FString::Printf(TEXT("GetMessageActions failed. Status: %d"), Result.Status));
         }
     });
 
@@ -286,10 +286,10 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
         });
 
     // Callback for AddMessageAction
-    FOnAddMessageActionsResponseNative AddActionCallback;
-    AddActionCallback.BindLambda([this, bAddActionDone, AddedActionTimetoken](FString ActionTimetoken)
+    FOnAddMessageActionResponseNative AddActionCallback;
+    AddActionCallback.BindLambda([this, bAddActionDone, AddedActionTimetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
     {
-        *AddedActionTimetoken = ActionTimetoken;
+        *AddedActionTimetoken = MessageActionData.ActionTimetoken;
         *bAddActionDone = true;
     });
 
@@ -403,18 +403,18 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
     TSharedPtr<TArray<FPubnubMessageActionData>> ReceivedActionsArray_AfterRemove = MakeShared<TArray<FPubnubMessageActionData>>();
 
     // Callbacks
-    FOnAddMessageActionsResponseNative AddActionCallback;
-    AddActionCallback.BindLambda([this, bAddActionDone, AddedActionTimetoken](FString ActionTimetoken)
+    FOnAddMessageActionResponseNative AddActionCallback;
+    AddActionCallback.BindLambda([this, bAddActionDone, AddedActionTimetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
     {
-        *AddedActionTimetoken = ActionTimetoken;
+        *AddedActionTimetoken = MessageActionData.ActionTimetoken;
         *bAddActionDone = true;
     });
 
     FOnGetMessageActionsResponseNative GetActionsCallback_Initial;
-    GetActionsCallback_Initial.BindLambda([this, bGetActionsDone_Initial, bGetActionsSuccess_Initial, ReceivedActionsArray_Initial](int Status, const TArray<FPubnubMessageActionData>& MessageActions)
+    GetActionsCallback_Initial.BindLambda([this, bGetActionsDone_Initial, bGetActionsSuccess_Initial, ReceivedActionsArray_Initial](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
     {
         *bGetActionsDone_Initial = true;
-        if (Status == 200)
+        if (Result.Status == 200)
         {
             *ReceivedActionsArray_Initial = MessageActions;
             *bGetActionsSuccess_Initial = true;
@@ -422,15 +422,15 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
         else
         {
             *bGetActionsSuccess_Initial = false;
-            AddError(FString::Printf(TEXT("GetMessageActions (Initial) failed. Status: %d"), Status));
+            AddError(FString::Printf(TEXT("GetMessageActions (Initial) failed. Status: %d"), Result.Status));
         }
     });
     
     FOnGetMessageActionsResponseNative GetActionsCallback_AfterRemove;
-    GetActionsCallback_AfterRemove.BindLambda([this, bGetActionsDone_AfterRemove, bGetActionsSuccess_AfterRemove, ReceivedActionsArray_AfterRemove](int Status, const TArray<FPubnubMessageActionData>& MessageActions)
+    GetActionsCallback_AfterRemove.BindLambda([this, bGetActionsDone_AfterRemove, bGetActionsSuccess_AfterRemove, ReceivedActionsArray_AfterRemove](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
     {
         *bGetActionsDone_AfterRemove = true;
-        if (Status == 200)
+        if (Result.Status == 200)
         {
             *ReceivedActionsArray_AfterRemove = MessageActions;
             *bGetActionsSuccess_AfterRemove = true;
@@ -438,7 +438,7 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
         else
         {
             *bGetActionsSuccess_AfterRemove = false;
-            AddError(FString::Printf(TEXT("GetMessageActions (After Remove) failed. Status: %d"), Status));
+            AddError(FString::Printf(TEXT("GetMessageActions (After Remove) failed. Status: %d"), Result.Status));
         }
     });
 

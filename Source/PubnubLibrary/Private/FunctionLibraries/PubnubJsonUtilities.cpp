@@ -442,16 +442,18 @@ void UPubnubJsonUtilities::GetChannelMetadataJsonToData(FString ResponseJson, FP
 	}
 }
 
-void UPubnubJsonUtilities::GetMessageActionsJsonToData(FString ResponseJson, int& Status, TArray<FPubnubMessageActionData>& MessageActions)
+void UPubnubJsonUtilities::GetMessageActionsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMessageActionData>& MessageActions)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	Result = GetOperationResultFromJson_AppContext(JsonObject);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{
@@ -468,6 +470,31 @@ void UPubnubJsonUtilities::GetMessageActionsJsonToData(FString ResponseJson, int
 
 			MessageActions.Add(CurrentMessageAction);
 		}
+	}
+}
+
+void UPubnubJsonUtilities::AddMessageActionJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubMessageActionData& MessageAction)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	if(!StringToJsonObject(ResponseJson, JsonObject))
+	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
+		return;
+	}
+	
+	Result = GetOperationResultFromJson_AppContext(JsonObject);
+
+	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{
+		TSharedPtr<FJsonObject> MessageActionJson = JsonObject->GetObjectField(ANSI_TO_TCHAR("data"));
+		
+		MessageActionJson->TryGetStringField(ANSI_TO_TCHAR("messageTimetoken"), MessageAction.MessageTimetoken);
+		MessageActionJson->TryGetStringField(ANSI_TO_TCHAR("type"), MessageAction.Type);
+		MessageActionJson->TryGetStringField(ANSI_TO_TCHAR("uuid"), MessageAction.UserID);
+		MessageActionJson->TryGetStringField(ANSI_TO_TCHAR("value"), MessageAction.Value);
+		MessageActionJson->TryGetStringField(ANSI_TO_TCHAR("actionTimetoken"), MessageAction.ActionTimetoken);
 	}
 }
 

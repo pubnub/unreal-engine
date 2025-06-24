@@ -88,10 +88,13 @@ DECLARE_DELEGATE_FourParams(FOnSetChannelMembersResponseNative, const FPubnubOpe
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveChannelMembersResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnRemoveChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
 
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, int, Status, const TArray<FPubnubMessageActionData>&, MessageActions);
-DECLARE_DELEGATE_TwoParams(FOnGetMessageActionsResponseNative, int Status, const TArray<FPubnubMessageActionData>& MessageActions);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddMessageActionsResponse, FString, MessageActionTimetoken);
-DECLARE_DELEGATE_OneParam(FOnAddMessageActionsResponseNative, FString MessageActionTimetoken);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubMessageActionData>&, MessageActions);
+DECLARE_DELEGATE_TwoParams(FOnGetMessageActionsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnAddMessageActionResponse, const FPubnubOperationResult&, Result, FPubnubMessageActionData, MessageActionData);
+DECLARE_DELEGATE_TwoParams(FOnAddMessageActionResponseNative, const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveMessageActionResponse, const FPubnubOperationResult&, Result);
+DECLARE_DELEGATE_OneParam(FOnRemoveMessageActionResponseNative, const FPubnubOperationResult& Result);
+
 
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
@@ -1634,24 +1637,45 @@ public:
 	 * @param MessageTimetoken The timetoken of the message to add the action to.
 	 * @param ActionType The type of action to add.
 	 * @param Value The value associated with the action.
-	 * @param AddActionResponse The callback function used to handle the result.
+	 * @param OnAddMessageActionResponse (Optional) The callback function used to handle the result and added MessageAction timetoken.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
-	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponse AddActionResponse);
-	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative NativeCallback);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta = (AutoCreateRefTerm = "OnAddMessageActionResponse"))
+	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponse OnAddMessageActionResponse);
+
+	/**
+	 * Adds a message action to a specific message in a channel.
+	 * 
+	 * @param Channel The ID of the channel.
+	 * @param MessageTimetoken The timetoken of the message to add the action to.
+	 * @param ActionType The type of action to add.
+	 * @param Value The value associated with the action.
+	 * @param NativeCallback (Optional) The callback function used to handle the result and added MessageAction timetoken.
+	 *						 Delegate in native form that can accept lambdas.
+	 */
+	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
 	 * 
 	 * @param Channel The ID of the channel.
-	 * @param Start The starting timetoken for the range. Has to be greater (newer) than the End timetoken.
+	 * @param Start The starting timetoken for the range. Has to be greater (newer) than the End timetoken. 
 	 * @param End The ending timetoken for the range.
-	 * @param SizeLimit The maximum number of actions to retrieve.
+	 * @param Limit The maximum number of actions to retrieve.
 	 * @param OnGetMessageActionsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
-	void GetMessageActions(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
-	void GetMessageActions(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponseNative NativeCallback);
+	void GetMessageActions(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
+
+	/**
+	 * Retrieves message actions for a specified channel within a given time range.
+	 * 
+	 * @param Channel The ID of the channel.
+	 * @param Start The starting timetoken for the range. Has to be greater (newer) than the End timetoken. 
+	 * @param End The ending timetoken for the range.
+	 * @param Limit The maximum number of actions to retrieve.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 */
+	void GetMessageActions(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponseNative NativeCallback);
 
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
@@ -1672,9 +1696,20 @@ public:
 	 * @param Channel The ID of the channel.
 	 * @param MessageTimetoken The timetoken of the message.
 	 * @param ActionTimetoken The timetoken of the action to remove.
+	 * @param OnRemoveMessageActionResponse (Optional) Delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
-	void RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta = (AutoCreateRefTerm = "OnRemoveMessageActionResponse"))
+	void RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponse OnRemoveMessageActionResponse);
+	
+	/**
+	 * Removes a specific message action from a message in a channel.
+	 * 
+	 * @param Channel The ID of the channel.
+	 * @param MessageTimetoken The timetoken of the message.
+	 * @param ActionTimetoken The timetoken of the action to remove.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 */
+	void RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative NativeCallback = nullptr);
 	
 	//UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
 	//void GetMessageActionsContinue(FOnPubnubResponse OnGetMessageActionsContinueResponse);
@@ -1834,11 +1869,11 @@ private:
 	void AddChannelMembers_priv(FString Channel, FString AddObj, FString Include);
 	void SetChannelMembers_priv(FString Channel, FString SetObj, FOnSetChannelMembersResponseNative OnSetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void RemoveChannelMembers_priv(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponseNative OnRemoveMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative AddActionResponse);
-	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
-	FString GetMessageActions_pn(FString Channel, FString Start, FString End, int SizeLimit);
+	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponseNative AddMessageActionResponse);
+	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative OnRemoveMessageActionResponse);
+	FString GetMessageActions_pn(FString Channel, FString Start, FString End, int Limit);
 	void GetMessageActions_JSON_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);
-	void GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse);
+	void GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse);
 	void GetMessageActionsContinue_priv(FOnPubnubResponse OnGetMessageActionsContinueResponse);
 
 #pragma endregion
