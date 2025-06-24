@@ -1037,10 +1037,10 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
     FOnGetMembershipsResponseNative GetMembershipsCallback;
     GetMembershipsCallback.BindLambda(
         [this, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships, NextPageToken, PrevPageToken]
-        (int Status, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev)
+        (const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev)
     {
         *bGetMembershipsDone = true;
-        *bGetMembershipsSuccess = (Status == 200);
+        *bGetMembershipsSuccess = (Result.Status == 200);
         if (*bGetMembershipsSuccess)
         {
             *ReceivedMemberships = MembershipsData;
@@ -1050,7 +1050,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         else
         {
             ReceivedMemberships->Empty();
-            AddError(FString::Printf(TEXT("GetMemberships call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNext, *PagePrev));
+            AddError(FString::Printf(TEXT("GetMemberships call failed. Status: %d. Next: '%s', Prev: '%s'"), Result.Status, *PageNext, *PagePrev));
         }
     });
 

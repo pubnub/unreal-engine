@@ -1057,15 +1057,15 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with minimal channel data
 	FString TestJson1 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"custom\":{\"channel_custom\":\"value\"},\"status\":\"active\",\"type\":\"public\"},\"custom\":{\"hot\":\"warm\"},\"status\":\"active\",\"type\":\"member\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"}],\"next\":\"MQ\"}";
-	int Status = 0;
+	FPubnubOperationResult Result;
 	TArray<FPubnubGetMembershipsWrapper> MembershipsData;
 	FString PageNext;
 	FString PagePrev;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson1, Status, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson1, Result, MembershipsData, PageNext, PagePrev);
 	
 	// Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
 	TestEqual("Next page token should be 'MQ'", PageNext, "MQ");
@@ -1089,15 +1089,15 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test successful response with full channel data and multiple memberships
 	FString TestJson2 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":\"Test Channel\",\"custom\":{\"channel_custom\":\"value1\"},\"status\":\"active\",\"type\":\"public\",\"updated\":\"2024-10-28T09:34:20.604564Z\",\"eTag\":\"cf9ba9ae8401fd369718d4f178bda4b7\"},\"type\":\"member\",\"status\":\"active\",\"custom\":{\"hotMembership\":\"warm\"},\"updated\":\"2024-10-28T09:35:26.660721Z\",\"eTag\":\"AdycwpOS7bWOKg\"},{\"channel\":{\"id\":\"my_channel2\",\"custom\":{\"channel_custom\":\"value2\"},\"status\":\"inactive\",\"type\":\"private\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"hot2Membership\":\"cold\"},\"updated\":\"2024-11-04T09:03:07.341822Z\",\"eTag\":\"AYfIn/PQoIPxlwE\"}],\"next\":\"Mg\"}";
-	Status = 0;
+	Result.Status = 0;
 	MembershipsData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson2, Status, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson2, Result, MembershipsData, PageNext, PagePrev);
 	
 	// Verify status code
-	TestEqual("Status code should be 200 for second test", Status, 200);
+	TestEqual("Status code should be 200 for second test", Result.Status, 200);
 	
 	// Verify pagination tokens
 	TestEqual("Next page token should be 'Mg'", PageNext, "Mg");
@@ -1134,38 +1134,38 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test empty data array
 	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
-	Status = 0;
+	Result.Status = 0;
 	MembershipsData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestEmptyJson, Status, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestEmptyJson, Result, MembershipsData, PageNext, PagePrev);
 	
-	TestEqual("Status code should be 200 for empty data", Status, 200);
+	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 memberships for empty data", MembershipsData.Num(), 0);
 	TestEqual("Next page token should be empty", PageNext, "");
 	TestEqual("Previous page token should be empty", PagePrev, "");
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
-	Status = 0;
+	Result.Status = 0;
 	MembershipsData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestErrorJson, Status, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestErrorJson, Result, MembershipsData, PageNext, PagePrev);
 	
-	TestEqual("Status code should be 400 for error", Status, 400);
+	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 memberships for error", MembershipsData.Num(), 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
+	Result.Status = 0;
 	MembershipsData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestInvalidJson, Status, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestInvalidJson, Result, MembershipsData, PageNext, PagePrev);
 	
 	TestEqual("Should have 0 memberships for invalid JSON", MembershipsData.Num(), 0);
 
