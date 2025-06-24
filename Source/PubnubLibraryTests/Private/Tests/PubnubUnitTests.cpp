@@ -1176,15 +1176,15 @@ bool FGetChannelMembersJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with channel members
 	FString TestJson = "{\"status\":200,\"data\":[{\"uuid\":{\"id\":\"cpp_chat_user\",\"name\":\"Chat User\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"type\":\"premium\",\"status\":\"active\",\"custom\":{\"age\":25,\"location\":\"New York\"},\"updated\":\"2025-03-14T13:23:50.608735Z\",\"eTag\":\"669571c9e7371edba566c9371bfd4aec\"},\"type\":\"user\",\"status\":\"active\",\"custom\":{\"lastReadMessageTimetoken\":\"17453138062518466\",\"platform\":\"desktop\"},\"updated\":\"2025-04-22T09:23:26.406843Z\",\"eTag\":\"AYWhgd7euNT0xgE\"},{\"uuid\":{\"id\":\"CppChatUser\",\"name\":\"Chat User 2\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"type\":\"standard\",\"status\":\"inactive\",\"custom\":{\"age\":30,\"location\":\"London\"},\"updated\":\"2025-03-19T09:08:14.60887Z\",\"eTag\":\"3bbbd36590c68b080b0f258843144afe\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"lastReadMessageTimetoken\":\"17447186377255230\",\"platform\":\"mobile\"},\"updated\":\"2025-04-15T12:04:00.151122Z\",\"eTag\":\"AfGZmbv/i4Hi2gE\"}],\"next\":\"Mw\"}";
-	int Status = 0;
+	FPubnubOperationResult Result;
 	TArray<FPubnubGetChannelMembersWrapper> MembersData;
 	FString PageNext;
 	FString PagePrev;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestJson, Status, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestJson, Result, MembersData, PageNext, PagePrev);
 	
 	// Verify status code
-	TestEqual("Status code should be 200", Status, 200);
+	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
 	TestEqual("Next page token should be 'Mw'", PageNext, "Mw");
@@ -1229,38 +1229,38 @@ bool FGetChannelMembersJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	// Test empty data array
 	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
-	Status = 0;
+	Result.Status = 0;
 	MembersData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestEmptyJson, Status, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestEmptyJson, Result, MembersData, PageNext, PagePrev);
 	
-	TestEqual("Status code should be 200 for empty data", Status, 200);
+	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 members for empty data", MembersData.Num(), 0);
 	TestEqual("Next page token should be empty", PageNext, "");
 	TestEqual("Previous page token should be empty", PagePrev, "");
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
-	Status = 0;
+	Result.Status = 0;
 	MembersData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestErrorJson, Status, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestErrorJson, Result, MembersData, PageNext, PagePrev);
 	
-	TestEqual("Status code should be 400 for error", Status, 400);
+	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 members for error", MembersData.Num(), 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
-	Status = 0;
+	Result.Status = 0;
 	MembersData.Empty();
 	PageNext = "";
 	PagePrev = "";
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestInvalidJson, Status, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestInvalidJson, Result, MembersData, PageNext, PagePrev);
 	
 	TestEqual("Should have 0 members for invalid JSON", MembersData.Num(), 0);
 

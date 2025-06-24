@@ -81,9 +81,13 @@ DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetMembershipsResponse, const FPubnubOper
 DECLARE_DELEGATE_FourParams(FOnSetMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveMembershipsResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnRemoveMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetChannelMembersResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetChannelMembersResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnSetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveChannelMembersResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnRemoveChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
 
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetChannelMembersResponse, int, Status, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnGetChannelMembersResponseNative, int Status, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, int, Status, const TArray<FPubnubMessageActionData>&, MessageActions);
 DECLARE_DELEGATE_TwoParams(FOnGetMessageActionsResponseNative, int Status, const TArray<FPubnubMessageActionData>& MessageActions);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddMessageActionsResponse, FString, MessageActionTimetoken);
@@ -280,7 +284,7 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to add to the channel group.
 	 * @param ChannelGroup The name of the channel group to add the channel to.
-	 * @param OnAddChannelToGroupResponse Optional delegate to listen for the operation result.
+	 * @param OnAddChannelToGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnAddChannelToGroupResponse"))
 	void AddChannelToGroup(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponse OnAddChannelToGroupResponse);
@@ -292,7 +296,7 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to add to the channel group.
 	 * @param ChannelGroup The name of the channel group to add the channel to.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
 	void AddChannelToGroup(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponseNative NativeCallback = nullptr);
@@ -304,7 +308,7 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to remove from the channel group.
 	 * @param ChannelGroup The name of the channel group to remove the channel from.
-	 * @param OnRemoveChannelFromGroupResponse Optional delegate to listen for the operation result.
+	 * @param OnRemoveChannelFromGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelFromGroupResponse"))
 	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
@@ -316,7 +320,7 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to remove from the channel group.
 	 * @param ChannelGroup The name of the channel group to remove the channel from.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
 	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
@@ -360,7 +364,7 @@ public:
 	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
 	 * 
 	 * @param ChannelGroup The name of the channel group to remove.
-	 * @param OnRemoveChannelGroupResponse Optional delegate to listen for the operation result.
+	 * @param OnRemoveChannelGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelGroupResponse"))
 	void RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
@@ -371,7 +375,7 @@ public:
 	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
 	 * 
 	 * @param ChannelGroup The name of the channel group to remove.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
 	void RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannelGroupResponseNative NativeCallback = nullptr);
@@ -452,7 +456,7 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to set the state on.
 	 * @param StateJson The JSON string representing the state to set.
-	 * @param OnSetStateResponse Optional delegate to listen for the operation result.
+	 * @param OnSetStateResponse (Optional) Delegate to listen for the operation result.
 	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta = (AutoCreateRefTerm = "OnSetStateResponse"))
@@ -526,7 +530,7 @@ public:
 	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Token The access token to revoke.
-	 * @param OnRevokeTokenResponse Optional delegate to listen for the operation result.
+	 * @param OnRevokeTokenResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta = (AutoCreateRefTerm = "OnRevokeTokenResponse"))
 	void RevokeToken(FString Token, FOnRevokeTokenResponse OnRevokeTokenResponse);
@@ -537,7 +541,7 @@ public:
 	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Token The access token to revoke.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 */
 	void RevokeToken(FString Token, FOnRevokeTokenResponseNative NativeCallback = nullptr);
@@ -636,7 +640,7 @@ public:
 	 * @Note Requires Enable Delete-From-History in Message Persistence tab for your key in the PubNub Admin Portal
 	 * 
 	 * @param Channel The ID of the channel to delete messages from.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
 	 *						 See FPubnubDeleteMessagesSettings for more details.
@@ -776,7 +780,7 @@ public:
 	 * 
 	 * @param User The user ID for whom to set metadata.
 	 * @param UserMetadataObj A JSON string representing the metadata to set.
-	 * @param OnSetUserMetadataResponse Optional delegate to listen for the operation result.
+	 * @param OnSetUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
@@ -790,7 +794,7 @@ public:
 	 * 
 	 * @param User The user ID for whom to set metadata.
 	 * @param UserMetadataObj A JSON string representing the metadata to set.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
@@ -803,7 +807,7 @@ public:
 	 * 
 	 * @param User The user ID for whom to set metadata.
 	 * @param UserMetadataObj A JSON string representing the metadata to set.
-	 * @param OnSetUserMetadataResponse Optional delegate to listen for the operation result.
+	 * @param OnSetUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
@@ -816,7 +820,7 @@ public:
 	 * 
 	 * @param User The user ID for whom to set metadata.
 	 * @param UserMetadataObj A JSON string representing the metadata to set.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
@@ -887,7 +891,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param User The user ID for whom to remove metadata.
-	 * @param OnRemoveUserMetadataResponse Optional delegate to listen for the operation result.
+	 * @param OnRemoveUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveUserMetadataResponse"))
 	void RemoveUserMetadata(FString User, FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse);
@@ -898,7 +902,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param User The user ID for whom to remove metadata.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 */
 	void RemoveUserMetadata(FString User, FOnRemoveUserMetadataResponseNative NativeCallback = nullptr);
@@ -994,7 +998,7 @@ public:
 	 * 
 	 * @param Channel The channel ID for which to set metadata.
 	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
-	 * @param OnSetChannelMetadataResponse Optional delegate to listen for the operation result.
+	 * @param OnSetChannelMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
@@ -1008,7 +1012,7 @@ public:
 	 * 
 	 * @param Channel The channel ID for which to set metadata.
 	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
@@ -1021,7 +1025,7 @@ public:
 	 * 
 	 * @param Channel The channel ID for which to set metadata.
 	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
-	 * @param OnSetChannelMetadataResponse Optional delegate to listen for the operation result.
+	 * @param OnSetChannelMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
@@ -1034,7 +1038,7 @@ public:
 	 * 
 	 * @param Channel The channel ID for which to set metadata.
 	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
@@ -1105,7 +1109,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Channel The channel ID for which to remove metadata.
-	 * @param OnRemoveChannelMetadataResponse Optional delegate to listen for the operation result.
+	 * @param OnRemoveChannelMetadataResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveChannelMetadataResponse"))
 	void RemoveChannelMetadata(FString Channel, FOnRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse);
@@ -1116,7 +1120,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Channel The channel ID for which to remove metadata.
-	 * @param NativeCallback Optional delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 */
 	void RemoveChannelMetadata(FString Channel, FOnRemoveChannelMetadataResponseNative NativeCallback = nullptr);
@@ -1221,7 +1225,7 @@ public:
 	 *
 	 * @param User The user ID for whom to set memberships.
 	 * @param SetObj A JSON string representing the memberships to set.
-	 * @param OnSetMembershipsResponse The callback function used to handle the result.
+	 * @param OnSetMembershipsResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1242,7 +1246,7 @@ public:
 	 *
 	 * @param User The user ID for whom to set memberships.
 	 * @param SetObj A JSON string representing the memberships to set.
-	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1261,7 +1265,7 @@ public:
 	 *
 	 * @param User The user ID for whom to set memberships.
 	 * @param SetObj A JSON string representing the memberships to set.
-	 * @param OnSetMembershipsResponse The callback function used to handle the result.
+	 * @param OnSetMembershipsResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1279,7 +1283,7 @@ public:
 	 *
 	 * @param User The user ID for whom to set memberships.
 	 * @param SetObj A JSON string representing the memberships to set.
-	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1297,7 +1301,7 @@ public:
 	 *
 	 * @param User The user ID for whom to remove memberships.
 	 * @param RemoveObj A JSON string representing the memberships to remove.
-	 * @param OnRemoveMembershipsResponse The callback function used to handle the result.
+	 * @param OnRemoveMembershipsResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1318,7 +1322,7 @@ public:
 	 *
 	 * @param User The user ID for whom to remove memberships.
 	 * @param RemoveObj A JSON string representing the memberships to remove.
-	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1337,7 +1341,7 @@ public:
 	 *
 	 * @param User The user ID for whom to remove memberships.
 	 * @param RemoveObj A JSON string representing the memberships to remove.
-	 * @param OnRemoveMembershipsResponse The callback function used to handle the result.
+	 * @param OnRemoveMembershipsResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1355,7 +1359,7 @@ public:
 	 *
 	 * @param User The user ID for whom to remove memberships.
 	 * @param RemoveObj A JSON string representing the memberships to remove.
-	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1378,13 +1382,32 @@ public:
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
 	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
-	 * If direction is not specified, ascending will be used.
+	 * 			   If direction is not specified, ascending will be used.
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	
+	/**
+	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
+	 *
+	 * (Generally the same as GetChannelMembers just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The Channel ID for which to retrieve member.
+	 * @param NativeCallback Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 * 			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
 	void GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -1403,6 +1426,21 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetChannelMembers(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	
+	/**
+	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The Channel ID for which to retrieve member.
+	 * @param NativeCallback Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
 	void GetChannelMembers(FString Channel, FOnGetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
@@ -1433,8 +1471,50 @@ public:
 	 * @param AddObj A JSON string representing the users to add.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use SetChannelMembers instead"))
 	void AddChannelMembers(FString Channel, FString AddObj, FString Include = "");
+
+	/**
+	 * Sets the members of a specified channel in the PubNub App Context.
+	 * (Generally the same as SetChannelMembers just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to set members for.
+	 * @param SetObj A JSON string representing the users to set as members.
+	 * @param OnSetChannelMembersResponse (Optional) Delegate to listen for the operation result.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
+	void SetChannelMembersRaw(FString Channel, FString SetObj, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Sets the members of a specified channel in the PubNub App Context.
+	 * (Generally the same as SetChannelMembers just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to set members for.
+	 * @param SetObj A JSON string representing the users to set as members.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
+	void SetChannelMembersRaw(FString Channel, FString SetObj, FOnSetChannelMembersResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Sets the members of a specified channel in the PubNub App Context.
@@ -1443,10 +1523,74 @@ public:
 	 *
 	 * @param Channel The channel name to add members to.
 	 * @param SetObj A JSON string representing the users to set as members.
-	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param OnSetChannelMembersResponse (Optional) Delegate to listen for the operation result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void SetChannelMembers(FString Channel, FString SetObj, FString Include = "");
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
+	void SetChannelMembers(FString Channel, FString SetObj, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	
+	/**
+	 * Sets the members of a specified channel in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to add members to.
+	 * @param SetObj A JSON string representing the users to set as members.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
+	void SetChannelMembers(FString Channel, FString SetObj, FOnSetChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+
+	/**
+	 * Removes users from a specified channel in the PubNub App Context.
+	 * (Generally the same as RemoveChannelMembers just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to remove members from.
+	 * @param RemoveObj A JSON string representing the users to remove.
+	 * @param OnRemoveChannelMembersResponse (Optional) Delegate to listen for the operation result.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
+	void RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Removes users from a specified channel in the PubNub App Context.
+	 * (Generally the same as RemoveChannelMembers just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to remove members from.
+	 * @param RemoveObj A JSON string representing the users to remove.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
+	void RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.
@@ -1455,10 +1599,33 @@ public:
 	 *
 	 * @param Channel The channel name to add members to.
 	 * @param RemoveObj A JSON string representing the users to remove.
-	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param OnRemoveChannelMembersResponse (Optional) Delegate to listen for the operation result.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void RemoveChannelMembers(FString Channel, FString RemoveObj, FString Include = "");
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
+	void RemoveChannelMembers(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	
+	/**
+	 * Removes users from a specified channel in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to add members to.
+	 * @param RemoveObj A JSON string representing the users to remove.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
+	void RemoveChannelMembers(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Adds a message action to a specific message in a channel.
@@ -1665,8 +1832,8 @@ private:
 	void GetChannelMembers_JSON_priv(FString Channel, FOnPubnubResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetChannelMembers_DATA_priv(FString Channel, FOnGetChannelMembersResponseNative OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void AddChannelMembers_priv(FString Channel, FString AddObj, FString Include);
-	void SetChannelMembers_priv(FString Channel, FString SetObj, FString Include);
-	void RemoveChannelMembers_priv(FString Channel, FString Include, FString RemoveObj);
+	void SetChannelMembers_priv(FString Channel, FString SetObj, FOnSetChannelMembersResponseNative OnSetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void RemoveChannelMembers_priv(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponseNative OnRemoveMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionsResponseNative AddActionResponse);
 	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
 	FString GetMessageActions_pn(FString Channel, FString Start, FString End, int SizeLimit);

@@ -1471,10 +1471,10 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
     FOnGetChannelMembersResponseNative GetMembersCallback;
     GetMembersCallback.BindLambda(
         [this, bGetMembersDone, bGetMembersSuccess, ReceivedMembers, NextPage, PrevPage]
-        (int Status, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNextStr, FString PagePrevStr)
+        (const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNextStr, FString PagePrevStr)
     {
         *bGetMembersDone = true;
-        *bGetMembersSuccess = (Status == 200);
+        *bGetMembersSuccess = (Result.Status == 200);
         if (*bGetMembersSuccess)
         {
             *ReceivedMembers = MembersData;
@@ -1484,7 +1484,7 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
         else
         {
             ReceivedMembers->Empty();
-            AddError(FString::Printf(TEXT("GetChannelMembers call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNextStr, *PagePrevStr));
+            AddError(FString::Printf(TEXT("GetChannelMembers call failed. Status: %d. Next: '%s', Prev: '%s'"), Result.Status, *PageNextStr, *PagePrevStr));
         }
     });
 

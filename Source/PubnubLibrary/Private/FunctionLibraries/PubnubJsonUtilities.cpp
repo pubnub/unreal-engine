@@ -516,16 +516,19 @@ void UPubnubJsonUtilities::GetMembershipsJsonToData(FString ResponseJson, FPubnu
 	}
 }
 
-void UPubnubJsonUtilities::GetChannelMembersJsonToData(FString ResponseJson, int& Status, TArray<FPubnubGetChannelMembersWrapper>& MembershipsData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubGetChannelMembersWrapper>& MembershipsData, FString& PageNext, FString& PagePrev)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
 	{
+		Result.Error = true;
+		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
 	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), Status);
+	Result = GetOperationResultFromJson_AppContext(JsonObject);
+	
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
 	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
 
