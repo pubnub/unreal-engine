@@ -431,18 +431,18 @@ void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FPubnubSetSt
 	});
 }
 
-void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse)
+void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse)
 {
-	FOnPubnubResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetStateResponse](FString JsonResponse)
+	FOnGetStateResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetStateResponse](const FPubnubOperationResult& Result, FString JsonResponse)
 	{
-		OnGetStateResponse.ExecuteIfBound(JsonResponse);
+		OnGetStateResponse.ExecuteIfBound(Result, JsonResponse);
 	});
 
 	GetState(Channel, ChannelGroup, UserID, NativeCallback);
 }
 
-void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative NativeCallback)
+void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
@@ -600,18 +600,18 @@ void UPubnubSubsystem::FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFe
 	});
 }
 
-void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnMessageCountsResponse OnMessageCountsResponse)
 {
-	FOnPubnubIntResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnMessageCountsResponse](int IntValue)
+	FOnMessageCountsResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnMessageCountsResponse](const FPubnubOperationResult& Result, int MessageCounts)
 	{
-		OnMessageCountsResponse.ExecuteIfBound(IntValue);
+		OnMessageCountsResponse.ExecuteIfBound(Result, MessageCounts);
 	});
 
 	MessageCounts(Channel, Timetoken, NativeCallback);
 }
 
-void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponseNative NativeCallback)
+void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnMessageCountsResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
@@ -2101,7 +2101,7 @@ void UPubnubSubsystem::SetState_priv(FString Channel, FString StateJson, FOnSetS
 	});
 }
 
-void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative OnGetStateResponse)
+void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponseNative OnGetStateResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2114,12 +2114,18 @@ void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FStr
 
 	pubnub_state_get(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup), TCHAR_TO_ANSI(*UserID));
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetStateResponse, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		OnGetStateResponse.ExecuteIfBound(JsonResponse);
+		OnGetStateResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), JsonResponse);
 	});
 }
 
@@ -2312,7 +2318,7 @@ void UPubnubSubsystem::DeleteMessages_priv(FString Channel, FOnDeleteMessagesRes
 	});
 }
 
-void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubIntResponseNative OnMessageCountsResponse)
+void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FOnMessageCountsResponseNative OnMessageCountsResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2327,11 +2333,13 @@ void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FO
 	int MessageCountsNumber = 0;
 	pubnub_get_message_counts(ctx_pub, TCHAR_TO_ANSI(*Channel), &MessageCountsNumber);
 
+	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnMessageCountsResponse, MessageCountsNumber]()
+	AsyncTask(ENamedThreads::GameThread, [this, OnMessageCountsResponse, MessageCountsNumber, JsonResponse]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		OnMessageCountsResponse.ExecuteIfBound(MessageCountsNumber);
+		OnMessageCountsResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), MessageCountsNumber);
 	});
 }
 

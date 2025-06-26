@@ -25,74 +25,76 @@ struct CCoreSubscriptionData
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMessageReceivedNative, FPubnubMessageData Message);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMessageReceivedNative, const FPubnubMessageData& Message);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorNative, FString ErrorMessage, EPubnubErrorType ErrorType);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, const FPubnubSubscriptionStatusData&, StatusData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, FPubnubSubscriptionStatusData, StatusData);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
 DECLARE_DELEGATE_OneParam(FOnPubnubResponseNative, FString JsonResponse);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubIntResponse, int, IntValue);
-DECLARE_DELEGATE_OneParam(FOnPubnubIntResponseNative, int IntValue);
 
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, const FPubnubOperationResult&, Result, const FPubnubMessageData&, PublishedMessage);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, FPubnubOperationResult, Result, FPubnubMessageData, PublishedMessage);
 DECLARE_DELEGATE_TwoParams(FOnPublishMessageResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSignalResponse, const FPubnubOperationResult&, Result, const FPubnubMessageData&, SignalMessage);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSignalResponse, FPubnubOperationResult, Result, FPubnubMessageData, SignalMessage);
 DECLARE_DELEGATE_TwoParams(FOnSignalResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddChannelToGroupResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddChannelToGroupResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnAddChannelToGroupResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelFromGroupResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelFromGroupResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveChannelFromGroupResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListChannelsFromGroupResponse, const FPubnubOperationResult&, Result, const TArray<FString>&, Channels);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListChannelsFromGroupResponse, FPubnubOperationResult, Result, const TArray<FString>&, Channels);
 DECLARE_DELEGATE_TwoParams(FOnListChannelsFromGroupResponseNative, const FPubnubOperationResult& Result, const TArray<FString>& Channels);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelGroupResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelGroupResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveChannelGroupResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListUsersSubscribedChannelsResponse, const FPubnubOperationResult&, Result, const TArray<FString>&, Channels);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListUsersSubscribedChannelsResponse, FPubnubOperationResult, Result, const TArray<FString>&, Channels);
 DECLARE_DELEGATE_TwoParams(FOnListUsersSubscribedChannelsResponseNative, const FPubnubOperationResult& Result, const TArray<FString>& Channels);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListUsersFromChannelResponse, const FPubnubOperationResult&, Result, FPubnubListUsersFromChannelWrapper, Data);
-DECLARE_DELEGATE_TwoParams(FOnListUsersFromChannelResponseNative, const FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper Data);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnSetStateResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnListUsersFromChannelResponse, FPubnubOperationResult, Result, FPubnubListUsersFromChannelWrapper, Data);
+DECLARE_DELEGATE_TwoParams(FOnListUsersFromChannelResponseNative, const FPubnubOperationResult& Result, const FPubnubListUsersFromChannelWrapper& Data);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnSetStateResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnSetStateResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRevokeTokenResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetStateResponse, FPubnubOperationResult, Result, FString, StateResponse);
+DECLARE_DELEGATE_TwoParams(FOnGetStateResponseNative, const FPubnubOperationResult& Result, FString StateResponse);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRevokeTokenResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnRevokeTokenResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnFetchHistoryResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubHistoryMessageData>&, Messages);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnFetchHistoryResponse, FPubnubOperationResult, Result, const TArray<FPubnubHistoryMessageData>&, Messages);
 DECLARE_DELEGATE_TwoParams(FOnFetchHistoryResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnDeleteMessagesResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMessageCountsResponse, FPubnubOperationResult, Result, int, MessageCounts);
+DECLARE_DELEGATE_TwoParams(FOnMessageCountsResponseNative, const FPubnubOperationResult& Result, int MessageCounts);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnDeleteMessagesResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnDeleteMessagesResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllUserMetadataResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubUserData>&, UsersData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllUserMetadataResponse, FPubnubOperationResult, Result, const TArray<FPubnubUserData>&, UsersData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnGetAllUserMetadataResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetUserMetadataResponse, const FPubnubOperationResult&, Result, FPubnubUserData, UserData);
-DECLARE_DELEGATE_TwoParams(FOnGetUserMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubUserData UserData);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSetUserMetadataResponse, const FPubnubOperationResult&, Result, FPubnubUserData, UserData);
-DECLARE_DELEGATE_TwoParams(FOnSetUserMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubUserData UserData);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveUserMetadataResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetUserMetadataResponse, FPubnubOperationResult, Result, FPubnubUserData, UserData);
+DECLARE_DELEGATE_TwoParams(FOnGetUserMetadataResponseNative, const FPubnubOperationResult& Result, const FPubnubUserData& UserData);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSetUserMetadataResponse, FPubnubOperationResult, Result, FPubnubUserData, UserData);
+DECLARE_DELEGATE_TwoParams(FOnSetUserMetadataResponseNative, const FPubnubOperationResult& Result, const FPubnubUserData& UserData);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveUserMetadataResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveUserMetadataResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubChannelData>&, ChannelsData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetAllChannelMetadataResponse, FPubnubOperationResult, Result, const TArray<FPubnubChannelData>&, ChannelsData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnGetAllChannelMetadataResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetChannelMetadataResponse, const FPubnubOperationResult&, Result, FPubnubChannelData, ChannelData);
-DECLARE_DELEGATE_TwoParams(FOnGetChannelMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubChannelData ChannelData);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSetChannelMetadataResponse, const FPubnubOperationResult&, Result, FPubnubChannelData, ChannelData);
-DECLARE_DELEGATE_TwoParams(FOnSetChannelMetadataResponseNative, const FPubnubOperationResult& Result, FPubnubChannelData ChannelData);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelMetadataResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetChannelMetadataResponse, FPubnubOperationResult, Result, FPubnubChannelData, ChannelData);
+DECLARE_DELEGATE_TwoParams(FOnGetChannelMetadataResponseNative, const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSetChannelMetadataResponse, FPubnubOperationResult, Result, FPubnubChannelData, ChannelData);
+DECLARE_DELEGATE_TwoParams(FOnSetChannelMetadataResponseNative, const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelMetadataResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveChannelMetadataResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetMembershipsResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnGetMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetMembershipsResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnSetMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveMembershipsResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnRemoveMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetChannelMembersResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnGetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetChannelMembersResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnSetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveChannelMembersResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnRemoveChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
 
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, const FPubnubOperationResult&, Result, const TArray<FPubnubMessageActionData>&, MessageActions);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, FPubnubOperationResult, Result, const TArray<FPubnubMessageActionData>&, MessageActions);
 DECLARE_DELEGATE_TwoParams(FOnGetMessageActionsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnAddMessageActionResponse, const FPubnubOperationResult&, Result, FPubnubMessageActionData, MessageActionData);
-DECLARE_DELEGATE_TwoParams(FOnAddMessageActionResponseNative, const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveMessageActionResponse, const FPubnubOperationResult&, Result);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnAddMessageActionResponse, FPubnubOperationResult, Result, FPubnubMessageActionData, MessageActionData);
+DECLARE_DELEGATE_TwoParams(FOnAddMessageActionResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageActionData& MessageActionData);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveMessageActionResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveMessageActionResponseNative, const FPubnubOperationResult& Result);
 
 
@@ -499,8 +501,19 @@ public:
 	 * @param OnGetStateResponse The callback function used to handle the result in JSON format.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponse OnGetStateResponse);
-	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative NativeCallback);
+	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse);
+
+	/**
+	 * Gets the presence state for a specified user on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to get the state from.
+	 * @param ChannelGroup The name of the channel group to get the state from.
+	 * @param UserID The user ID to get the state for.
+	 * @param NativeCallback The callback function used to handle the result in JSON format. Delegate in native form that can accept lambdas.
+	 */
+	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponseNative NativeCallback);
 
 	/**
 	 * This method notifies channels and channel groups about a client's presence.
@@ -676,7 +689,7 @@ public:
 	 * @param OnMessageCountsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
-	void MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponse OnMessageCountsResponse);
+	void MessageCounts(FString Channel, FString Timetoken, FOnMessageCountsResponse OnMessageCountsResponse);
 
 	/**
 	 * Returns the number of messages published on one or more channels since a given time.
@@ -689,7 +702,7 @@ public:
 	 * @param Timetoken The timetoken to start counting messages from.
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 */
-	void MessageCounts(FString Channel, FString Timetoken, FOnPubnubIntResponseNative NativeCallback);
+	void MessageCounts(FString Channel, FString Timetoken, FOnMessageCountsResponseNative NativeCallback);
 
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
@@ -1832,7 +1845,7 @@ private:
 	void ListUserSubscribedChannels_JSON_priv(FString UserID, FOnPubnubResponse ListUserSubscribedChannelsResponse);
 	void ListUserSubscribedChannels_DATA_priv(FString UserID, FOnListUsersSubscribedChannelsResponseNative ListUserSubscribedChannelsResponse);
 	void SetState_priv(FString Channel, FString StateJson, FOnSetStateResponseNative OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
-	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubResponseNative OnGetStateResponse);
+	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponseNative OnGetStateResponse);
 	void Heartbeat_priv(FString Channel, FString ChannelGroup);
 	void GrantToken_priv(FString PermissionObject, FOnPubnubResponseNative OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token, FOnRevokeTokenResponseNative OnRevokeTokenResponse);
@@ -1841,7 +1854,7 @@ private:
 	void FetchHistory_JSON_priv(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void DeleteMessages_priv(FString Channel, FOnDeleteMessagesResponseNative OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
-	void MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubIntResponseNative OnMessageCountsResponse);
+	void MessageCounts_priv(FString Channel, FString Timetoken, FOnMessageCountsResponseNative OnMessageCountsResponse);
 	FString GetAllUserMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllUserMetadata_JSON_priv(FOnPubnubResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetAllUserMetadata_DATA_priv(FOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);

@@ -45,8 +45,8 @@ bool FPubnubMessageCountsTest::RunTest(const FString& Parameters)
 	});
 
 	// MessageCounts callback handler
-	FOnPubnubIntResponseNative MessageCountsCallback;
-	MessageCountsCallback.BindLambda([this, bMessageCountsOperationDone, bMessageCountsOperationSuccess, MessageCountResult](int Count)
+	FOnMessageCountsResponseNative MessageCountsCallback;
+	MessageCountsCallback.BindLambda([this, bMessageCountsOperationDone, bMessageCountsOperationSuccess, MessageCountResult](const FPubnubOperationResult& Result, int Count)
 	{
 		*bMessageCountsOperationDone = true;
 		*bMessageCountsOperationSuccess = true; // Success is implied by the callback firing for MessageCounts

@@ -287,8 +287,8 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
         AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubChannelSetGetStateTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    FOnPubnubResponseNative GetStateCallback;
-    GetStateCallback.BindLambda([this, bGetStateOperationDone, ReceivedStateJson](FString JsonResponse)
+    FOnGetStateResponseNative GetStateCallback;
+    GetStateCallback.BindLambda([this, bGetStateOperationDone, ReceivedStateJson](const FPubnubOperationResult& Result, FString JsonResponse)
     {
         *bGetStateOperationDone = true;
         *ReceivedStateJson = JsonResponse;
@@ -431,8 +431,8 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
         AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubChannelSetGetStateForMultipleTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    FOnPubnubResponseNative GetStateCallback;
-    GetStateCallback.BindLambda([this, bGetStateOperationDone, ReceivedCombinedStateJson](FString JsonResponse)
+    FOnGetStateResponseNative GetStateCallback;
+    GetStateCallback.BindLambda([this, bGetStateOperationDone, ReceivedCombinedStateJson](const FPubnubOperationResult& Result, FString JsonResponse)
     {
         *bGetStateOperationDone = true;
         *ReceivedCombinedStateJson = JsonResponse;
