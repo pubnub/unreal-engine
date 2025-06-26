@@ -35,7 +35,8 @@ void ASample_PubSubFull::RunPubSubFullExample()
 	FString Channel = TEXT("guild_chat");
 	PubnubSubsystem->SubscribeToChannel(Channel);
 
-	//Wait some time to let the server proceed subscription
+	// NOTE: Subscribing to a group or channel may take a few seconds to complete.
+	// This sleep is used to simulate the waiting period in an actual application.
 	FPlatformProcess::Sleep(3);
 	
 	UE_LOG(LogTemp, Log, TEXT("PubSub example, subscribed to channel: %s"), *Channel);

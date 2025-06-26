@@ -1,0 +1,37 @@
+// Copyright 2024 PubNub Inc. All Rights Reserved.
+
+// snippet.full_groups_example
+#pragma once
+
+#include "PubnubSubsystem.h"
+
+#include "CoreMinimal.h"
+#include "PubnubSampleBase.h"
+#include "Sample_GroupsFull.generated.h"
+
+// ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
+UCLASS()
+class PUBNUBLIBRARYTESTS_API ASample_GroupsFull : public AActor
+{
+	GENERATED_BODY()
+
+protected:
+	virtual void BeginPlay() override;
+
+public:
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|Groups")
+	void RunGroupsFullExample();
+
+	UFUNCTION()
+	void OnAddChannelToGroupResponse(FPubnubOperationResult Result);
+
+	UFUNCTION()
+	void OnPubnubMessageReceived(FPubnubMessageData Message);
+
+	UFUNCTION()
+	void OnPublishResult(FPubnubOperationResult Result, FPubnubMessageData Message);
+	
+};
+
+// snippet.end
