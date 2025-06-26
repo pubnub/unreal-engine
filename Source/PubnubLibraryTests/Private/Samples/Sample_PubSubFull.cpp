@@ -38,18 +38,34 @@ void ASample_PubSubFull::RunPubSubFullExample()
 	//Wait some time to let the server proceed subscription
 	FPlatformProcess::Sleep(3);
 	
-	UE_LOG(LogTemp, Log, TEXT("PubSub example, dubscribed to channel: %s"), *Channel);
-
+	UE_LOG(LogTemp, Log, TEXT("PubSub example, subscribed to channel: %s"), *Channel);
+		
+	//Bind delegate to the publish result
+	FOnPublishMessageResponse OnPublishMessageResponse;
+	OnPublishMessageResponse.BindDynamic(this, &ASample_PubSubFull::OnPublishResult);
+	
 	//Publish message to the subscribed channel
 	FString Message = R"({"event": "PowerUpUsed", "powerup": "Invisibility Cloak", "duration": 10})";
-	PubnubSubsystem->PublishMessage(Channel, Message);
+	PubnubSubsystem->PublishMessage(Channel, Message, OnPublishMessageResponse);
 
 	UE_LOG(LogTemp, Log, TEXT("PubSub example, message published"));
 }
 
 void ASample_PubSubFull::OnPubnubMessageReceived(FPubnubMessageData Message)
 {
-	UE_LOG(LogTemp, Log, TEXT("PubSub example, message reveived on Channel: %s, Message Content: %s"), *Message.Channel, *Message.Message);
+	UE_LOG(LogTemp, Log, TEXT("PubSub example, message received on Channel: %s, Message Content: %s"), *Message.Channel, *Message.Message);
+}
+
+void ASample_PubSubFull::OnPublishResult(FPubnubOperationResult Result, FPubnubMessageData Message)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("PubSub example, failed to publish message. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("PubSub example, message published successfully. Published message timetoken: %s"), *Message.Timetoken);
+	}
 }
 
 // snippet.end

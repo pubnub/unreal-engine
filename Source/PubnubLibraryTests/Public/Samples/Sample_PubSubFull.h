@@ -23,8 +23,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|PubSub")
 	void RunPubSubFullExample();
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|PubSub")
+	UFUNCTION()
 	void OnPubnubMessageReceived(FPubnubMessageData Message);
+
+	UFUNCTION()
+	void OnPublishResult(FPubnubOperationResult Result, FPubnubMessageData Message);
 };
 
 // snippet.end
