@@ -54,6 +54,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SignalWithSettingsSample();
 
+	// snippet.signal_with_result
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void SignalWithResultSample();
+
+	UFUNCTION()
+	void SignalMessageResponse(FPubnubOperationResult Result, FPubnubMessageData Message);
+
+	// snippet.signal_with_result_lambda
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void SignalWithResultLambdaSample();
+
 	// snippet.subscribe
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SubscribeSample();
@@ -92,7 +103,6 @@ public:
 	void UnsubscribeFromAllSample();
 	
 	// snippet.end
-	
 };
 
 

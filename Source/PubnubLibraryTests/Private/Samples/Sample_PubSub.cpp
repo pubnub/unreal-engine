@@ -37,6 +37,8 @@ void ASample_PubSub::RunSamples()
 	PublishWithResultLambdaSample();
 	SimpleSignalSample();
 	SignalWithSettingsSample();
+	SignalWithResultSample();
+	SignalWithResultLambdaSample();
 	SubscribeSample();
 	SubscribeWithLambdaSample();
 	SubscribeToGroupSample();
@@ -205,6 +207,74 @@ void ASample_PubSub::SignalWithSettingsSample()
 
 	//Send signal with settings
 	PubnubSubsystem->Signal(Channel, Message, SignalSettings);
+}
+
+// snippet.signal_with_result
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+void ASample_PubSub::SignalWithResultSample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_001");
+	PubnubSubsystem->SetUserID(UserID);
+
+	//Bind SignalMessageResponse to be fired with Signal result
+	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+	FOnSignalResponse OnSignalResponse;
+	OnSignalResponse.BindDynamic(this, &ASample_PubSub::SignalMessageResponse);
+	
+	//Send signal message to provided channel
+	FString Channel = TEXT("global_chat");
+	FString SimpleMessage = TEXT("Player is aiming");
+	PubnubSubsystem->Signal(Channel, SimpleMessage, OnSignalResponse);
+}
+
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+void ASample_PubSub::SignalMessageResponse(FPubnubOperationResult Result, FPubnubMessageData Message)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to send signal. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Signal sent successfully. Signal timetoken: %s"), *Message.Timetoken);
+	}
+}
+
+// snippet.signal_with_result_lambda
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+void ASample_PubSub::SignalWithResultLambdaSample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_001");
+	PubnubSubsystem->SetUserID(UserID);
+
+	//Bind lambda function to SignalResponse delegate
+	FOnSignalResponseNative OnSignalResponse;
+	OnSignalResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubMessageData& Message)
+	{
+		if(Result.Error)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to send signal. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Signal sent successfully. Signal timetoken: %s"), *Message.Timetoken);
+		}
+	});
+	
+	//Send signal message to provided channel
+	FString Channel = TEXT("global_chat");
+	FString SimpleMessage = TEXT("Player is aiming");
+	PubnubSubsystem->Signal(Channel, SimpleMessage, OnSignalResponse);
 }
 
 // snippet.subscribe

@@ -31,5 +31,4 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pubnub|Samples")
 	FString SamplesName = "";
 	
-
 };
