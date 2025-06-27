@@ -49,6 +49,9 @@ void ASample_PubSubFull::RunPubSubFullExample()
 	FString Message = R"({"event": "PowerUpUsed", "powerup": "Invisibility Cloak", "duration": 10})";
 	PubnubSubsystem->PublishMessage(Channel, Message, OnPublishMessageResponse);
 
+	//Unsubscribe from previously subscribed channel
+	PubnubSubsystem->UnsubscribeFromChannel(Channel);
+
 	UE_LOG(LogTemp, Log, TEXT("PubSub example, message published"));
 }
 

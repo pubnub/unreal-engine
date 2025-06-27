@@ -46,7 +46,7 @@ void ASample_Groups::RunSamples()
 //Internal function, don't copy it with the samples
 ASample_Groups::ASample_Groups()
 {
-	SamplesName = "Groups";
+	SamplesName = "Channel Groups";
 }
 
 

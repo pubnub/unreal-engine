@@ -20,7 +20,7 @@ protected:
 
 public:
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|Groups")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|Channel Groups")
 	void RunGroupsFullExample();
 
 	UFUNCTION()
