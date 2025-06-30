@@ -618,6 +618,19 @@ public:
 	void FetchHistory(FString Channel, FOnFetchHistoryResponseNative NativeCallback, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 
 	/**
+	 * Fetches historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to fetch messages from.
+	 * @param OnFetchHistoryResponse The callback function used to handle the result in JSON format.
+	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta=(DeprecatedFunction,
+		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
+	void FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	
+	/**
 	 * Deletes historical messages from a specified channel using Message Persistence.
 	 * 
 	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
@@ -645,19 +658,17 @@ public:
 	 */
 	void DeleteMessages(FString Channel, FOnDeleteMessagesResponseNative NativeCallback = nullptr, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
 
-	
 	/**
-	 * Fetches historical messages from a specified channel using Message Persistence.
+	 * Deletes historical messages from a specified channel using Message Persistence.
 	 * 
 	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * @Note Requires Enable Delete-From-History in Message Persistence tab for your key in the PubNub Admin Portal
 	 * 
-	 * @param Channel The ID of the channel to fetch messages from.
-	 * @param OnFetchHistoryResponse The callback function used to handle the result in JSON format.
-	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
+	 * @param Channel The ID of the channel to delete messages from.
+	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
+	 *						 See FPubnubDeleteMessagesSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta=(DeprecatedFunction,
-		DeprecationMessage="Function has been deprecated and will be removed in the next release. Please use function equivalent without _JSON"))
-	void FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void DeleteMessages(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 	
 	/**
 	 * Returns the number of messages published on one or more channels since a given time.

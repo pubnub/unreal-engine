@@ -552,6 +552,17 @@ void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponseNati
 	});
 }
 
+void UPubnubSubsystem::FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+{
+	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
+	{return;}
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, OnFetchHistoryResponse, FetchHistorySettings]
+	{
+		FetchHistory_JSON_priv(Channel, OnFetchHistoryResponse, FetchHistorySettings);
+	});
+}
+
 void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
 {
 	FOnDeleteMessagesResponseNative NativeCallback;
@@ -565,7 +576,6 @@ void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponse
 
 void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponseNative NativeCallback, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
 {
-
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
@@ -575,14 +585,14 @@ void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponse
 	});
 }
 
-void UPubnubSubsystem::FetchHistory_JSON(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
+void UPubnubSubsystem::DeleteMessages(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, OnFetchHistoryResponse, FetchHistorySettings]
+	QuickActionThread->AddFunctionToQueue( [this, Channel, DeleteMessagesSettings]
 	{
-		FetchHistory_JSON_priv(Channel, OnFetchHistoryResponse, FetchHistorySettings);
+		DeleteMessages_priv(Channel, nullptr, DeleteMessagesSettings);
 	});
 }
 
