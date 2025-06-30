@@ -464,18 +464,18 @@ void UPubnubSubsystem::Heartbeat(FString Channel, FString ChannelGroup)
 	});
 }
 
-void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnGrantTokenResponse OnGrantTokenResponse)
 {
-	FOnPubnubResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGrantTokenResponse](FString JsonResponse)
+	FOnGrantTokenResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGrantTokenResponse](const FPubnubOperationResult& Result, FString Token)
 	{
-		OnGrantTokenResponse.ExecuteIfBound(JsonResponse);
+		OnGrantTokenResponse.ExecuteIfBound(Result, Token);
 	});
 
 	GrantToken(PermissionObject, NativeCallback);
 }
 
-void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnPubnubResponseNative NativeCallback)
+void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnGrantTokenResponseNative NativeCallback)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
@@ -507,26 +507,12 @@ void UPubnubSubsystem::RevokeToken(FString Token, FOnRevokeTokenResponseNative N
 	});
 }
 
-void UPubnubSubsystem::ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse)
+FString UPubnubSubsystem::ParseToken(FString Token)
 {
-	FOnPubnubResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnParseTokenResponse](FString JsonResponse)
-	{
-		OnParseTokenResponse.ExecuteIfBound(JsonResponse);
-	});
+	if(!CheckIsPubnubInitialized())
+	{return "";}
 
-	ParseToken(Token, NativeCallback);
-}
-
-void UPubnubSubsystem::ParseToken(FString Token, FOnPubnubResponseNative NativeCallback)
-{
-	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
-	{return;}
-	
-	QuickActionThread->AddFunctionToQueue( [this, Token, NativeCallback]
-	{
-		ParseToken_priv(Token, NativeCallback);
-	});
+	return ParseToken_priv(Token);
 }
 
 void UPubnubSubsystem::SetAuthToken(FString Token)
@@ -2139,7 +2125,7 @@ void UPubnubSubsystem::Heartbeat_priv(FString Channel, FString ChannelGroup)
 	GetLastResponse(ctx_pub);
 }
 
-void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubResponseNative OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnGrantTokenResponseNative OnGrantTokenResponse)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2149,27 +2135,22 @@ void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnPubnubRespon
 	
 	pubnub_grant_token(ctx_pub, TCHAR_TO_ANSI(*PermissionObject));
 
-	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
-	if(PubnubResponse != PNR_OK)
+	pubnub_await(ctx_pub);
+	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	//Access Manager has similar result structure to AppContext, so we use the same getter
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+	FString Token = "";
+	if(Result.Status == 200)
 	{
-		PubnubResponseError(PubnubResponse, "Failed to Grant Token.");
-		return;
+		pubnub_chamebl_t grant_token_resp = pubnub_get_grant_token(ctx_pub);
+		Token = FString(grant_token_resp.ptr);
 	}
-
-	pubnub_chamebl_t grant_token_resp = pubnub_get_grant_token(ctx_pub);
-	if(!grant_token_resp.ptr)
-	{
-		PubnubError("Failed to get Grant Token - pointer to token is invalid.");
-		return;
-	}
-	
-	FString JsonResponse(grant_token_resp.ptr);
 	
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnGrantTokenResponse, JsonResponse]()
+	AsyncTask(ENamedThreads::GameThread, [this, OnGrantTokenResponse, Result, Token]()
 	{
 		//Broadcast bound delegate with JsonResponse
-		OnGrantTokenResponse.ExecuteIfBound(JsonResponse);
+		OnGrantTokenResponse.ExecuteIfBound(Result, Token);
 	});
 	
 }
@@ -2195,31 +2176,25 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token, FOnRevokeTokenResponseNat
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnRevokeTokenResponse, JsonResponse]()
 	{
-		OnRevokeTokenResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson_AccessManager(JsonResponse));
+		//Access Manager has similar result structure to AppContext, so we use the same getter
+		OnRevokeTokenResponse.ExecuteIfBound(UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse));
 	});
 }
 
-void UPubnubSubsystem::ParseToken_priv(FString Token, FOnPubnubResponseNative OnParseTokenResponse)
+FString UPubnubSubsystem::ParseToken_priv(FString Token)
 {
 	if(!CheckIsUserIDSet())
-	{return;}
+	{return "";}
 
 	if(CheckIsFieldEmpty(Token, "Token", "ParseToken"))
-	{return;}
+	{return "";}
 	
 	char* TokenResponse = pubnub_parse_token(ctx_pub, TCHAR_TO_ANSI(*Token));
-	
-	FString JsonResponse(TokenResponse);
-	
-	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnParseTokenResponse, JsonResponse]()
-	{
-		//Broadcast bound delegate with JsonResponse
-		OnParseTokenResponse.ExecuteIfBound(JsonResponse);
-	});
-	
+	FString ParsedToken(TokenResponse);
 	//Free this char, as it's allocated with malloc inside of pubnub_parse_token
 	free(TokenResponse);
+	
+	return ParsedToken;
 }
 
 FString UPubnubSubsystem::FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)

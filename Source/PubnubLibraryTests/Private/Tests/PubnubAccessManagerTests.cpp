@@ -302,7 +302,6 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
 
     TSharedPtr<FString> ParsedTokenResponseJson = MakeShared<FString>();
     TSharedPtr<bool> bParseTokenSuccess = MakeShared<bool>(false);
-    TSharedPtr<bool> bParseTokenCallbackReceived = MakeShared<bool>(false);
 
     if (!InitTest())
     {
@@ -354,13 +353,13 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
 
 
     // GrantToken callback
-    FOnPubnubResponseNative GrantTokenCallback;
-    GrantTokenCallback.BindLambda([this, GrantedToken, bGrantTokenSuccess, bGrantTokenCallbackReceived](FString JsonResponse)
+    FOnGrantTokenResponseNative GrantTokenCallback;
+    GrantTokenCallback.BindLambda([this, GrantedToken, bGrantTokenSuccess, bGrantTokenCallbackReceived](const FPubnubOperationResult& Result, FString Token)
     {
         *bGrantTokenCallbackReceived = true;
-        if (!JsonResponse.IsEmpty())
+        if (!Token.IsEmpty())
         {
-            *GrantedToken = JsonResponse; // The response is the token itself
+            *GrantedToken = Token; // The response is the token itself
             *bGrantTokenSuccess = true;
         }
         else
@@ -369,32 +368,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
             *bGrantTokenSuccess = false;
         }
     });
-
-    // ParseToken callback
-    FOnPubnubResponseNative ParseTokenCallback;
-    ParseTokenCallback.BindLambda([this, ParsedTokenResponseJson, bParseTokenSuccess, bParseTokenCallbackReceived](FString JsonResponse)
-    {
-        *bParseTokenCallbackReceived = true;
-        *ParsedTokenResponseJson = JsonResponse;
-        if (!JsonResponse.IsEmpty())
-        {
-             TSharedPtr<FJsonObject> ParsedTokenObject;
-             if (UPubnubJsonUtilities::StringToJsonObject(JsonResponse, ParsedTokenObject) && ParsedTokenObject.IsValid())
-             {
-                *bParseTokenSuccess = true; 
-             }
-             else
-             {
-                AddError(FString::Printf(TEXT("ParseToken response is not a valid JSON: %s"), *JsonResponse));
-             }
-        }
-        else
-        {
-            AddError("ParseToken response was empty.");
-        }
-    });
-
-
+    
     // --- Test Execution ---
 
     // Set UserID
@@ -417,19 +391,38 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGrantTokenCallbackReceived](){ return *bGrantTokenCallbackReceived; }, MAX_WAIT_TIME));
 
     // Step 2: Verify Grant Token Success and Proceed to Parse
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bGrantTokenSuccess, GrantedToken, ParseTokenCallback]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bGrantTokenSuccess, GrantedToken, bParseTokenSuccess, ParsedTokenResponseJson]()
     {
         TestTrue("GrantToken operation was successful (callback received and token extracted)", *bGrantTokenSuccess);
         if (*bGrantTokenSuccess && !GrantedToken->IsEmpty())
         {
-            PubnubSubsystem->ParseToken(*GrantedToken, ParseTokenCallback);
+            FString ParsedToken = PubnubSubsystem->ParseToken(*GrantedToken);
+            *ParsedTokenResponseJson = ParsedToken;
+            if (!ParsedToken.IsEmpty())
+             {
+                  TSharedPtr<FJsonObject> ParsedTokenObject;
+                  if (UPubnubJsonUtilities::StringToJsonObject(ParsedToken, ParsedTokenObject) && ParsedTokenObject.IsValid())
+                  {
+                     *bParseTokenSuccess = true; 
+                  }
+                  else
+                  {
+                     AddError(FString::Printf(TEXT("ParseToken response is not a valid JSON: %s"), *ParsedToken));
+                  }
+             }
+             else
+             {
+                 AddError("ParseToken response was empty.");
+             }
+
+                
         }
-        else if (GrantedToken->IsEmpty())
-        {
-            AddError("Granted token string is empty, cannot proceed to ParseToken.");
-        }
+            else if (GrantedToken->IsEmpty())
+            {
+                AddError("Granted token string is empty, cannot proceed to ParseToken.");
+            }
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bParseTokenCallbackReceived, bGrantTokenSuccess](){ return *bParseTokenCallbackReceived || !*bGrantTokenSuccess; }, MAX_WAIT_TIME)); // Wait if grant was successful
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGrantTokenSuccess, bParseTokenSuccess](){ return *bParseTokenSuccess || !*bGrantTokenSuccess; }, MAX_WAIT_TIME)); // Wait if grant was successful
 
     // Step 3: Verify Parsed Token
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bParseTokenSuccess, ParsedTokenResponseJson, TestTTLMinutes, TestChannelName, ExpectedChannelBitmask, TestGroupName, ExpectedGroupBitmask, TestTargetResourceUID, ExpectedUserResourceBitmask]()
@@ -547,13 +540,13 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
     }
 
     // GrantToken callback (copied from GrantAndParse, simplified as we just need the token string)
-    FOnPubnubResponseNative GrantTokenCallback;
-    GrantTokenCallback.BindLambda([this, GrantedToken, bGrantTokenSuccess, bGrantTokenCallbackReceived](FString RawTokenString)
+    FOnGrantTokenResponseNative GrantTokenCallback;
+    GrantTokenCallback.BindLambda([this, GrantedToken, bGrantTokenSuccess, bGrantTokenCallbackReceived](const FPubnubOperationResult& Result, FString Token)
     {
         *bGrantTokenCallbackReceived = true;
-        if (!RawTokenString.IsEmpty())
+        if (!Token.IsEmpty())
         {
-            *GrantedToken = RawTokenString;
+            *GrantedToken = Token;
             *bGrantTokenSuccess = true;
         }
         else

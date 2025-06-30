@@ -142,13 +142,7 @@ public:
 	
 
 	/**
-	 * Get Operation result from Json Object in AccessManager operation
-	 */
-	static FPubnubOperationResult GetOperationResultFromJson_AccessManager(TSharedPtr<FJsonObject> JsonObject);
-	static FPubnubOperationResult GetOperationResultFromJson_AccessManager(FString ResponseJson);
-
-	/**
-	 * Get error message from App Context operation result Json Object. 
+	 * Get error message from App Context operation result Json Object. Works also for Access Manager operations.
 	 */
 	static FPubnubOperationResult GetOperationResultFromJson_AppContext(TSharedPtr<FJsonObject> JsonObject);
 	static FPubnubOperationResult GetOperationResultFromJson_AppContext(FString ResponseJson);

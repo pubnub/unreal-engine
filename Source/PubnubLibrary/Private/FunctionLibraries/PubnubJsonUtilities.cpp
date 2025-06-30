@@ -681,42 +681,6 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson(TSharedP
 	return OperationResult;
 }
 
-FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AccessManager(TSharedPtr<FJsonObject> JsonObject)
-{
-	if(!JsonObject)
-	{
-		return FPubnubOperationResult();
-	}
-
-	FPubnubOperationResult OperationResult;
-
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("status"), OperationResult.Status);
-	if(OperationResult.Status == 200)
-	{
-		OperationResult.Error = false;
-		OperationResult.ErrorMessage = "Success";
-	}
-	else
-	{
-		OperationResult.Error = true;
-		JsonObject->TryGetStringField(ANSI_TO_TCHAR("message"), OperationResult.ErrorMessage);
-	}
-
-	return OperationResult;
-}
-
-FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AccessManager(FString ResponseJson)
-{
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-
-	if(!StringToJsonObject(ResponseJson, JsonObject))
-	{
-		return FPubnubOperationResult();
-	}
-	
-	return GetOperationResultFromJson_AccessManager(JsonObject);
-}
-
 FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(TSharedPtr<FJsonObject> JsonObject)
 {
 	if(!JsonObject)

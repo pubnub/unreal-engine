@@ -53,6 +53,8 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnSetStateResponse, FPubnubOperationResult, R
 DECLARE_DELEGATE_OneParam(FOnSetStateResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetStateResponse, FPubnubOperationResult, Result, FString, StateResponse);
 DECLARE_DELEGATE_TwoParams(FOnGetStateResponseNative, const FPubnubOperationResult& Result, FString StateResponse);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGrantTokenResponse, FPubnubOperationResult, Result, FString, Token);
+DECLARE_DELEGATE_TwoParams(FOnGrantTokenResponseNative, const FPubnubOperationResult& Result, FString Token);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRevokeTokenResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnRevokeTokenResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnFetchHistoryResponse, FPubnubOperationResult, Result, const TArray<FPubnubHistoryMessageData>&, Messages);
@@ -537,8 +539,8 @@ public:
 	 * @param OnGrantTokenResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
-	void GrantToken(FString PermissionObject, FOnPubnubResponse OnGrantTokenResponse);
-	void GrantToken(FString PermissionObject, FOnPubnubResponseNative NativeCallback);
+	void GrantToken(FString PermissionObject, FOnGrantTokenResponse OnGrantTokenResponse);
+	void GrantToken(FString PermissionObject, FOnGrantTokenResponseNative NativeCallback);
 
 	/**
 	 * Revokes a previously granted access token.
@@ -578,30 +580,10 @@ public:
 	 * JOIN = 128
 	 * 
 	 * @param Token The access token to parse.
-	 * @param OnParseTokenResponse The callback function used to handle the result in JSON format.
+	 * @return Parsed token
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
-	void ParseToken(FString Token, FOnPubnubResponse OnParseTokenResponse);
-
-	/**
-	 * Parses an access token and retrieves information about its permissions.
-	 * 
-	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
-	 *
-	 * Permissions are written in bit mask int:
-	 * READ = 1
-	 * WRITE = 2
-	 * MANAGE = 4
-	 * DELETE = 8
-	 * CREATE = 16
-	 * GET = 32
-	 * UPDATE = 64
-	 * JOIN = 128
-	 * 
-	 * @param Token The access token to parse.
-	 * @param NativeCallback The callback function used to handle the result in JSON format. Delegate in native form that can accept lambdas.
-	 */
-	void ParseToken(FString Token, FOnPubnubResponseNative NativeCallback);
+	FString ParseToken(FString Token);
 
 	/**
 	 * This method is used by the client devices to update the authentication token granted by the server.
@@ -1847,9 +1829,9 @@ private:
 	void SetState_priv(FString Channel, FString StateJson, FOnSetStateResponseNative OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponseNative OnGetStateResponse);
 	void Heartbeat_priv(FString Channel, FString ChannelGroup);
-	void GrantToken_priv(FString PermissionObject, FOnPubnubResponseNative OnGrantTokenResponse);
+	void GrantToken_priv(FString PermissionObject, FOnGrantTokenResponseNative OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token, FOnRevokeTokenResponseNative OnRevokeTokenResponse);
-	void ParseToken_priv(FString Token, FOnPubnubResponseNative OnParseTokenResponse);
+	FString ParseToken_priv(FString Token);
 	FString FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_JSON_priv(FString Channel, FOnPubnubResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void FetchHistory_DATA_priv(FString Channel, FOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
