@@ -678,7 +678,7 @@ public:
 	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Channel The ID of the channel to count messages for.
-	 * @param Timetoken The timetoken to start counting messages from.
+	 * @param Timetoken The timetoken to start counting messages from. (Exclusive, messages with the same timetoken, won't be counted).
 	 * @param OnMessageCountsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
@@ -692,7 +692,7 @@ public:
 	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Channel The ID of the channel to count messages for.
-	 * @param Timetoken The timetoken to start counting messages from.
+	 * @param Timetoken The timetoken to start counting messages from. (Exclusive, messages with the same timetoken, won't be counted).
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 */
 	void MessageCounts(FString Channel, FString Timetoken, FOnMessageCountsResponseNative NativeCallback);
