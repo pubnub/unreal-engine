@@ -1,6 +1,6 @@
 // Copyright 2024 PubNub Inc. All Rights Reserved.
 
-// snippet.full_Presence_example
+// snippet.full_message_persistence_example
 #pragma once
 
 #include "PubnubSubsystem.h"

@@ -1,6 +1,6 @@
 // Copyright 2024 PubNub Inc. All Rights Reserved.
 
-// snippet.full_Presence_example
+// snippet.full_message_persistence_example
 
 #include "Samples/Sample_MessagePersistenceFull.h"
 #include "Kismet/GameplayStatics.h"
@@ -27,8 +27,6 @@ void ASample_MessagePersistenceFull::RunMessagePersistenceFullExample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	UE_LOG(LogTemp, Log, TEXT("Message Persistence example, User ID is set"));
-	
-	TestChannel = TEXT("persistence-channel-full");
 	
 	// 1. Publish two messages. The second one will trigger the next step.
 	PubnubSubsystem->PublishMessage(TestChannel, TEXT("{\"message\":\"Hello from the past!\"}"));
@@ -83,6 +81,7 @@ void ASample_MessagePersistenceFull::GetMessageCounts(const FString& Timetoken)
 	// 3. Get message counts using the timetoken of the first message.
 	FOnMessageCountsResponse OnMessageCountsResponse;
 	OnMessageCountsResponse.BindDynamic(this, &ASample_MessagePersistenceFull::OnMessageCountsResponse);
+	// NOTE:: Timetoken param in MessageCounts is exclusive, so the message with this timetoken won't be calculated
 	PubnubSubsystem->MessageCounts(TestChannel, Timetoken, OnMessageCountsResponse);
 }
 

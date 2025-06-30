@@ -1,6 +1,6 @@
 // Copyright 2024 PubNub Inc. All Rights Reserved.
 
-// snippet.full_Presence_example
+// snippet.full_presence_example
 
 #include "Samples/Sample_PresenceFull.h"
 #include "Kismet/GameplayStatics.h"
