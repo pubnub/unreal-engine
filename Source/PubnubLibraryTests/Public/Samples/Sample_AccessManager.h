@@ -41,8 +41,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Access Manager")
 	void GrantTokenWithLambdaSample();
 
-	// snippet.grant_token_complex
+	// snippet.grant_token_various_resources
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Access Manager")
+	void GrantTokenVariousResourcesSample();
+
+	UFUNCTION()
+	void OnGrantTokenResponse_VariousResources(FPubnubOperationResult Result, FString Token);
+
+	// snippet.grant_token_regex
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Access Manager")
+	void GrantTokenRegexSample();
+
+	UFUNCTION()
+	void OnGrantTokenResponse_Regex(FPubnubOperationResult Result, FString Token);
 	
+	// snippet.grant_token_complex
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Access Manager")
 	void GrantTokenComplexSample();
 

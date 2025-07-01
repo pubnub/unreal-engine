@@ -33,6 +33,8 @@ void ASample_AccessManager::RunSamples()
 	
 	GrantTokenSample();
 	GrantTokenWithLambdaSample();
+	GrantTokenVariousResourcesSample();
+	GrantTokenRegexSample();
 	GrantTokenComplexSample();
 	RevokeTokenSample();
 	RevokeTokenWithResultSample();
@@ -69,7 +71,7 @@ void ASample_AccessManager::GrantTokenSample()
 	// Create the token structure
 	FPubnubGrantTokenStructure TokenStructure;
 	TokenStructure.TTLMinutes = 60;
-	TokenStructure.AuthorizedUser = UserID;
+	TokenStructure.AuthorizedUser = TEXT("my-authorized-user-id");;
 
 	//Add Read and Write permissions to "global_chat" channel
 	FPubnubChannelPermissions ChannelPermissions;
@@ -85,6 +87,7 @@ void ASample_AccessManager::GrantTokenSample()
 	if (bSuccess)
 	{
 		// Bind response delegate
+		// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 		FOnGrantTokenResponse OnGrantTokenResponse;
 		OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_Simple);
 		
@@ -130,7 +133,7 @@ void ASample_AccessManager::GrantTokenWithLambdaSample()
 	// Create the token structure
 	FPubnubGrantTokenStructure TokenStructure;
 	TokenStructure.TTLMinutes = 60;
-	TokenStructure.AuthorizedUser = UserID;
+	TokenStructure.AuthorizedUser = TEXT("my-authorized-user-id");;
 
 	//Add Read and Write permissions to "global_chat" channel
 	FPubnubChannelPermissions ChannelPermissions;
@@ -168,6 +171,158 @@ void ASample_AccessManager::GrantTokenWithLambdaSample()
 	}
 }
 
+// snippet.grant_token_various_resources
+// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+void ASample_AccessManager::GrantTokenVariousResourcesSample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_001");
+	PubnubSubsystem->SetUserID(UserID);
+
+	//Set secret key to be able to grant token
+	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
+	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	PubnubSubsystem->SetSecretKey();
+
+	// Create the token structure
+	FPubnubGrantTokenStructure TokenStructure;
+	TokenStructure.TTLMinutes = 1440;
+	TokenStructure.AuthorizedUser = TEXT("my-authorized-user-id");
+
+	//Add Read permission to channel "channel-a"
+	TokenStructure.Channels.Add("channel-a");
+	FPubnubChannelPermissions ChannelAReadPermission;
+	ChannelAReadPermission.Read = true;
+	TokenStructure.ChannelPermissions.Add(ChannelAReadPermission);
+
+	//Add Read permission to group "channel-group-b"
+	TokenStructure.ChannelGroups.Add("channel-group-b");
+	FPubnubChannelGroupPermissions ChannelGroupBReadPermission;
+	ChannelGroupBReadPermission.Read = true;
+	TokenStructure.ChannelGroupPermissions.Add(ChannelGroupBReadPermission);
+
+	//Add Get permission to user "user-c"
+	TokenStructure.Users.Add("user-c");
+	FPubnubUserPermissions UserCGetPermission;
+	UserCGetPermission.Get = true;
+	TokenStructure.UserPermissions.Add(UserCGetPermission);
+
+	//Add Read and Write permissions to 3 additional channels
+	TArray<FString> ChannelsWithReadWrite = { "channel-b", "channel-c", "channel-d" };
+	for (const FString& Channel : ChannelsWithReadWrite)
+	{
+		TokenStructure.Channels.Add(Channel);
+		FPubnubChannelPermissions ReadWritePermission;
+		ReadWritePermission.Read = true;
+		ReadWritePermission.Write = true;
+		TokenStructure.ChannelPermissions.Add(ReadWritePermission);
+	}
+
+	//Add Get and Update permission to user "user-d"
+	TokenStructure.Users.Add("user-d");
+	FPubnubUserPermissions UserGetUpdatePermission;
+	UserGetUpdatePermission.Get = true;
+	UserGetUpdatePermission.Update = true;
+	TokenStructure.UserPermissions.Add(UserGetUpdatePermission);
+
+	// Convert structure to JSON string permission object
+	bool bSuccess;
+	FString PermissionObject = PubnubSubsystem->GrantTokenStructureToJsonString(TokenStructure, bSuccess);
+
+	if (bSuccess)
+	{
+		// Bind response delegate
+		// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+		FOnGrantTokenResponse OnGrantTokenResponse;
+		OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_VariousResources);
+		
+		// Request the token from the server
+		PubnubSubsystem->GrantToken(PermissionObject, OnGrantTokenResponse);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create token structure JSON."));
+	}
+}
+
+// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+void ASample_AccessManager::OnGrantTokenResponse_VariousResources(FPubnubOperationResult Result, FString Token)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to Grant Token. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Grant Token Success. The Token: %s"), *Token);
+	}
+}
+
+// snippet.grant_token_regex
+// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+void ASample_AccessManager::GrantTokenRegexSample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_001");
+	PubnubSubsystem->SetUserID(UserID);
+
+	//Set secret key to be able to grant token
+	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
+	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	PubnubSubsystem->SetSecretKey();
+
+	// Create the token structure
+	FPubnubGrantTokenStructure TokenStructure;
+	TokenStructure.TTLMinutes = 1440;
+	TokenStructure.AuthorizedUser = TEXT("my-authorized-user-id");
+	
+	//Add Read permission to the whole channels pattern
+	TokenStructure.ChannelPatterns.Add("channel-[A-Za-z0-9]");
+	FPubnubChannelPermissions PatternReadPermission;
+	PatternReadPermission.Read = true;
+	TokenStructure.ChannelPatternPermissions.Add(PatternReadPermission);
+
+	// Convert structure to JSON string permission object
+	bool bSuccess;
+	FString PermissionObject = PubnubSubsystem->GrantTokenStructureToJsonString(TokenStructure, bSuccess);
+
+	if (bSuccess)
+	{
+		// Bind response delegate
+		// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+		FOnGrantTokenResponse OnGrantTokenResponse;
+		OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_Regex);
+		
+		// Request the token from the server
+		PubnubSubsystem->GrantToken(PermissionObject, OnGrantTokenResponse);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create token structure JSON."));
+	}
+}
+
+// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+void ASample_AccessManager::OnGrantTokenResponse_Regex(FPubnubOperationResult Result, FString Token)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to Grant Token. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Grant Token Success. The Token: %s"), *Token);
+	}
+}
+
 // snippet.grant_token_complex
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::GrantTokenComplexSample()
@@ -188,7 +343,7 @@ void ASample_AccessManager::GrantTokenComplexSample()
 	// Create the token structure
 	FPubnubGrantTokenStructure TokenStructure;
 	TokenStructure.TTLMinutes = 1440;
-	TokenStructure.AuthorizedUser = UserID;
+	TokenStructure.AuthorizedUser = TEXT("my-authorized-user-id");;
 
 	//Add Read permission to channel "channel-a"
 	TokenStructure.Channels.Add("channel-a");
@@ -239,6 +394,7 @@ void ASample_AccessManager::GrantTokenComplexSample()
 	if (bSuccess)
 	{
 		// Bind response delegate
+		// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 		FOnGrantTokenResponse OnGrantTokenResponse;
 		OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_Complex);
 		
