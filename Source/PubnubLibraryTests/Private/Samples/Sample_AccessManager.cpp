@@ -168,7 +168,7 @@ void ASample_AccessManager::GrantTokenWithLambdaSample()
 	}
 }
 
-// snippet.grant_token
+// snippet.grant_token_complex
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::GrantTokenComplexSample()
 {
