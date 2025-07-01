@@ -681,14 +681,14 @@ void UPubnubSubsystem::SetUserMetadataRaw(FString User, FString UserMetadataObj,
 	});
 }
 
-void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
+void UPubnubSubsystem::SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-	SetUserMetadataRaw(User, UserMetadataObj, OnSetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	SetUserMetadataRaw(User, UPubnubJsonUtilities::GetJsonFromUserData(UserMetadata), OnSetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
-void UPubnubSubsystem::SetUserMetadata(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+void UPubnubSubsystem::SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
-	SetUserMetadataRaw(User, UserMetadataObj, NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	SetUserMetadataRaw(User, UPubnubJsonUtilities::GetJsonFromUserData(UserMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubSubsystem::GetUserMetadataRaw(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
@@ -817,14 +817,14 @@ void UPubnubSubsystem::SetChannelMetadataRaw(FString Channel, FString ChannelMet
 	});
 }
 
-void UPubnubSubsystem::SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
+void UPubnubSubsystem::SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-	SetChannelMetadataRaw(Channel, ChannelMetadataObj, OnSetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	SetChannelMetadataRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(ChannelMetadata), OnSetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
-void UPubnubSubsystem::SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+void UPubnubSubsystem::SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
-	SetChannelMetadataRaw(Channel, ChannelMetadataObj, NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	SetChannelMetadataRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(ChannelMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubSubsystem::GetChannelMetadataRaw(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include)
@@ -895,7 +895,7 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString Channel, FOnRemoveChannelMe
 void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	FOnGetMembershipsResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev)
+	NativeCallback.BindLambda([OnGetMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		OnGetMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
 	});
@@ -938,7 +938,7 @@ void UPubnubSubsystem::GetMemberships_JSON(FString User, FOnPubnubResponse OnGet
 void UPubnubSubsystem::SetMembershipsRaw(FString User, FString SetObj, FOnSetMembershipsResponse OnSetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	FOnGetMembershipsResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnSetMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev)
+	NativeCallback.BindLambda([OnSetMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		OnSetMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
 	});
@@ -957,20 +957,20 @@ void UPubnubSubsystem::SetMembershipsRaw(FString User, FString SetObj, FOnSetMem
 	});
 }
 
-void UPubnubSubsystem::SetMemberships(FString User, FString SetObj, FOnSetMembershipsResponse OnSetMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::SetMemberships(FString User, TArray<FPubnubMembershipData> MembershipsData, FOnSetMembershipsResponse OnSetMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
 {
-	SetMembershipsRaw(User, SetObj, OnSetMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+	SetMembershipsRaw(User, UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(MembershipsData), OnSetMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
-void UPubnubSubsystem::SetMemberships(FString User, FString SetObj, FOnSetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::SetMemberships(FString User, TArray<FPubnubMembershipData> MembershipsData, FOnSetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
 {
-	SetMembershipsRaw(User, SetObj, NativeCallback, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+	SetMembershipsRaw(User, UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(MembershipsData), NativeCallback, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::RemoveMembershipsRaw(FString User, FString RemoveObj, FOnRemoveMembershipsResponse OnRemoveMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	FOnGetMembershipsResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnRemoveMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev)
+	NativeCallback.BindLambda([OnRemoveMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		OnRemoveMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
 	});
@@ -989,20 +989,20 @@ void UPubnubSubsystem::RemoveMembershipsRaw(FString User, FString RemoveObj, FOn
 	});
 }
 
-void UPubnubSubsystem::RemoveMemberships(FString User, FString RemoveObj, FOnRemoveMembershipsResponse OnRemoveMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::RemoveMemberships(FString User, TArray<FString> Channels, FOnRemoveMembershipsResponse OnRemoveMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
 {
-	RemoveMembershipsRaw(User, RemoveObj, OnRemoveMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+	RemoveMembershipsRaw(User, UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(Channels), OnRemoveMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
-void UPubnubSubsystem::RemoveMemberships(FString User, FString RemoveObj, FOnRemoveMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::RemoveMemberships(FString User, TArray<FString> Channels, FOnRemoveMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
 {
-	RemoveMembershipsRaw(User, RemoveObj, NativeCallback, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+	RemoveMembershipsRaw(User, UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(Channels), NativeCallback, UPubnubUtilities::MembershipIncludeToString(Include), Limit, Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
     FOnGetChannelMembersResponseNative NativeCallback;
-    NativeCallback.BindLambda([OnGetMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev)
+    NativeCallback.BindLambda([OnGetMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
     {
         OnGetMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
     });
@@ -1057,7 +1057,7 @@ void UPubnubSubsystem::AddChannelMembers(FString Channel, FString AddObj, FStrin
 void UPubnubSubsystem::SetChannelMembersRaw(FString Channel, FString SetObj, FOnSetChannelMembersResponse OnSetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
     FOnSetChannelMembersResponseNative NativeCallback;
-    NativeCallback.BindLambda([OnSetMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev)
+    NativeCallback.BindLambda([OnSetMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
     {
         OnSetMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
     });
@@ -1077,20 +1077,20 @@ void UPubnubSubsystem::SetChannelMembersRaw(FString Channel, FString SetObj, FOn
     });
 }
 
-void UPubnubSubsystem::SetChannelMembers(FString Channel, FString SetObj, FOnSetChannelMembersResponse OnSetMembersResponse, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberData> ChannelMembersData, FOnSetChannelMembersResponse OnSetMembersResponse, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
 {
-    SetChannelMembersRaw(Channel, SetObj, OnSetMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+    SetChannelMembersRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(ChannelMembersData), OnSetMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
 }
 
-void UPubnubSubsystem::SetChannelMembers(FString Channel, FString SetObj, FOnSetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberData> ChannelMembersData, FOnSetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
 {
-    SetChannelMembersRaw(Channel, SetObj, NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+    SetChannelMembersRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(ChannelMembersData), NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponse OnRemoveMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
     FOnRemoveChannelMembersResponseNative NativeCallback;
-    NativeCallback.BindLambda([OnRemoveMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev)
+    NativeCallback.BindLambda([OnRemoveMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
     {
         OnRemoveMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
     });
@@ -1110,14 +1110,14 @@ void UPubnubSubsystem::RemoveChannelMembersRaw(FString Channel, FString RemoveOb
     });
 }
 
-void UPubnubSubsystem::RemoveChannelMembers(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponse OnRemoveMembersResponse, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::RemoveChannelMembers(FString Channel, TArray<FString> Users, FOnRemoveChannelMembersResponse OnRemoveMembersResponse, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
 {
-    RemoveChannelMembersRaw(Channel, RemoveObj, OnRemoveMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+    RemoveChannelMembersRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(Users), OnRemoveMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
 }
 
-void UPubnubSubsystem::RemoveChannelMembers(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::RemoveChannelMembers(FString Channel, TArray<FString> Users, FOnRemoveChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
 {
-    RemoveChannelMembersRaw(Channel, RemoveObj, NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+    RemoveChannelMembersRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(Users), NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), Limit, Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponse OnAddMessageActionResponse)
@@ -2755,7 +2755,7 @@ void UPubnubSubsystem::GetMemberships_DATA_priv(FString User, FOnGetMembershipsR
 	{
 		//Parse Json response into data
 		FPubnubOperationResult Result;
-		TArray<FPubnubGetMembershipsWrapper> MembershipsData;
+		TArray<FPubnubMembershipData> MembershipsData;
 		FString PageNext;
 		FString PagePrev;
 		UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, Result, MembershipsData, PageNext, PagePrev);
@@ -2809,7 +2809,7 @@ void UPubnubSubsystem::SetMemberships_priv(FString User, FString SetObj, FOnSetM
 	{
 		//Parse Json response into data
 		FPubnubOperationResult Result;
-		TArray<FPubnubGetMembershipsWrapper> MembershipsData;
+		TArray<FPubnubMembershipData> MembershipsData;
 		FString PageNext;
 		FString PagePrev;
 		UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, Result, MembershipsData, PageNext, PagePrev);
@@ -2863,7 +2863,7 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString User, FString RemoveObj, F
 	{
 		//Parse Json response into data
 		FPubnubOperationResult Result;
-		TArray<FPubnubGetMembershipsWrapper> MembershipsData;
+		TArray<FPubnubMembershipData> MembershipsData;
 		FString PageNext;
 		FString PagePrev;
 		UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, Result, MembershipsData, PageNext, PagePrev);
@@ -2938,7 +2938,7 @@ void UPubnubSubsystem::GetChannelMembers_DATA_priv(FString Channel, FOnGetChanne
 	{
 		//Parse Json response into data
 		FPubnubOperationResult Result;
-		TArray<FPubnubGetChannelMembersWrapper> MembersData;
+		TArray<FPubnubChannelMemberData> MembersData;
 		FString PageNext;
 		FString PagePrev;
 		UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, Result, MembersData, PageNext, PagePrev);
@@ -3014,7 +3014,7 @@ void UPubnubSubsystem::SetChannelMembers_priv(FString Channel, FString SetObj, F
 	{
 		//Parse Json response into data
 		FPubnubOperationResult Result;
-		TArray<FPubnubGetChannelMembersWrapper> MembersData;
+		TArray<FPubnubChannelMemberData> MembersData;
 		FString PageNext;
 		FString PagePrev;
 		UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, Result, MembersData, PageNext, PagePrev);
@@ -3066,7 +3066,7 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString Channel, FString Remove
 	{
 		//Parse Json response into data
 		FPubnubOperationResult Result;
-		TArray<FPubnubGetChannelMembersWrapper> MembersData;
+		TArray<FPubnubChannelMemberData> MembersData;
 		FString PageNext;
 		FString PagePrev;
 		UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, Result, MembersData, PageNext, PagePrev);

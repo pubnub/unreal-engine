@@ -20,6 +20,7 @@ class PUBNUBLIBRARY_API UPubnubJsonUtilities : public UBlueprintFunctionLibrary
 public:
 
 	static FString JsonObjectToString(TSharedPtr<FJsonObject> JsonObject);
+	static FString JsonArrayToString(TArray<TSharedPtr<FJsonValue>> JsonArray);
 	//Convert FString to JsonObject. Returns true if conversion was successful
 	static bool StringToJsonObject(FString JsonString, TSharedPtr<FJsonObject> &JsonObject);
 
@@ -114,13 +115,13 @@ public:
 	 * Converter from GetMemberships_Json response to actual types
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubGetMembershipsWrapper> &MembershipsData, FString &PageNext, FString &PagePrev);
+	static void GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMembershipData> &MembershipsData, FString &PageNext, FString &PagePrev);
 
 	/**
 	 * Converter from GetChannelMembers_Json response to actual types
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static void GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubGetChannelMembersWrapper> &MembershipsData, FString &PageNext, FString &PagePrev);
+	static void GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelMemberData> &MembershipsData, FString &PageNext, FString &PagePrev);
 
 	/**
 	 * Converter from Json string containing User data to FPubnubUserData
@@ -129,11 +130,87 @@ public:
 	static FPubnubUserData GetUserDataFromJson(FString ResponseJson);
 
 	/**
+	 * Converter from FPubnubUserData to Json string containing User data
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FString GetJsonFromUserData(const FPubnubUserData& UserData);
+
+	/**
 	 * Converter from Json string containing Channel data to FPubnubChannelData
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FPubnubChannelData GetChannelDataFromJson(FString ResponseJson);
 
+	/**
+	 * Converter from FPubnubChannelData to Json string containing Channel data
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FString GetJsonFromChannelData(const FPubnubChannelData& ChannelData);
+
+	/**
+	 * Converter from Json string containing Membership data to FPubnubMembershipData
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubMembershipData GetMembershipDataFromJson(FString ResponseJson);
+	static FPubnubMembershipData GetMembershipDataFromJson(TSharedPtr<FJsonObject> JsonObject);
+
+	/**
+	 * Converter from FPubnubMembershipData to Json string containing Membership data
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FString GetJsonFromMembershipData(const FPubnubMembershipData& MembershipData);
+
+	/**
+	 * Converter from Json string containing Memberships data to FPubnubMembershipData Array
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static TArray<FPubnubMembershipData> GetMembershipsDataArrayFromJson(FString ResponseJson);
+	static TArray<FPubnubMembershipData> GetMembershipsDataArrayFromJson(TSharedPtr<FJsonObject> JsonObject);
+
+	/**
+	 * Converter from FPubnubMembershipData Array to Json string containing Memberships data
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FString GetJsonFromMembershipsDataArray(const TArray<FPubnubMembershipData>& MembershipsData);
+
+	/**
+	 * Converter from Json string containing Channel Member data to FPubnubChannelMemberData
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubChannelMemberData GetChannelMemberDataFromJson(FString ResponseJson);
+	static FPubnubChannelMemberData GetChannelMemberDataFromJson(TSharedPtr<FJsonObject> JsonObject);
+
+	/**
+	 * Converter from FPubnubChannelMemberData to Json string containing Channel Member data
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FString GetJsonFromChannelMemberData(const FPubnubChannelMemberData& ChannelMemberData);
+
+	/**
+	 * Converter from Json string containing Channel Members data to FPubnubChannelMemberData Array
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static TArray<FPubnubChannelMemberData> GetChannelMembersDataArrayFromJson(FString ResponseJson);
+	static TArray<FPubnubChannelMemberData> GetChannelMembersDataArrayFromJson(TSharedPtr<FJsonObject> JsonObject);
+
+	/**
+	 * Converter from FPubnubChannelMemberData Array to Json string containing Channel Members data
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FString GetJsonFromChannelMembersDataArray(const TArray<FPubnubChannelMemberData>& ChannelMembersData);
+
+	/**
+	 * Convert list of Memberships (Channel IDs) to RemoveObject accepted by RemoveMemberships function
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FString GetJsonFromMembershipsToRemove(TArray<FString> Memberships);
+
+	/**
+	 * Convert list of ChannelMembers (User IDs) to RemoveObject accepted by RemoveChannelMembers function
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FString GetJsonFromChannelMembersToRemove(TArray<FString> ChannelMembers);
+	
 	/**
 	 * Get Operation result from Json Object
 	 */
@@ -148,4 +225,5 @@ public:
 	static FPubnubOperationResult GetOperationResultFromJson_AppContext(FString ResponseJson);
 
 };
+
 

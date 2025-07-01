@@ -347,9 +347,13 @@ struct FPubnubUserData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
 	//User type. Max. 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
-	//The date when the user's metadata was last updated.
+	/** The date when the user's metadata was last updated. Filled when receiving UserMetadata from server.
+	 * Setting this manually has no effect.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
-	//Information on the object's content fingerprint.
+	/** Information on the object's content fingerprint. Filled when receiving UserMetadata from server.
+	 * Setting this manually has no effect.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
 
@@ -370,14 +374,18 @@ struct FPubnubChannelData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
 	//Channel type. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
-	//The date when the channel's metadata was last updated.
+	/** The date when the channel's metadata was last updated. Filled when receiving UserMetadata from server.
+	 * Setting this manually has no effect.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
-	//Version identifier of the channel's metadata.
+	/** Version identifier of the channel's metadata. Filled when receiving UserMetadata from server.
+	 * Setting this manually has no effect.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
 
 USTRUCT(BlueprintType)
-struct FPubnubGetMembershipsWrapper
+struct FPubnubMembershipData
 {
 	GENERATED_BODY()
 
@@ -389,14 +397,18 @@ struct FPubnubGetMembershipsWrapper
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
 	//Type of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
-	//The date when the channel's membership was last updated.
+	/** The date when the membership was last updated. Filled when receiving UserMetadata from server.
+	 * Setting this manually has no effect.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
-	//Version identifier of the membership metadata.
+	/** Version identifier of the membership metadata. Filled when receiving UserMetadata from server.
+	 * Setting this manually has no effect.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
 
 USTRUCT(BlueprintType)
-struct FPubnubGetChannelMembersWrapper
+struct FPubnubChannelMemberData
 {
 	GENERATED_BODY()
 
@@ -408,9 +420,13 @@ struct FPubnubGetChannelMembersWrapper
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
 	//Type of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
-	//The date when the membership was last updated.
+	/** The date when the membership was last updated. Filled when receiving UserMetadata from server.
+	 * Setting this manually has no effect.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Updated = "";
-	//Version identifier of the membership metadata.
+	/** Version identifier of the membership metadata. Filled when receiving UserMetadata from server.
+	 * Setting this manually has no effect.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ETag = "";
 };
 

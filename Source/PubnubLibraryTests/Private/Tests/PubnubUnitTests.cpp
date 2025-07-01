@@ -1058,7 +1058,7 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 	// Test successful response with minimal channel data
 	FString TestJson1 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"custom\":{\"channel_custom\":\"value\"},\"status\":\"active\",\"type\":\"public\"},\"custom\":{\"hot\":\"warm\"},\"status\":\"active\",\"type\":\"member\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"}],\"next\":\"MQ\"}";
 	FPubnubOperationResult Result;
-	TArray<FPubnubGetMembershipsWrapper> MembershipsData;
+	TArray<FPubnubMembershipData> MembershipsData;
 	FString PageNext;
 	FString PagePrev;
 	
@@ -1177,7 +1177,7 @@ bool FGetChannelMembersJsonToDataUnitTest::RunTest(const FString& Parameters)
 	// Test successful response with channel members
 	FString TestJson = "{\"status\":200,\"data\":[{\"uuid\":{\"id\":\"cpp_chat_user\",\"name\":\"Chat User\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"type\":\"premium\",\"status\":\"active\",\"custom\":{\"age\":25,\"location\":\"New York\"},\"updated\":\"2025-03-14T13:23:50.608735Z\",\"eTag\":\"669571c9e7371edba566c9371bfd4aec\"},\"type\":\"user\",\"status\":\"active\",\"custom\":{\"lastReadMessageTimetoken\":\"17453138062518466\",\"platform\":\"desktop\"},\"updated\":\"2025-04-22T09:23:26.406843Z\",\"eTag\":\"AYWhgd7euNT0xgE\"},{\"uuid\":{\"id\":\"CppChatUser\",\"name\":\"Chat User 2\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"type\":\"standard\",\"status\":\"inactive\",\"custom\":{\"age\":30,\"location\":\"London\"},\"updated\":\"2025-03-19T09:08:14.60887Z\",\"eTag\":\"3bbbd36590c68b080b0f258843144afe\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"lastReadMessageTimetoken\":\"17447186377255230\",\"platform\":\"mobile\"},\"updated\":\"2025-04-15T12:04:00.151122Z\",\"eTag\":\"AfGZmbv/i4Hi2gE\"}],\"next\":\"Mw\"}";
 	FPubnubOperationResult Result;
-	TArray<FPubnubGetChannelMembersWrapper> MembersData;
+	TArray<FPubnubChannelMemberData> MembersData;
 	FString PageNext;
 	FString PagePrev;
 	

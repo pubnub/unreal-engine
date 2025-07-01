@@ -79,18 +79,18 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSetChannelMetadataResponse, FPubnubOperati
 DECLARE_DELEGATE_TwoParams(FOnSetChannelMetadataResponseNative, const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelMetadataResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnRemoveChannelMetadataResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnGetMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnSetMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetMembershipsWrapper>&, MembershipsData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnRemoveMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnGetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnSetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubGetChannelMembersWrapper>&, MembersData, FString, PageNext, FString, PagePrev);
-DECLARE_DELEGATE_FourParams(FOnRemoveChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubMembershipData>&, MembershipsData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubMembershipData>&, MembershipsData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnSetMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveMembershipsResponse, FPubnubOperationResult, Result, const TArray<FPubnubMembershipData>&, MembershipsData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnRemoveMembershipsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnGetChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubChannelMemberData>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnGetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubChannelMemberData>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnSetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubChannelMemberData>&, MembersData, FString, PageNext, FString, PagePrev);
+DECLARE_DELEGATE_FourParams(FOnRemoveChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, FPubnubOperationResult, Result, const TArray<FPubnubMessageActionData>&, MessageActions);
 DECLARE_DELEGATE_TwoParams(FOnGetMessageActionsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions);
@@ -783,7 +783,7 @@ public:
 
 	/**
 	 * Sets metadata for a specified User in the PubNub App Context.
-	 * (Generally the same as SetUserMetadata just using raw string as Include input)
+	 * (Generally the same as SetUserMetadata just using raw string as UserMetadata and Include inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
@@ -797,7 +797,7 @@ public:
 
 	/**
 	 * Sets metadata for a specified User in the PubNub App Context.
-	 * (Generally the same as SetUserMetadata just using raw string as Include input)
+	 * (Generally the same as SetUserMetadata just using raw string as UserMetadata and Include inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
@@ -815,12 +815,12 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param User The user ID for whom to set metadata.
-	 * @param UserMetadataObj A JSON string representing the metadata to set.
+	 * @param UserMetadata User Metadata object to set.
 	 * @param OnSetUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
-	void SetUserMetadata(FString User, FString UserMetadataObj, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for a specified User in the PubNub App Context.
@@ -828,12 +828,12 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param User The user ID for whom to set metadata.
-	 * @param UserMetadataObj A JSON string representing the metadata to set.
+	 * @param UserMetadata User Metadata object to set.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void SetUserMetadata(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 	
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
@@ -1001,7 +1001,7 @@ public:
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
-	 * (Generally the same as SetChannelMetadata just using raw string as Include input)
+	 * (Generally the same as SetChannelMetadata just using raw string as ChannelMetadata and Include inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
@@ -1015,7 +1015,7 @@ public:
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
-	 * (Generally the same as SetChannelMetadata just using raw string as Include input)
+	 * (Generally the same as SetChannelMetadata just using raw string as ChannelMetadata and Include inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
@@ -1033,12 +1033,12 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Channel The channel ID for which to set metadata.
-	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
+	 * @param ChannelMetadata Channel Metadata object to set.
 	 * @param OnSetChannelMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
-	void SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
@@ -1046,12 +1046,12 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Channel The channel ID for which to set metadata.
-	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
+	 * @param ChannelMetadata Channel Metadata object to set.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void SetChannelMetadata(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
@@ -1228,7 +1228,7 @@ public:
 
 	/**
 	 * Sets memberships for a specified User in the PubNub App Context.
-	 * (Generally the same as SetMemberships just using raw strings as Include and Sort inputs)
+	 * (Generally the same as SetMemberships just using raw strings as SetObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -1249,7 +1249,7 @@ public:
 
 	/**
 	 * Sets memberships for a specified User in the PubNub App Context.
-	 * (Generally the same as SetMemberships just using raw strings as Include and Sort inputs)
+	 * (Generally the same as SetMemberships just using raw strings as SetObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -1273,7 +1273,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param User The user ID for whom to set memberships.
-	 * @param SetObj A JSON string representing the memberships to set.
+	 * @param MembershipsData Memberships data object to set.
 	 * @param OnSetMembershipsResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1283,7 +1283,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetMembershipsResponse"))
-	void SetMemberships(FString User, FString SetObj, FOnSetMembershipsResponse OnSetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void SetMemberships(FString User, TArray<FPubnubMembershipData> MembershipsData, FOnSetMembershipsResponse OnSetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
 	 * Sets memberships for a specified User in the PubNub App Context.
@@ -1291,7 +1291,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param User The user ID for whom to set memberships.
-	 * @param SetObj A JSON string representing the memberships to set.
+	 * @param MembershipsData Memberships data object to set.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1300,11 +1300,11 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void SetMemberships(FString User, FString SetObj, FOnSetMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void SetMemberships(FString User, TArray<FPubnubMembershipData> MembershipsData, FOnSetMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Removes memberships for a specified User from the PubNub App Context.
-	 * (Generally the same as RemoveMemberships just using raw strings as Include and Sort inputs)
+	 * (Generally the same as RemoveMemberships just using raw strings as RemoveObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -1325,7 +1325,7 @@ public:
 
 	/**
 	 * Removes memberships for a specified User from the PubNub App Context.
-	 * (Generally the same as RemoveMemberships just using raw strings as Include and Sort inputs)
+	 * (Generally the same as RemoveMemberships just using raw strings as RemoveObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -1349,7 +1349,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param User The user ID for whom to remove memberships.
-	 * @param RemoveObj A JSON string representing the memberships to remove.
+	 * @param Channels Array of Memberships (Channels) to remove.
 	 * @param OnRemoveMembershipsResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1359,7 +1359,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveMembershipsResponse"))
-	void RemoveMemberships(FString User, FString RemoveObj, FOnRemoveMembershipsResponse OnRemoveMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void RemoveMemberships(FString User, TArray<FString> Channels, FOnRemoveMembershipsResponse OnRemoveMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Removes memberships for a specified User from the PubNub App Context.
@@ -1367,7 +1367,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param User The user ID for whom to remove memberships.
-	 * @param RemoveObj A JSON string representing the memberships to remove.
+	 * @param Channels Array of Memberships (Channels) to remove.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1376,7 +1376,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void RemoveMemberships(FString User, FString RemoveObj, FOnRemoveMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void RemoveMemberships(FString User, TArray<FString> Channels, FOnRemoveMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
@@ -1486,7 +1486,7 @@ public:
 
 	/**
 	 * Sets the members of a specified channel in the PubNub App Context.
-	 * (Generally the same as SetChannelMembers just using raw strings as Include and Sort inputs)
+	 * (Generally the same as SetChannelMembers just using raw strings as SetObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -1507,7 +1507,7 @@ public:
 
 	/**
 	 * Sets the members of a specified channel in the PubNub App Context.
-	 * (Generally the same as SetChannelMembers just using raw strings as Include and Sort inputs)
+	 * (Generally the same as SetChannelMembers just using raw strings as SetObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -1531,7 +1531,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param Channel The channel name to add members to.
-	 * @param SetObj A JSON string representing the users to set as members.
+	 * @param ChannelMembersData ChannelMembers data object to set.
 	 * @param OnSetChannelMembersResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1541,7 +1541,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
-	void SetChannelMembers(FString Channel, FString SetObj, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberData> ChannelMembersData, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
 	 * Sets the members of a specified channel in the PubNub App Context.
@@ -1549,7 +1549,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param Channel The channel name to add members to.
-	 * @param SetObj A JSON string representing the users to set as members.
+	 * @param ChannelMembersData ChannelMembers data object to set.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1558,11 +1558,11 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void SetChannelMembers(FString Channel, FString SetObj, FOnSetChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberData> ChannelMembersData, FOnSetChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.
-	 * (Generally the same as RemoveChannelMembers just using raw strings as Include and Sort inputs)
+	 * (Generally the same as RemoveChannelMembers just using raw strings as RemoveObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -1583,7 +1583,7 @@ public:
 
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.
-	 * (Generally the same as RemoveChannelMembers just using raw strings as Include and Sort inputs)
+	 * (Generally the same as RemoveChannelMembers just using raw strings as RemoveObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -1607,7 +1607,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param Channel The channel name to add members to.
-	 * @param RemoveObj A JSON string representing the users to remove.
+	 * @param Users Array of ChannelMembers (Users) to remove.
 	 * @param OnRemoveChannelMembersResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1617,7 +1617,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
-	void RemoveChannelMembers(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void RemoveChannelMembers(FString Channel, TArray<FString> Users, FOnRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.
@@ -1625,7 +1625,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param Channel The channel name to add members to.
-	 * @param RemoveObj A JSON string representing the users to remove.
+	 * @param Users Array of ChannelMembers (Users) to remove.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1634,7 +1634,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void RemoveChannelMembers(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void RemoveChannelMembers(FString Channel, TArray<FString> Users, FOnRemoveChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Adds a message action to a specific message in a channel.
