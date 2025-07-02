@@ -26,7 +26,7 @@ void ASample_PresenceFull::RunPresenceFullExample()
 	FString UserID = TEXT("Player_001");
 	PubnubSubsystem->SetUserID(UserID);
 
-	UE_LOG(LogTemp, Log, TEXT("Channel Presence example, User ID is set"));
+	UE_LOG(LogTemp, Log, TEXT("Presence example: User ID is set"));
 	
 	//Subscribe to a channel with presence events enabled.
 	FPubnubSubscribeSettings SubscribeSettings;
@@ -37,7 +37,7 @@ void ASample_PresenceFull::RunPresenceFullExample()
 	// NOTE: Subscribing to a group or channel may take a few seconds to complete.
 	// This sleep is used to simulate the waiting period in an actual application.
 	FPlatformProcess::Sleep(3);
-	UE_LOG(LogTemp, Log, TEXT("Presence example, subscribed to channel: %s"), *Channel);
+	UE_LOG(LogTemp, Log, TEXT("Presence example: subscribed to channel: %s"), *Channel);
 
 	//Set the user's state on the channel.
 	FOnSetStateResponse OnSetStateResponse;
@@ -62,11 +62,11 @@ void ASample_PresenceFull::OnSetStateResponse(FPubnubOperationResult Result)
 {
 	if (!Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Presence example, state successfully set."));
+		UE_LOG(LogTemp, Log, TEXT("Presence example: state successfully set."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Presence example, failed to set state. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Presence example: failed to set state. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
 	}
 }
 
@@ -74,11 +74,11 @@ void ASample_PresenceFull::OnListUsersFromChannelResponse(FPubnubOperationResult
 {
 	if (!Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Presence example, successfully listed users. Occupancy: %d"), Data.Occupancy);
+		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully listed users. Occupancy: %d"), Data.Occupancy);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Presence example, failed to list users. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Presence example: failed to list users. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
 	}
 }
 
@@ -86,11 +86,11 @@ void ASample_PresenceFull::OnGetStateResponse(FPubnubOperationResult Result, FSt
 {
 	if (!Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Presence example, successfully got state: %s"), *StateResponse);
+		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully got state: %s"), *StateResponse);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Presence example, failed to get state. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Presence example: failed to get state. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
 	}
 }
 

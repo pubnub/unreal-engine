@@ -26,7 +26,7 @@ void ASample_MessagePersistenceFull::RunMessagePersistenceFullExample()
 	FString UserID = TEXT("Player_001");
 	PubnubSubsystem->SetUserID(UserID);
 
-	UE_LOG(LogTemp, Log, TEXT("Message Persistence example, User ID is set"));
+	UE_LOG(LogTemp, Log, TEXT("Message Persistence exampl: User ID is set"));
 	
 	// 1. Publish two messages. The second one will trigger the next step.
 	PubnubSubsystem->PublishMessage(TestChannel, TEXT("{\"message\":\"Hello from the past!\"}"));
@@ -35,19 +35,19 @@ void ASample_MessagePersistenceFull::RunMessagePersistenceFullExample()
 	OnPublishResponse.BindDynamic(this, &ASample_MessagePersistenceFull::OnPublishResponse);
 	PubnubSubsystem->PublishMessage(TestChannel, TEXT("{\"message\":\"This is the second message.\"}"), OnPublishResponse);
 	
-	UE_LOG(LogTemp, Log, TEXT("Message Persistence example, published two messages to channel: %s"), *TestChannel);
+	UE_LOG(LogTemp, Log, TEXT("Message Persistence exampl: published two messages to channel: %s"), *TestChannel);
 }
 
 void ASample_MessagePersistenceFull::OnPublishResponse(FPubnubOperationResult Result, FPubnubMessageData Message)
 {
 	if (!Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Message Persistence example, second message published successfully."));
+		UE_LOG(LogTemp, Log, TEXT("Message Persistence exampl: second message published successfully."));
 		FetchHistory();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Message Persistence example, failed to publish second message. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Message Persistence exampl: failed to publish second message. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
 	}
 }
 
@@ -65,14 +65,14 @@ void ASample_MessagePersistenceFull::OnFetchHistoryResponse(FPubnubOperationResu
 {
 	if (!Result.Error && !Messages.IsEmpty())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Message Persistence example, successfully fetched history. Found %d messages."), Messages.Num());
+		UE_LOG(LogTemp, Log, TEXT("Message Persistence exampl: successfully fetched history. Found %d messages."), Messages.Num());
 		
 		FString Timetoken = Messages[0].Timetoken;
 		GetMessageCounts(Timetoken);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Message Persistence example, failed to fetch history. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Message Persistence exampl: failed to fetch history. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
 	}
 }
 
@@ -89,12 +89,12 @@ void ASample_MessagePersistenceFull::OnMessageCountsResponse(FPubnubOperationRes
 {
 	if (!Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Message Persistence example, successfully got message counts: %d"), MessageCounts);
+		UE_LOG(LogTemp, Log, TEXT("Message Persistence exampl: successfully got message counts: %d"), MessageCounts);
 		DeleteMessages();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Message Persistence example, failed to get message counts. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Message Persistence exampl: failed to get message counts. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
 	}
 }
 
@@ -110,12 +110,12 @@ void ASample_MessagePersistenceFull::OnDeleteMessagesResponse(FPubnubOperationRe
 {
 	if (!Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Message Persistence example, successfully deleted messages."));
+		UE_LOG(LogTemp, Log, TEXT("Message Persistence exampl: successfully deleted messages."));
 		UE_LOG(LogTemp, Log, TEXT("Message Persistence example finished."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Message Persistence example, failed to delete messages. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Message Persistence exampl: failed to delete messages. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
 	}
 }
 

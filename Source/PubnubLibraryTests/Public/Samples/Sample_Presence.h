@@ -81,13 +81,6 @@ public:
 
 	UFUNCTION()
 	void OnGetStateResponse_Simple(FPubnubOperationResult Result, FString StateResponse);
-
-	// snippet.get_state_from_group
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
-	void GetStateFromGroupSample();
-	
-	UFUNCTION()
-	void OnGetStateResponse_FromGroup(FPubnubOperationResult Result, FString StateResponse);
 	
 	// snippet.get_state_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")

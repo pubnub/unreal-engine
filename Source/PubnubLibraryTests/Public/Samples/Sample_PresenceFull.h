@@ -20,7 +20,7 @@ protected:
 
 public:
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|Channel Presence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|Presence")
 	void RunPresenceFullExample();
 
 	UFUNCTION()

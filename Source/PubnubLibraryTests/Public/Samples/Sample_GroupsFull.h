@@ -23,6 +23,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|Channel Groups")
 	void RunGroupsFullExample();
 
+private:
+	UPubnubSubsystem* PubnubSubsystem = nullptr;
+	
+	FString ChannelGroup = "all-chats";
+	FString Channel = "global_chat";
+
 	UFUNCTION()
 	void OnAddChannelToGroupResponse(FPubnubOperationResult Result);
 

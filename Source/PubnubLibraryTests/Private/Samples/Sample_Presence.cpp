@@ -40,7 +40,6 @@ void ASample_Presence::RunSamples()
 	SetStateWithResultSample();
 	SetStateWithResultLambdaSample();
 	GetStateSample();
-	GetStateFromGroupSample();
 	GetStateWithLambdaSample();
 }
 //Internal function, don't copy it with the samples
@@ -372,43 +371,6 @@ void ASample_Presence::GetStateSample()
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::OnGetStateResponse_Simple(FPubnubOperationResult Result, FString StateResponse)
-{
-	if(Result.Error)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to get state. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Successfully got state: %s"), *StateResponse);
-	}
-}
-
-// snippet.get_state_from_group
-// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-void ASample_Presence::GetStateFromGroupSample()
-{
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
-
-	// Bind response delegate
-	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-	FOnGetStateResponse OnGetStateResponse;
-	OnGetStateResponse.BindDynamic(this, &ASample_Presence::OnGetStateResponse_FromGroup);
-
-	//Get state for the user on a channel group
-	//TODO:: This should work with empty channel, check why empty channel gives broken results
-	FString Channel = TEXT("s");
-	FString ChannelGroup = TEXT("all-presence-channels");
-	PubnubSubsystem->GetState(Channel, ChannelGroup, UserID, OnGetStateResponse);
-}
-
-// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-void ASample_Presence::OnGetStateResponse_FromGroup(FPubnubOperationResult Result, FString StateResponse)
 {
 	if(Result.Error)
 	{

@@ -49,6 +49,10 @@ void ASample_PubSubFull::RunPubSubFullExample()
 	FString Message = R"({"event": "PowerUpUsed", "powerup": "Invisibility Cloak", "duration": 10})";
 	PubnubSubsystem->PublishMessage(Channel, Message, OnPublishMessageResponse);
 
+	// NOTE: Give some time to receive message before unsubscribing
+	// This sleep is used only to simulate the waiting period in an actual application.
+	FPlatformProcess::Sleep(3);
+	
 	//Unsubscribe from previously subscribed channel
 	PubnubSubsystem->UnsubscribeFromChannel(Channel);
 
