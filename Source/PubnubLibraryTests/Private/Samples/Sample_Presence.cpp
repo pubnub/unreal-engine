@@ -65,6 +65,7 @@ void ASample_Presence::ListUsersFromChannelSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 	FOnListUsersFromChannelResponse OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_Presence::OnListUsersFromChannelResponse_Simple);
 
@@ -99,6 +100,7 @@ void ASample_Presence::ListUsersFromChannelWithSettingsSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 	FOnListUsersFromChannelResponse OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_Presence::OnListUsersFromChannelResponse_WithSettings);
 
@@ -174,6 +176,7 @@ void ASample_Presence::ListUserSubscribedChannelsSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 	FOnListUsersSubscribedChannelsResponse OnListUsersSubscribedChannelsResponse;
 	OnListUsersSubscribedChannelsResponse.BindDynamic(this, &ASample_Presence::OnListUserSubscribedChannelsResponse);
 
@@ -289,6 +292,7 @@ void ASample_Presence::SetStateWithResultSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 	FOnSetStateResponse OnSetStateResponse;
 	OnSetStateResponse.BindDynamic(this, &ASample_Presence::OnSetStateResponse);
 
@@ -356,6 +360,7 @@ void ASample_Presence::GetStateSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 	FOnGetStateResponse OnGetStateResponse;
 	OnGetStateResponse.BindDynamic(this, &ASample_Presence::OnGetStateResponse_Simple);
 
@@ -391,6 +396,7 @@ void ASample_Presence::GetStateFromGroupSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 	FOnGetStateResponse OnGetStateResponse;
 	OnGetStateResponse.BindDynamic(this, &ASample_Presence::OnGetStateResponse_FromGroup);
 

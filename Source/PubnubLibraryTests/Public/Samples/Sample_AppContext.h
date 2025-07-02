@@ -135,6 +135,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void SetChannelMetadataWithLambdaSample();
 
+	// snippet.set_channel_metadata_raw
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
+	void SetChannelMetadataRawSample();
+
+	UFUNCTION()
+	void OnSetChannelMetadataRawResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData);
+
 	// snippet.get_all_channel_metadata
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetAllChannelMetadataSample();
@@ -159,6 +166,13 @@ public:
 	// snippet.get_all_channel_metadata_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetAllChannelMetadataWithLambdaSample();
+
+	// snippet.get_all_channel_metadata_raw
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
+	void GetAllChannelMetadataRawSample();
+
+	UFUNCTION()
+	void OnGetAllChannelMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
 
 	// snippet.get_channel_metadata
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -199,7 +213,7 @@ public:
 	// snippet.remove_channel_metadata_with_result_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void RemoveChannelMetadataWithResultLambdaSample();
-
+	
 	// snippet.end
 };
 

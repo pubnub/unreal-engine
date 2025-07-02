@@ -1227,7 +1227,9 @@ public:
 	void GetMemberships_JSON(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
-	 * Sets memberships for a specified User in the PubNub App Context.
+	 * Sets or updates a User's Memberships to one or more Channels.
+	 * A Membership is the relationship between a User and a Channel, and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the user-centric counterpart to the `SetChannelMembers` function. Both functions modify the same underlying data.
 	 * (Generally the same as SetMemberships just using raw strings as SetObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -1248,7 +1250,9 @@ public:
 	void SetMembershipsRaw(FString User, FString SetObj, FOnSetMembershipsResponse OnSetMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
-	 * Sets memberships for a specified User in the PubNub App Context.
+	 * Sets or updates a User's Memberships to one or more Channels.
+	 * A Membership is the relationship between a User and a Channel, and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the user-centric counterpart to the `SetChannelMembers` function. Both functions modify the same underlying data.
 	 * (Generally the same as SetMemberships just using raw strings as SetObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -1268,12 +1272,14 @@ public:
 	void SetMembershipsRaw(FString User, FString SetObj, FOnSetMembershipsResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
-	 * Sets memberships for a specified User in the PubNub App Context.
+	 * Sets or updates a User's Memberships to one or more Channels.
+	 * A Membership is the relationship between a User and a Channel, and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the user-centric counterpart to the `SetChannelMembers` function. Both functions modify the same underlying data.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param User The user ID for whom to set memberships.
-	 * @param MembershipsData Memberships data object to set.
+	 * @param Channels Channels with their associated MembershipData to set.
 	 * @param OnSetMembershipsResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1283,15 +1289,17 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetMembershipsResponse"))
-	void SetMemberships(FString User, TArray<FPubnubMembershipData> MembershipsData, FOnSetMembershipsResponse OnSetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FOnSetMembershipsResponse OnSetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
-	 * Sets memberships for a specified User in the PubNub App Context.
+	 * Sets or updates a User's Memberships to one or more Channels.
+	 * A Membership is the relationship between a User and a Channel, and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the user-centric counterpart to the `SetChannelMembers` function. Both functions modify the same underlying data.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param User The user ID for whom to set memberships.
-	 * @param MembershipsData Memberships data object to set.
+	 * @param Channels Channels with their associated MembershipData to set.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1300,7 +1308,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void SetMemberships(FString User, TArray<FPubnubMembershipData> MembershipsData, FOnSetMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FOnSetMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Removes memberships for a specified User from the PubNub App Context.
@@ -1485,7 +1493,9 @@ public:
 	void AddChannelMembers(FString Channel, FString AddObj, FString Include = "");
 
 	/**
-	 * Sets the members of a specified channel in the PubNub App Context.
+	 * Sets or updates the members for a specified Channel.
+	 * A member (Membership) represents a User's relationship to the Channel and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the channel-centric counterpart to the `SetMemberships` function. Both functions modify the same underlying data.
 	 * (Generally the same as SetChannelMembers just using raw strings as SetObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -1506,7 +1516,9 @@ public:
 	void SetChannelMembersRaw(FString Channel, FString SetObj, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
-	 * Sets the members of a specified channel in the PubNub App Context.
+	 * Sets or updates the members for a specified Channel.
+	 * A member (Membership) represents a User's relationship to the Channel and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the channel-centric counterpart to the `SetMemberships` function. Both functions modify the same underlying data.
 	 * (Generally the same as SetChannelMembers just using raw strings as SetObj, Include and Sort inputs)
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -1526,12 +1538,14 @@ public:
 	void SetChannelMembersRaw(FString Channel, FString SetObj, FOnSetChannelMembersResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
-	 * Sets the members of a specified channel in the PubNub App Context.
+	 * Sets or updates the members for a specified Channel.
+	 * A member (Membership) represents a User's relationship to the Channel and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the channel-centric counterpart to the `SetMemberships` function. Both functions modify the same underlying data.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param Channel The channel name to add members to.
-	 * @param ChannelMembersData ChannelMembers data object to set.
+	 * @param Users Users with their associated MembershipData to set.
 	 * @param OnSetChannelMembersResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1541,15 +1555,17 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
-	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberData> ChannelMembersData, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
-	 * Sets the members of a specified channel in the PubNub App Context.
+	 * Sets or updates the members for a specified Channel.
+	 * A member (Membership) represents a User's relationship to the Channel and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the channel-centric counterpart to the `SetMemberships` function. Both functions modify the same underlying data.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param Channel The channel name to add members to.
-	 * @param ChannelMembersData ChannelMembers data object to set.
+	 * @param Users Users with their associated MembershipData to set.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
@@ -1558,7 +1574,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberData> ChannelMembersData, FOnSetChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FOnSetChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.

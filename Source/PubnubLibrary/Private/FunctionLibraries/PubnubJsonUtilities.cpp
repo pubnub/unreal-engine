@@ -753,43 +753,33 @@ FPubnubMembershipData UPubnubJsonUtilities::GetMembershipDataFromJson(TSharedPtr
 	return MembershipData;
 }
 
-FString UPubnubJsonUtilities::GetJsonFromMembershipData(const FPubnubMembershipData& MembershipData)
+FString UPubnubJsonUtilities::GetJsonFromMembershipInputData(const FPubnubMembershipInputData& MembershipInputData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
-	if (!MembershipData.Channel.ChannelID.IsEmpty())
+	if (!MembershipInputData.Channel.IsEmpty())
 	{
-		TSharedPtr<FJsonObject> ChannelJsonObject;
-		if (StringToJsonObject(GetJsonFromChannelData(MembershipData.Channel), ChannelJsonObject))
-		{
-			JsonObject->SetObjectField(ANSI_TO_TCHAR("channel"), ChannelJsonObject);
-		}
+		TSharedPtr<FJsonObject> ChannelJsonObject = MakeShareable(new FJsonObject());
+		ChannelJsonObject->SetStringField(ANSI_TO_TCHAR("id"), MembershipInputData.Channel);
+		JsonObject->SetObjectField(ANSI_TO_TCHAR("channel"), ChannelJsonObject);
 	}
 
-	if (!MembershipData.Custom.IsEmpty())
+	if (!MembershipInputData.Custom.IsEmpty())
 	{
 		TSharedPtr<FJsonObject> CustomJsonObject;
-		if (StringToJsonObject(MembershipData.Custom, CustomJsonObject))
+		if (StringToJsonObject(MembershipInputData.Custom, CustomJsonObject))
 		{
 			JsonObject->SetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject);
 		}
 	}
 	
-	if (!MembershipData.Status.IsEmpty())
+	if (!MembershipInputData.Status.IsEmpty())
 	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("status"), MembershipData.Status);
+		JsonObject->SetStringField(ANSI_TO_TCHAR("status"), MembershipInputData.Status);
 	}
-	if (!MembershipData.Type.IsEmpty())
+	if (!MembershipInputData.Type.IsEmpty())
 	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("type"), MembershipData.Type);
-	}
-	if (!MembershipData.Updated.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("updated"), MembershipData.Updated);
-	}
-	if (!MembershipData.ETag.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("eTag"), MembershipData.ETag);
+		JsonObject->SetStringField(ANSI_TO_TCHAR("type"), MembershipInputData.Type);
 	}
 
 	return JsonObjectToString(JsonObject);
@@ -826,13 +816,13 @@ TArray<FPubnubMembershipData> UPubnubJsonUtilities::GetMembershipsDataArrayFromJ
 	return MembershipsDataArray;
 }
 
-FString UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(const TArray<FPubnubMembershipData>& MembershipsData)
+FString UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(const TArray<FPubnubMembershipInputData>& MembershipsInputData)
 {
 	TArray<TSharedPtr<FJsonValue>> JsonArray;
-	for (const auto& MembershipData : MembershipsData)
+	for (const auto& MembershipData : MembershipsInputData)
 	{
 		TSharedPtr<FJsonObject> MembershipJsonObject;
-		if (StringToJsonObject(GetJsonFromMembershipData(MembershipData), MembershipJsonObject))
+		if (StringToJsonObject(GetJsonFromMembershipInputData(MembershipData), MembershipJsonObject))
 		{
 			JsonArray.Add(MakeShareable(new FJsonValueObject(MembershipJsonObject)));
 		}
@@ -894,43 +884,33 @@ FPubnubChannelMemberData UPubnubJsonUtilities::GetChannelMemberDataFromJson(TSha
 	return ChannelMemberData;
 }
 
-FString UPubnubJsonUtilities::GetJsonFromChannelMemberData(const FPubnubChannelMemberData& ChannelMemberData)
+FString UPubnubJsonUtilities::GetJsonFromChannelMemberData(const FPubnubChannelMemberInputData& ChannelMemberInputData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
-	if (!ChannelMemberData.User.UserID.IsEmpty())
+	if (!ChannelMemberInputData.User.IsEmpty())
 	{
-		TSharedPtr<FJsonObject> UserJsonObject;
-		if (StringToJsonObject(GetJsonFromUserData(ChannelMemberData.User), UserJsonObject))
-		{
-			JsonObject->SetObjectField(ANSI_TO_TCHAR("uuid"), UserJsonObject);
-		}
+		TSharedPtr<FJsonObject> UserJsonObject = MakeShareable(new FJsonObject());
+		UserJsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelMemberInputData.User);
+		JsonObject->SetObjectField(ANSI_TO_TCHAR("uuid"), UserJsonObject);
 	}
 
-	if (!ChannelMemberData.Custom.IsEmpty())
+	if (!ChannelMemberInputData.Custom.IsEmpty())
 	{
 		TSharedPtr<FJsonObject> CustomJsonObject;
-		if (StringToJsonObject(ChannelMemberData.Custom, CustomJsonObject))
+		if (StringToJsonObject(ChannelMemberInputData.Custom, CustomJsonObject))
 		{
 			JsonObject->SetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject);
 		}
 	}
 	
-	if (!ChannelMemberData.Status.IsEmpty())
+	if (!ChannelMemberInputData.Status.IsEmpty())
 	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("status"), ChannelMemberData.Status);
+		JsonObject->SetStringField(ANSI_TO_TCHAR("status"), ChannelMemberInputData.Status);
 	}
-	if (!ChannelMemberData.Type.IsEmpty())
+	if (!ChannelMemberInputData.Type.IsEmpty())
 	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("type"), ChannelMemberData.Type);
-	}
-	if (!ChannelMemberData.Updated.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("updated"), ChannelMemberData.Updated);
-	}
-	if (!ChannelMemberData.ETag.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("eTag"), ChannelMemberData.ETag);
+		JsonObject->SetStringField(ANSI_TO_TCHAR("type"), ChannelMemberInputData.Type);
 	}
 
 	return JsonObjectToString(JsonObject);
@@ -970,10 +950,10 @@ TArray<FPubnubChannelMemberData> UPubnubJsonUtilities::GetChannelMembersDataArra
 	return ChannelMembersDataArray;
 }
 
-FString UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(const TArray<FPubnubChannelMemberData>& ChannelMembersData)
+FString UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(const TArray<FPubnubChannelMemberInputData>& ChannelMembersInputData)
 {
 	TArray<TSharedPtr<FJsonValue>> JsonArray;
-	for (const auto& ChannelMemberData : ChannelMembersData)
+	for (const auto& ChannelMemberData : ChannelMembersInputData)
 	{
 		TSharedPtr<FJsonObject> MemberJsonObject;
 		if (StringToJsonObject(GetJsonFromChannelMemberData(ChannelMemberData), MemberJsonObject))

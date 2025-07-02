@@ -158,7 +158,7 @@ public:
 	 * Converter from FPubnubMembershipData to Json string containing Membership data
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static FString GetJsonFromMembershipData(const FPubnubMembershipData& MembershipData);
+	static FString GetJsonFromMembershipInputData(const FPubnubMembershipInputData& MembershipInputData);
 
 	/**
 	 * Converter from Json string containing Memberships data to FPubnubMembershipData Array
@@ -171,7 +171,7 @@ public:
 	 * Converter from FPubnubMembershipData Array to Json string containing Memberships data
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static FString GetJsonFromMembershipsDataArray(const TArray<FPubnubMembershipData>& MembershipsData);
+	static FString GetJsonFromMembershipsDataArray(const TArray<FPubnubMembershipInputData>& MembershipsInputData);
 
 	/**
 	 * Converter from Json string containing Channel Member data to FPubnubChannelMemberData
@@ -184,7 +184,7 @@ public:
 	 * Converter from FPubnubChannelMemberData to Json string containing Channel Member data
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static FString GetJsonFromChannelMemberData(const FPubnubChannelMemberData& ChannelMemberData);
+	static FString GetJsonFromChannelMemberData(const FPubnubChannelMemberInputData& ChannelMemberInputData);
 
 	/**
 	 * Converter from Json string containing Channel Members data to FPubnubChannelMemberData Array
@@ -197,7 +197,7 @@ public:
 	 * Converter from FPubnubChannelMemberData Array to Json string containing Channel Members data
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
-	static FString GetJsonFromChannelMembersDataArray(const TArray<FPubnubChannelMemberData>& ChannelMembersData);
+	static FString GetJsonFromChannelMembersDataArray(const TArray<FPubnubChannelMemberInputData>& ChannelMembersInputData);
 
 	/**
 	 * Convert list of Memberships (Channel IDs) to RemoveObject accepted by RemoveMemberships function

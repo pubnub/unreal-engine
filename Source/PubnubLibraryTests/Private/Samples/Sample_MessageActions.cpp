@@ -290,6 +290,7 @@ void ASample_MessageActions::RemoveMessageActionWithResultSample()
 	FString ActionTimetoken = TEXT("17298418390000000");
 	
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_MessageActions with name of your Actor class
 	FOnRemoveMessageActionResponse OnRemoveMessageActionResponse;
 	OnRemoveMessageActionResponse.BindDynamic(this, &ASample_MessageActions::OnRemoveMessageActionResponse);
 

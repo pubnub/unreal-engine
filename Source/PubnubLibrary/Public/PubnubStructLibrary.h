@@ -431,6 +431,36 @@ struct FPubnubChannelMemberData
 };
 
 USTRUCT(BlueprintType)
+struct FPubnubMembershipInputData
+{
+	GENERATED_BODY()
+
+	//ID of the Channel associated with this membership 
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Channel;
+	//JSON providing custom data about the membership. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//Status of the membership. Max 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//Type of the membership. Max 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelMemberInputData
+{
+	GENERATED_BODY()
+
+	//ID of the User associated with this membership 
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString User;
+	//JSON providing custom data about the member. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//Status of the membership. Max 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//Type of the membership. Max 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubMessageData
 {
 	GENERATED_BODY()

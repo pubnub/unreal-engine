@@ -50,10 +50,12 @@ void ASample_AppContext::RunSamples()
 	SetChannelMetadataSample();
 	SetChannelMetadataWithResultSample();
 	SetChannelMetadataWithLambdaSample();
+	SetChannelMetadataRawSample();
 	GetAllChannelMetadataSample();
 	GetAllChannelMetadataWithSettingsSample();
 	GetAllChannelMetadataWithAllIncludesSample();
 	GetAllChannelMetadataWithLambdaSample();
+	GetAllChannelMetadataRawSample();
 	GetChannelMetadataSample();
 	GetChannelMetadataWithAllIncludesSample();
 	GetChannelMetadataWithLambdaSample();
@@ -183,7 +185,8 @@ void ASample_AppContext::SetUserMetadataRawSample()
 	FString UserID = TEXT("Player_004");
 	PubnubSubsystem->SetUserID(UserID);
 
-	// Bind response delegate
+	// Bind response delegate	
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
 	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetUserMetadataRawResponse);
 
@@ -594,6 +597,7 @@ void ASample_AppContext::RemoveUserMetadataWithResultSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 	FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse;
 	OnRemoveUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnRemoveUserMetadataResponse);
 
@@ -681,6 +685,7 @@ void ASample_AppContext::SetChannelMetadataWithResultSample()
 	FString UserID = TEXT("Player_001");
 	PubnubSubsystem->SetUserID(UserID);
 	
+	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetChannelMetadataResponse);
@@ -748,6 +753,45 @@ void ASample_AppContext::SetChannelMetadataWithLambdaSample()
 	PubnubSubsystem->SetChannelMetadata(Channel, ChannelMetadata, OnSetChannelMetadataResponse, Include);
 }
 
+// snippet.set_channel_metadata_raw
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::SetChannelMetadataRawSample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_001");
+	PubnubSubsystem->SetUserID(UserID);
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetChannelMetadataRawResponse);
+
+	// Create channel metadata object as a raw JSON string
+	FString ChannelMetadataJson = R"({"name": "Secret Lair", "custom": {"max_players": 4, "password_protected": true}})";
+	
+	// Set channel metadata with a raw include string
+	FString Channel = "secret-lair-channel";
+	FString Include = TEXT("custom");
+	PubnubSubsystem->SetChannelMetadataRaw(Channel, ChannelMetadataJson, OnSetChannelMetadataResponse, Include);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnSetChannelMetadataRawResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set channel metadata (raw). Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully set channel metadata (raw). ChannelID: %s, Name: %s, Custom: %s"), *ChannelData.ChannelID, *ChannelData.ChannelName, *ChannelData.Custom);
+	}
+}
+
 
 // snippet.get_all_channel_metadata
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -762,6 +806,7 @@ void ASample_AppContext::GetAllChannelMetadataSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 	FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
 	OnGetAllChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllChannelMetadataResponse_Simple);
 
@@ -802,6 +847,7 @@ void ASample_AppContext::GetAllChannelMetadataWithSettingsSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 	FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
 	OnGetAllChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllChannelMetadataResponse_WithSettings);
 
@@ -849,6 +895,7 @@ void ASample_AppContext::GetAllChannelMetadataWithAllIncludesSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 	FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
 	OnGetAllChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllChannelMetadataResponse_WithAllIncludes);
 
@@ -916,6 +963,53 @@ void ASample_AppContext::GetAllChannelMetadataWithLambdaSample()
 	
 	// Get all channel metadata with a limit of 5
 	PubnubSubsystem->GetAllChannelMetadata(OnGetAllChannelMetadataResponse, FPubnubGetAllInclude(), 5);
+}
+
+// snippet.get_all_channel_metadata_raw
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::GetAllChannelMetadataRawSample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_001");
+	PubnubSubsystem->SetUserID(UserID);
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
+	OnGetAllChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllChannelMetadataRawResponse);
+
+	// Create settings with includes and a filter
+	FString Include = TEXT("custom,status");
+	FString Filter = TEXT("status=='active'");
+	FString Sort = TEXT("name:desc,status");
+	int Limit = 10;
+	
+	// Get all channel metadata with custom settings
+	PubnubSubsystem->GetAllChannelMetadataRaw(OnGetAllChannelMetadataResponse, Include, Limit, Filter, Sort);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnGetAllChannelMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to get all channel metadata (raw). Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully got all channel metadata (raw). Number of channels: %d"), ChannelsData.Num());
+		// Print all channel metadata
+		for (const FPubnubChannelData& Channel : ChannelsData)
+		{
+			UE_LOG(LogTemp, Log, TEXT("- ChannelID: %s, Name: %s, Custom: %s, Status: %s"), *Channel.ChannelID, *Channel.ChannelName, *Channel.Custom, *Channel.Status);
+		}
+		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
+		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+	}
 }
 
 // snippet.get_channel_metadata

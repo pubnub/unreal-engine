@@ -83,6 +83,7 @@ void ASample_Groups::AddChannelToGroupWithResultSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Groups with name of your Actor class
 	FOnAddChannelToGroupResponse OnAddChannelToGroupResponse;
 	OnAddChannelToGroupResponse.BindDynamic(this, &ASample_Groups::OnAddChannelToGroupResponse);
 
@@ -150,6 +151,7 @@ void ASample_Groups::ListChannelsFromGroupSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Groups with name of your Actor class
 	FOnListChannelsFromGroupResponse OnListChannelsFromGroupResponse;
 	OnListChannelsFromGroupResponse.BindDynamic(this, &ASample_Groups::OnListChannelsFromGroupResponse);
 
@@ -241,6 +243,7 @@ void ASample_Groups::RemoveChannelFromGroupWithResultSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Groups with name of your Actor class
 	FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse;
 	OnRemoveChannelFromGroupResponse.BindDynamic(this, &ASample_Groups::OnRemoveChannelFromGroupResponse);
 
@@ -325,6 +328,7 @@ void ASample_Groups::RemoveChannelGroupWithResultSample()
 	PubnubSubsystem->SetUserID(UserID);
 
 	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_Groups with name of your Actor class
 	FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse;
 	OnRemoveChannelGroupResponse.BindDynamic(this, &ASample_Groups::OnRemoveChannelGroupResponse);
 
