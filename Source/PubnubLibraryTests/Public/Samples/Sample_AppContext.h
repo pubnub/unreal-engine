@@ -48,6 +48,16 @@ public:
 	UFUNCTION()
 	void OnSetUserMetadataRawResponse(FPubnubOperationResult Result, FPubnubUserData UserData);
 
+	//snippet.update_user_metadata_iteratively
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
+	void UpdateUserMetadataIterativelySample();
+	
+	UFUNCTION()
+	void OnInitialSetUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData);
+	
+	UFUNCTION()
+	void OnUpdateUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData);
+
 	// snippet.get_all_user_metadata
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetAllUserMetadataSample();
@@ -138,6 +148,17 @@ public:
 	// snippet.set_channel_metadata_raw
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void SetChannelMetadataRawSample();
+	
+    //snippet.update_channel_metadata_iteratively
+    UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
+    void UpdateChannelMetadataIterativelySample();
+    
+    UFUNCTION()
+    void OnInitialSetChannelMetadataResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData);
+    
+    UFUNCTION()
+    void OnUpdateChannelMetadataResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData);
+    
 
 	UFUNCTION()
 	void OnSetChannelMetadataRawResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData);
@@ -213,7 +234,7 @@ public:
 	// snippet.remove_channel_metadata_with_result_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void RemoveChannelMetadataWithResultLambdaSample();
-	
+
 	// snippet.end
 };
 

@@ -35,6 +35,7 @@ void ASample_AppContext::RunSamples()
 	SetUserMetadataWithResultSample();
 	SetUserMetadataWithLambdaSample();
 	SetUserMetadataRawSample();
+	UpdateUserMetadataIterativelySample();
 	GetAllUserMetadataSample();
 	GetAllUserMetadataWithSettingsSample();
 	GetAllUserMetadataWithAllIncludesSample();
@@ -51,6 +52,7 @@ void ASample_AppContext::RunSamples()
 	SetChannelMetadataWithResultSample();
 	SetChannelMetadataWithLambdaSample();
 	SetChannelMetadataRawSample();
+	UpdateChannelMetadataIterativelySample();
 	GetAllChannelMetadataSample();
 	GetAllChannelMetadataWithSettingsSample();
 	GetAllChannelMetadataWithAllIncludesSample();
@@ -196,6 +198,77 @@ void ASample_AppContext::SetUserMetadataRawSample()
 	// Set user metadata with a raw include string
 	FString Include = TEXT("custom");
 	PubnubSubsystem->SetUserMetadataRaw(UserID, UserMetadataJson, OnSetUserMetadataResponse, Include);
+}
+
+// snippet.update_user_metadata_iteratively
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::UpdateUserMetadataIterativelySample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_005");
+	PubnubSubsystem->SetUserID(UserID);
+	
+	// Create initial user metadata object
+	FPubnubUserData UserMetadata;
+	UserMetadata.UserName = "Player Two";
+	UserMetadata.Status = "active";
+	UserMetadata.Custom = "{\"inventory_slots\": 20, \"guild_id\": \"G2\"}";
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
+	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnInitialSetUserMetadataResponse);
+
+	// Set initial user metadata
+	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
+	PubnubSubsystem->SetUserMetadata(UserID, UserMetadata, OnSetUserMetadataResponse);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnInitialSetUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set initial user metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		return;
+	}
+	
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	FString UserID = TEXT("Player_005");
+	
+	// Create updated version of user metadata object - change status to "inactive"
+	FPubnubUserData UpdatedUserMetadata = UserData;
+	UpdatedUserMetadata.Status = "inactive";
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
+	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnUpdateUserMetadataResponse);
+
+	// Update user metadata
+	FPubnubGetMetadataInclude Include;
+	Include.IncludeStatus = true;
+	PubnubSubsystem->SetUserMetadata(UserID, UpdatedUserMetadata, OnSetUserMetadataResponse, Include);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnUpdateUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to update user metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully updated user metadata. New status is: %s"), *UserData.Status);
+	}
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -777,6 +850,78 @@ void ASample_AppContext::SetChannelMetadataRawSample()
 	FString Channel = "secret-lair-channel";
 	FString Include = TEXT("custom");
 	PubnubSubsystem->SetChannelMetadataRaw(Channel, ChannelMetadataJson, OnSetChannelMetadataResponse, Include);
+}
+
+// snippet.update_channel_metadata_iteratively
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::UpdateChannelMetadataIterativelySample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_001");
+	PubnubSubsystem->SetUserID(UserID);
+	
+	// Create initial channel metadata object
+	FString ChannelID = TEXT("iterative-channel-update-test");
+	FPubnubChannelData ChannelMetadata;
+	ChannelMetadata.ChannelName = "Channel For Iterative Update";
+	ChannelMetadata.Description = "This is the initial description.";
+	ChannelMetadata.Custom = "{\"topic\": \"initial_topic\"}";
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnInitialSetChannelMetadataResponse);
+
+	// Set initial channel metadata 
+	PubnubSubsystem->SetChannelMetadata(ChannelID, ChannelMetadata, OnSetChannelMetadataResponse);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnInitialSetChannelMetadataResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set initial channel metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		return;
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("Successfully set initial channel metadata. Description: %s"), *ChannelData.Description);
+
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	// Use the ChannelID from the response
+	FString ChannelID = ChannelData.ChannelID;
+	
+	// Create updated version of channel metadata object - change description only
+	FPubnubChannelData UpdatedChannelMetadata;
+	UpdatedChannelMetadata.Description = "This is the updated description!";
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnUpdateChannelMetadataResponse);
+
+	// Update channel metadata 
+	PubnubSubsystem->SetChannelMetadata(ChannelID, UpdatedChannelMetadata, OnSetChannelMetadataResponse);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnUpdateChannelMetadataResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to update channel metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully updated channel metadata. New description is: '%s' and channel name is still: '%s'"), *ChannelData.Description, *ChannelData.ChannelName);
+	}
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
