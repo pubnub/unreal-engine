@@ -56,7 +56,7 @@ public:
 	UFUNCTION()
 	void OnSubscriptionStatusChanged(EPubnubSubscriptionStatus Status, FPubnubSubscriptionStatusData StatusData);
 
-	// snippet.subscription_status_listener
+	// snippet.subscription_status_listener_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void SubscriptionStatusListenerLambdaSample();
 
