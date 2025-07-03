@@ -85,7 +85,7 @@ void ASample_Configuration::MessageListenerLambdaSample()
 	});
 }
 
-// snippet.message_listener
+// snippet.error_listener
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::ErrorListenerSample()
 {
@@ -144,7 +144,7 @@ void ASample_Configuration::OnSubscriptionStatusChanged(EPubnubSubscriptionStatu
 	}
 }
 
-// snippet.subscription_status_listener
+// snippet.subscription_status_listener_lambda
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::SubscriptionStatusListenerLambdaSample()
 {
