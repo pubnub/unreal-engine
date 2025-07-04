@@ -1914,21 +1914,11 @@ private:
 	TSharedPtr<FJsonObject> AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions);
 	TSharedPtr<FJsonObject> AddUserPermissionsToJson(TArray<FString> Users, TArray<FPubnubUserPermissions> UserPermissions);
 
+	static TArray<FString> FalseCCoreLogPhrases;
+	static bool ShouldCCoreLogBeSkipped(FString Message);
+	
 	//Function that is sent to Pubnub sdk (c-core) to pass sdk logs to Unreal
-	static void PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message) {
-		switch (log_level)
-		{
-		case pubnub_log_level::PUBNUB_LOG_LEVEL_WARNING:
-			UE_LOG(PubnubLog, Warning, TEXT("%s"), UTF8_TO_TCHAR(message));
-			break;
-		case pubnub_log_level::PUBNUB_LOG_LEVEL_ERROR:
-			UE_LOG(PubnubLog, Error, TEXT("%s"), UTF8_TO_TCHAR(message));
-			break;
-		default:
-			UE_LOG(PubnubLog, Log, TEXT("%s"), UTF8_TO_TCHAR(message));
-			break;
-		};
-	};
+	static void PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message);
 
 	void OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data);
 };

@@ -3396,6 +3396,50 @@ TSharedPtr<FJsonObject> UPubnubSubsystem::AddUserPermissionsToJson(TArray<FStrin
 	return JsonObject;
 }
 
+//Logs from C-Core that are false warnings as they are sent during normal C-Core operations flow
+TArray<FString> UPubnubSubsystem::FalseCCoreLogPhrases =
+	{
+		"errno=0('No error')",
+		"errno=9('Bad file descriptor')",
+		"errno=2('No such file or directory')",
+		"errno=35('Resource temporarily unavailable')"
+	};
+
+bool UPubnubSubsystem::ShouldCCoreLogBeSkipped(FString Message)
+{
+	for(FString& LogSkipPhrases : FalseCCoreLogPhrases)
+	{
+		if(Message.Contains(LogSkipPhrases))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void UPubnubSubsystem::PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message)
+{
+	//This is temporal solution to skip false warnings from C-Core.
+	//It should be fixed on C-Core level, but until it's done we filter them out here
+	if(ShouldCCoreLogBeSkipped(FString(message)))
+	{
+		return;
+	}
+	
+	switch (log_level)
+	{
+	case pubnub_log_level::PUBNUB_LOG_LEVEL_WARNING:
+		UE_LOG(PubnubLog, Warning, TEXT("%s"), UTF8_TO_TCHAR(message));
+		break;
+	case pubnub_log_level::PUBNUB_LOG_LEVEL_ERROR:
+		UE_LOG(PubnubLog, Error, TEXT("%s"), UTF8_TO_TCHAR(message));
+		break;
+	default:
+		UE_LOG(PubnubLog, Log, TEXT("%s"), UTF8_TO_TCHAR(message));
+		break;
+	};
+};
+
 void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data)
 {
 	//Don't waste resources to translate data if there is no delegate bound to it
