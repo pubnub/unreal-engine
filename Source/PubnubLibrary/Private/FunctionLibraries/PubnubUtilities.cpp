@@ -3,7 +3,7 @@
 
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "Config/PubnubSettings.h"
-#include "Runtime/Launch/Resources/Version.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
 FPubnubConfig UPubnubUtilities::PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings)
@@ -22,6 +22,11 @@ FString UPubnubUtilities::PubnubGetLastServerHttpResponse(pubnub_t* Context)
 	pubnub_char_mem_block LastServerResponse;
 	pubnub_last_http_response_body(Context, &LastServerResponse);
 	return PubnubCharMemBlockToString(LastServerResponse);
+}
+
+int UPubnubUtilities::RoundLimitForPubnubFunctions(int ProvidedLimit)
+{
+	return UKismetMathLibrary::Clamp(ProvidedLimit, 0, PUBNUB_MAX_LIMIT);
 }
 
 FString UPubnubUtilities::AddQuotesToString(const FString InString, bool SkipIfHasQuotes)

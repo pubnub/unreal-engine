@@ -41,6 +41,9 @@ public:
 
 	static FPubnubConfig PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings);
 	static FString PubnubGetLastServerHttpResponse(pubnub_t* Context);
+
+	//Sets limit to be between 0 and PUBNUB_MAX_LIMIT. Prevents C-Core crash on providing incorrect limit.
+	static int RoundLimitForPubnubFunctions(int ProvidedLimit);
 	
 	/* STRING OPERATIONS */
 	

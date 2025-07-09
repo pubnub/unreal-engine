@@ -11,6 +11,8 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(PubnubLog, Log, All);
 
+constexpr int PUBNUB_MAX_LIMIT = 100;
+
 class FJsonObject;
 
 class UPubnubSettings;
