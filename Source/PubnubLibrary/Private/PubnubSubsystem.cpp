@@ -526,8 +526,9 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 	if(CheckIsFieldEmpty(Token, "Token", "SetAuthToken"))
 	{return;}
 
+	FUTF8StringHolder TokenHolder(Token);
 	//This is just a setter, so no need to call it on a separate thread
-	pubnub_set_auth_token(ctx_pub, TCHAR_TO_ANSI(*Token));
+	pubnub_set_auth_token(ctx_pub, TokenHolder.Get());
 }
 
 void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
@@ -1329,8 +1330,11 @@ FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
 	
 	pubnub_res PubnubResponse = pubnub_await(context);
 	if (PNR_OK == PubnubResponse) {
-		
-		Response = pubnub_get(context);
+
+		//Convert it keeping UTF8 characters valid
+		const char* CharResponse = pubnub_get(context);
+		FUTF8ToTCHAR Converter(CharResponse);
+		Response = FString(Converter.Length(), Converter.Get());
 	}
 	else
 	{
@@ -1349,7 +1353,10 @@ FString UPubnubSubsystem::GetLastChannelResponse(pubnub_t* context)
 	pubnub_res PubnubResponse = pubnub_await(context);
 	if (PNR_OK == PubnubResponse) {
 		
-		Response = pubnub_get_channel(context);
+		//Convert it keeping UTF8 characters valid
+		const char* CharResponse = pubnub_get_channel(context);
+		FUTF8ToTCHAR Converter(CharResponse);
+		Response = FString(Converter.Length(), Converter.Get());
 	}
 	else
 	{
@@ -1562,8 +1569,9 @@ void UPubnubSubsystem::SetUserID_priv(FString UserID)
 		return;
 	}
 
-	pubnub_set_user_id(ctx_pub, TCHAR_TO_ANSI(*UserID));
-	pubnub_set_user_id(ctx_ee, TCHAR_TO_ANSI(*UserID));
+	FUTF8StringHolder UserIDHolder(UserID);
+	pubnub_set_user_id(ctx_pub, UserIDHolder.Get());
+	pubnub_set_user_id(ctx_ee, UserIDHolder.Get());
 
 	IsUserIDSet = true;
 }
@@ -1583,22 +1591,24 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FOn
 	{
 		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
 	}
+
+	FUTF8StringHolder MessageHolder(FinalMessage);
+	FUTF8StringHolder ChannelHolder(Channel);
 	
 	//Convert all UE PublishSettings to Pubnub PublishOptions
 	
 	//Converted char needs to live in function scope, so we need to create it here
 	pubnub_publish_options PubnubOptions;
-	auto CharConverter = StringCast<ANSICHAR>(*PublishSettings.MetaData);
-	PubnubOptions.meta = CharConverter.Get();
-		
-	auto TypeCharConverter = StringCast<ANSICHAR>(*PublishSettings.CustomMessageType);
-	PubnubOptions.custom_message_type = TypeCharConverter.Get();
+	
+	FUTF8StringHolder MetaHolder(PublishSettings.MetaData);
+	FUTF8StringHolder CustomMessageTypeHolder(PublishSettings.CustomMessageType);
+	PubnubOptions.meta = MetaHolder.Get();
+	PubnubOptions.custom_message_type = CustomMessageTypeHolder.Get();
 	
 	PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
-	pubnub_publish_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*FinalMessage), PubnubOptions);
+	pubnub_publish_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
 
 	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
-
 	
 	FPubnubMessageData PublishedMessage;
 	FPubnubOperationResult PublishResult;
@@ -1646,10 +1656,13 @@ void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FOnSignalRe
 		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
 	}
 	
+	FUTF8StringHolder MessageHolder(FinalMessage);
+	FUTF8StringHolder ChannelHolder(Channel);
+	
 	pubnub_signal_options PubnubOptions = pubnub_signal_defopts();
-	auto CharConverter = StringCast<ANSICHAR>(*SignalSettings.CustomMessageType);
-	PubnubOptions.custom_message_type = SignalSettings.CustomMessageType.IsEmpty() ? NULL : CharConverter.Get();
-	pubnub_signal_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*FinalMessage), PubnubOptions);
+	FUTF8StringHolder CustomMessageTypeHolder(SignalSettings.CustomMessageType);
+	PubnubOptions.custom_message_type = SignalSettings.CustomMessageType.IsEmpty() ? NULL : CustomMessageTypeHolder.Get();
+	pubnub_signal_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
 	
 	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
 
@@ -1849,8 +1862,11 @@ void UPubnubSubsystem::AddChannelToGroup_priv(FString Channel, FString ChannelGr
 
 	if(CheckIsFieldEmpty(Channel, "Channel", "AddChannelToGroup") || CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "AddChannelToGroup"))
 	{return;}
+
+	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
+	FUTF8StringHolder ChannelHolder(Channel);
 	
-	pubnub_add_channel_to_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+	pubnub_add_channel_to_group(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get());
 
 	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
@@ -1872,7 +1888,10 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString Chan
 	if(CheckIsFieldEmpty(Channel, "Channel", "RemoveChannelFromGroup") || CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "RemoveChannelFromGroup"))
 	{return;}
 
-	pubnub_remove_channel_from_group(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
+	FUTF8StringHolder ChannelHolder(Channel);
+
+	pubnub_remove_channel_from_group(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get());
 
 	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
@@ -1888,7 +1907,9 @@ void UPubnubSubsystem::RemoveChannelFromGroup_priv(FString Channel, FString Chan
 
 FString UPubnubSubsystem::ListChannelsFromGroup_pn(FString ChannelGroup)
 {
-	pubnub_list_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
+	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
+	
+	pubnub_list_channel_group(ctx_pub, ChannelGroupHolder.Get());
 	return GetLastChannelResponse(ctx_pub);
 }
 
@@ -1941,7 +1962,9 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup, FOnRemoveCh
 	if(CheckIsFieldEmpty(ChannelGroup, "ChannelGroup", "RemoveChannelGroup"))
 	{return;}
 
-	pubnub_remove_channel_group(ctx_pub, TCHAR_TO_ANSI(*ChannelGroup));
+	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
+
+	pubnub_remove_channel_group(ctx_pub, ChannelGroupHolder.Get());
 	
 	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
@@ -1958,15 +1981,17 @@ void UPubnubSubsystem::RemoveChannelGroup_priv(FString ChannelGroup, FOnRemoveCh
 FString UPubnubSubsystem::ListUsersFromChannel_pn(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
 	//Set all options from ListUsersFromChannelSettings
+
+	FUTF8StringHolder ChannelHolder(Channel);
 	
 	//Converted char needs to live in function scope, so we need to create it here
 	pubnub_here_now_options HereNowOptions;
-	auto CharConverter = StringCast<ANSICHAR>(*ListUsersFromChannelSettings.ChannelGroup);
-	HereNowOptions.channel_group = CharConverter.Get();
+	FUTF8StringHolder ChannelGroupHolder(ListUsersFromChannelSettings.ChannelGroup);
+	HereNowOptions.channel_group = ChannelGroupHolder.Get();
 	
 	HereNowUESettingsToPubnubHereNowOptions(ListUsersFromChannelSettings, HereNowOptions);
 	
-	pubnub_here_now_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), HereNowOptions);
+	pubnub_here_now_ex(ctx_pub, ChannelHolder.Get(), HereNowOptions);
 	return GetLastResponse(ctx_pub);
 }
 
@@ -2013,7 +2038,8 @@ void UPubnubSubsystem::ListUsersFromChannel_DATA_priv(FString Channel, FOnListUs
 
 FString UPubnubSubsystem::ListUserSubscribedChannels_pn(FString UserID)
 {
-	pubnub_where_now(ctx_pub, TCHAR_TO_ANSI(*UserID));
+	FUTF8StringHolder UserIDHolder(UserID);
+	pubnub_where_now(ctx_pub, UserIDHolder.Get());
 	return GetLastResponse(ctx_pub);
 }
 
@@ -2076,14 +2102,17 @@ void UPubnubSubsystem::SetState_priv(FString Channel, FString StateJson, FOnSetS
 
 	//Converted char needs to live in function scope, so we need to create it here
 	pubnub_set_state_options SetStateOptions;
-	auto CharConverter = StringCast<ANSICHAR>(*SetStateSettings.ChannelGroup);
-	SetStateOptions.channel_group = CharConverter.Get();
-	auto UserIDCharConverter = StringCast<ANSICHAR>(*SetStateSettings.UserID);
-	SetStateOptions.user_id = UserIDCharConverter.Get();
+	FUTF8StringHolder ChannelGroupHolder(SetStateSettings.ChannelGroup);
+	SetStateOptions.channel_group = ChannelGroupHolder.Get();
+	FUTF8StringHolder UserIDHolder(SetStateSettings.UserID);
+	SetStateOptions.user_id = UserIDHolder.Get();
 
 	SetStateUESettingsToPubnubSetStateOptions(SetStateSettings, SetStateOptions);
+
+	FUTF8StringHolder StateJsonHolder(StateJson);
+	FUTF8StringHolder ChannelHolder(Channel);
 	
-	pubnub_set_state_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*StateJson), SetStateOptions);
+	pubnub_set_state_ex(ctx_pub, ChannelHolder.Get(), StateJsonHolder.Get(), SetStateOptions);
 	
 	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
@@ -2108,7 +2137,11 @@ void UPubnubSubsystem::GetState_priv(FString Channel, FString ChannelGroup, FStr
 		return;
 	}
 
-	pubnub_state_get(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup), TCHAR_TO_ANSI(*UserID));
+	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder UserIDHolder(UserID);
+
+	pubnub_state_get(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get(), UserIDHolder.Get());
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2129,8 +2162,11 @@ void UPubnubSubsystem::Heartbeat_priv(FString Channel, FString ChannelGroup)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
+	
+	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
+	FUTF8StringHolder ChannelHolder(Channel);
 
-	pubnub_heartbeat(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*ChannelGroup));
+	pubnub_heartbeat(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get());
 
 	GetLastResponse(ctx_pub);
 }
@@ -2142,8 +2178,10 @@ void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnGrantTokenRe
 
 	if(CheckIsFieldEmpty(PermissionObject, "PermissionObject", "GrantToken"))
 	{return;}
+
+	FUTF8StringHolder PermissionObjectHolder(PermissionObject);
 	
-	pubnub_grant_token(ctx_pub, TCHAR_TO_ANSI(*PermissionObject));
+	pubnub_grant_token(ctx_pub, PermissionObjectHolder.Get());
 
 	pubnub_await(ctx_pub);
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
@@ -2153,7 +2191,7 @@ void UPubnubSubsystem::GrantToken_priv(FString PermissionObject, FOnGrantTokenRe
 	if(Result.Status == 200)
 	{
 		pubnub_chamebl_t grant_token_resp = pubnub_get_grant_token(ctx_pub);
-		Token = FString(grant_token_resp.ptr);
+		Token = UPubnubUtilities::PubnubCharMemBlockToString(grant_token_resp);
 	}
 	
 	//Delegate needs to be executed back on Game Thread
@@ -2172,8 +2210,10 @@ void UPubnubSubsystem::RevokeToken_priv(FString Token, FOnRevokeTokenResponseNat
 
 	if(CheckIsFieldEmpty(Token, "Token", "RevokeToken"))
 	{return;}
+
+	FUTF8StringHolder TokenHolder(Token);
 	
-	pubnub_revoke_token(ctx_pub, TCHAR_TO_ANSI(*Token));
+	pubnub_revoke_token(ctx_pub, TokenHolder.Get());
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 
@@ -2198,9 +2238,13 @@ FString UPubnubSubsystem::ParseToken_priv(FString Token)
 
 	if(CheckIsFieldEmpty(Token, "Token", "ParseToken"))
 	{return "";}
+
+	FUTF8StringHolder TokenHolder(Token);
 	
-	char* TokenResponse = pubnub_parse_token(ctx_pub, TCHAR_TO_ANSI(*Token));
-	FString ParsedToken(TokenResponse);
+	char* TokenResponse = pubnub_parse_token(ctx_pub, TokenHolder.Get());
+	FUTF8ToTCHAR Converter(TokenResponse);
+	FString ParsedToken(Converter.Length(), Converter.Get());
+	
 	//Free this char, as it's allocated with malloc inside of pubnub_parse_token
 	free(TokenResponse);
 	
@@ -2213,14 +2257,16 @@ FString UPubnubSubsystem::FetchHistory_pn(FString Channel, FPubnubFetchHistorySe
 
 	//Converted char needs to live in function scope, so we need to create it here
 	pubnub_fetch_history_options FetchHistoryOptions;
-	auto StartCharConverter = StringCast<ANSICHAR>(*FetchHistorySettings.Start);
-	FetchHistoryOptions.start = StartCharConverter.Get();
-	auto EndCharConverter = StringCast<ANSICHAR>(*FetchHistorySettings.End);
-	FetchHistoryOptions.end = EndCharConverter.Get();
+	FUTF8StringHolder StartHolder(FetchHistorySettings.Start);
+	FUTF8StringHolder EndHolder(FetchHistorySettings.End);
+	FetchHistoryOptions.start = StartHolder.Get();
+	FetchHistoryOptions.end = EndHolder.Get();
 
 	FetchHistoryUESettingsToPbFetchHistoryOptions(FetchHistorySettings, FetchHistoryOptions);
+
+	FUTF8StringHolder ChannelHolder(Channel);
 	
-	pubnub_fetch_history(ctx_pub, TCHAR_TO_ANSI(*Channel), FetchHistoryOptions);
+	pubnub_fetch_history(ctx_pub, ChannelHolder.Get(), FetchHistoryOptions);
 
 	return GetLastResponse(ctx_pub);
 }
@@ -2281,12 +2327,14 @@ void UPubnubSubsystem::DeleteMessages_priv(FString Channel, FOnDeleteMessagesRes
 	{return;}
 
 	pubnub_delete_messages_options DeleteMessagesOptions = pubnub_delete_messages_defopts();
-	auto StartCharConverter = StringCast<ANSICHAR>(*DeleteMessagesSettings.Start);
-	DeleteMessagesOptions.start = StartCharConverter.Get();
-	auto EndCharConverter = StringCast<ANSICHAR>(*DeleteMessagesSettings.End);
-	DeleteMessagesOptions.end = EndCharConverter.Get();
+	FUTF8StringHolder StartHolder(DeleteMessagesSettings.Start);
+	FUTF8StringHolder EndHolder(DeleteMessagesSettings.End);
+	DeleteMessagesOptions.start = StartHolder.Get();
+	DeleteMessagesOptions.end = EndHolder.Get();
 
-	pubnub_delete_messages(ctx_pub, TCHAR_TO_ANSI(*Channel), DeleteMessagesOptions);
+	FUTF8StringHolder ChannelHolder(Channel);
+
+	pubnub_delete_messages(ctx_pub, ChannelHolder.Get(), DeleteMessagesOptions);
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
 
@@ -2310,13 +2358,16 @@ void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FO
 
 	if(CheckIsFieldEmpty(Channel, "Channel", "MessageCounts"))
 	{return;}
+
+	FUTF8StringHolder TimetokenHolder(Timetoken);
+	FUTF8StringHolder ChannelHolder(Channel);
 	
-	pubnub_message_counts(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Timetoken));
+	pubnub_message_counts(ctx_pub, ChannelHolder.Get(), TimetokenHolder.Get());
 
 	pubnub_await(ctx_pub);
 
 	int MessageCountsNumber = 0;
-	pubnub_get_message_counts(ctx_pub, TCHAR_TO_ANSI(*Channel), &MessageCountsNumber);
+	pubnub_get_message_counts(ctx_pub, ChannelHolder.Get(), &MessageCountsNumber);
 
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 
@@ -2331,16 +2382,16 @@ void UPubnubSubsystem::MessageCounts_priv(FString Channel, FString Timetoken, FO
 FString UPubnubSubsystem::GetAllUserMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
-	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
-	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
-	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
-	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
-	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
@@ -2407,7 +2458,11 @@ void UPubnubSubsystem::SetUserMetadata_priv(FString User, FString UserMetadataOb
 		return;
 	}
 	
-	pubnub_set_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*User), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*UserMetadataObj));
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder UserMetadataObjHolder(UserMetadataObj);
+	FUTF8StringHolder IncludeHolder(Include);
+	
+	pubnub_set_uuidmetadata(ctx_pub, UserHolder.Get(), IncludeHolder.Get(), UserMetadataObjHolder.Get());
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2431,7 +2486,9 @@ void UPubnubSubsystem::SetUserMetadata_priv(FString User, FString UserMetadataOb
 
 FString UPubnubSubsystem::GetUserMetadata_pn(FString User, FString Include)
 {
-	pubnub_get_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*User));
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder IncludeHolder(Include);
+	pubnub_get_uuidmetadata(ctx_pub, IncludeHolder.Get(), UserHolder.Get());
 
 	FString Response = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2491,8 +2548,10 @@ void UPubnubSubsystem::RemoveUserMetadata_priv(FString User, FOnRemoveUserMetada
 
 	if(CheckIsFieldEmpty(User, "User", "RemoveUserMetadata"))
 	{return;}
+
+	FUTF8StringHolder UserHolder(User);
 	
-	pubnub_remove_uuidmetadata(ctx_pub, TCHAR_TO_ANSI(*User));
+	pubnub_remove_uuidmetadata(ctx_pub, UserHolder.Get());
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2512,16 +2571,16 @@ void UPubnubSubsystem::RemoveUserMetadata_priv(FString User, FOnRemoveUserMetada
 FString UPubnubSubsystem::GetAllChannelMetadata_pn(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
-	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
-	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
-	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
-	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
-	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
@@ -2581,6 +2640,10 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString Channel, FString ChannelM
 	
 	if(CheckIsFieldEmpty(Channel, "Channel", "SetChannelMetadata") || CheckIsFieldEmpty(ChannelMetadataObj, "ChannelMetadataObj", "SetChannelMetadata"))
 	{return;}
+
+	FUTF8StringHolder ChannelMetadataObjHolder(ChannelMetadataObj);
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder IncludeHolder(Include);
 	
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(ChannelMetadataObj, false))
 	{
@@ -2588,7 +2651,7 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString Channel, FString ChannelM
 		return;
 	}
 	
-	pubnub_set_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*ChannelMetadataObj));
+	pubnub_set_channelmetadata(ctx_pub, ChannelHolder.Get(), IncludeHolder.Get(), ChannelMetadataObjHolder.Get());
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2612,7 +2675,10 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString Channel, FString ChannelM
 
 FString UPubnubSubsystem::GetChannelMetadata_pn(FString Channel, FString Include)
 {
-	pubnub_get_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*Channel));
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder IncludeHolder(Include);
+	
+	pubnub_get_channelmetadata(ctx_pub, IncludeHolder.Get(), ChannelHolder.Get());
 
 	FString Response = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2673,7 +2739,9 @@ void UPubnubSubsystem::RemoveChannelMetadata_priv(FString Channel, FOnRemoveChan
 	if(CheckIsFieldEmpty(Channel, "Channel", "RemoveChannelMetadata"))
 	{return;}
 
-	pubnub_remove_channelmetadata(ctx_pub, TCHAR_TO_ANSI(*Channel));
+	FUTF8StringHolder ChannelHolder(Channel);
+
+	pubnub_remove_channelmetadata(ctx_pub, ChannelHolder.Get());
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2694,18 +2762,18 @@ FString UPubnubSubsystem::GetMemberships_pn(FString User, FString Include, int L
 	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
-	auto CharConverterUuid = StringCast<ANSICHAR>(*User);
-	PubnubOptions.uuid = User.IsEmpty() ? NULL : CharConverterUuid.Get();
-	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
-	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
-	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
-	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
-	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.uuid = User.IsEmpty() ? NULL : UserHolder.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
@@ -2780,22 +2848,23 @@ void UPubnubSubsystem::SetMemberships_priv(FString User, FString SetObj, FOnSetM
 	}
 
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
-	auto CharConverterUuid = StringCast<ANSICHAR>(*User);
-	PubnubOptions.uuid = User.IsEmpty() ? NULL : CharConverterUuid.Get();
-	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
-	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
-	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
-	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
-	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.uuid = User.IsEmpty() ? NULL : UserHolder.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 
-	pubnub_set_memberships_ex(ctx_pub, TCHAR_TO_ANSI(*SetObj), PubnubOptions);
+	FUTF8StringHolder SetObjHolder(SetObj);
+	pubnub_set_memberships_ex(ctx_pub, SetObjHolder.Get(), PubnubOptions);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2834,22 +2903,23 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString User, FString RemoveObj, F
 	}
 
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
-	auto CharConverterUuid = StringCast<ANSICHAR>(*User);
-	PubnubOptions.uuid = User.IsEmpty() ? NULL : CharConverterUuid.Get();
-	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
-	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
-	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
-	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
-	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.uuid = User.IsEmpty() ? NULL : UserHolder.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 
-	pubnub_remove_memberships_ex(ctx_pub, TCHAR_TO_ANSI(*RemoveObj), PubnubOptions);
+	FUTF8StringHolder RemoveObjHolder(RemoveObj);
+	pubnub_remove_memberships_ex(ctx_pub, RemoveObjHolder.Get(), PubnubOptions);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2878,20 +2948,21 @@ FString UPubnubSubsystem::GetChannelMembers_pn(FString Channel, FString Include,
 	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
-	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
-	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
-	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
-	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
-	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
-	
-	pubnub_get_members_ex(ctx_pub,TCHAR_TO_ANSI(*Channel), PubnubOptions);
+
+	FUTF8StringHolder ChannelHolder(Channel);
+	pubnub_get_members_ex(ctx_pub, ChannelHolder.Get(), PubnubOptions);
 
 	FString Response = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -2963,7 +3034,10 @@ void UPubnubSubsystem::AddChannelMembers_priv(FString Channel, FString AddObj, F
 		return;
 	}
 
-	pubnub_add_members(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Include), TCHAR_TO_ANSI(*AddObj));
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder AddObjHolder(AddObj);
+	pubnub_add_members(ctx_pub, ChannelHolder.Get(), IncludeHolder.Get(), AddObjHolder.Get());
 
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
 	if(PubnubResponse != PNR_OK)
@@ -2987,20 +3061,22 @@ void UPubnubSubsystem::SetChannelMembers_priv(FString Channel, FString SetObj, F
 	}
 
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
-	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
-	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
-	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
-	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
-	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 
-	pubnub_set_members_ex(ctx_pub, TCHAR_TO_ANSI(*Channel),TCHAR_TO_ANSI(*SetObj), PubnubOptions);
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder SetObjHolder(SetObj);
+	pubnub_set_members_ex(ctx_pub, ChannelHolder.Get(), SetObjHolder.Get(), PubnubOptions);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -3039,20 +3115,22 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString Channel, FString Remove
 	}
 
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
-	auto CharConverterInclude = StringCast<ANSICHAR>(*Include);
-	PubnubOptions.include = Include.IsEmpty() ? NULL : CharConverterInclude.Get();
-	auto CharConverterFilter = StringCast<ANSICHAR>(*Filter);
-	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  CharConverterFilter.Get();
-	auto CharConverterSort = StringCast<ANSICHAR>(*Sort);
-	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  CharConverterSort.Get();
-	auto CharConverterPageNext = StringCast<ANSICHAR>(*PageNext);
-	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  CharConverterPageNext.Get();
-	auto CharConverterPagePrev = StringCast<ANSICHAR>(*PagePrev);
-	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  CharConverterPagePrev.Get();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 
-	pubnub_remove_members_ex(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*RemoveObj), PubnubOptions);
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder RemoveObjHolder(RemoveObj);
+	pubnub_remove_members_ex(ctx_pub, ChannelHolder.Get(), RemoveObjHolder.Get(), PubnubOptions);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -3087,8 +3165,13 @@ void UPubnubSubsystem::AddMessageAction_priv(FString Channel, FString MessageTim
 	//Add quotes to these fields as they are required by C-Core
 	FString FinalActionType = UPubnubUtilities::AddQuotesToString(ActionType);
 	FString FinalValue = UPubnubUtilities::AddQuotesToString(Value);
+
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder MessageTimetokenHolder(MessageTimetoken);
+	FUTF8StringHolder FinalActionTypeHolder(FinalActionType);
+	FUTF8StringHolder FinalValueHolder(FinalValue);
 	
-	pubnub_add_message_action_str(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*MessageTimetoken), TCHAR_TO_ANSI(*FinalActionType),  TCHAR_TO_ANSI(*FinalValue));
+	pubnub_add_message_action_str(ctx_pub, ChannelHolder.Get(), MessageTimetokenHolder.Get(), FinalActionTypeHolder.Get(),  FinalValueHolder.Get());
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -3138,8 +3221,10 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString Message
 	pubnub_char_mem_block action_timetoken_chamebl;
 	action_timetoken_chamebl.ptr = ActionTimetokenArray.GetData();
 	action_timetoken_chamebl.size = FinalActionTimetoken.Len();
+
+	FUTF8StringHolder ChannelHolder(Channel);
 	
-	pubnub_remove_message_action(ctx_pub, TCHAR_TO_ANSI(*Channel), message_timetoken_chamebl, action_timetoken_chamebl);
+	pubnub_remove_message_action(ctx_pub, ChannelHolder.Get(), message_timetoken_chamebl, action_timetoken_chamebl);
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -3158,7 +3243,10 @@ void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString Message
 
 FString UPubnubSubsystem::GetMessageActions_pn(FString Channel, FString Start, FString End, int Limit)
 {
-	pubnub_get_message_actions(ctx_pub, TCHAR_TO_ANSI(*Channel), TCHAR_TO_ANSI(*Start), TCHAR_TO_ANSI(*End), Limit);
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder StartHolder(Start);
+	FUTF8StringHolder EndHolder(End);
+	pubnub_get_message_actions(ctx_pub, ChannelHolder.Get(), StartHolder.Get(), EndHolder.Get(), Limit);
 	
 	FString Response = GetLastResponse(ctx_pub);
 	//If last response is empty, it means that there was an error, so return server response instead
@@ -3450,12 +3538,14 @@ void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscripti
 	SubscriptionStatusData.Reason = pubnub_res_2_string(status_data.reason);
 	if (NULL != status_data.channels)
 	{
-		FString Channels(status_data.channels);
+		FUTF8ToTCHAR Converter(status_data.channels);
+		FString Channels(Converter.Length(), Converter.Get());
 		Channels.ParseIntoArray(SubscriptionStatusData.Channels, TEXT(","));
 	}
 	if (NULL != status_data.channel_groups)
 	{
-		FString ChannelGroups(status_data.channel_groups);
+		FUTF8ToTCHAR Converter(status_data.channel_groups);
+		FString ChannelGroups(Converter.Length(), Converter.Get());
 		ChannelGroups.ParseIntoArray(SubscriptionStatusData.ChannelGroups, TEXT(","));
 	}
 	

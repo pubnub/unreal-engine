@@ -21,7 +21,7 @@ FString UPubnubUtilities::PubnubGetLastServerHttpResponse(pubnub_t* Context)
 {
 	pubnub_char_mem_block LastServerResponse;
 	pubnub_last_http_response_body(Context, &LastServerResponse);
-	return FString(LastServerResponse.ptr);
+	return PubnubCharMemBlockToString(LastServerResponse);
 }
 
 FString UPubnubUtilities::AddQuotesToString(const FString InString, bool SkipIfHasQuotes)
@@ -51,17 +51,13 @@ FString UPubnubUtilities::RemoveOuterQuotesFromString(const FString InString)
 
 FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar)
 {
-	if(!PnChar.ptr)
+	if (!PnChar.ptr || PnChar.size == 0)
 	{
-		return "";
+		return FString();
 	}
-
-#if ENGINE_MINOR_VERSION <= 3
-	//This constructor is deprecated since 5.4
-	return FString(PnChar.size, PnChar.ptr);
-#else
-	return FString::ConstructFromPtrSize(PnChar.ptr, PnChar.size);
-#endif
+	
+	FUTF8ToTCHAR Converter(reinterpret_cast<const ANSICHAR*>(PnChar.ptr), PnChar.size);
+	return FString(Converter.Length(), Converter.Get());
 }
 
 FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude)
@@ -259,13 +255,14 @@ FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllIncl
 	return FinalString;
 }
 
-
 pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForChannel(pubnub_t* Context, FString Channel, FPubnubSubscribeSettings Options)
 {
 	pubnub_subscription_options_t PnOptions = pubnub_subscription_options_defopts();
 	PnOptions.receive_presence_events = Options.ReceivePresenceEvents;
 
-	pubnub_channel_t* PubnubChannel = pubnub_channel_alloc(Context, TCHAR_TO_ANSI(*Channel));
+	FUTF8StringHolder ChannelHolder(Channel);
+
+	pubnub_channel_t* PubnubChannel = pubnub_channel_alloc(Context, ChannelHolder.Get());
 	
 	pubnub_subscription_t* Subscription = pubnub_subscription_alloc((pubnub_entity_t*)PubnubChannel, &PnOptions);
 	
@@ -279,7 +276,9 @@ pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForChannelGroup(pubnub
 	pubnub_subscription_options_t PnOptions = pubnub_subscription_options_defopts();
 	PnOptions.receive_presence_events = Options.ReceivePresenceEvents;
 
-	pubnub_channel_group_t* PubnubChannelGroup = pubnub_channel_group_alloc(Context, TCHAR_TO_ANSI(*ChannelGroup));
+	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
+
+	pubnub_channel_group_t* PubnubChannelGroup = pubnub_channel_group_alloc(Context, ChannelGroupHolder.Get());
 	
 	pubnub_subscription_t* Subscription = pubnub_subscription_alloc((pubnub_entity_t*)PubnubChannelGroup, &PnOptions);
 	

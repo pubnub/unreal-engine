@@ -11,6 +11,25 @@
 
 class UPubnubSettings;
 
+/** This struct is an utility for more convenient converting FString into const char* while keeping char memory alive
+ * Will not break UTF8 characters.
+ * NOTE:: if the struct goes out of scope, the memory pointed by const char* from Get() will do as well.
+ */
+struct FUTF8StringHolder
+{
+	FTCHARToUTF8 Converter;
+
+	FUTF8StringHolder(const FString& Input)
+		: Converter(*Input)
+	{
+	}
+
+	const char* Get() const
+	{
+		return Converter.Get();
+	}
+};
+
 /**
  * 
  */
