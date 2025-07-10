@@ -85,6 +85,7 @@ void UPubnubSubsystem::DeinitPubnub()
 	ChannelSubscriptions.Empty();
 	ChannelGroupSubscriptions.Empty();
 	IsUserIDSet = false;
+	delete[] AuthTokenBuffer;
 }
 
 void UPubnubSubsystem::SetUserID(FString UserID)
@@ -523,12 +524,16 @@ void UPubnubSubsystem::SetAuthToken(FString Token)
 	if(!CheckIsUserIDSet())
 	{return;}
 
-	if(CheckIsFieldEmpty(Token, "Token", "SetAuthToken"))
-	{return;}
-
-	FUTF8StringHolder TokenHolder(Token);
+	//Auth token has to be kept alive for the lifetime of the sdk, so we copy it into AuthTokenBuffer
+	FTCHARToUTF8 Converter(*Token);
+	AuthTokenLength = Converter.Length();
+	delete[] AuthTokenBuffer;
+	AuthTokenBuffer = new char[AuthTokenLength + 1];
+	FMemory::Memcpy(AuthTokenBuffer, Converter.Get(), AuthTokenLength);
+	AuthTokenBuffer[AuthTokenLength] = '\0';
+	
 	//This is just a setter, so no need to call it on a separate thread
-	pubnub_set_auth_token(ctx_pub, TokenHolder.Get());
+	pubnub_set_auth_token(ctx_pub, AuthTokenBuffer);
 }
 
 void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings)
@@ -1404,29 +1409,6 @@ void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString Er
 	});
 }
 
-void UPubnubSubsystem::PubnubPublishError()
-{
-	FString FinalErrorMessage;
-	if(ctx_pub == nullptr)
-	{
-		FinalErrorMessage = "Can't publish message. Publish context is invalid";
-	}
-	
-	FString PublishError(pubnub_last_publish_result(ctx_pub));
-	FinalErrorMessage = FString::Printf(TEXT("Publish message failed. Error: %s."), *PublishError);
-
-	//Log and broadcast error
-	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
-
-	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
-	AsyncTask(ENamedThreads::GameThread, [this, FinalErrorMessage]()
-	{
-		//Broadcast bound delegate with JsonResponse
-		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
-		OnPubnubErrorNative.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
-	});
-}
-
 void UPubnubSubsystem::LoadPluginSettings()
 {
 	//Save all settings
@@ -1629,10 +1611,6 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FOn
 		PublishedMessage.MessageType = EPubnubMessageType::PMT_Published;
 		PublishedMessage.CustomMessageType = PublishSettings.CustomMessageType;
 	}
-	else
-	{
-		PubnubPublishError();
-	}
 	
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnPublishMessageResponse, PublishResult, PublishedMessage]()
@@ -1682,10 +1660,6 @@ void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FOnSignalRe
 		SignalMessage.Metadata = ""; // Signals don't have metadata
 		SignalMessage.MessageType = EPubnubMessageType::PMT_Signal;
 		SignalMessage.CustomMessageType = SignalSettings.CustomMessageType;
-	}
-	else
-	{
-		PubnubPublishError();
 	}
 
 	//Delegate needs to be executed back on Game Thread

@@ -14,11 +14,9 @@ DECLARE_LOG_CATEGORY_EXTERN(PubnubLog, Log, All);
 constexpr int PUBNUB_MAX_LIMIT = 100;
 
 class FJsonObject;
-
 class UPubnubSettings;
 class FPubnubFunctionThread;
 class UPubnubChatSystem;
-
 
 struct CCoreSubscriptionData
 {
@@ -1771,6 +1769,10 @@ private:
 	pubnub_t *ctx_pub = nullptr;
 	//Pubnub context for the event engine - subscribe operations
 	pubnub_t *ctx_ee = nullptr;
+
+	//Auth token has to be kept alive for the lifetime of the sdk, so this is the container for it
+	char* AuthTokenBuffer = nullptr;
+	size_t AuthTokenLength = 0;
 	
 	TMap<FString, CCoreSubscriptionData> ChannelSubscriptions;
 	TMap<FString, CCoreSubscriptionData> ChannelGroupSubscriptions;
