@@ -32,13 +32,16 @@ bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
 
     const FString TestStartTimetoken = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
 
-    TSharedPtr<bool> bMessagePublishedAndTimetokenCaptured = MakeShared<bool>(false);
+    TSharedPtr<bool> bPublishMessageDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bPublishMessageSuccess = MakeShared<bool>(false);
     TSharedPtr<FString> PublishedMessageTimetoken = MakeShared<FString>();
 
     TSharedPtr<bool> bAddAction1Done = MakeShared<bool>(false);
+    TSharedPtr<bool> bAddAction1Success = MakeShared<bool>(false);
     TSharedPtr<FString> ReceivedAction1Timetoken = MakeShared<FString>();
 
     TSharedPtr<bool> bAddAction2Done = MakeShared<bool>(false);
+    TSharedPtr<bool> bAddAction2Success = MakeShared<bool>(false);
     TSharedPtr<FString> ReceivedAction2Timetoken = MakeShared<FString>();
 
     TSharedPtr<bool> bGetActionsDone = MakeShared<bool>(false);
@@ -58,31 +61,52 @@ bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
 
     PubnubSubsystem->SetUserID(TestUser);
 
-    // Step 1: Subscribe and Listen for Message Timetoken
-    PubnubSubsystem->OnMessageReceivedNative.AddLambda(
-        [this, TestChannel, TestMessageContent, PublishedMessageTimetoken, bMessagePublishedAndTimetokenCaptured](FPubnubMessageData ReceivedMessage)
+    // Publish Message Callback
+    FOnPublishMessageResponseNative PublishCallback;
+    PublishCallback.BindLambda([this, bPublishMessageDone, bPublishMessageSuccess, PublishedMessageTimetoken](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+    {
+        *bPublishMessageDone = true;
+        *bPublishMessageSuccess = !Result.Error && Result.Status == 200;
+        if (*bPublishMessageSuccess)
         {
-            if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.Message == TestMessageContent)
-            {
-                *PublishedMessageTimetoken = ReceivedMessage.Timetoken;
-                *bMessagePublishedAndTimetokenCaptured = true;
-            }
-        });
+            *PublishedMessageTimetoken = PublishedMessage.Timetoken;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("PublishMessage failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
 
     // First Message Action Callback
     FOnAddMessageActionResponseNative AddAction1Callback;
-    AddAction1Callback.BindLambda([this, bAddAction1Done, ReceivedAction1Timetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
+    AddAction1Callback.BindLambda([this, bAddAction1Done, bAddAction1Success, ReceivedAction1Timetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
     {
-        *ReceivedAction1Timetoken = MessageActionData.ActionTimetoken;
         *bAddAction1Done = true;
+        *bAddAction1Success = !Result.Error && Result.Status == 200;
+        if (*bAddAction1Success)
+        {
+            *ReceivedAction1Timetoken = MessageActionData.ActionTimetoken;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("AddMessageAction1 failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
     });
 
     // Second Message Action Callback
     FOnAddMessageActionResponseNative AddAction2Callback;
-    AddAction2Callback.BindLambda([this, bAddAction2Done, ReceivedAction2Timetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
+    AddAction2Callback.BindLambda([this, bAddAction2Done, bAddAction2Success, ReceivedAction2Timetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
     {
-        *ReceivedAction2Timetoken = MessageActionData.ActionTimetoken;
         *bAddAction2Done = true;
+        *bAddAction2Success = !Result.Error && Result.Status == 200;
+        if (*bAddAction2Success)
+        {
+            *ReceivedAction2Timetoken = MessageActionData.ActionTimetoken;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("AddMessageAction2 failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
     });
 
     // Get Message Actions Callback
@@ -90,81 +114,71 @@ bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
     GetActionsCallback.BindLambda([this, bGetActionsDone, bGetActionsSuccess, ReceivedActionsArray](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
     {
         *bGetActionsDone = true;
-        if (Result.Status == 200)
+        *bGetActionsSuccess = !Result.Error && Result.Status == 200;
+        if (*bGetActionsSuccess)
         {
             *ReceivedActionsArray = MessageActions;
-            *bGetActionsSuccess = true;
         }
         else
         {
-            *bGetActionsSuccess = false;
-            AddError(FString::Printf(TEXT("GetMessageActions failed. Status: %d"), Result.Status));
+            AddError(FString::Printf(TEXT("GetMessageActions failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
         }
     });
 
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
-    {
-        PubnubSubsystem->SubscribeToChannel(TestChannel);
-    }, 0.1f));
-
-    // Step 2: Publish Message
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessageContent]()
+    // Step 1: Publish Message
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessageContent, PublishCallback]()
     {
         FPubnubPublishSettings PublishSettings;
         PublishSettings.StoreInHistory = true;
-        PubnubSubsystem->PublishMessage(TestChannel, TestMessageContent, PublishSettings);
-    }, 0.5f));
-
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessagePublishedAndTimetokenCaptured, PublishedMessageTimetoken]()
+        PubnubSubsystem->PublishMessage(TestChannel, TestMessageContent, PublishCallback, PublishSettings);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessageDone]() { return *bPublishMessageDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessageSuccess, PublishedMessageTimetoken]()
     {
-        return *bMessagePublishedAndTimetokenCaptured && !PublishedMessageTimetoken->IsEmpty();
-    }, MAX_WAIT_TIME));
-
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, PublishedMessageTimetoken]()
-    {
+        TestTrue("PublishMessage operation was successful", *bPublishMessageSuccess);
+        TestFalse("PublishedMessageTimetoken should not be empty", PublishedMessageTimetoken->IsEmpty());
         if (PublishedMessageTimetoken->IsEmpty())
         {
-            AddError("Failed to capture published message timetoken. AddMessageAction cannot proceed.");
+            AddError("Failed to get published message timetoken. AddMessageAction cannot proceed.");
         }
     }, 0.1f));
     
-    // Step 3: Add First Message Action
-
+    // Step 2: Add First Message Action (immediate - request queue ensures publish completes first)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, PublishedMessageTimetoken, Action1Type, Action1Value, AddAction1Callback]()
     {
         if (PublishedMessageTimetoken->IsEmpty()) return; // Guard against proceeding without timetoken
         PubnubSubsystem->AddMessageAction(TestChannel, *PublishedMessageTimetoken, Action1Type, Action1Value, AddAction1Callback);
-    }, 0.2f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddAction1Done]() { return *bAddAction1Done; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedAction1Timetoken]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddAction1Success, ReceivedAction1Timetoken]()
     {
-        TestFalse("AddAction1Timetoken should not be empty after AddMessageAction.", ReceivedAction1Timetoken->IsEmpty());
+        TestTrue("AddAction1 operation was successful", *bAddAction1Success);
+        TestFalse("AddAction1Timetoken should not be empty after AddMessageAction", ReceivedAction1Timetoken->IsEmpty());
     }, 0.1f));
 
-    // Step 4: Add Second Message Action
-
+    // Step 3: Add Second Message Action (immediate - request queue ensures action1 completes first)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, PublishedMessageTimetoken, Action2Type, Action2Value, AddAction2Callback]()
     {
         if (PublishedMessageTimetoken->IsEmpty()) return;
         PubnubSubsystem->AddMessageAction(TestChannel, *PublishedMessageTimetoken, Action2Type, Action2Value, AddAction2Callback);
-    }, 0.2f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddAction2Done]() { return *bAddAction2Done; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedAction2Timetoken]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddAction2Success, ReceivedAction2Timetoken]()
     {
-        TestFalse("AddAction2Timetoken should not be empty after AddMessageAction.", ReceivedAction2Timetoken->IsEmpty());
+        TestTrue("AddAction2 operation was successful", *bAddAction2Success);
+        TestFalse("AddAction2Timetoken should not be empty after AddMessageAction", ReceivedAction2Timetoken->IsEmpty());
     }, 0.1f));
     
-    // Step 5: Get Message Actions
-
+    // Step 4: Get Message Actions (immediate - request queue ensures action2 completes first)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, GetActionsCallback, TestStartTimetoken]()
     {
         // Use a wide enough time range to catch the actions
         FString StartTimetoken = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
         PubnubSubsystem->GetMessageActions(TestChannel, StartTimetoken, TestStartTimetoken, 10, GetActionsCallback);
-    }, 1.0f)); // Wait a bit for actions to be processed by server
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetActionsDone]() { return *bGetActionsDone; }, MAX_WAIT_TIME));
 
-    // Step 6: Verify Received Actions
+    // Step 5: Verify Received Actions
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand(
         [this, TestUser, PublishedMessageTimetoken, Action1Type, Action1Value, ReceivedAction1Timetoken, 
               Action2Type, Action2Value, ReceivedAction2Timetoken, ReceivedActionsArray, bGetActionsSuccess]()
@@ -220,10 +234,12 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
     const FString TestActionType = "reaction";
     const FString TestActionValue = "event_heart";
 
-    TSharedPtr<bool> bMessagePublishedAndTimetokenCaptured = MakeShared<bool>(false);
+    TSharedPtr<bool> bPublishMessageDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bPublishMessageSuccess = MakeShared<bool>(false);
     TSharedPtr<FString> PublishedMessageTimetoken = MakeShared<FString>();
 
     TSharedPtr<bool> bAddActionDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bAddActionSuccess = MakeShared<bool>(false);
     TSharedPtr<FString> AddedActionTimetoken = MakeShared<FString>();
 
     TSharedPtr<bool> bMessageActionEventReceived = MakeShared<bool>(false);
@@ -246,19 +262,29 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
 
     PubnubSubsystem->SetUserID(TestUser);
 
-    // Listener for both initial published message and the subsequent message action event
+    // Publish Message Callback
+    FOnPublishMessageResponseNative PublishCallback;
+    PublishCallback.BindLambda([this, bPublishMessageDone, bPublishMessageSuccess, PublishedMessageTimetoken](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+    {
+        *bPublishMessageDone = true;
+        *bPublishMessageSuccess = !Result.Error && Result.Status == 200;
+        if (*bPublishMessageSuccess)
+        {
+            *PublishedMessageTimetoken = PublishedMessage.Timetoken;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("PublishMessage failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Listener for message action events only (not for published messages)
     PubnubSubsystem->OnMessageReceivedNative.AddLambda(
-        [this, TestChannel, TestMessageContent, PublishedMessageTimetoken, bMessagePublishedAndTimetokenCaptured,
-         bMessageActionEventReceived, ReceivedEventActionTimetoken, ReceivedEventMessageTimetoken,
+        [this, TestChannel, bMessageActionEventReceived, ReceivedEventActionTimetoken, ReceivedEventMessageTimetoken,
          ReceivedEventActionType, ReceivedEventActionValue, ReceivedEventUserID]
         (FPubnubMessageData ReceivedMessage)
         {
-            if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.MessageType == EPubnubMessageType::PMT_Published && ReceivedMessage.Message == TestMessageContent)
-            {
-                *PublishedMessageTimetoken = ReceivedMessage.Timetoken;
-                *bMessagePublishedAndTimetokenCaptured = true;
-            }
-            else if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.MessageType == EPubnubMessageType::PMT_Action)
+            if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.MessageType == EPubnubMessageType::PMT_Action)
             {
                 TSharedPtr<FJsonObject> JsonObject;
                 if (UPubnubJsonUtilities::StringToJsonObject(ReceivedMessage.Message, JsonObject))
@@ -287,10 +313,18 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
 
     // Callback for AddMessageAction
     FOnAddMessageActionResponseNative AddActionCallback;
-    AddActionCallback.BindLambda([this, bAddActionDone, AddedActionTimetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
+    AddActionCallback.BindLambda([this, bAddActionDone, bAddActionSuccess, AddedActionTimetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
     {
-        *AddedActionTimetoken = MessageActionData.ActionTimetoken;
         *bAddActionDone = true;
+        *bAddActionSuccess = !Result.Error && Result.Status == 200;
+        if (*bAddActionSuccess)
+        {
+            *AddedActionTimetoken = MessageActionData.ActionTimetoken;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("AddMessageAction failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
     });
 
     // Step 1: Subscribe to Channel
@@ -299,41 +333,31 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
         PubnubSubsystem->SubscribeToChannel(TestChannel);
     }, 0.1f));
 
-    // Step 2: Publish Message
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessageContent]()
+    // Step 2: Publish Message (immediate - using publish callback to get timetoken)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessageContent, PublishCallback]()
     {
         FPubnubPublishSettings PublishSettings;
         PublishSettings.StoreInHistory = true; // Ensure it can have actions
-        PubnubSubsystem->PublishMessage(TestChannel, TestMessageContent, PublishSettings);
+        PubnubSubsystem->PublishMessage(TestChannel, TestMessageContent, PublishCallback, PublishSettings);
     }, 0.5f));
-
-    // Wait for message to be published and its timetoken captured
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessagePublishedAndTimetokenCaptured, PublishedMessageTimetoken]()
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessageDone]() { return *bPublishMessageDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessageSuccess, PublishedMessageTimetoken]()
     {
-        return *bMessagePublishedAndTimetokenCaptured && !PublishedMessageTimetoken->IsEmpty();
-    }, MAX_WAIT_TIME));
-
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, PublishedMessageTimetoken]()
-    {
+        TestTrue("PublishMessage operation was successful", *bPublishMessageSuccess);
+        TestFalse("PublishedMessageTimetoken should not be empty", PublishedMessageTimetoken->IsEmpty());
         if (PublishedMessageTimetoken->IsEmpty())
         {
-            AddError(TEXT("Failed to capture published message timetoken. Cannot proceed to add action."));
+            AddError("Failed to get published message timetoken from publish callback. Cannot proceed to add action.");
         }
     }, 0.1f));
     
-    // Step 3: Add Message Action
+    // Step 3: Add Message Action (immediate - request queue ensures publish completes first)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, PublishedMessageTimetoken, TestActionType, TestActionValue, AddActionCallback]()
     {
         if (PublishedMessageTimetoken->IsEmpty()) return; // Guard
         PubnubSubsystem->AddMessageAction(TestChannel, *PublishedMessageTimetoken, TestActionType, TestActionValue, AddActionCallback);
-    }, 1.0f));
-
-    // Wait for AddMessageAction to complete and its timetoken captured
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddActionDone, AddedActionTimetoken]()
-    {
-        return *bAddActionDone && !AddedActionTimetoken->IsEmpty();
-    }, MAX_WAIT_TIME));
-    
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddActionDone, bAddActionSuccess, AddedActionTimetoken]() { return *bAddActionDone && *bAddActionSuccess && !AddedActionTimetoken->IsEmpty(); }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, AddedActionTimetoken]()
     {
         if (AddedActionTimetoken->IsEmpty())
@@ -388,11 +412,16 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
 
     TSharedPtr<FString> TestRunStartTimetoken = MakeShared<FString>(UPubnubTimetokenUtilities::GetCurrentUnixTimetoken());
 
-    TSharedPtr<bool> bMessagePublishedAndTimetokenCaptured = MakeShared<bool>(false);
+    TSharedPtr<bool> bPublishMessageDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bPublishMessageSuccess = MakeShared<bool>(false);
     TSharedPtr<FString> PublishedMessageTimetoken = MakeShared<FString>();
 
     TSharedPtr<bool> bAddActionDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bAddActionSuccess = MakeShared<bool>(false);
     TSharedPtr<FString> AddedActionTimetoken = MakeShared<FString>();
+
+    TSharedPtr<bool> bRemoveActionDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveActionSuccess = MakeShared<bool>(false);
 
     TSharedPtr<bool> bGetActionsDone_Initial = MakeShared<bool>(false);
     TSharedPtr<bool> bGetActionsSuccess_Initial = MakeShared<bool>(false);
@@ -401,46 +430,6 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
     TSharedPtr<bool> bGetActionsDone_AfterRemove = MakeShared<bool>(false);
     TSharedPtr<bool> bGetActionsSuccess_AfterRemove = MakeShared<bool>(false);
     TSharedPtr<TArray<FPubnubMessageActionData>> ReceivedActionsArray_AfterRemove = MakeShared<TArray<FPubnubMessageActionData>>();
-
-    // Callbacks
-    FOnAddMessageActionResponseNative AddActionCallback;
-    AddActionCallback.BindLambda([this, bAddActionDone, AddedActionTimetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
-    {
-        *AddedActionTimetoken = MessageActionData.ActionTimetoken;
-        *bAddActionDone = true;
-    });
-
-    FOnGetMessageActionsResponseNative GetActionsCallback_Initial;
-    GetActionsCallback_Initial.BindLambda([this, bGetActionsDone_Initial, bGetActionsSuccess_Initial, ReceivedActionsArray_Initial](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
-    {
-        *bGetActionsDone_Initial = true;
-        if (Result.Status == 200)
-        {
-            *ReceivedActionsArray_Initial = MessageActions;
-            *bGetActionsSuccess_Initial = true;
-        }
-        else
-        {
-            *bGetActionsSuccess_Initial = false;
-            AddError(FString::Printf(TEXT("GetMessageActions (Initial) failed. Status: %d"), Result.Status));
-        }
-    });
-    
-    FOnGetMessageActionsResponseNative GetActionsCallback_AfterRemove;
-    GetActionsCallback_AfterRemove.BindLambda([this, bGetActionsDone_AfterRemove, bGetActionsSuccess_AfterRemove, ReceivedActionsArray_AfterRemove](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
-    {
-        *bGetActionsDone_AfterRemove = true;
-        if (Result.Status == 200)
-        {
-            *ReceivedActionsArray_AfterRemove = MessageActions;
-            *bGetActionsSuccess_AfterRemove = true;
-        }
-        else
-        {
-            *bGetActionsSuccess_AfterRemove = false;
-            AddError(FString::Printf(TEXT("GetMessageActions (After Remove) failed. Status: %d"), Result.Status));
-        }
-    });
 
     if (!InitTest())
     {
@@ -455,62 +444,119 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
 
     PubnubSubsystem->SetUserID(TestUser);
 
-    // Step 1: Subscribe and Listen for Message Timetoken
-    PubnubSubsystem->OnMessageReceivedNative.AddLambda(
-        [this, TestChannel, TestMessageContent, PublishedMessageTimetoken, bMessagePublishedAndTimetokenCaptured](FPubnubMessageData ReceivedMessage)
-        {
-            if (ReceivedMessage.Channel == TestChannel && ReceivedMessage.Message == TestMessageContent && !ReceivedMessage.Timetoken.IsEmpty())
-            {
-                *PublishedMessageTimetoken = ReceivedMessage.Timetoken;
-                *bMessagePublishedAndTimetokenCaptured = true;
-            }
-        });
-
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+    // Publish Message Callback
+    FOnPublishMessageResponseNative PublishCallback;
+    PublishCallback.BindLambda([this, bPublishMessageDone, bPublishMessageSuccess, PublishedMessageTimetoken](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
     {
-        PubnubSubsystem->SubscribeToChannel(TestChannel);
-    }, 0.1f));
+        *bPublishMessageDone = true;
+        *bPublishMessageSuccess = !Result.Error && Result.Status == 200;
+        if (*bPublishMessageSuccess)
+        {
+            *PublishedMessageTimetoken = PublishedMessage.Timetoken;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("PublishMessage failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
 
-    // Step 2: Publish Message
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessageContent]()
+    // Add Message Action Callback
+    FOnAddMessageActionResponseNative AddActionCallback;
+    AddActionCallback.BindLambda([this, bAddActionDone, bAddActionSuccess, AddedActionTimetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
+    {
+        *bAddActionDone = true;
+        *bAddActionSuccess = !Result.Error && Result.Status == 200;
+        if (*bAddActionSuccess)
+        {
+            *AddedActionTimetoken = MessageActionData.ActionTimetoken;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("AddMessageAction failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Remove Message Action Callback
+    FOnRemoveMessageActionResponseNative RemoveActionCallback;
+    RemoveActionCallback.BindLambda([this, bRemoveActionDone, bRemoveActionSuccess](const FPubnubOperationResult& Result)
+    {
+        *bRemoveActionDone = true;
+        *bRemoveActionSuccess = !Result.Error && Result.Status == 200;
+        if (!*bRemoveActionSuccess)
+        {
+            AddError(FString::Printf(TEXT("RemoveMessageAction failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Get Message Actions Callbacks
+    FOnGetMessageActionsResponseNative GetActionsCallback_Initial;
+    GetActionsCallback_Initial.BindLambda([this, bGetActionsDone_Initial, bGetActionsSuccess_Initial, ReceivedActionsArray_Initial](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
+    {
+        *bGetActionsDone_Initial = true;
+        *bGetActionsSuccess_Initial = !Result.Error && Result.Status == 200;
+        if (*bGetActionsSuccess_Initial)
+        {
+            *ReceivedActionsArray_Initial = MessageActions;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("GetMessageActions (Initial) failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+    
+    FOnGetMessageActionsResponseNative GetActionsCallback_AfterRemove;
+    GetActionsCallback_AfterRemove.BindLambda([this, bGetActionsDone_AfterRemove, bGetActionsSuccess_AfterRemove, ReceivedActionsArray_AfterRemove](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
+    {
+        *bGetActionsDone_AfterRemove = true;
+        *bGetActionsSuccess_AfterRemove = !Result.Error && Result.Status == 200;
+        if (*bGetActionsSuccess_AfterRemove)
+        {
+            *ReceivedActionsArray_AfterRemove = MessageActions;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("GetMessageActions (After Remove) failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Step 1: Publish Message
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessageContent, PublishCallback]()
     {
         FPubnubPublishSettings PublishSettings;
         PublishSettings.StoreInHistory = true;
-        PubnubSubsystem->PublishMessage(TestChannel, TestMessageContent, PublishSettings);
-    }, 0.5f));
-
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessagePublishedAndTimetokenCaptured, PublishedMessageTimetoken]()
+        PubnubSubsystem->PublishMessage(TestChannel, TestMessageContent, PublishCallback, PublishSettings);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessageDone]() { return *bPublishMessageDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessageSuccess, PublishedMessageTimetoken]()
     {
-        return *bMessagePublishedAndTimetokenCaptured && !PublishedMessageTimetoken->IsEmpty();
-    }, MAX_WAIT_TIME));
-    
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, PublishedMessageTimetoken]()
-    {
+        TestTrue("PublishMessage operation was successful", *bPublishMessageSuccess);
+        TestFalse("PublishedMessageTimetoken should not be empty", PublishedMessageTimetoken->IsEmpty());
         if (PublishedMessageTimetoken->IsEmpty())
         {
-            AddError("Failed to capture published message timetoken. Test cannot proceed.");
+            AddError("Failed to get published message timetoken. Test cannot proceed.");
         }
     }, 0.1f));
 
-    // Step 3: Add Message Action
+    // Step 2: Add Message Action (immediate - request queue ensures publish completes first)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, PublishedMessageTimetoken, ActionTypeToRemove, ActionValueToRemove, AddActionCallback]()
     {
         if (PublishedMessageTimetoken->IsEmpty()) { AddError("Skipping AddMessageAction due to missing PublishedMessageTimetoken"); return; }
         PubnubSubsystem->AddMessageAction(TestChannel, *PublishedMessageTimetoken, ActionTypeToRemove, ActionValueToRemove, AddActionCallback);
-    }, 0.2f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddActionDone]() { return *bAddActionDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, AddedActionTimetoken]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddActionSuccess, AddedActionTimetoken]()
     {
-        TestFalse("AddedActionTimetoken should not be empty after AddMessageAction.", AddedActionTimetoken->IsEmpty());
+        TestTrue("AddMessageAction operation was successful", *bAddActionSuccess);
+        TestFalse("AddedActionTimetoken should not be empty after AddMessageAction", AddedActionTimetoken->IsEmpty());
         if(AddedActionTimetoken->IsEmpty()) AddError("AddedActionTimetoken is empty. Cannot proceed with verification or removal.");
     }, 0.1f));
 
-    // Step 4: Get Message Actions (Initial) and Verify Action is Present
+    // Step 3: Get Message Actions (Initial) and Verify Action is Present (immediate - request queue ensures add completes first)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, GetActionsCallback_Initial, TestRunStartTimetoken]()
     {
         FString CurrentTimetoken = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
         PubnubSubsystem->GetMessageActions(TestChannel, CurrentTimetoken, *TestRunStartTimetoken, 10, GetActionsCallback_Initial);
-    }, 0.5f)); 
+    }, 0.1f)); 
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetActionsDone_Initial]() { return *bGetActionsDone_Initial; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand(
         [this, TestUser, PublishedMessageTimetoken, ActionTypeToRemove, ActionValueToRemove, AddedActionTimetoken, ReceivedActionsArray_Initial, bGetActionsSuccess_Initial]()
@@ -539,23 +585,28 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
         if(!bFoundActionInitially) AddError("Action to be removed was not found in initial GetMessageActions call.");
     }, 0.1f));
     
-    // Step 5: Remove Message Action
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, PublishedMessageTimetoken, AddedActionTimetoken]()
+    // Step 4: Remove Message Action (immediate - request queue ensures get actions completes first)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, PublishedMessageTimetoken, AddedActionTimetoken, RemoveActionCallback]()
     {
         if (PublishedMessageTimetoken->IsEmpty() || AddedActionTimetoken->IsEmpty())
         {
             AddError("Cannot remove action due to missing PublishedMessageTimetoken or AddedActionTimetoken.");
             return;
         }
-        PubnubSubsystem->RemoveMessageAction(TestChannel, *PublishedMessageTimetoken, *AddedActionTimetoken);
-    }, 0.2f));
+        PubnubSubsystem->RemoveMessageAction(TestChannel, *PublishedMessageTimetoken, *AddedActionTimetoken, RemoveActionCallback);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveActionDone]() { return *bRemoveActionDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveActionSuccess]()
+    {
+        TestTrue("RemoveMessageAction operation was successful", *bRemoveActionSuccess);
+    }, 0.1f));
 
-    // Step 6: Get Message Actions (After Remove) and Verify Action is NOT Present
+    // Step 5: Get Message Actions (After Remove) and Verify Action is NOT Present (immediate - request queue ensures remove completes first)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, GetActionsCallback_AfterRemove, TestRunStartTimetoken]()
     {
         FString CurrentTimetoken = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
         PubnubSubsystem->GetMessageActions(TestChannel, CurrentTimetoken, *TestRunStartTimetoken, 10, GetActionsCallback_AfterRemove);
-    }, 0.5f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetActionsDone_AfterRemove]() { return *bGetActionsDone_AfterRemove; }, MAX_WAIT_TIME));
     
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand(

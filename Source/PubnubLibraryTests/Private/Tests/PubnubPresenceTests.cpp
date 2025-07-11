@@ -275,6 +275,10 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
 
     TSharedPtr<bool> bGetStateOperationDone = MakeShared<bool>(false);
     TSharedPtr<FString> ReceivedStateJson = MakeShared<FString>();
+    TSharedPtr<bool> bSetInitialStateDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetInitialStateSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetUpdatedStateDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetUpdatedStateSuccess = MakeShared<bool>(false);
 
     if (!InitTest())
     {
@@ -294,6 +298,28 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
         *ReceivedStateJson = JsonResponse;
     });
 
+    FOnSetStateResponseNative SetInitialStateCallback;
+    SetInitialStateCallback.BindLambda([this, bSetInitialStateDone, bSetInitialStateSuccess](const FPubnubOperationResult& Result)
+    {
+        *bSetInitialStateDone = true;
+        *bSetInitialStateSuccess = !Result.Error && Result.Status == 200;
+        if (!*bSetInitialStateSuccess)
+        {
+            AddError(FString::Printf(TEXT("SetState (initial) failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    FOnSetStateResponseNative SetUpdatedStateCallback;
+    SetUpdatedStateCallback.BindLambda([this, bSetUpdatedStateDone, bSetUpdatedStateSuccess](const FPubnubOperationResult& Result)
+    {
+        *bSetUpdatedStateDone = true;
+        *bSetUpdatedStateSuccess = !Result.Error && Result.Status == 200;
+        if (!*bSetUpdatedStateSuccess)
+        {
+            AddError(FString::Printf(TEXT("SetState (updated) failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     // Set UserID first
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
     {
@@ -305,12 +331,19 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     {
         PubnubSubsystem->SubscribeToChannel(TestChannelName);
     }, 0.2f));
+
     // Step 2: Set Initial State
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, InitialStateJson]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, InitialStateJson, SetInitialStateCallback, bSetInitialStateDone, bSetInitialStateSuccess]()
     {
-        PubnubSubsystem->SetState(TestChannelName, InitialStateJson);
+        *bSetInitialStateDone = false;
+        *bSetInitialStateSuccess = false;
+        PubnubSubsystem->SetState(TestChannelName, InitialStateJson, SetInitialStateCallback);
     }, 0.2f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow SetState to propagate before GetState
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetInitialStateDone]() { return *bSetInitialStateDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetInitialStateSuccess]()
+    {
+        TestTrue("SetState (initial) operation was successful", *bSetInitialStateSuccess);
+    }, 0.1f));
 
     // Step 3: Get Initial State and Verify
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, TestUserID, GetStateCallback, bGetStateOperationDone, ReceivedStateJson]()
@@ -352,11 +385,17 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 4: Set Updated State
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, UpdatedStateJson]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, UpdatedStateJson, SetUpdatedStateCallback, bSetUpdatedStateDone, bSetUpdatedStateSuccess]()
     {
-        PubnubSubsystem->SetState(TestChannelName, UpdatedStateJson);
+        *bSetUpdatedStateDone = false;
+        *bSetUpdatedStateSuccess = false;
+        PubnubSubsystem->SetState(TestChannelName, UpdatedStateJson, SetUpdatedStateCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.5f)); // Allow SetState to propagate
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetUpdatedStateDone]() { return *bSetUpdatedStateDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetUpdatedStateSuccess]()
+    {
+        TestTrue("SetState (updated) operation was successful", *bSetUpdatedStateSuccess);
+    }, 0.1f));
 
     // Step 5: Get Updated State and Verify
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, TestUserID, GetStateCallback, bGetStateOperationDone, ReceivedStateJson]()
@@ -419,6 +458,10 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
 
     TSharedPtr<bool> bGetStateOperationDone = MakeShared<bool>(false);
     TSharedPtr<FString> ReceivedCombinedStateJson = MakeShared<FString>();
+    TSharedPtr<bool> bSetState1Done = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetState1Success = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetState2Done = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetState2Success = MakeShared<bool>(false);
 
     if (!InitTest())
     {
@@ -436,6 +479,28 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
     {
         *bGetStateOperationDone = true;
         *ReceivedCombinedStateJson = JsonResponse;
+    });
+
+    FOnSetStateResponseNative SetState1Callback;
+    SetState1Callback.BindLambda([this, bSetState1Done, bSetState1Success](const FPubnubOperationResult& Result)
+    {
+        *bSetState1Done = true;
+        *bSetState1Success = !Result.Error && Result.Status == 200;
+        if (!*bSetState1Success)
+        {
+            AddError(FString::Printf(TEXT("SetState (Channel1) failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    FOnSetStateResponseNative SetState2Callback;
+    SetState2Callback.BindLambda([this, bSetState2Done, bSetState2Success](const FPubnubOperationResult& Result)
+    {
+        *bSetState2Done = true;
+        *bSetState2Success = !Result.Error && Result.Status == 200;
+        if (!*bSetState2Success)
+        {
+            AddError(FString::Printf(TEXT("SetState (Channel2) failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
     });
 
     // Set UserID first
@@ -457,16 +522,30 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
     }, 0.5f));
 
     // Set State for Channel 1
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name, State1Json]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name, State1Json, SetState1Callback, bSetState1Done, bSetState1Success]()
     {
-        PubnubSubsystem->SetState(TestChannel1Name, State1Json);
+        *bSetState1Done = false;
+        *bSetState1Success = false;
+        PubnubSubsystem->SetState(TestChannel1Name, State1Json, SetState1Callback);
     }, 0.3f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetState1Done]() { return *bSetState1Done; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetState1Success]()
+    {
+        TestTrue("SetState (Channel1) operation was successful", *bSetState1Success);
+    }, 0.1f));
 
     // Set State for Channel 2
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name, State2Json]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name, State2Json, SetState2Callback, bSetState2Done, bSetState2Success]()
     {
-        PubnubSubsystem->SetState(TestChannel2Name, State2Json);
+        *bSetState2Done = false;
+        *bSetState2Success = false;
+        PubnubSubsystem->SetState(TestChannel2Name, State2Json, SetState2Callback);
     }, 0.3f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetState2Done]() { return *bSetState2Done; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetState2Success]()
+    {
+        TestTrue("SetState (Channel2) operation was successful", *bSetState2Success);
+    }, 0.1f));
 
     // Get Combined State for Channel 1 and Channel 2
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, CombinedChannelsString, TestUserID, GetStateCallback, bGetStateOperationDone, ReceivedCombinedStateJson]()

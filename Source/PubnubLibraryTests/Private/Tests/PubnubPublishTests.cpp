@@ -27,6 +27,9 @@ bool FPubnubPublishMessageTest::RunTest(const FString& Parameters)
 	const FString TestUser = SDK_PREFIX + "test_user";
 	const FString TestChannel = SDK_PREFIX + "test_channel";
 	TSharedPtr<bool> TestMessageReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestPublishResultReceived = MakeShared<bool>(false);
+	TSharedPtr<FPubnubOperationResult> PublishResult = MakeShared<FPubnubOperationResult>();
+	TSharedPtr<FPubnubMessageData> PublishedMessageData = MakeShared<FPubnubMessageData>();
 	
 	if(!InitTest())
 	{
@@ -53,16 +56,58 @@ bool FPubnubPublishMessageTest::RunTest(const FString& Parameters)
 		TestEqual("Published message MessageType", EPubnubMessageType::PMT_Published, ReceivedMessage.MessageType);
 	});
 
+	//Create publish result callback
+	FOnPublishMessageResponseNative PublishCallback;
+	PublishCallback.BindLambda([this, TestMessage, TestChannel, TestUser, TestPublishResultReceived, PublishResult, PublishedMessageData]
+		(const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*TestPublishResultReceived = true;
+		*PublishResult = Result;
+		*PublishedMessageData = PublishedMessage;
+		
+		// Verify publish result
+		TestFalse("Publish operation should not have failed", Result.Error);
+		TestEqual("Publish HTTP status should be 200", Result.Status, 200);
+		
+		if (!Result.Error)
+		{
+			// Verify published message data matches what we sent
+			TestEqual("Published message data - content", TestMessage, PublishedMessage.Message);
+			TestEqual("Published message data - channel", TestChannel, PublishedMessage.Channel);
+			TestEqual("Published message data - user ID", TestUser, PublishedMessage.UserID);
+			TestEqual("Published message data - message type", EPubnubMessageType::PMT_Published, PublishedMessage.MessageType);
+			TestFalse("Published message timetoken should not be empty", PublishedMessage.Timetoken.IsEmpty());
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("Publish failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
 	
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
 	{
 		PubnubSubsystem->SubscribeToChannel(TestChannel);
 	}, 0.1f));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage, PublishCallback]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage, PublishCallback);
 	}, 0.5f));
+
+	//Wait until publish result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestPublishResultReceived]() -> bool {
+		return *TestPublishResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether publish result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestPublishResultReceived]()
+	{
+		if(!*TestPublishResultReceived)
+		{
+			AddError("Publish result callback was not received");
+		}
+	}, 0.1f));
 
 	//This will wait until message is received or timeout is reached
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestMessageReceived]() -> bool {
@@ -159,6 +204,9 @@ bool FPubnubSignalTest::RunTest(const FString& Parameters)
 	const FString TestUser = SDK_PREFIX + "test_user";
 	const FString TestChannel = SDK_PREFIX + "test_channel";
 	TSharedPtr<bool> TestSignalReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestSignalResultReceived = MakeShared<bool>(false);
+	TSharedPtr<FPubnubOperationResult> SignalResult = MakeShared<FPubnubOperationResult>();
+	TSharedPtr<FPubnubMessageData> SignalMessageData = MakeShared<FPubnubMessageData>();
 	
 	if(!InitTest())
 	{
@@ -183,16 +231,58 @@ bool FPubnubSignalTest::RunTest(const FString& Parameters)
 		TestEqual("Received signal channel matches", TestChannel, ReceivedMessage.Channel);
 		TestEqual("Received signal MessageType matches", EPubnubMessageType::PMT_Signal, ReceivedMessage.MessageType);
 	});
+
+	//Create signal result callback
+	FOnSignalResponseNative SignalCallback;
+	SignalCallback.BindLambda([this, TestSignalMessage, TestChannel, TestUser, TestSignalResultReceived, SignalResult, SignalMessageData]
+		(const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
+	{
+		*TestSignalResultReceived = true;
+		*SignalResult = Result;
+		*SignalMessageData = SignalMessage;
+		
+		// Verify signal result
+		TestFalse("Signal operation should not have failed", Result.Error);
+		TestEqual("Signal HTTP status should be 200", Result.Status, 200);
+		
+		if (!Result.Error)
+		{
+			// Verify signal message data matches what we sent
+			TestEqual("Signal message data - content", TestSignalMessage, SignalMessage.Message);
+			TestEqual("Signal message data - channel", TestChannel, SignalMessage.Channel);
+			TestEqual("Signal message data - user ID", TestUser, SignalMessage.UserID);
+			TestEqual("Signal message data - message type", EPubnubMessageType::PMT_Signal, SignalMessage.MessageType);
+			TestFalse("Signal message timetoken should not be empty", SignalMessage.Timetoken.IsEmpty());
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("Signal failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
 	
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
 	{
 		PubnubSubsystem->SubscribeToChannel(TestChannel);
 	}, 0.1f));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestSignalMessage]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestSignalMessage, SignalCallback]()
 	{
-		PubnubSubsystem->Signal(TestChannel, TestSignalMessage);
+		PubnubSubsystem->Signal(TestChannel, TestSignalMessage, SignalCallback);
 	}, 0.5f));
+
+	//Wait until signal result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSignalResultReceived]() -> bool {
+		return *TestSignalResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether signal result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestSignalResultReceived]()
+	{
+		if(!*TestSignalResultReceived)
+		{
+			AddError("Signal result callback was not received");
+		}
+	}, 0.1f));
 
 	//This will wait until signal is received or timeout is reached
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSignalReceived]() -> bool {

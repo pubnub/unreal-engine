@@ -27,6 +27,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetUserMetadataJsonToDataUnitTest, "Pubnub.aUn
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllChannelMetadataJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetAllChannelMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMetadataJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMetadataJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMessageActionsJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMessageActionsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAddMessageActionJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.AddMessageActionJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipsJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMembersJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMembersJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetOperationResultFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetOperationResultFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
@@ -1049,6 +1050,160 @@ bool FGetMessageActionsJsonToDataUnitTest::RunTest(const FString& Parameters)
 	UPubnubJsonUtilities::GetMessageActionsJsonToData(TestInvalidJson, Result, MessageActions);
 	
 	TestEqual("Should have 0 message actions for invalid JSON", MessageActions.Num(), 0);
+
+	return true;
+}
+
+bool FAddMessageActionJsonToDataUnitTest::RunTest(const FString& Parameters)
+{
+	// Test successful response with complete message action data
+	FString TestJsonSuccess = "{\"status\": 200, \"data\": {\"messageTimetoken\": \"17302756128241865\", \"type\": \"reaction\", \"uuid\": \"User1\", \"value\": \"thumbs_up\", \"actionTimetoken\": \"17302756806526160\"}}";
+	FPubnubOperationResult Result;
+	FPubnubMessageActionData MessageActionData;
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonSuccess, Result, MessageActionData);
+	
+	// Verify operation result
+	TestEqual("Successful response: Status should be 200", Result.Status, 200);
+	TestFalse("Successful response: Error should be false", Result.Error);
+	TestEqual("Successful response: ErrorMessage should be empty", Result.ErrorMessage, "");
+	
+	// Verify message action data
+	TestEqual("Message timetoken should be correct", MessageActionData.MessageTimetoken, "17302756128241865");
+	TestEqual("Action type should be 'reaction'", MessageActionData.Type, "reaction");
+	TestEqual("User ID should be 'User1'", MessageActionData.UserID, "User1");
+	TestEqual("Action value should be 'thumbs_up'", MessageActionData.Value, "thumbs_up");
+	TestEqual("Action timetoken should be correct", MessageActionData.ActionTimetoken, "17302756806526160");
+
+	// Test successful response with different action types and special characters
+	FString TestJsonSpecialChars = "{\"status\": 200, \"data\": {\"messageTimetoken\": \"17302756128241999\", \"type\": \"custom_emoji\", \"uuid\": \"User@Special#123\", \"value\": \"🔥💯\", \"actionTimetoken\": \"17302756806526200\"}}";
+	Result = FPubnubOperationResult();
+	MessageActionData = FPubnubMessageActionData();
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonSpecialChars, Result, MessageActionData);
+	
+	TestEqual("Special chars: Status should be 200", Result.Status, 200);
+	TestFalse("Special chars: Error should be false", Result.Error);
+	TestEqual("Special chars: Action type should be 'custom_emoji'", MessageActionData.Type, "custom_emoji");
+	TestEqual("Special chars: User ID should contain special characters", MessageActionData.UserID, "User@Special#123");
+	TestEqual("Special chars: Action value should contain emojis", MessageActionData.Value, "🔥💯");
+
+	// Test error response with 400 status
+	FString TestJsonError = "{\"status\": 400, \"error\": true, \"message\": \"Invalid message timetoken\", \"data\": {}}";
+	Result = FPubnubOperationResult();
+	MessageActionData = FPubnubMessageActionData();
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonError, Result, MessageActionData);
+	
+	TestEqual("Error response: Status should be 400", Result.Status, 400);
+	TestTrue("Error response: Error should be true", Result.Error);
+	TestEqual("Error response: ErrorMessage should contain error", Result.ErrorMessage, "Invalid message timetoken");
+	
+	// Verify message action data is empty/default for error response
+	TestEqual("Error response: Message timetoken should be empty", MessageActionData.MessageTimetoken, "");
+	TestEqual("Error response: Action type should be empty", MessageActionData.Type, "");
+	TestEqual("Error response: User ID should be empty", MessageActionData.UserID, "");
+	TestEqual("Error response: Action value should be empty", MessageActionData.Value, "");
+	TestEqual("Error response: Action timetoken should be empty", MessageActionData.ActionTimetoken, "");
+
+	// Test response with missing data field
+	FString TestJsonMissingData = "{\"status\": 200}";
+	Result = FPubnubOperationResult();
+	MessageActionData = FPubnubMessageActionData();
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonMissingData, Result, MessageActionData);
+	
+	TestEqual("Missing data: Status should be 200", Result.Status, 200);
+	TestFalse("Missing data: Error should be false", Result.Error);
+	
+	// Verify message action data remains empty when data field is missing
+	TestEqual("Missing data: Message timetoken should be empty", MessageActionData.MessageTimetoken, "");
+	TestEqual("Missing data: Action type should be empty", MessageActionData.Type, "");
+	TestEqual("Missing data: User ID should be empty", MessageActionData.UserID, "");
+	TestEqual("Missing data: Action value should be empty", MessageActionData.Value, "");
+	TestEqual("Missing data: Action timetoken should be empty", MessageActionData.ActionTimetoken, "");
+
+	// Test response with partial data fields
+	FString TestJsonPartialData = "{\"status\": 200, \"data\": {\"messageTimetoken\": \"17302756128241865\", \"type\": \"like\"}}";
+	Result = FPubnubOperationResult();
+	MessageActionData = FPubnubMessageActionData();
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonPartialData, Result, MessageActionData);
+	
+	TestEqual("Partial data: Status should be 200", Result.Status, 200);
+	TestFalse("Partial data: Error should be false", Result.Error);
+	
+	// Verify available fields are populated, missing fields remain empty
+	TestEqual("Partial data: Message timetoken should be populated", MessageActionData.MessageTimetoken, "17302756128241865");
+	TestEqual("Partial data: Action type should be populated", MessageActionData.Type, "like");
+	TestEqual("Partial data: User ID should be empty", MessageActionData.UserID, "");
+	TestEqual("Partial data: Action value should be empty", MessageActionData.Value, "");
+	TestEqual("Partial data: Action timetoken should be empty", MessageActionData.ActionTimetoken, "");
+
+	// Test response with null values in data
+	FString TestJsonNullValues = "{\"status\": 200, \"data\": {\"messageTimetoken\": \"17302756128241865\", \"type\": null, \"uuid\": \"User1\", \"value\": null, \"actionTimetoken\": \"17302756806526160\"}}";
+	Result = FPubnubOperationResult();
+	MessageActionData = FPubnubMessageActionData();
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonNullValues, Result, MessageActionData);
+	
+	TestEqual("Null values: Status should be 200", Result.Status, 200);
+	TestFalse("Null values: Error should be false", Result.Error);
+	
+	// Verify null fields are handled appropriately (likely converted to empty strings)
+	TestEqual("Null values: Message timetoken should be populated", MessageActionData.MessageTimetoken, "17302756128241865");
+	TestEqual("Null values: Action type should be empty for null", MessageActionData.Type, "");
+	TestEqual("Null values: User ID should be populated", MessageActionData.UserID, "User1");
+	TestEqual("Null values: Action value should be empty for null", MessageActionData.Value, "");
+	TestEqual("Null values: Action timetoken should be populated", MessageActionData.ActionTimetoken, "17302756806526160");
+
+	// Test completely invalid JSON
+	FString TestJsonInvalid = "this is not valid json at all";
+	Result = FPubnubOperationResult();
+	MessageActionData = FPubnubMessageActionData();
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonInvalid, Result, MessageActionData);
+	
+	// For invalid JSON, the function should handle gracefully with default values
+	TestEqual("Invalid JSON: Message timetoken should be empty", MessageActionData.MessageTimetoken, "");
+	TestEqual("Invalid JSON: Action type should be empty", MessageActionData.Type, "");
+	TestEqual("Invalid JSON: User ID should be empty", MessageActionData.UserID, "");
+	TestEqual("Invalid JSON: Action value should be empty", MessageActionData.Value, "");
+	TestEqual("Invalid JSON: Action timetoken should be empty", MessageActionData.ActionTimetoken, "");
+
+	// Test empty JSON object
+	FString TestJsonEmpty = "{}";
+	Result = FPubnubOperationResult();
+	MessageActionData = FPubnubMessageActionData();
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonEmpty, Result, MessageActionData);
+	
+	// Default values should be preserved for empty JSON
+	TestEqual("Empty JSON: Status should be 0 (default)", Result.Status, 0);
+	TestTrue("Empty JSON: Error should be true", Result.Error);
+	TestEqual("Empty JSON: Message timetoken should be empty", MessageActionData.MessageTimetoken, "");
+	TestEqual("Empty JSON: Action type should be empty", MessageActionData.Type, "");
+	TestEqual("Empty JSON: User ID should be empty", MessageActionData.UserID, "");
+	TestEqual("Empty JSON: Action value should be empty", MessageActionData.Value, "");
+	TestEqual("Empty JSON: Action timetoken should be empty", MessageActionData.ActionTimetoken, "");
+
+	// Test server error response with detailed error information
+	FString TestJsonServerError = "{\"status\": 403, \"error\": true, \"message\": \"Insufficient permissions to add message action\", \"details\": \"User does not have write access to channel\"}";
+	Result = FPubnubOperationResult();
+	MessageActionData = FPubnubMessageActionData();
+	
+	UPubnubJsonUtilities::AddMessageActionJsonToData(TestJsonServerError, Result, MessageActionData);
+	
+	TestEqual("Server error: Status should be 403", Result.Status, 403);
+	TestTrue("Server error: Error should be true", Result.Error);
+	TestEqual("Server error: ErrorMessage should contain permission error", Result.ErrorMessage, "Insufficient permissions to add message action");
+	
+	// Verify message action data remains empty for error cases
+	TestEqual("Server error: Message timetoken should be empty", MessageActionData.MessageTimetoken, "");
+	TestEqual("Server error: Action type should be empty", MessageActionData.Type, "");
+	TestEqual("Server error: User ID should be empty", MessageActionData.UserID, "");
+	TestEqual("Server error: Action value should be empty", MessageActionData.Value, "");
+	TestEqual("Server error: Action timetoken should be empty", MessageActionData.ActionTimetoken, "");
 
 	return true;
 }
