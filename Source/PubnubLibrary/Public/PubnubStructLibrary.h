@@ -158,28 +158,24 @@ struct FPubnubFetchHistorySettings
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString End = "";
 	/** If true to recieve metadata with each history
-	 * message if any. If false, no metadata per message. Defaults to
-	 * false.
+	 * message if any. If false, no metadata per message. Defaults to false.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeMeta = false;
 	/** If true to recieve message type with each history
-	 * message. If false, no message type per message. Defaults to
-	 * false.
+	 * message. If false, no message type per message. Defaults to false.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeMessageType = false;
 	/** If true to receive user_id with each history
-	 * message. If false, no user_id per message. Defaults to
-	 * false.
+	 * message. If false, no user_id per message. Defaults to false.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeUserID = false;
 	/** If true to recieve message actions with each history
-	 * message. If false, no message actions per message. Defaults to
-	 * false.
+	 * message. If false, no message actions per message. Defaults to false.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeMessageActions = false;
 	/** Include messages' custom type flag.
-	Message / signal and file messages may contain user-provided type.
-	*/
+	 * Message / signal and file messages may contain user-provided type.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool IncludeCustomMessageType = false;
 };
 
@@ -243,38 +239,115 @@ struct FPubnubUserPermissions
 };
 
 USTRUCT(BlueprintType)
-struct FPubnubGrantTokenStructure
+struct FChannelGrant
 {
 	GENERATED_BODY()
 
-	//Time-To-Live (TTL) in minutes for the granted token.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TTLMinutes = 0;
-	//The User that is authorized by this grant.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString AuthorizedUser = "";
-	//List of channel names included in this grant.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
-	//Permissions applied to the listed channels. Has to be either 1 or the same amount as Channels.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelPermissions> ChannelPermissions;
-	//List of channel group names included in this grant.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroups;
-	//Permissions applied to the listed channel groups. Has to be either 1 or the same amount as ChannelGroups.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions;
-	//List of Users included in this grant.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Users;
-	//Permissions applied to the listed Users. Has to be either 1 or the same amount as Users.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UserPermissions;
-	//List of channel name patterns included in this grant.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelPatterns;
-	//Permissions applied to the listed channel name patterns. Has to be either 1 or the same amount as ChannelPatterns.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelPermissions> ChannelPatternPermissions;
-	//List of channel group name patterns included in this grant.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> ChannelGroupPatterns;
-	//Permissions applied to the listed channel group name patterns. Has to be either 1 or the same amount as ChannelGroupPatterns.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelGroupPermissions> ChannelGroupPatternPermissions;
-	//List of User name patterns included in this grant.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> UserPatterns;
-	//Permissions applied to the listed User name patterns. Has to be either 1 or the same amount as UserPatterns.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserPermissions> UserPatternPermissions;
+	/**
+	 * The ID of a single Channel if used in the "Channels" field of FPubnubGrantTokenPermissions.
+	 * Or a regular expression pattern if used in the "ChannelPatterns" field.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	FString Channel;
+
+	/**
+	 * Permissions to grant for the specified Channel name or pattern.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	FPubnubChannelPermissions Permissions;
+};
+
+USTRUCT(BlueprintType)
+struct FChannelGroupGrant
+{
+	GENERATED_BODY()
+
+	/**
+	 * The name of a single Channel Group if used in the "ChannelGroups" field of FPubnubGrantTokenPermissions.
+	 * Or a regular expression pattern if used in the "ChannelGroupPatterns" field.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	FString ChannelGroup;
+
+	/**
+	 * Permissions to grant for the specified Channel Group name or pattern.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	FPubnubChannelGroupPermissions Permissions;
+};
+
+USTRUCT(BlueprintType)
+struct FUserGrant
+{
+	GENERATED_BODY()
+
+	/**
+	 * The ID of a single User if used in the "Users" field of FPubnubGrantTokenPermissions.
+	 * Or a regular expression pattern if used in the "UserPatterns" field.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	FString User;
+
+	/**
+	 * Permissions to grant for the specified User ID or pattern.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	FPubnubUserPermissions Permissions;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGrantTokenPermissions
+{
+	GENERATED_BODY()
+
+	/**
+	 * A list of exact Channel names and their associated permissions.
+	 * These are applied to the "resources.channels" section of the grant token.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	TArray<FChannelGrant> Channels;
+
+	/**
+	 * A list of exact Channel Group names and their associated permissions.
+	 * These are applied to the "resources.groups" section of the grant token.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	TArray<FChannelGroupGrant> ChannelGroups;
+
+	/**
+	 * A list of exact User IDs and their associated permissions.
+	 * These are applied to the "resources.uuids" section of the grant token.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	TArray<FUserGrant> Users;
+
+	/**
+	 * A list of Channel name patterns (regular expressions) and their associated permissions.
+	 * These are applied to the "patterns.channels" section of the grant token.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	TArray<FChannelGrant> ChannelPatterns;
+
+	/**
+	 * A list of Channel Group name patterns (regular expressions) and their associated permissions.
+	 * These are applied to the "patterns.groups" section of the grant token.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	TArray<FChannelGroupGrant> ChannelGroupPatterns;
+
+	/**
+	 * A list of User ID patterns (regular expressions) and their associated permissions.
+	 * These are applied to the "patterns.uuids" section of the grant token.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	TArray<FUserGrant> UserPatterns;
+
+	//Helper to check if Permissions struct contains at least one permission
+	bool ArePermissionsEmpty() const
+	{
+		return Channels.IsEmpty() && ChannelGroups.IsEmpty() && Users.IsEmpty() &&
+		ChannelPatterns.IsEmpty() && ChannelGroupPatterns.IsEmpty() && UserPatterns.IsEmpty();
+	}
 };
 
 USTRUCT(BlueprintType)

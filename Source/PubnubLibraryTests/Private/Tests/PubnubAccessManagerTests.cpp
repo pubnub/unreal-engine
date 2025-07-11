@@ -5,6 +5,7 @@
 #include "PubnubStructLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "Dom/JsonObject.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -16,7 +17,8 @@
 using namespace PubnubTests;
 
 //This is an Unit test, but it still requires getting Pubnub subsystem, that's why it's here, not with other Unit tests
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantTokenStructureToJsonStringUnitTest, FPubnubAutomationTestBase, "Pubnub.aUnit.AccessManager.GrantTokenStructureToJsonString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantTokenPermissionsStructureUnitTest, FPubnubAutomationTestBase, "Pubnub.aUnit.AccessManager.GrantTokenPermissionsStructure", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubReworkParsedTokenUnitTest, FPubnubAutomationTestBase, "Pubnub.aUnit.AccessManager.ReworkParsedTokenUnit", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGrantAndParseTokenTest, FPubnubAutomationTestBase, "Pubnub.Integration.AccessManager.GrantAndParseToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRevokeTokenTest, FPubnubAutomationTestBase, "Pubnub.Integration.AccessManager.RevokeToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
@@ -55,233 +57,356 @@ int CalculateUserPermissionsBitmask(const FPubnubUserPermissions& Perms)
     return Bitmask;
 }
 
-bool FPubnubGrantTokenStructureToJsonStringUnitTest::RunTest(const FString& Parameters)
+bool FPubnubGrantTokenPermissionsStructureUnitTest::RunTest(const FString& Parameters)
 {
     if (!InitTest())
     {
-        AddError("TestInitialization failed for FPubnubGrantTokenStructureToJsonStringUnitTest");
+        AddError("TestInitialization failed for FPubnubGrantTokenPermissionsStructureUnitTest");
         return false;
     }
 
     // --- Test Case 1: Basic Valid Structure (similar to E2E test) ---
     {
         const FString TestDescription = "Case 1: Basic Valid Structure";
-        FPubnubGrantTokenStructure Ts;
-        Ts.TTLMinutes = 60;
-        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_1";
+        FPubnubGrantTokenPermissions Permissions;
         
-        FPubnubChannelPermissions ChanPerms; ChanPerms.Read = true; ChanPerms.Write = true; // Mask = 3
-        Ts.Channels.Add(SDK_PREFIX + "chan1");
-        Ts.ChannelPermissions.Add(ChanPerms);
+        // Set up channel permissions
+        FChannelGrant ChannelGrant;
+        ChannelGrant.Channel = SDK_PREFIX + "chan1";
+        ChannelGrant.Permissions.Read = true;
+        ChannelGrant.Permissions.Write = true; // Mask = 3
+        Permissions.Channels.Add(ChannelGrant);
 
-        FPubnubChannelGroupPermissions GroupPerms; GroupPerms.Read = true; GroupPerms.Manage = true; // Mask = 5
-        Ts.ChannelGroups.Add(SDK_PREFIX + "group1");
-        Ts.ChannelGroupPermissions.Add(GroupPerms);
+        // Set up channel group permissions
+        FChannelGroupGrant GroupGrant;
+        GroupGrant.ChannelGroup = SDK_PREFIX + "group1";
+        GroupGrant.Permissions.Read = true;
+        GroupGrant.Permissions.Manage = true; // Mask = 5
+        Permissions.ChannelGroups.Add(GroupGrant);
 
-        FPubnubUserPermissions UserResPerms; UserResPerms.Get = true; UserResPerms.Update = true; // Mask = 96
-        Ts.Users.Add(SDK_PREFIX + "uuid_res1");
-        Ts.UserPermissions.Add(UserResPerms);
+        // Set up user permissions
+        FUserGrant UserGrant;
+        UserGrant.User = SDK_PREFIX + "uuid_res1";
+        UserGrant.Permissions.Get = true;
+        UserGrant.Permissions.Update = true; // Mask = 96
+        Permissions.Users.Add(UserGrant);
 
-        bool bSuccess = false;
-        FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + " - Conversion Success", bSuccess);
-
-        if (bSuccess)
-        {
-            TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
-            if (RootObject.IsValid())
-            {
-                TestEqual(TestDescription + " - TTL", RootObject->GetIntegerField(TEXT("ttl")), Ts.TTLMinutes);
-                TestEqual(TestDescription + " - Auth User", RootObject->GetStringField(TEXT("authorized_uuid")), Ts.AuthorizedUser);
-
-                const TSharedPtr<FJsonObject>* PermissionsObjectPtr = nullptr;
-                TestTrue(TestDescription + " - Has 'permissions' object", RootObject->TryGetObjectField(TEXT("permissions"), PermissionsObjectPtr) && PermissionsObjectPtr && (*PermissionsObjectPtr).IsValid());
-                if (PermissionsObjectPtr && (*PermissionsObjectPtr).IsValid())
-                {
-                    const TSharedPtr<FJsonObject>* ResourcesObjectPtr = nullptr;
-                    TestTrue(TestDescription + " - Has 'resources' object", (*PermissionsObjectPtr)->TryGetObjectField(TEXT("resources"), ResourcesObjectPtr) && ResourcesObjectPtr && (*ResourcesObjectPtr).IsValid());
-                    if (ResourcesObjectPtr && (*ResourcesObjectPtr).IsValid())
-                    {
-                        const TSharedPtr<FJsonObject>* ChannelsObjectPtr = nullptr;
-                        TestTrue(TestDescription + " - Resources has 'channels'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("channels"), ChannelsObjectPtr) && ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid());
-                        if (ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid())
-                        {
-                            TestEqual(TestDescription + " - Channel Perms", (*ChannelsObjectPtr)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPerms));
-                        }
-                        const TSharedPtr<FJsonObject>* GroupsObjectPtr = nullptr;
-                        TestTrue(TestDescription + " - Resources has 'groups'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("groups"), GroupsObjectPtr) && GroupsObjectPtr && (*GroupsObjectPtr).IsValid());
-                        if (GroupsObjectPtr && (*GroupsObjectPtr).IsValid())
-                        {
-                             TestEqual(TestDescription + " - Group Perms", (*GroupsObjectPtr)->GetIntegerField(Ts.ChannelGroups[0]), CalculateChannelGroupPermissionsBitmask(GroupPerms));
-                        }
-                        const TSharedPtr<FJsonObject>* UuidsObjectPtr = nullptr;
-                        TestTrue(TestDescription + " - Resources has 'uuids'", (*ResourcesObjectPtr)->TryGetObjectField(TEXT("uuids"), UuidsObjectPtr) && UuidsObjectPtr && (*UuidsObjectPtr).IsValid());
-                        if (UuidsObjectPtr && (*UuidsObjectPtr).IsValid())
-                        {
-                            TestEqual(TestDescription + " - UUID Resource Perms", (*UuidsObjectPtr)->GetIntegerField(Ts.Users[0]), CalculateUserPermissionsBitmask(UserResPerms));
-                        }
-                    }
-                     const TSharedPtr<FJsonObject>* PatternsObjectPtr = nullptr;
-                     TestTrue(TestDescription + " - Has 'patterns' object", (*PermissionsObjectPtr)->TryGetObjectField(TEXT("patterns"), PatternsObjectPtr) && PatternsObjectPtr && (*PatternsObjectPtr).IsValid());
-                }
-            }
-        }
-    }
-
-    // --- Test Case 2: One Channel Permission for Multiple Channels ---
-    {
-        const FString TestDescription = "Case 2: One Perm for Multiple Channels";
-        FPubnubGrantTokenStructure Ts;
-        Ts.TTLMinutes = 10;
-        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_2";
+        // Test structure validity
+        TestFalse(TestDescription + " - Permissions should not be empty", Permissions.ArePermissionsEmpty());
+        TestEqual(TestDescription + " - Channel count", Permissions.Channels.Num(), 1);
+        TestEqual(TestDescription + " - Channel group count", Permissions.ChannelGroups.Num(), 1);
+        TestEqual(TestDescription + " - User count", Permissions.Users.Num(), 1);
         
-        FPubnubChannelPermissions ChanPerm; ChanPerm.Read = true; // Mask = 1
-        Ts.Channels.Add(SDK_PREFIX + "chanA");
-        Ts.Channels.Add(SDK_PREFIX + "chanB");
-        Ts.ChannelPermissions.Add(ChanPerm); // Single permission object
-
-        bool bSuccess = false;
-        FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + " - Conversion Success", bSuccess);
-        if (bSuccess)
-        {
-            TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
-            // ... (basic TTL, AuthUser checks) ...
-            const TSharedPtr<FJsonObject>* PermsObj = nullptr;
-            const TSharedPtr<FJsonObject>* ResObj = nullptr;
-            const TSharedPtr<FJsonObject>* ChansObj = nullptr;
-            if (RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && (*ResObj)->TryGetObjectField(TEXT("channels"), ChansObj))
-            {
-                TestEqual(TestDescription + " - ChanA Perms", (*ChansObj)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPerm));
-                TestEqual(TestDescription + " - ChanB Perms", (*ChansObj)->GetIntegerField(Ts.Channels[1]), CalculateChannelPermissionsBitmask(ChanPerm));
-            } else { AddError(TestDescription + " - JSON structure error"); }
-        }
+        // Test individual permission settings
+        TestTrue(TestDescription + " - Channel Read permission", Permissions.Channels[0].Permissions.Read);
+        TestTrue(TestDescription + " - Channel Write permission", Permissions.Channels[0].Permissions.Write);
+        TestTrue(TestDescription + " - Group Read permission", Permissions.ChannelGroups[0].Permissions.Read);
+        TestTrue(TestDescription + " - Group Manage permission", Permissions.ChannelGroups[0].Permissions.Manage);
+        TestTrue(TestDescription + " - User Get permission", Permissions.Users[0].Permissions.Get);
+        TestTrue(TestDescription + " - User Update permission", Permissions.Users[0].Permissions.Update);
     }
 
-    // --- Test Case 3: Matching Channel Permissions for Multiple Channels ---
+    // --- Test Case 2: Multiple Channels with Different Permissions ---
     {
-        const FString TestDescription = "Case 3: Matching Perms for Multiple Channels";
-        FPubnubGrantTokenStructure Ts;
-        Ts.TTLMinutes = 10;
-        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_3";
+        const FString TestDescription = "Case 2: Multiple Channels with Different Permissions";
+        FPubnubGrantTokenPermissions Permissions;
+        
+        // Set up first channel with read permission
+        FChannelGrant ChannelGrantA;
+        ChannelGrantA.Channel = SDK_PREFIX + "chanA";
+        ChannelGrantA.Permissions.Read = true; // Mask = 1
+        Permissions.Channels.Add(ChannelGrantA);
 
-        FPubnubChannelPermissions ChanPermC; ChanPermC.Read = true; // Mask = 1
-        FPubnubChannelPermissions ChanPermD; ChanPermD.Write = true; // Mask = 2
-        Ts.Channels.Add(SDK_PREFIX + "chanC");
-        Ts.Channels.Add(SDK_PREFIX + "chanD");
-        Ts.ChannelPermissions.Add(ChanPermC);
-        Ts.ChannelPermissions.Add(ChanPermD);
+        // Set up second channel with write permission
+        FChannelGrant ChannelGrantB;
+        ChannelGrantB.Channel = SDK_PREFIX + "chanB";
+        ChannelGrantB.Permissions.Write = true; // Mask = 2
+        Permissions.Channels.Add(ChannelGrantB);
 
-        bool bSuccess = false;
-        FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + " - Conversion Success", bSuccess);
-         if (bSuccess)
-        {
-            TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
-            const TSharedPtr<FJsonObject>* PermsObj = nullptr;
-            const TSharedPtr<FJsonObject>* ResObj = nullptr;
-            const TSharedPtr<FJsonObject>* ChansObj = nullptr;
-            if (RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && (*ResObj)->TryGetObjectField(TEXT("channels"), ChansObj))
-            {
-                TestEqual(TestDescription + " - ChanC Perms", (*ChansObj)->GetIntegerField(Ts.Channels[0]), CalculateChannelPermissionsBitmask(ChanPermC));
-                TestEqual(TestDescription + " - ChanD Perms", (*ChansObj)->GetIntegerField(Ts.Channels[1]), CalculateChannelPermissionsBitmask(ChanPermD));
-            } else { AddError(TestDescription + " - JSON structure error"); }
-        }
+        // Test structure validity
+        TestFalse(TestDescription + " - Permissions should not be empty", Permissions.ArePermissionsEmpty());
+        TestEqual(TestDescription + " - Channel count", Permissions.Channels.Num(), 2);
+        
+        // Test individual channel permissions
+        TestTrue(TestDescription + " - ChanA Read permission", Permissions.Channels[0].Permissions.Read);
+        TestFalse(TestDescription + " - ChanA Write permission", Permissions.Channels[0].Permissions.Write);
+        TestEqual(TestDescription + " - ChanA name", Permissions.Channels[0].Channel, SDK_PREFIX + "chanA");
+        
+        TestFalse(TestDescription + " - ChanB Read permission", Permissions.Channels[1].Permissions.Read);
+        TestTrue(TestDescription + " - ChanB Write permission", Permissions.Channels[1].Permissions.Write);
+        TestEqual(TestDescription + " - ChanB name", Permissions.Channels[1].Channel, SDK_PREFIX + "chanB");
     }
 
-    // --- Test Case 4: Mismatched Channel Permissions (Fail Case) ---
+    // --- Test Case 3: Channel Patterns with Permissions ---
     {
-        const FString TestDescription = "Case 4: Mismatched Perms (3 chans, 2 perms)";
-        FPubnubGrantTokenStructure Ts;
-        Ts.TTLMinutes = 10;
-        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_4";
+        const FString TestDescription = "Case 3: Channel Patterns with Permissions";
+        FPubnubGrantTokenPermissions Permissions;
 
-        FPubnubChannelPermissions ChanPermE; ChanPermE.Read = true;
-        FPubnubChannelPermissions ChanPermF; ChanPermF.Write = true;
-        Ts.Channels.Add(SDK_PREFIX + "chanE");
-        Ts.Channels.Add(SDK_PREFIX + "chanF");
-        Ts.Channels.Add(SDK_PREFIX + "chanG");
-        Ts.ChannelPermissions.Add(ChanPermE);
-        Ts.ChannelPermissions.Add(ChanPermF); // 3 channels, 2 permissions
+        // Set up channel patterns
+        FChannelGrant ChannelPatternC;
+        ChannelPatternC.Channel = SDK_PREFIX + "chan-pattern-*";
+        ChannelPatternC.Permissions.Read = true; // Mask = 1
+        Permissions.ChannelPatterns.Add(ChannelPatternC);
 
-        bool bSuccess = true; // Expecting this to be set to false by the function
-        FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestFalse(TestDescription + " - Conversion should Fail", bSuccess);
+        FChannelGrant ChannelPatternD;
+        ChannelPatternD.Channel = SDK_PREFIX + "write-pattern-*";
+        ChannelPatternD.Permissions.Write = true; // Mask = 2
+        Permissions.ChannelPatterns.Add(ChannelPatternD);
+
+        // Test structure validity
+        TestFalse(TestDescription + " - Permissions should not be empty", Permissions.ArePermissionsEmpty());
+        TestEqual(TestDescription + " - Channel pattern count", Permissions.ChannelPatterns.Num(), 2);
+        
+        // Test individual pattern permissions
+        TestTrue(TestDescription + " - PatternC Read permission", Permissions.ChannelPatterns[0].Permissions.Read);
+        TestFalse(TestDescription + " - PatternC Write permission", Permissions.ChannelPatterns[0].Permissions.Write);
+        TestEqual(TestDescription + " - PatternC name", Permissions.ChannelPatterns[0].Channel, SDK_PREFIX + "chan-pattern-*");
+        
+        TestFalse(TestDescription + " - PatternD Read permission", Permissions.ChannelPatterns[1].Permissions.Read);
+        TestTrue(TestDescription + " - PatternD Write permission", Permissions.ChannelPatterns[1].Permissions.Write);
+        TestEqual(TestDescription + " - PatternD name", Permissions.ChannelPatterns[1].Channel, SDK_PREFIX + "write-pattern-*");
+    }
+
+    // --- Test Case 4: Mixed Resource Types ---
+    {
+        const FString TestDescription = "Case 4: Mixed Resource Types";
+        FPubnubGrantTokenPermissions Permissions;
+
+        // Set up channel with manage permission
+        FChannelGrant ChannelGrant;
+        ChannelGrant.Channel = SDK_PREFIX + "chanE";
+        ChannelGrant.Permissions.Manage = true;
+        Permissions.Channels.Add(ChannelGrant);
+
+        // Set up user with delete permission
+        FUserGrant UserGrant;
+        UserGrant.User = SDK_PREFIX + "userF";
+        UserGrant.Permissions.Delete = true;
+        Permissions.Users.Add(UserGrant);
+
+        // Set up channel group pattern
+        FChannelGroupGrant GroupPatternGrant;
+        GroupPatternGrant.ChannelGroup = SDK_PREFIX + "group-pattern-*";
+        GroupPatternGrant.Permissions.Read = true;
+        GroupPatternGrant.Permissions.Manage = true;
+        Permissions.ChannelGroupPatterns.Add(GroupPatternGrant);
+
+        // Test structure validity
+        TestFalse(TestDescription + " - Permissions should not be empty", Permissions.ArePermissionsEmpty());
+        TestEqual(TestDescription + " - Channel count", Permissions.Channels.Num(), 1);
+        TestEqual(TestDescription + " - User count", Permissions.Users.Num(), 1);
+        TestEqual(TestDescription + " - Channel group pattern count", Permissions.ChannelGroupPatterns.Num(), 1);
+        
+        // Test individual permissions
+        TestTrue(TestDescription + " - Channel Manage permission", Permissions.Channels[0].Permissions.Manage);
+        TestTrue(TestDescription + " - User Delete permission", Permissions.Users[0].Permissions.Delete);
+        TestTrue(TestDescription + " - Group Pattern Read permission", Permissions.ChannelGroupPatterns[0].Permissions.Read);
+        TestTrue(TestDescription + " - Group Pattern Manage permission", Permissions.ChannelGroupPatterns[0].Permissions.Manage);
     }
     
-    // --- Test Case 5: Empty Resources and Patterns ---
+    // --- Test Case 5: Empty Permissions Structure ---
     {
-        const FString TestDescription = "Case 5: Empty Resources and Patterns";
-        FPubnubGrantTokenStructure Ts;
-        Ts.TTLMinutes = 5;
-        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_5";
+        const FString TestDescription = "Case 5: Empty Permissions Structure";
+        FPubnubGrantTokenPermissions Permissions;
 
-        bool bSuccess = false;
-        FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + " - Conversion Success", bSuccess);
-        if(bSuccess)
-        {
-            TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
-            if (RootObject.IsValid())
-            {
-                 TestEqual(TestDescription + " - TTL", RootObject->GetIntegerField(TEXT("ttl")), Ts.TTLMinutes);
-                 TestEqual(TestDescription + " - Auth User", RootObject->GetStringField(TEXT("authorized_uuid")), Ts.AuthorizedUser);
-                 const TSharedPtr<FJsonObject>* PermsObj = nullptr;
-                 TestTrue(TestDescription + " - Has 'permissions' object", RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) && PermsObj && (*PermsObj).IsValid());
-                 if(PermsObj && (*PermsObj).IsValid())
-                 {
-                    const TSharedPtr<FJsonObject>* ResObj = nullptr;
-                    TestTrue(TestDescription + " - Perms has 'resources' object", (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) && ResObj && (*ResObj).IsValid());
-                    if(ResObj && (*ResObj).IsValid()) TestEqual(TestDescription + " - Resources is empty", (*ResObj)->Values.Num(), 0);
-                    
-                    const TSharedPtr<FJsonObject>* PatObj = nullptr;
-                    TestTrue(TestDescription + " - Perms has 'patterns' object", (*PermsObj)->TryGetObjectField(TEXT("patterns"), PatObj) && PatObj && (*PatObj).IsValid());
-                    if(PatObj && (*PatObj).IsValid()) TestEqual(TestDescription + " - Patterns is empty", (*PatObj)->Values.Num(), 0);
-                 }
-            }
-        }
+        // Test empty structure
+        TestTrue(TestDescription + " - Permissions should be empty", Permissions.ArePermissionsEmpty());
+        TestEqual(TestDescription + " - Channel count", Permissions.Channels.Num(), 0);
+        TestEqual(TestDescription + " - Channel group count", Permissions.ChannelGroups.Num(), 0);
+        TestEqual(TestDescription + " - User count", Permissions.Users.Num(), 0);
+        TestEqual(TestDescription + " - Channel pattern count", Permissions.ChannelPatterns.Num(), 0);
+        TestEqual(TestDescription + " - Channel group pattern count", Permissions.ChannelGroupPatterns.Num(), 0);
+        TestEqual(TestDescription + " - User pattern count", Permissions.UserPatterns.Num(), 0);
     }
 
     // --- Test Case 6: Only Patterns ---
     {
         const FString TestDescription = "Case 6: Only Patterns";
-        FPubnubGrantTokenStructure Ts;
-        Ts.TTLMinutes = 15;
-        Ts.AuthorizedUser = SDK_PREFIX + "auth_user_unit_6";
+        FPubnubGrantTokenPermissions Permissions;
 
-        FPubnubChannelPermissions ChanPatternPerms; ChanPatternPerms.Manage = true; // Mask = 4
-        Ts.ChannelPatterns.Add(SDK_PREFIX + "chan-pat-*");
-        Ts.ChannelPatternPermissions.Add(ChanPatternPerms);
+        // Set up channel pattern
+        FChannelGrant ChannelPatternGrant;
+        ChannelPatternGrant.Channel = SDK_PREFIX + "chan-pat-*";
+        ChannelPatternGrant.Permissions.Manage = true; // Mask = 4
+        Permissions.ChannelPatterns.Add(ChannelPatternGrant);
 
-        bool bSuccess = false;
-        FString JsonString = PubnubSubsystem->GrantTokenStructureToJsonString(Ts, bSuccess);
-        TestTrue(TestDescription + " - Conversion Success", bSuccess);
-        if (bSuccess)
+        // Set up user pattern
+        FUserGrant UserPatternGrant;
+        UserPatternGrant.User = SDK_PREFIX + "user-pat-*";
+        UserPatternGrant.Permissions.Get = true;
+        UserPatternGrant.Permissions.Update = true;
+        Permissions.UserPatterns.Add(UserPatternGrant);
+
+        // Test structure validity
+        TestFalse(TestDescription + " - Permissions should not be empty", Permissions.ArePermissionsEmpty());
+        TestEqual(TestDescription + " - Channel count", Permissions.Channels.Num(), 0);
+        TestEqual(TestDescription + " - Channel group count", Permissions.ChannelGroups.Num(), 0);
+        TestEqual(TestDescription + " - User count", Permissions.Users.Num(), 0);
+        TestEqual(TestDescription + " - Channel pattern count", Permissions.ChannelPatterns.Num(), 1);
+        TestEqual(TestDescription + " - Channel group pattern count", Permissions.ChannelGroupPatterns.Num(), 0);
+        TestEqual(TestDescription + " - User pattern count", Permissions.UserPatterns.Num(), 1);
+        
+        // Test pattern permissions
+        TestTrue(TestDescription + " - Channel Pattern Manage permission", Permissions.ChannelPatterns[0].Permissions.Manage);
+        TestEqual(TestDescription + " - Channel Pattern name", Permissions.ChannelPatterns[0].Channel, SDK_PREFIX + "chan-pat-*");
+        TestTrue(TestDescription + " - User Pattern Get permission", Permissions.UserPatterns[0].Permissions.Get);
+        TestTrue(TestDescription + " - User Pattern Update permission", Permissions.UserPatterns[0].Permissions.Update);
+        TestEqual(TestDescription + " - User Pattern name", Permissions.UserPatterns[0].User, SDK_PREFIX + "user-pat-*");
+    }
+
+    CleanUp();
+    return true;
+}
+
+bool FPubnubReworkParsedTokenUnitTest::RunTest(const FString& Parameters)
+{
+    if (!InitTest())
+    {
+        AddError("TestInitialization failed for FPubnubReworkParsedTokenUnitTest");
+        return false;
+    }
+
+    // Test with a sample parsed token JSON (compact format)
+    FString SampleParsedToken = TEXT(R"({"v":2,"t":1752219810,"ttl":30,"res":{"chan":{"my_channel":239},"grp":{"my_group":5},"uuid":{"User1":104}},"pat":{"chan":{"chan_pattern*":7},"grp":{},"uuid":{"user_pattern*":96}}})");
+    
+    // Call the ReworkParsedToken function
+    FString ReworkedToken = UPubnubTokenUtilities::ReworkParsedToken(SampleParsedToken);
+    
+    // Verify the function returned a non-empty result
+    TestFalse("ReworkParsedToken should return non-empty result", ReworkedToken.IsEmpty());
+    
+    if (!ReworkedToken.IsEmpty())
+    {
+        // Parse the reworked token to verify its structure
+        TSharedPtr<FJsonObject> ReworkedTokenObject;
+        TestTrue("ReworkedToken should be valid JSON", UPubnubJsonUtilities::StringToJsonObject(ReworkedToken, ReworkedTokenObject) && ReworkedTokenObject.IsValid());
+        
+        if (ReworkedTokenObject.IsValid())
         {
-            TSharedPtr<FJsonObject> RootObject;
-            TestTrue(TestDescription + " - Is Valid JSON", UPubnubJsonUtilities::StringToJsonObject(JsonString, RootObject) && RootObject.IsValid());
-            if (RootObject.IsValid())
+            // Verify main fields
+            TestEqual("Version should be 2", static_cast<int>(ReworkedTokenObject->GetNumberField(TEXT("Version"))), 2);
+            TestEqual("Timestamp should match", static_cast<int64>(ReworkedTokenObject->GetNumberField(TEXT("Timestamp"))), 1752219810);
+            TestEqual("TTL should be 30", static_cast<int>(ReworkedTokenObject->GetNumberField(TEXT("TTL"))), 30);
+            
+            // Verify Resources structure
+            const TSharedPtr<FJsonObject>* ResourcesPtr = nullptr;
+            TestTrue("Should have Resources object", ReworkedTokenObject->TryGetObjectField(TEXT("Resources"), ResourcesPtr) && ResourcesPtr && (*ResourcesPtr).IsValid());
+            
+            if (ResourcesPtr && (*ResourcesPtr).IsValid())
             {
-                // ... (basic TTL, AuthUser checks) ...
-                const TSharedPtr<FJsonObject>* PermsObj = nullptr;
-                const TSharedPtr<FJsonObject>* ResObj = nullptr;
-                const TSharedPtr<FJsonObject>* PatObj = nullptr;
-                const TSharedPtr<FJsonObject>* ChanPatObj = nullptr;
-                if (RootObject->TryGetObjectField(TEXT("permissions"), PermsObj) &&
-                    (*PermsObj)->TryGetObjectField(TEXT("resources"), ResObj) &&
-                    (*PermsObj)->TryGetObjectField(TEXT("patterns"), PatObj) &&
-                    (*PatObj)->TryGetObjectField(TEXT("channels"), ChanPatObj))
+                const TSharedPtr<FJsonObject>& Resources = *ResourcesPtr;
+                
+                // Test channel permissions (bitmask 239 = 1+2+4+8+32+64+128 = Read+Write+Manage+Delete+Get+Update+Join)
+                const TSharedPtr<FJsonObject>* ChannelsPtr = nullptr;
+                TestTrue("Should have Channels in Resources", Resources->TryGetObjectField(TEXT("Channels"), ChannelsPtr) && ChannelsPtr && (*ChannelsPtr).IsValid());
+                
+                if (ChannelsPtr && (*ChannelsPtr).IsValid())
                 {
-                    TestEqual(TestDescription + " - Resources is empty", (*ResObj)->Values.Num(), 0);
-                    TestEqual(TestDescription + " - Pattern Perms", (*ChanPatObj)->GetIntegerField(Ts.ChannelPatterns[0]), CalculateChannelPermissionsBitmask(ChanPatternPerms));
-                } else { AddError(TestDescription + " - JSON structure error"); }
+                    const TSharedPtr<FJsonObject>* ChannelPermsPtr = nullptr;
+                    TestTrue("Should have my_channel permissions", (*ChannelsPtr)->TryGetObjectField(TEXT("my_channel"), ChannelPermsPtr) && ChannelPermsPtr && (*ChannelPermsPtr).IsValid());
+                    
+                    if (ChannelPermsPtr && (*ChannelPermsPtr).IsValid())
+                    {
+                        TestTrue("Channel should have Read permission", (*ChannelPermsPtr)->GetBoolField(TEXT("Read")));
+                        TestTrue("Channel should have Write permission", (*ChannelPermsPtr)->GetBoolField(TEXT("Write")));
+                        TestTrue("Channel should have Manage permission", (*ChannelPermsPtr)->GetBoolField(TEXT("Manage")));
+                        TestTrue("Channel should have Delete permission", (*ChannelPermsPtr)->GetBoolField(TEXT("Delete")));
+                        TestTrue("Channel should have Get permission", (*ChannelPermsPtr)->GetBoolField(TEXT("Get")));
+                        TestTrue("Channel should have Update permission", (*ChannelPermsPtr)->GetBoolField(TEXT("Update")));
+                        TestTrue("Channel should have Join permission", (*ChannelPermsPtr)->GetBoolField(TEXT("Join")));
+                    }
+                }
+                
+                // Test channel group permissions (bitmask 5 = 1+4 = Read+Manage)
+                const TSharedPtr<FJsonObject>* ChannelGroupsPtr = nullptr;
+                TestTrue("Should have ChannelGroups in Resources", Resources->TryGetObjectField(TEXT("ChannelGroups"), ChannelGroupsPtr) && ChannelGroupsPtr && (*ChannelGroupsPtr).IsValid());
+                
+                if (ChannelGroupsPtr && (*ChannelGroupsPtr).IsValid())
+                {
+                    const TSharedPtr<FJsonObject>* GroupPermsPtr = nullptr;
+                    TestTrue("Should have my_group permissions", (*ChannelGroupsPtr)->TryGetObjectField(TEXT("my_group"), GroupPermsPtr) && GroupPermsPtr && (*GroupPermsPtr).IsValid());
+                    
+                    if (GroupPermsPtr && (*GroupPermsPtr).IsValid())
+                    {
+                        TestTrue("Group should have Read permission", (*GroupPermsPtr)->GetBoolField(TEXT("Read")));
+                        TestTrue("Group should have Manage permission", (*GroupPermsPtr)->GetBoolField(TEXT("Manage")));
+                    }
+                }
+                
+                // Test user permissions (bitmask 104 = 8+32+64 = Delete+Get+Update)
+                const TSharedPtr<FJsonObject>* UuidsPtr = nullptr;
+                TestTrue("Should have Uuids in Resources", Resources->TryGetObjectField(TEXT("Uuids"), UuidsPtr) && UuidsPtr && (*UuidsPtr).IsValid());
+                
+                if (UuidsPtr && (*UuidsPtr).IsValid())
+                {
+                    const TSharedPtr<FJsonObject>* UserPermsPtr = nullptr;
+                    TestTrue("Should have User1 permissions", (*UuidsPtr)->TryGetObjectField(TEXT("User1"), UserPermsPtr) && UserPermsPtr && (*UserPermsPtr).IsValid());
+                    
+                    if (UserPermsPtr && (*UserPermsPtr).IsValid())
+                    {
+                        TestTrue("User should have Delete permission", (*UserPermsPtr)->GetBoolField(TEXT("Delete")));
+                        TestTrue("User should have Get permission", (*UserPermsPtr)->GetBoolField(TEXT("Get")));
+                        TestTrue("User should have Update permission", (*UserPermsPtr)->GetBoolField(TEXT("Update")));
+                    }
+                }
+            }
+            
+            // Verify Patterns structure
+            const TSharedPtr<FJsonObject>* PatternsPtr = nullptr;
+            TestTrue("Should have Patterns object", ReworkedTokenObject->TryGetObjectField(TEXT("Patterns"), PatternsPtr) && PatternsPtr && (*PatternsPtr).IsValid());
+            
+            if (PatternsPtr && (*PatternsPtr).IsValid())
+            {
+                const TSharedPtr<FJsonObject>& Patterns = *PatternsPtr;
+                
+                // Test channel pattern permissions (bitmask 7 = 1+2+4 = Read+Write+Manage)
+                const TSharedPtr<FJsonObject>* ChannelPatternsPtr = nullptr;
+                TestTrue("Should have Channels in Patterns", Patterns->TryGetObjectField(TEXT("Channels"), ChannelPatternsPtr) && ChannelPatternsPtr && (*ChannelPatternsPtr).IsValid());
+                
+                if (ChannelPatternsPtr && (*ChannelPatternsPtr).IsValid())
+                {
+                    const TSharedPtr<FJsonObject>* ChannelPatternPermsPtr = nullptr;
+                    TestTrue("Should have chan_pattern* permissions", (*ChannelPatternsPtr)->TryGetObjectField(TEXT("chan_pattern*"), ChannelPatternPermsPtr) && ChannelPatternPermsPtr && (*ChannelPatternPermsPtr).IsValid());
+                    
+                    if (ChannelPatternPermsPtr && (*ChannelPatternPermsPtr).IsValid())
+                    {
+                        TestTrue("Channel pattern should have Read permission", (*ChannelPatternPermsPtr)->GetBoolField(TEXT("Read")));
+                        TestTrue("Channel pattern should have Write permission", (*ChannelPatternPermsPtr)->GetBoolField(TEXT("Write")));
+                        TestTrue("Channel pattern should have Manage permission", (*ChannelPatternPermsPtr)->GetBoolField(TEXT("Manage")));
+                        TestFalse("Channel pattern should not have Delete permission", (*ChannelPatternPermsPtr)->GetBoolField(TEXT("Delete")));
+                        TestFalse("Channel pattern should not have Get permission", (*ChannelPatternPermsPtr)->GetBoolField(TEXT("Get")));
+                        TestFalse("Channel pattern should not have Update permission", (*ChannelPatternPermsPtr)->GetBoolField(TEXT("Update")));
+                        TestFalse("Channel pattern should not have Join permission", (*ChannelPatternPermsPtr)->GetBoolField(TEXT("Join")));
+                    }
+                }
+                
+                // Test user pattern permissions (bitmask 96 = 32+64 = Get+Update)
+                const TSharedPtr<FJsonObject>* UuidPatternsPtr = nullptr;
+                TestTrue("Should have Uuids in Patterns", Patterns->TryGetObjectField(TEXT("Uuids"), UuidPatternsPtr) && UuidPatternsPtr && (*UuidPatternsPtr).IsValid());
+                
+                if (UuidPatternsPtr && (*UuidPatternsPtr).IsValid())
+                {
+                    const TSharedPtr<FJsonObject>* UserPatternPermsPtr = nullptr;
+                    TestTrue("Should have user_pattern* permissions", (*UuidPatternsPtr)->TryGetObjectField(TEXT("user_pattern*"), UserPatternPermsPtr) && UserPatternPermsPtr && (*UserPatternPermsPtr).IsValid());
+                    
+                    if (UserPatternPermsPtr && (*UserPatternPermsPtr).IsValid())
+                    {
+                        TestFalse("User pattern should not have Delete permission", (*UserPatternPermsPtr)->GetBoolField(TEXT("Delete")));
+                        TestTrue("User pattern should have Get permission", (*UserPatternPermsPtr)->GetBoolField(TEXT("Get")));
+                        TestTrue("User pattern should have Update permission", (*UserPatternPermsPtr)->GetBoolField(TEXT("Update")));
+                    }
+                }
             }
         }
     }
+    
+    // Test with empty input
+    FString EmptyResult = UPubnubTokenUtilities::ReworkParsedToken(TEXT(""));
+    TestTrue("Empty input should return empty result", EmptyResult.IsEmpty());
+    
+    // Test with invalid JSON
+    FString InvalidResult = UPubnubTokenUtilities::ReworkParsedToken(TEXT("invalid json"));
+    TestTrue("Invalid JSON should return empty result", InvalidResult.IsEmpty());
 
     CleanUp();
     return true;
@@ -315,41 +440,34 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
         AddError(FString::Printf(TEXT("Pubnub Error in FPubnubGrantAndParseTokenTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // Prepare GrantTokenStructure
-    FPubnubGrantTokenStructure TokenStructure;
-    TokenStructure.TTLMinutes = TestTTLMinutes;
-    TokenStructure.AuthorizedUser = TestAuthUser;
+    // Prepare GrantToken permissions
+    FPubnubGrantTokenPermissions TokenPermissions;
 
-    FPubnubChannelPermissions ChanPerms;
-    ChanPerms.Read = true;
-    ChanPerms.Write = true;
-    TokenStructure.Channels.Add(TestChannelName);
-    TokenStructure.ChannelPermissions.Add(ChanPerms);
-    const int ExpectedChannelBitmask = CalculateChannelPermissionsBitmask(ChanPerms);
+    // Set up channel permissions
+    FChannelGrant ChannelGrant;
+    ChannelGrant.Channel = TestChannelName;
+    ChannelGrant.Permissions.Read = true;
+    ChannelGrant.Permissions.Write = true;
+    TokenPermissions.Channels.Add(ChannelGrant);
+    const int ExpectedChannelBitmask = CalculateChannelPermissionsBitmask(ChannelGrant.Permissions);
 
-    FPubnubChannelGroupPermissions GroupPerms;
-    GroupPerms.Read = true;
-    GroupPerms.Manage = true;
-    TokenStructure.ChannelGroups.Add(TestGroupName);
-    TokenStructure.ChannelGroupPermissions.Add(GroupPerms);
-    const int ExpectedGroupBitmask = CalculateChannelGroupPermissionsBitmask(GroupPerms);
+    // Set up channel group permissions
+    FChannelGroupGrant GroupGrant;
+    GroupGrant.ChannelGroup = TestGroupName;
+    GroupGrant.Permissions.Read = true;
+    GroupGrant.Permissions.Manage = true;
+    TokenPermissions.ChannelGroups.Add(GroupGrant);
+    const int ExpectedGroupBitmask = CalculateChannelGroupPermissionsBitmask(GroupGrant.Permissions);
 
-    FPubnubUserPermissions UserResourcePerms; // Permissions for a specific UUID resource (App Context)
-    UserResourcePerms.Get = true;
-    UserResourcePerms.Update = true;
-    TokenStructure.Users.Add(TestTargetResourceUID); // Using 'Users' field for UUID resources as per FPubnubGrantTokenStructure
-    TokenStructure.UserPermissions.Add(UserResourcePerms);
-    const int ExpectedUserResourceBitmask = CalculateUserPermissionsBitmask(UserResourcePerms);
+    // Set up user permissions
+    FUserGrant UserGrant;
+    UserGrant.User = TestTargetResourceUID;
+    UserGrant.Permissions.Get = true;
+    UserGrant.Permissions.Update = true;
+    TokenPermissions.Users.Add(UserGrant);
+    const int ExpectedUserResourceBitmask = CalculateUserPermissionsBitmask(UserGrant.Permissions);
     
-    bool bJsonConversionSuccess = false;
-    FString PermissionObjectJson = PubnubSubsystem->GrantTokenStructureToJsonString(TokenStructure, bJsonConversionSuccess);
-    if (!bJsonConversionSuccess)
-    {
-        AddError("Failed to convert GrantTokenStructure to JSON. Check logs for details from PubnubSubsystem.");
-        CleanUp();
-        return false;
-    }
-    TestTrue("GrantTokenStructureToJsonString conversion success", bJsonConversionSuccess);
+    TestFalse("TokenPermissions should not be empty", TokenPermissions.ArePermissionsEmpty());
 
 
     // GrantToken callback
@@ -384,9 +502,9 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 1: Grant Token
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, PermissionObjectJson, GrantTokenCallback]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestTTLMinutes, TestAuthUser, TokenPermissions, GrantTokenCallback]()
     {
-        PubnubSubsystem->GrantToken(PermissionObjectJson, GrantTokenCallback);
+        PubnubSubsystem->GrantToken(TestTTLMinutes, TestAuthUser, TokenPermissions, GrantTokenCallback);
     }, 0.2f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGrantTokenCallbackReceived](){ return *bGrantTokenCallbackReceived; }, MAX_WAIT_TIME));
 
@@ -425,7 +543,7 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGrantTokenSuccess, bParseTokenSuccess](){ return *bParseTokenSuccess || !*bGrantTokenSuccess; }, MAX_WAIT_TIME)); // Wait if grant was successful
 
     // Step 3: Verify Parsed Token
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bParseTokenSuccess, ParsedTokenResponseJson, TestTTLMinutes, TestChannelName, ExpectedChannelBitmask, TestGroupName, ExpectedGroupBitmask, TestTargetResourceUID, ExpectedUserResourceBitmask]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bParseTokenSuccess, ParsedTokenResponseJson, TestTTLMinutes, TestChannelName, TestGroupName, TestTargetResourceUID]()
     {
         TestTrue("ParseToken operation was successful (callback received and response is valid JSON)", *bParseTokenSuccess);
         if (!*bParseTokenSuccess || ParsedTokenResponseJson->IsEmpty())
@@ -441,53 +559,68 @@ bool FPubnubGrantAndParseTokenTest::RunTest(const FString& Parameters)
             return;
         }
 
-        // Verify TTL
-        int ParsedTTL = 0;
-        if (ParsedTokenObject->TryGetNumberField(TEXT("ttl"), ParsedTTL))
+        // Verify TTL (now in enhanced format)
+        if (ParsedTokenObject->HasField(TEXT("TTL")))
         {
-             TestEqual("Parsed token TTL matches granted TTL", ParsedTTL, TestTTLMinutes);
-        } else { AddError("Parsed token JSON does not contain 'ttl' field."); }
+            TestEqual("Parsed token TTL matches granted TTL", static_cast<int>(ParsedTokenObject->GetNumberField(TEXT("TTL"))), TestTTLMinutes);
+        } else { AddError("Parsed token JSON does not contain 'TTL' field."); }
+
+        // Verify Version
+        if (ParsedTokenObject->HasField(TEXT("Version")))
+        {
+            TestEqual("Parsed token Version is 2", static_cast<int>(ParsedTokenObject->GetNumberField(TEXT("Version"))), 2);
+        } else { AddError("Parsed token JSON does not contain 'Version' field."); }
         
-        const TSharedPtr<FJsonObject>* ResourcesObjectPtr = nullptr; // This will now point to the "res" object
-        if (!ParsedTokenObject->TryGetObjectField(TEXT("res"), ResourcesObjectPtr) || !ResourcesObjectPtr || !(*ResourcesObjectPtr).IsValid())
+        // Verify Resources (now in enhanced format)
+        const TSharedPtr<FJsonObject>* ResourcesObjectPtr = nullptr;
+        if (!ParsedTokenObject->TryGetObjectField(TEXT("Resources"), ResourcesObjectPtr) || !ResourcesObjectPtr || !(*ResourcesObjectPtr).IsValid())
         {
-            AddError("Parsed token JSON does not contain 'res' (resources) object.");
+            AddError("Parsed token JSON does not contain 'Resources' object.");
             return;
         }
         const TSharedPtr<FJsonObject>& ResourcesObject = *ResourcesObjectPtr;
 
-        // Channel Permissions
+        // Channel Permissions (enhanced human-readable format)
         const TSharedPtr<FJsonObject>* ChannelsObjectPtr = nullptr;
-        if (ResourcesObject->TryGetObjectField(TEXT("chan"), ChannelsObjectPtr) && ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid())
+        if (ResourcesObject->TryGetObjectField(TEXT("Channels"), ChannelsObjectPtr) && ChannelsObjectPtr && (*ChannelsObjectPtr).IsValid())
         {
-            int ActualChannelPerms = 0;
-            if ((*ChannelsObjectPtr)->TryGetNumberField(TestChannelName, ActualChannelPerms))
+            const TSharedPtr<FJsonObject>* ChannelPermissionsPtr = nullptr;
+            if ((*ChannelsObjectPtr)->TryGetObjectField(TestChannelName, ChannelPermissionsPtr) && ChannelPermissionsPtr && (*ChannelPermissionsPtr).IsValid())
             {
-                TestEqual(FString::Printf(TEXT("Permissions for channel '%s'"), *TestChannelName), ActualChannelPerms, ExpectedChannelBitmask);
-            } else { AddError(FString::Printf(TEXT("Channel '%s' not found in parsed token res.chan."), *TestChannelName)); }
-        } else { AddWarning(FString::Printf(TEXT("No 'chan' found in parsed token res (expected for %s)."), *TestChannelName)); }
+                TestTrue(FString::Printf(TEXT("Channel '%s' has Read permission"), *TestChannelName), (*ChannelPermissionsPtr)->GetBoolField(TEXT("Read")));
+                TestTrue(FString::Printf(TEXT("Channel '%s' has Write permission"), *TestChannelName), (*ChannelPermissionsPtr)->GetBoolField(TEXT("Write")));
+                TestFalse(FString::Printf(TEXT("Channel '%s' does not have Manage permission"), *TestChannelName), (*ChannelPermissionsPtr)->GetBoolField(TEXT("Manage")));
+                TestFalse(FString::Printf(TEXT("Channel '%s' does not have Delete permission"), *TestChannelName), (*ChannelPermissionsPtr)->GetBoolField(TEXT("Delete")));
+                TestFalse(FString::Printf(TEXT("Channel '%s' does not have Get permission"), *TestChannelName), (*ChannelPermissionsPtr)->GetBoolField(TEXT("Get")));
+                TestFalse(FString::Printf(TEXT("Channel '%s' does not have Update permission"), *TestChannelName), (*ChannelPermissionsPtr)->GetBoolField(TEXT("Update")));
+                TestFalse(FString::Printf(TEXT("Channel '%s' does not have Join permission"), *TestChannelName), (*ChannelPermissionsPtr)->GetBoolField(TEXT("Join")));
+            } else { AddError(FString::Printf(TEXT("Channel '%s' not found in parsed token Resources.Channels."), *TestChannelName)); }
+        } else { AddWarning(FString::Printf(TEXT("No 'Channels' found in parsed token Resources (expected for %s)."), *TestChannelName)); }
 
-        // Group Permissions
-        const TSharedPtr<FJsonObject>* GroupsObjectPtr = nullptr;
-        if (ResourcesObject->TryGetObjectField(TEXT("grp"), GroupsObjectPtr) && GroupsObjectPtr && (*GroupsObjectPtr).IsValid())
+        // Group Permissions (enhanced human-readable format)
+        const TSharedPtr<FJsonObject>* ChannelGroupsObjectPtr = nullptr;
+        if (ResourcesObject->TryGetObjectField(TEXT("ChannelGroups"), ChannelGroupsObjectPtr) && ChannelGroupsObjectPtr && (*ChannelGroupsObjectPtr).IsValid())
         {
-            int ActualGroupPerms = 0;
-            if ((*GroupsObjectPtr)->TryGetNumberField(TestGroupName, ActualGroupPerms))
+            const TSharedPtr<FJsonObject>* GroupPermissionsPtr = nullptr;
+            if ((*ChannelGroupsObjectPtr)->TryGetObjectField(TestGroupName, GroupPermissionsPtr) && GroupPermissionsPtr && (*GroupPermissionsPtr).IsValid())
             {
-                TestEqual(FString::Printf(TEXT("Permissions for group '%s'"), *TestGroupName), ActualGroupPerms, ExpectedGroupBitmask);
-            } else { AddError(FString::Printf(TEXT("Group '%s' not found in parsed token res.grp."), *TestGroupName)); }
-        } else { AddWarning(FString::Printf(TEXT("No 'grp' found in parsed token res (expected for %s)."),*TestGroupName)); }
+                TestTrue(FString::Printf(TEXT("Group '%s' has Read permission"), *TestGroupName), (*GroupPermissionsPtr)->GetBoolField(TEXT("Read")));
+                TestTrue(FString::Printf(TEXT("Group '%s' has Manage permission"), *TestGroupName), (*GroupPermissionsPtr)->GetBoolField(TEXT("Manage")));
+            } else { AddError(FString::Printf(TEXT("Group '%s' not found in parsed token Resources.ChannelGroups."), *TestGroupName)); }
+        } else { AddWarning(FString::Printf(TEXT("No 'ChannelGroups' found in parsed token Resources (expected for %s)."), *TestGroupName)); }
         
-        // UUID (User Resource) Permissions
+        // UUID (User Resource) Permissions (enhanced human-readable format)
         const TSharedPtr<FJsonObject>* UuidsObjectPtr = nullptr;
-        if (ResourcesObject->TryGetObjectField(TEXT("uuid"), UuidsObjectPtr) && UuidsObjectPtr && (*UuidsObjectPtr).IsValid()) // "uuid" here is the key for uuid-specific permissions inside "res"
+        if (ResourcesObject->TryGetObjectField(TEXT("Uuids"), UuidsObjectPtr) && UuidsObjectPtr && (*UuidsObjectPtr).IsValid())
         {
-            int ActualUserResourcePerms = 0;
-            if ((*UuidsObjectPtr)->TryGetNumberField(TestTargetResourceUID, ActualUserResourcePerms))
+            const TSharedPtr<FJsonObject>* UserPermissionsPtr = nullptr;
+            if ((*UuidsObjectPtr)->TryGetObjectField(TestTargetResourceUID, UserPermissionsPtr) && UserPermissionsPtr && (*UserPermissionsPtr).IsValid())
             {
-                TestEqual(FString::Printf(TEXT("Permissions for UUID resource '%s'"), *TestTargetResourceUID), ActualUserResourcePerms, ExpectedUserResourceBitmask);
-            } else { AddError(FString::Printf(TEXT("UUID resource '%s' not found in parsed token res.uuid."), *TestTargetResourceUID)); }
-        } else { AddWarning(FString::Printf(TEXT("No 'uuid' resource key found in parsed token res (expected for %s)."), *TestTargetResourceUID)); }
+                TestFalse(FString::Printf(TEXT("User '%s' does not have Delete permission"), *TestTargetResourceUID), (*UserPermissionsPtr)->GetBoolField(TEXT("Delete")));
+                TestTrue(FString::Printf(TEXT("User '%s' has Get permission"), *TestTargetResourceUID), (*UserPermissionsPtr)->GetBoolField(TEXT("Get")));
+                TestTrue(FString::Printf(TEXT("User '%s' has Update permission"), *TestTargetResourceUID), (*UserPermissionsPtr)->GetBoolField(TEXT("Update")));
+            } else { AddError(FString::Printf(TEXT("User resource '%s' not found in parsed token Resources.Uuids."), *TestTargetResourceUID)); }
+        } else { AddWarning(FString::Printf(TEXT("No 'Uuids' resource key found in parsed token Resources (expected for %s)."), *TestTargetResourceUID)); }
         
     }, 0.1f));
 
@@ -522,22 +655,14 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
         AddError(FString::Printf(TEXT("Pubnub Error in FPubnubRevokeTokenTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // Prepare GrantTokenStructure for a temporary token
-    FPubnubGrantTokenStructure TokenStructure;
-    TokenStructure.TTLMinutes = TestTTLForGrant;
-    TokenStructure.AuthorizedUser = TestAuthUserForGrant;
-    FPubnubChannelPermissions ChanPerms; ChanPerms.Read = true;
-    TokenStructure.Channels.Add(TestChannelForGrant);
-    TokenStructure.ChannelPermissions.Add(ChanPerms);
+    // Prepare GrantToken permissions for a temporary token
+    FPubnubGrantTokenPermissions TokenPermissions;
+    FChannelGrant ChannelGrant;
+    ChannelGrant.Channel = TestChannelForGrant;
+    ChannelGrant.Permissions.Read = true;
+    TokenPermissions.Channels.Add(ChannelGrant);
 
-    bool bJsonConversionSuccess = false;
-    FString PermissionObjectJson = PubnubSubsystem->GrantTokenStructureToJsonString(TokenStructure, bJsonConversionSuccess);
-    if (!bJsonConversionSuccess)
-    {
-        AddError("Failed to convert GrantTokenStructure to JSON for RevokeTest.");
-        CleanUp();
-        return false;
-    }
+    TestFalse("TokenPermissions should not be empty", TokenPermissions.ArePermissionsEmpty());
 
     // GrantToken callback (copied from GrantAndParse, simplified as we just need the token string)
     FOnGrantTokenResponseNative GrantTokenCallback;
@@ -571,9 +696,9 @@ bool FPubnubRevokeTokenTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 1: Grant a temporary token
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, PermissionObjectJson, GrantTokenCallback]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestTTLForGrant, TestAuthUserForGrant, TokenPermissions, GrantTokenCallback]()
     {
-        PubnubSubsystem->GrantToken(PermissionObjectJson, GrantTokenCallback);
+        PubnubSubsystem->GrantToken(TestTTLForGrant, TestAuthUserForGrant, TokenPermissions, GrantTokenCallback);
     }, 0.2f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGrantTokenCallbackReceived](){ return *bGrantTokenCallbackReceived; }, MAX_WAIT_TIME));
 

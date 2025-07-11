@@ -54,73 +54,61 @@ public:
 	/**
 	 * Converter from ListChannelsFromGroup_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void ListChannelsFromGroupJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FString>& Channels);
 
 	/**
 	 * Converter from ListUserSubscribedChannels_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void ListUserSubscribedChannelsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FString>& Channels);
 
 	/**
 	 * Converter from ListUsersFromChannel_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper &Data);
 
 	/**
 	 * Converter from FetchHistory_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void FetchHistoryJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubHistoryMessageData> &Messages);
 	
 	/**
 	 * Converter from GetAllUserMetadata_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData> &UsersData, FString &PageNext, FString &PagePrev);
 
 	/**
 	 * Converter from GetUserMetadata_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubUserData &UserData);
 
 	/**
 	 * Converter from GetAllChannelMetadata_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData> &ChannelsData, FString &PageNext, FString &PagePrev);
 
 	/**
 	 * Converter from GetChannelMetadata_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubChannelData &ChannelData);
 
 	/**
 	 * Converter from GetMessageActions_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetMessageActionsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMessageActionData> &MessageActions);
 
 	/**
 	 * Converter from AddMessageActions_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void AddMessageActionJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubMessageActionData& MessageAction);
 
 	/**
 	 * Converter from GetMemberships_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMembershipData> &MembershipsData, FString &PageNext, FString &PagePrev);
 
 	/**
 	 * Converter from GetChannelMembers_Json response to actual types
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static void GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelMemberData> &MembershipsData, FString &PageNext, FString &PagePrev);
 
 	/**
@@ -132,7 +120,6 @@ public:
 	/**
 	 * Converter from FPubnubUserData to Json string containing User data
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FString GetJsonFromUserData(const FPubnubUserData& UserData);
 
 	/**
@@ -144,7 +131,6 @@ public:
 	/**
 	 * Converter from FPubnubChannelData to Json string containing Channel data
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FString GetJsonFromChannelData(const FPubnubChannelData& ChannelData);
 
 	/**
@@ -157,7 +143,6 @@ public:
 	/**
 	 * Converter from FPubnubMembershipData to Json string containing Membership data
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FString GetJsonFromMembershipInputData(const FPubnubMembershipInputData& MembershipInputData);
 
 	/**
@@ -170,7 +155,6 @@ public:
 	/**
 	 * Converter from FPubnubMembershipData Array to Json string containing Memberships data
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FString GetJsonFromMembershipsDataArray(const TArray<FPubnubMembershipInputData>& MembershipsInputData);
 
 	/**
@@ -183,7 +167,6 @@ public:
 	/**
 	 * Converter from FPubnubChannelMemberData to Json string containing Channel Member data
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FString GetJsonFromChannelMemberData(const FPubnubChannelMemberInputData& ChannelMemberInputData);
 
 	/**
@@ -196,19 +179,16 @@ public:
 	/**
 	 * Converter from FPubnubChannelMemberData Array to Json string containing Channel Members data
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FString GetJsonFromChannelMembersDataArray(const TArray<FPubnubChannelMemberInputData>& ChannelMembersInputData);
 
 	/**
 	 * Convert list of Memberships (Channel IDs) to RemoveObject accepted by RemoveMemberships function
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FString GetJsonFromMembershipsToRemove(TArray<FString> Memberships);
 
 	/**
 	 * Convert list of ChannelMembers (User IDs) to RemoveObject accepted by RemoveChannelMembers function
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FString GetJsonFromChannelMembersToRemove(TArray<FString> ChannelMembers);
 	
 	/**

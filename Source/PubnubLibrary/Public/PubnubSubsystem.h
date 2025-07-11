@@ -528,20 +528,36 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void Heartbeat(FString Channel, FString ChannelGroup);
+	
+	/**
+	 * Requests an access token from the PubNub server with the specified permissions.
+	 * Requires SecretKey to be set.
+	 * 
+	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Ttl Time-To-Live (TTL) in minutes for the granted token.
+	 * @param AuthorizedUser The User that is authorized by this grant.
+	 * @param Permissions A struct containing all permissions that will be granted with this token.
+	 * @param OnGrantTokenResponse The callback function used to handle the result.
+	 * @param Meta (Optional) metadata that will be embedded into the token.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnGrantTokenResponse OnGrantTokenResponse, FString Meta = "");
 
 	/**
 	 * Requests an access token from the PubNub server with the specified permissions.
-	 * Use GrantTokenStructureToJsonString function to easily create correct PermissionObject.
+	 * Requires SecretKey to be set.
 	 * 
 	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
-	 * 
-	 * @param PermissionObject A JSON object representing the desired permissions for the token.
-	 * @param OnGrantTokenResponse The callback function used to handle the result.
+	 *
+	 * @param Ttl Time-To-Live (TTL) in minutes for the granted token.
+	 * @param AuthorizedUser The User that is authorized by this grant.
+	 * @param Permissions A struct containing all permissions that will be granted with this token.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Meta (Optional) metadata that will be embedded into the token.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
-	void GrantToken(FString PermissionObject, FOnGrantTokenResponse OnGrantTokenResponse);
-	void GrantToken(FString PermissionObject, FOnGrantTokenResponseNative NativeCallback);
-
+	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnGrantTokenResponseNative NativeCallback, FString Meta = "");
+	
 	/**
 	 * Revokes a previously granted access token.
 	 * 
@@ -1744,20 +1760,7 @@ public:
 	void DisconnectSubscriptions();
 
 #pragma endregion
-
-	/**
-	 * Helper function to create correct PermissionObject for GrantToken function.
-	 *
-	 * @Note For an object type there has to be 1 permission or the same amount of permissions as there are objects.
-	 * For example. If there are 3 Channels, there can be either 1 ChannelPermission (it will be given for all those
-	 * 3 channels) or 3 ChannelPermission (each channel will receive permission from corresponding permissions index)
-	 * 
-	 * @param TokenStructure Structure containing all required data to GrantToken.
-	 * @param success True if data was provided correctly.
-	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|Access Manager")
-	FString GrantTokenStructureToJsonString(FPubnubGrantTokenStructure TokenStructure, bool &success);
-
+	
 	bool CheckIsFieldEmpty(FString Field, FString FieldName, FString FunctionName);
 	
 private:

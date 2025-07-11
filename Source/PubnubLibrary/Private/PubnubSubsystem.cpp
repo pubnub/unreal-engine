@@ -6,6 +6,7 @@
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
+#include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "Threads/PubnubFunctionThread.h"
@@ -465,25 +466,26 @@ void UPubnubSubsystem::Heartbeat(FString Channel, FString ChannelGroup)
 	});
 }
 
-void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnGrantTokenResponse OnGrantTokenResponse)
+void UPubnubSubsystem::GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnGrantTokenResponse OnGrantTokenResponse, FString Meta)
 {
+
 	FOnGrantTokenResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnGrantTokenResponse](const FPubnubOperationResult& Result, FString Token)
 	{
 		OnGrantTokenResponse.ExecuteIfBound(Result, Token);
 	});
 
-	GrantToken(PermissionObject, NativeCallback);
+	GrantToken(Ttl, AuthorizedUser, Permissions, NativeCallback, Meta);
 }
 
-void UPubnubSubsystem::GrantToken(FString PermissionObject, FOnGrantTokenResponseNative NativeCallback)
+void UPubnubSubsystem::GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnGrantTokenResponseNative NativeCallback, FString Meta)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
-	QuickActionThread->AddFunctionToQueue( [this, PermissionObject, NativeCallback]
+	QuickActionThread->AddFunctionToQueue( [this, Ttl, AuthorizedUser, Permissions, NativeCallback, Meta]
 	{
-		GrantToken_priv(PermissionObject, NativeCallback);
+		GrantToken_priv(UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(Ttl, AuthorizedUser, Permissions, Meta), NativeCallback);
 	});
 }
 
@@ -1222,108 +1224,6 @@ void UPubnubSubsystem::ReconnectSubscriptions()
 void UPubnubSubsystem::DisconnectSubscriptions()
 {
 	pubnub_disconnect(ctx_ee);
-}
-
-FString UPubnubSubsystem::GrantTokenStructureToJsonString(FPubnubGrantTokenStructure TokenStructure, bool &success)
-{
-	FString TokenJsonString;
-
-	//Make sure token data is provided in correct form. There must be the same amount of object and permissions or just one permission,
-	//then one permission is used for every object
-	
-	if(TokenStructure.Channels.Num() != TokenStructure.ChannelPermissions.Num() && TokenStructure.ChannelPermissions.Num() != 1)
-	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPermissions and Channels (or only 1 ChannelPermission).", EPubnubErrorType::PET_Warning);
-		success = false;
-		return TokenJsonString;
-	}
-
-	if(TokenStructure.ChannelGroups.Num() != TokenStructure.ChannelGroupPermissions.Num() && TokenStructure.ChannelGroupPermissions.Num() != 1)
-	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPermissions and ChannelGroups (or only 1 ChannelGroupPermissions).", EPubnubErrorType::PET_Warning);
-		success = false;
-		return TokenJsonString;
-	}
-
-	if(TokenStructure.Users.Num() != TokenStructure.UserPermissions.Num() && TokenStructure.UserPermissions.Num() != 1)
-	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPermissions and Users (or only 1 UserPermissions).", EPubnubErrorType::PET_Warning);
-		success = false;
-		return TokenJsonString;
-	}
-
-	if(TokenStructure.ChannelPatterns.Num() != TokenStructure.ChannelPatternPermissions.Num() && TokenStructure.ChannelPatternPermissions.Num() != 1)
-	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelPatternPermissions and ChannelsPatterns (or only 1 ChannelPatternPermissions).", EPubnubErrorType::PET_Warning);
-		success = false;
-		return TokenJsonString;
-	}
-
-	if(TokenStructure.ChannelGroupPatterns.Num() != TokenStructure.ChannelGroupPatternPermissions.Num() && TokenStructure.ChannelGroupPatternPermissions.Num() != 1)
-	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of ChannelGroupPatternPermissions and ChannelGroupsPatterns (or only 1 ChannelGroupPatternPermissions).", EPubnubErrorType::PET_Warning);
-		success = false;
-		return TokenJsonString;
-	}
-
-	if(TokenStructure.UserPatterns.Num() != TokenStructure.UserPatternPermissions.Num() && TokenStructure.UserPatternPermissions.Num() != 1)
-	{
-		PubnubError("Grant Token Structure To JsonString - Provide the same amount of UserPatternPermissions and UsersPatterns (or only 1 UserPatternPermissions).", EPubnubErrorType::PET_Warning);
-		success = false;
-		return TokenJsonString;
-	}
-	
-
-	//Create Json objects with channels, groups, users permissions and their patterns
-	TSharedPtr<FJsonObject> ChannelsJsonObject = AddChannelPermissionsToJson(TokenStructure.Channels, TokenStructure.ChannelPermissions);
-	TSharedPtr<FJsonObject> ChannelGroupsJsonObject = AddChannelGroupPermissionsToJson(TokenStructure.ChannelGroups, TokenStructure.ChannelGroupPermissions);
-	TSharedPtr<FJsonObject> UsersJsonObject = AddUserPermissionsToJson(TokenStructure.Users, TokenStructure.UserPermissions);
-	TSharedPtr<FJsonObject> ChannelPatternsJsonObject = AddChannelPermissionsToJson(TokenStructure.ChannelPatterns, TokenStructure.ChannelPatternPermissions);
-	TSharedPtr<FJsonObject> ChannelGroupPatternsJsonObject = AddChannelGroupPermissionsToJson(TokenStructure.ChannelGroupPatterns, TokenStructure.ChannelGroupPatternPermissions);
-	TSharedPtr<FJsonObject> UserPatternsJsonObject = AddUserPermissionsToJson(TokenStructure.UserPatterns, TokenStructure.UserPatternPermissions);
-
-	//Add resources fields
-	TSharedPtr<FJsonObject> ResourcesJsonObject = MakeShareable(new FJsonObject);
-	if(TokenStructure.Channels.Num() > 0)
-	{
-		ResourcesJsonObject->SetObjectField("channels", ChannelsJsonObject);
-	}
-	if(TokenStructure.ChannelGroups.Num() > 0)
-	{
-		ResourcesJsonObject->SetObjectField("groups", ChannelGroupsJsonObject);
-	}
-	if(TokenStructure.Users.Num() > 0)
-	{
-		ResourcesJsonObject->SetObjectField("uuids", UsersJsonObject);
-	}
-
-	//Add patterns fields
-	TSharedPtr<FJsonObject> PatternsJsonObject = MakeShareable(new FJsonObject);
-	if(TokenStructure.ChannelPatterns.Num() > 0)
-	{
-		PatternsJsonObject->SetObjectField("channels", ChannelPatternsJsonObject);
-	}
-	if(TokenStructure.ChannelGroupPatterns.Num() > 0)
-	{
-		PatternsJsonObject->SetObjectField("groups", ChannelGroupPatternsJsonObject);
-	}
-	if(TokenStructure.UserPatterns.Num() > 0)
-	{
-		PatternsJsonObject->SetObjectField("uuids", UserPatternsJsonObject);
-	}
-
-	TSharedPtr<FJsonObject> TokenStructureJsonObject = MakeShareable(new FJsonObject);
-	TokenStructureJsonObject->SetObjectField("resources", ResourcesJsonObject);
-	TokenStructureJsonObject->SetObjectField("patterns", PatternsJsonObject);
-
-	TSharedPtr<FJsonObject> PermissionsJsonObject = MakeShareable(new FJsonObject);
-	PermissionsJsonObject->SetNumberField("ttl", TokenStructure.TTLMinutes);
-	PermissionsJsonObject->SetStringField("authorized_uuid", TokenStructure.AuthorizedUser);
-	PermissionsJsonObject->SetObjectField("permissions", TokenStructureJsonObject);
-
-	success = true;
-	//Convert created Json object to string
-	return UPubnubJsonUtilities::JsonObjectToString(PermissionsJsonObject);
 }
 
 FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
@@ -2221,8 +2121,9 @@ FString UPubnubSubsystem::ParseToken_priv(FString Token)
 	
 	//Free this char, as it's allocated with malloc inside of pubnub_parse_token
 	free(TokenResponse);
-	
-	return ParsedToken;
+
+	//Rework parsed token into more human readable form
+	return UPubnubTokenUtilities::ReworkParsedToken(ParsedToken);
 }
 
 FString UPubnubSubsystem::FetchHistory_pn(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)
