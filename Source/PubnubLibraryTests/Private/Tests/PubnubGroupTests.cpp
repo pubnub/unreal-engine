@@ -28,6 +28,13 @@ bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Param
 	const FString TestGroup = SDK_PREFIX + "test_group";
 	TSharedPtr<bool> TestMessageReceived = MakeShared<bool>(false);
 	
+	// Shared state for operation callbacks
+	TSharedPtr<bool> bAddChannelToGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bAddChannelToGroupSuccess = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishSuccess = MakeShared<bool>(false);
+	TSharedPtr<bool> bRemoveChannelFromGroupDone = MakeShared<bool>(false);
+	
 	if(!InitTest())
 	{
 		AddError("TestInitialization failed for FPubnubAddChannelToGroupAndReceiveMessageTest");
@@ -57,25 +64,77 @@ bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Param
 		}
 	});
 
-	// Step 1: Add channel to group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup]()
+	// Define callbacks
+	FOnAddChannelToGroupResponseNative AddChannelCallback;
+	AddChannelCallback.BindLambda([this, bAddChannelToGroupDone, bAddChannelToGroupSuccess](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->AddChannelToGroup(TestChannel, TestGroup);
-	}, 0.2f));
-	
+		*bAddChannelToGroupDone = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bAddChannelToGroupSuccess = true;
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("AddChannelToGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnPublishMessageResponseNative PublishCallback;
+	PublishCallback.BindLambda([this, bPublishDone, bPublishSuccess](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*bPublishDone = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bPublishSuccess = true;
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("PublishMessage failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnRemoveChannelFromGroupResponseNative RemoveChannelCallback;
+	RemoveChannelCallback.BindLambda([this, bRemoveChannelFromGroupDone](const FPubnubOperationResult& Result)
+	{
+		*bRemoveChannelFromGroupDone = true;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("RemoveChannelFromGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	// Step 1: Add channel to group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup, AddChannelCallback, bAddChannelToGroupDone, bAddChannelToGroupSuccess]()
+	{
+		*bAddChannelToGroupDone = false;
+		*bAddChannelToGroupSuccess = false;
+		PubnubSubsystem->AddChannelToGroup(TestChannel, TestGroup, AddChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddChannelToGroupDone]() { return *bAddChannelToGroupDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddChannelToGroupSuccess]()
+	{
+		TestTrue("AddChannelToGroup should succeed", *bAddChannelToGroupSuccess);
+	}, 0.1f));
 
 	// Step 2: Subscribe to the group
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
 	{
 		PubnubSubsystem->SubscribeToGroup(TestGroup);
-	}, 0.5f));
-	
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); // Allow subscription to establish
 
 	// Step 3: Publish a message to the channel (which is in the subscribed group)
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage, PublishCallback, bPublishDone, bPublishSuccess]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
-	}, 1.f));
+		*bPublishDone = false;
+		*bPublishSuccess = false;
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage, PublishCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishDone]() { return *bPublishDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishSuccess]()
+	{
+		TestTrue("PublishMessage should succeed", *bPublishSuccess);
+	}, 0.1f));
 
 	// Step 4: Wait until message is received or timeout is reached
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestMessageReceived]() -> bool {
@@ -85,22 +144,21 @@ bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Param
 	// Step 5: Check whether message was received
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestMessageReceived]()
 	{
-		if(!*TestMessageReceived)
-		{
-			AddError("Message was not received on channel within a group in FPubnubAddChannelToGroupAndReceiveMessageTest.");
-		}
+		TestTrue("Message should be received on channel within a group", *TestMessageReceived);
 	}, 0.1f));
 
+	// Cleanup
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
 	{
 		PubnubSubsystem->UnsubscribeFromGroup(TestGroup);
-	}, 0.5f));
+	}, 0.1f));
 	
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup, RemoveChannelCallback, bRemoveChannelFromGroupDone]()
 	{
-		PubnubSubsystem->RemoveChannelFromGroup(TestChannel, TestGroup);
-	}, 0.5f));
-	
+		*bRemoveChannelFromGroupDone = false;
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannel, TestGroup, RemoveChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelFromGroupDone]() { return *bRemoveChannelFromGroupDone; }, MAX_WAIT_TIME));
 
 	CleanUp();
 	return true;
@@ -117,6 +175,12 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	TSharedPtr<bool> bListOperationCompleted = MakeShared<bool>(false);
 	TSharedPtr<TArray<FString>> ListedChannels = MakeShared<TArray<FString>>();
 	TSharedPtr<bool> bListOperationSuccess = MakeShared<bool>(false);
+
+	// Shared state for operation callbacks
+	TSharedPtr<bool> bAddChannelDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bAddChannelSuccess = MakeShared<bool>(false);
+	TSharedPtr<bool> bRemoveChannelDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bRemoveChannelSuccess = MakeShared<bool>(false);
 
 	if(!InitTest())
 	{
@@ -150,18 +214,63 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	// Ensure group is empty to start (clean up from previous tests if necessary)
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, TestChannel1, TestChannel2]()
+	FOnAddChannelToGroupResponseNative AddChannelCallback;
+	AddChannelCallback.BindLambda([this, bAddChannelDone, bAddChannelSuccess](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->RemoveChannelFromGroup(TestChannel1, TestGroup);
-		PubnubSubsystem->RemoveChannelFromGroup(TestChannel2, TestGroup); 
+		*bAddChannelDone = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bAddChannelSuccess = true;
+		}
+		else
+		{
+			*bAddChannelSuccess = false;
+			AddError(FString::Printf(TEXT("AddChannelToGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnRemoveChannelFromGroupResponseNative RemoveChannelCallback;
+	RemoveChannelCallback.BindLambda([this, bRemoveChannelDone, bRemoveChannelSuccess](const FPubnubOperationResult& Result)
+	{
+		*bRemoveChannelDone = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bRemoveChannelSuccess = true;
+		}
+		else
+		{
+			*bRemoveChannelSuccess = false;
+			AddError(FString::Printf(TEXT("RemoveChannelFromGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	// Ensure group is empty to start (clean up from previous tests if necessary)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, TestChannel1, TestChannel2, RemoveChannelCallback, bRemoveChannelDone]()
+	{
+		*bRemoveChannelDone = false;
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannel1, TestGroup, RemoveChannelCallback);
 	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelDone]() { return *bRemoveChannelDone; }, MAX_WAIT_TIME));
+	
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, TestChannel2, RemoveChannelCallback, bRemoveChannelDone]()
+	{
+		*bRemoveChannelDone = false;
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannel2, TestGroup, RemoveChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelDone]() { return *bRemoveChannelDone; }, MAX_WAIT_TIME));
 
 	// 1. Add Channel1 to Group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestGroup, AddChannelCallback, bAddChannelDone, bAddChannelSuccess]()
 	{
-		PubnubSubsystem->AddChannelToGroup(TestChannel1, TestGroup);
-	}, 0.2f));
+		*bAddChannelDone = false;
+		*bAddChannelSuccess = false;
+		PubnubSubsystem->AddChannelToGroup(TestChannel1, TestGroup, AddChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddChannelDone]() { return *bAddChannelDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddChannelSuccess]()
+	{
+		TestTrue("AddChannelToGroup (Channel1) should succeed", *bAddChannelSuccess);
+	}, 0.1f));
 
 	// 2. List and Verify Channel1
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels]()
@@ -183,10 +292,17 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	}, 0.1f));
 
 	// 3. Add Channel2 to Group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2, TestGroup, AddChannelCallback, bAddChannelDone, bAddChannelSuccess]()
 	{
-		PubnubSubsystem->AddChannelToGroup(TestChannel2, TestGroup);
-	}, 0.2f));
+		*bAddChannelDone = false;
+		*bAddChannelSuccess = false;
+		PubnubSubsystem->AddChannelToGroup(TestChannel2, TestGroup, AddChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddChannelDone]() { return *bAddChannelDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddChannelSuccess]()
+	{
+		TestTrue("AddChannelToGroup (Channel2) should succeed", *bAddChannelSuccess);
+	}, 0.1f));
 
 	// 4. List and Verify Channel1 and Channel2
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels]()
@@ -209,10 +325,17 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	}, 0.1f));
 
 	// 5. Remove Channel1 from Group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestGroup, RemoveChannelCallback, bRemoveChannelDone, bRemoveChannelSuccess]()
 	{
-		PubnubSubsystem->RemoveChannelFromGroup(TestChannel1, TestGroup);
-	}, 0.2f));
+		*bRemoveChannelDone = false;
+		*bRemoveChannelSuccess = false;
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannel1, TestGroup, RemoveChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelDone]() { return *bRemoveChannelDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveChannelSuccess]()
+	{
+		TestTrue("RemoveChannelFromGroup (Channel1) should succeed", *bRemoveChannelSuccess);
+	}, 0.1f));
 
 	// 6. List and Verify Only Channel2 Remains
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels]()
@@ -235,10 +358,17 @@ bool FPubnubChannelAddRemoveListGroupTest::RunTest(const FString& Parameters)
 	}, 0.1f));
 
 	// 7. Remove Channel2 from Group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2, TestGroup, RemoveChannelCallback, bRemoveChannelDone, bRemoveChannelSuccess]()
 	{
-		PubnubSubsystem->RemoveChannelFromGroup(TestChannel2, TestGroup);
-	}, 0.2f));
+		*bRemoveChannelDone = false;
+		*bRemoveChannelSuccess = false;
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannel2, TestGroup, RemoveChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelDone]() { return *bRemoveChannelDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveChannelSuccess]()
+	{
+		TestTrue("RemoveChannelFromGroup (Channel2) should succeed", *bRemoveChannelSuccess);
+	}, 0.1f));
 
 	// 8. List and Verify Group is Empty
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels]()
@@ -271,6 +401,13 @@ bool FPubnubUnsubscribeFromGroupTest::RunTest(const FString& Parameters)
 	const FString TestGroup = SDK_PREFIX + "test_group_unsubscribe";
 	TSharedPtr<bool> TestMessageReceivedAfterUnsubscribe = MakeShared<bool>(false);
 
+	// Shared state for operation callbacks
+	TSharedPtr<bool> bAddChannelToGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bAddChannelToGroupSuccess = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishSuccess = MakeShared<bool>(false);
+	TSharedPtr<bool> bRemoveChannelFromGroupDone = MakeShared<bool>(false);
+
 	if (!InitTest())
 	{
 		AddError("TestInitialization failed for FPubnubUnsubscribeFromGroupTest");
@@ -293,29 +430,84 @@ bool FPubnubUnsubscribeFromGroupTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	// Step 1: Add channel to group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup]()
+	// Define callbacks
+	FOnAddChannelToGroupResponseNative AddChannelCallback;
+	AddChannelCallback.BindLambda([this, bAddChannelToGroupDone, bAddChannelToGroupSuccess](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->AddChannelToGroup(TestChannel, TestGroup);
-	}, 0.2f));
+		*bAddChannelToGroupDone = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bAddChannelToGroupSuccess = true;
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("AddChannelToGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnPublishMessageResponseNative PublishCallback;
+	PublishCallback.BindLambda([this, bPublishDone, bPublishSuccess](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*bPublishDone = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bPublishSuccess = true;
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("PublishMessage failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnRemoveChannelFromGroupResponseNative RemoveChannelCallback;
+	RemoveChannelCallback.BindLambda([this, bRemoveChannelFromGroupDone](const FPubnubOperationResult& Result)
+	{
+		*bRemoveChannelFromGroupDone = true;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("RemoveChannelFromGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	// Step 1: Add channel to group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup, AddChannelCallback, bAddChannelToGroupDone, bAddChannelToGroupSuccess]()
+	{
+		*bAddChannelToGroupDone = false;
+		*bAddChannelToGroupSuccess = false;
+		PubnubSubsystem->AddChannelToGroup(TestChannel, TestGroup, AddChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddChannelToGroupDone]() { return *bAddChannelToGroupDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddChannelToGroupSuccess]()
+	{
+		TestTrue("AddChannelToGroup should succeed", *bAddChannelToGroupSuccess);
+	}, 0.1f));
 
 	// Step 2: Subscribe to the group
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
 	{
 		PubnubSubsystem->SubscribeToGroup(TestGroup);
-	}, 0.2f));
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); // Allow subscription to establish
 
 	// Step 3: Unsubscribe from the group
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
 	{
 		PubnubSubsystem->UnsubscribeFromGroup(TestGroup);
-	}, 0.2f));
+	}, 2.0f));
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); // Allow unsubscription to process
 
 	// Step 4: Publish a message to the channel (that was in the group)
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage, PublishCallback, bPublishDone, bPublishSuccess]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
-	}, 0.3f));
+		*bPublishDone = false;
+		*bPublishSuccess = false;
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage, PublishCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishDone]() { return *bPublishDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishSuccess]()
+	{
+		TestTrue("PublishMessage should succeed", *bPublishSuccess);
+	}, 0.1f));
 
 	// Step 5: Wait for a period to see if the message is incorrectly received
 	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(MAX_WAIT_TIME / 2.0f));
@@ -326,11 +518,13 @@ bool FPubnubUnsubscribeFromGroupTest::RunTest(const FString& Parameters)
 		TestFalse(FString::Printf(TEXT("Message should NOT have been received via group '%s' after unsubscribing."), *TestGroup), *TestMessageReceivedAfterUnsubscribe);
 	}, 0.1f));
 
-	// Cleanup: Remove channel from group (optional, but good for test hygiene)
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup]()
+	// Cleanup: Remove channel from group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup, RemoveChannelCallback, bRemoveChannelFromGroupDone]()
 	{
-		PubnubSubsystem->RemoveChannelFromGroup(TestChannel, TestGroup);
-	}, 0.2f));
+		*bRemoveChannelFromGroupDone = false;
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannel, TestGroup, RemoveChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelFromGroupDone]() { return *bRemoveChannelFromGroupDone; }, MAX_WAIT_TIME));
 
 	CleanUp();
 	return true;
@@ -349,6 +543,16 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 
 	TSharedPtr<bool> bMessageReceivedOnDirectChannel = MakeShared<bool>(false);
 	TSharedPtr<bool> bMessageReceivedViaGroup = MakeShared<bool>(false);
+
+	// Shared state for operation callbacks
+	TSharedPtr<bool> bAddChannelToGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bAddChannelToGroupSuccess = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublish1Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublish1Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublish2Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublish2Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bRemoveChannelFromGroupDone = MakeShared<bool>(false);
+
 
 	if (!InitTest())
 	{
@@ -377,17 +581,77 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	// Step 1: Add a channel to the group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestGroupForAll]()
+	// Define callbacks
+	FOnAddChannelToGroupResponseNative AddChannelCallback;
+	AddChannelCallback.BindLambda([this, bAddChannelToGroupDone, bAddChannelToGroupSuccess](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->AddChannelToGroup(TestChannelInGroupForAll, TestGroupForAll);
-	}, 0.2f));
+		*bAddChannelToGroupDone = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bAddChannelToGroupSuccess = true;
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("AddChannelToGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnPublishMessageResponseNative PublishCallback1;
+	PublishCallback1.BindLambda([this, bPublish1Done, bPublish1Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*bPublish1Done = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bPublish1Success = true;
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("PublishMessage 1 failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnPublishMessageResponseNative PublishCallback2;
+	PublishCallback2.BindLambda([this, bPublish2Done, bPublish2Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*bPublish2Done = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bPublish2Success = true;
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("PublishMessage 2 failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnRemoveChannelFromGroupResponseNative RemoveChannelCallback;
+	RemoveChannelCallback.BindLambda([this, bRemoveChannelFromGroupDone](const FPubnubOperationResult& Result)
+	{
+		*bRemoveChannelFromGroupDone = true;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("RemoveChannelFromGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+	
+	// Step 1: Add a channel to the group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestGroupForAll, AddChannelCallback, bAddChannelToGroupDone, bAddChannelToGroupSuccess]()
+	{
+		*bAddChannelToGroupDone = false;
+		*bAddChannelToGroupSuccess = false;
+		PubnubSubsystem->AddChannelToGroup(TestChannelInGroupForAll, TestGroupForAll, AddChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddChannelToGroupDone]() { return *bAddChannelToGroupDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddChannelToGroupSuccess]()
+	{
+		TestTrue("AddChannelToGroup should succeed", *bAddChannelToGroupSuccess);
+	}, 0.1f));
 
 	// Step 2: Subscribe to the channel
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelForAll]()
 	{
 		PubnubSubsystem->SubscribeToChannel(TestChannelForAll);
-	}, 0.2f));
+	}, 2.2f));
 
 	// Step 3: Subscribe to the group
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroupForAll]()
@@ -402,16 +666,30 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 	}, 1.0f));
 
 	// Step 5: Publish a message to the direct channel
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelForAll, TestMessageForChannel]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelForAll, TestMessageForChannel, PublishCallback1, bPublish1Done, bPublish1Success]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannelForAll, TestMessageForChannel);
+		*bPublish1Done = false;
+		*bPublish1Success = false;
+		PubnubSubsystem->PublishMessage(TestChannelForAll, TestMessageForChannel, PublishCallback1);
+	}, 0.3f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublish1Done]() { return *bPublish1Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublish1Success]()
+	{
+		TestTrue("PublishMessage 1 should succeed", *bPublish1Success);
 	}, 0.3f));
 
 	// Step 6: Publish a message to the channel that was in the group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestMessageForGroupChannel]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestMessageForGroupChannel, PublishCallback2, bPublish2Done, bPublish2Success]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannelInGroupForAll, TestMessageForGroupChannel);
-	}, 0.3f));
+		*bPublish2Done = false;
+		*bPublish2Success = false;
+		PubnubSubsystem->PublishMessage(TestChannelInGroupForAll, TestMessageForGroupChannel, PublishCallback2);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublish2Done]() { return *bPublish2Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublish2Success]()
+	{
+		TestTrue("PublishMessage 2 should succeed", *bPublish2Success);
+	}, 0.1f));
 
 	// Step 7: Wait for a period to see if messages are incorrectly received
 	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(MAX_WAIT_TIME / 2.0f));
@@ -423,11 +701,13 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 		TestFalse(FString::Printf(TEXT("Message should NOT have been received via group '%s' after UnsubscribeFromAll."), *TestGroupForAll), *bMessageReceivedViaGroup);
 	}, 0.1f));
 
-	// Cleanup: Remove channel from group (optional, but good for test hygiene)
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestGroupForAll]()
+	// Cleanup: Remove channel from group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestGroupForAll, RemoveChannelCallback, bRemoveChannelFromGroupDone]()
 	{
-		PubnubSubsystem->RemoveChannelFromGroup(TestChannelInGroupForAll, TestGroupForAll);
-	}, 0.2f));
+		*bRemoveChannelFromGroupDone = false;
+		PubnubSubsystem->RemoveChannelFromGroup(TestChannelInGroupForAll, TestGroupForAll, RemoveChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelFromGroupDone]() { return *bRemoveChannelFromGroupDone; }, MAX_WAIT_TIME));
 
 	CleanUp();
 	return true;
@@ -445,6 +725,14 @@ bool FPubnubRemoveGroupTest::RunTest(const FString& Parameters)
 	TSharedPtr<TArray<FString>> ListedChannels = MakeShared<TArray<FString>>();
 	TSharedPtr<bool> bListOperationSuccess = MakeShared<bool>(false);
 	TSharedPtr<int> ListOperationStatus = MakeShared<int>(0);
+
+	// Shared state for operation callbacks
+	TSharedPtr<bool> bAddChannel1Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bAddChannel1Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bAddChannel2Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bAddChannel2Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bRemoveGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bRemoveGroupSuccess = MakeShared<bool>(false);
 
 	if(!InitTest())
 	{
@@ -476,25 +764,84 @@ bool FPubnubRemoveGroupTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	// Pre-cleanup: Ensure the group doesn't exist from a previous failed run.
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	FOnAddChannelToGroupResponseNative AddChannelCallback;
+	AddChannelCallback.BindLambda([this, bAddChannel1Done, bAddChannel1Success, bAddChannel2Done, bAddChannel2Success](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->RemoveChannelGroup(TestGroup);
+		// This callback will be used for both channels, so we need to track which one completed
+		// We'll use the done flags to determine which operation this is for
+		if (!*bAddChannel1Done)
+		{
+			*bAddChannel1Done = true;
+			if (!Result.Error && Result.Status == 200)
+			{
+				*bAddChannel1Success = true;
+			}
+			else
+			{
+				AddError(FString::Printf(TEXT("AddChannelToGroup (Channel1) failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+			}
+		}
+		else if (!*bAddChannel2Done)
+		{
+			*bAddChannel2Done = true;
+			if (!Result.Error && Result.Status == 200)
+			{
+				*bAddChannel2Success = true;
+			}
+			else
+			{
+				AddError(FString::Printf(TEXT("AddChannelToGroup (Channel2) failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+			}
+		}
+	});
+
+	FOnRemoveChannelGroupResponseNative RemoveGroupCallback;
+	RemoveGroupCallback.BindLambda([this, bRemoveGroupDone, bRemoveGroupSuccess](const FPubnubOperationResult& Result)
+	{
+		*bRemoveGroupDone = true;
+		if (!Result.Error && Result.Status == 200)
+		{
+			*bRemoveGroupSuccess = true;
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("RemoveChannelGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	// Pre-cleanup: Ensure the group doesn't exist from a previous failed run.
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, RemoveGroupCallback, bRemoveGroupDone]()
+	{
+		*bRemoveGroupDone = false;
+		PubnubSubsystem->RemoveChannelGroup(TestGroup, RemoveGroupCallback);
 	}, 0.1f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); // Wait for remove to process
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveGroupDone]() { return *bRemoveGroupDone; }, MAX_WAIT_TIME));
 
 	// 1. Add Channel1 to Group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestGroup, AddChannelCallback, bAddChannel1Done, bAddChannel1Success]()
 	{
-		PubnubSubsystem->AddChannelToGroup(TestChannel1, TestGroup);
-	}, 0.2f));
+		*bAddChannel1Done = false;
+		*bAddChannel1Success = false;
+		PubnubSubsystem->AddChannelToGroup(TestChannel1, TestGroup, AddChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddChannel1Done]() { return *bAddChannel1Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddChannel1Success]()
+	{
+		TestTrue("AddChannelToGroup (Channel1) should succeed", *bAddChannel1Success);
+	}, 0.1f));
 
 	// 2. Add Channel2 to Group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2, TestGroup, AddChannelCallback, bAddChannel2Done, bAddChannel2Success]()
 	{
-		PubnubSubsystem->AddChannelToGroup(TestChannel2, TestGroup);
-	}, 0.2f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); // Wait for add operations
+		*bAddChannel2Done = false;
+		*bAddChannel2Success = false;
+		PubnubSubsystem->AddChannelToGroup(TestChannel2, TestGroup, AddChannelCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bAddChannel2Done]() { return *bAddChannel2Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bAddChannel2Success]()
+	{
+		TestTrue("AddChannelToGroup (Channel2) should succeed", *bAddChannel2Success);
+	}, 0.1f));
 
 	// 3. List and Verify Channels are in the Group
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels, ListOperationStatus]()
@@ -518,11 +865,17 @@ bool FPubnubRemoveGroupTest::RunTest(const FString& Parameters)
 	}, 0.1f));
 
 	// 4. Remove the entire Group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, RemoveGroupCallback, bRemoveGroupDone, bRemoveGroupSuccess]()
 	{
-		PubnubSubsystem->RemoveChannelGroup(TestGroup);
-	}, 0.2f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Wait for remove group to process
+		*bRemoveGroupDone = false;
+		*bRemoveGroupSuccess = false;
+		PubnubSubsystem->RemoveChannelGroup(TestGroup, RemoveGroupCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveGroupDone]() { return *bRemoveGroupDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveGroupSuccess]()
+	{
+		TestTrue("RemoveChannelGroup should succeed", *bRemoveGroupSuccess);
+	}, 0.1f));
 
 	// 5. Attempt to List Channels from the (now removed) Group and Verify
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, ListDelegate, bListOperationCompleted, bListOperationSuccess, ListedChannels, ListOperationStatus]()

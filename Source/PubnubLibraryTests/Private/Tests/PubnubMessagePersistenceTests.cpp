@@ -30,13 +30,22 @@ bool FPubnubMessageCountsTest::RunTest(const FString& Parameters)
 	TSharedPtr<FString> InitialTimetoken = MakeShared<FString>(UPubnubTimetokenUtilities::GetCurrentUnixTimetoken());
 	TSharedPtr<bool> bMessageCountsOperationDone = MakeShared<bool>(false);
 	TSharedPtr<bool> bMessageCountsOperationSuccess = MakeShared<bool>(false);
-	TSharedPtr<int32> MessageCountResult = MakeShared<int32>(-1); // Initialize to an invalid count
+	TSharedPtr<int32> MessageCountResult = MakeShared<int32>(-1);
+	
+	// Variables to track publish operations
+	TSharedPtr<bool> bPublishMessage1Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage1Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage2Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage2Success = MakeShared<bool>(false);
 
 	if (!InitTest())
 	{
 		AddError("TestInitialization failed for FPubnubMessageCountsTest");
 		return false;
 	}
+
+	// Set UserID  
+	PubnubSubsystem->SetUserID(TestUser);
 
 	// General error handler
 	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
@@ -49,15 +58,39 @@ bool FPubnubMessageCountsTest::RunTest(const FString& Parameters)
 	MessageCountsCallback.BindLambda([this, bMessageCountsOperationDone, bMessageCountsOperationSuccess, MessageCountResult](const FPubnubOperationResult& Result, int Count)
 	{
 		*bMessageCountsOperationDone = true;
-		*bMessageCountsOperationSuccess = true; // Success is implied by the callback firing for MessageCounts
+		*bMessageCountsOperationSuccess = !Result.Error && Result.Status == 200;
 		*MessageCountResult = Count;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("MessageCounts failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
 	});
 
-	// Set UserID
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUser]()
+	// PublishMessage callbacks
+	FOnPublishMessageResponseNative PublishMessage1Callback;
+	PublishMessage1Callback.BindLambda([this, bPublishMessage1Done, bPublishMessage1Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
 	{
-		PubnubSubsystem->SetUserID(TestUser);
-	}, 0.1f));
+		*bPublishMessage1Done = true;
+		*bPublishMessage1Success = !Result.Error && Result.Status == 200;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("PublishMessage1 failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnPublishMessageResponseNative PublishMessage2Callback;
+	PublishMessage2Callback.BindLambda([this, bPublishMessage2Done, bPublishMessage2Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*bPublishMessage2Done = true;
+		*bPublishMessage2Success = !Result.Error && Result.Status == 200;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("PublishMessage2 failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
+	});
 
 	// Step 1: Call MessageCounts with initial timetoken, expect 0
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, InitialTimetoken, MessageCountsCallback, bMessageCountsOperationDone, bMessageCountsOperationSuccess, MessageCountResult]()
@@ -66,26 +99,32 @@ bool FPubnubMessageCountsTest::RunTest(const FString& Parameters)
 		*bMessageCountsOperationSuccess = false;
 		*MessageCountResult = -1;
 		PubnubSubsystem->MessageCounts(TestChannel, *InitialTimetoken, MessageCountsCallback);
-	}, 0.2f));
+	}, 0.1f));
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessageCountsOperationDone]() { return *bMessageCountsOperationDone; }, MAX_WAIT_TIME));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, MessageCountResult, bMessageCountsOperationSuccess, bMessageCountsOperationDone]()
 	{
-		TestTrue("MessageCounts (initial) operation should have completed (callback fired)", *bMessageCountsOperationDone);
-		if (*bMessageCountsOperationSuccess) // Still useful to check if error was caught by general handler
+		TestTrue("MessageCounts (initial) operation should have completed", *bMessageCountsOperationDone);
+		TestTrue("MessageCounts (initial) operation should have succeeded", *bMessageCountsOperationSuccess);
+		if (*bMessageCountsOperationSuccess)
 		{
 			TestEqual("Initial message count should be 0", *MessageCountResult, 0);
-		} else {
-			AddError("MessageCounts (initial) operation was marked as failed, likely via OnPubnubErrorNative.");
 		}
 	}, 0.1f));
 
-	// Step 2: Publish message 1 - (StoreInHistory = true)
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage1]()
+	// Step 2: Publish message 1 (StoreInHistory = true)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage1, PublishMessage1Callback, bPublishMessage1Done, bPublishMessage1Success]()
 	{
+		*bPublishMessage1Done = false;
+		*bPublishMessage1Success = false;
 		FPubnubPublishSettings PublishSettings;
 		PublishSettings.StoreInHistory = true;
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage1, PublishSettings);
-	}, 0.2f));
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage1, PublishMessage1Callback, PublishSettings);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessage1Done]() { return *bPublishMessage1Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessage1Success]()
+	{
+		TestTrue("PublishMessage1 should have succeeded", *bPublishMessage1Success);
+	}, 0.1f));
 
 	// Step 3: Call MessageCounts again, expect 1
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, InitialTimetoken, MessageCountsCallback, bMessageCountsOperationDone, bMessageCountsOperationSuccess, MessageCountResult]()
@@ -94,27 +133,32 @@ bool FPubnubMessageCountsTest::RunTest(const FString& Parameters)
 		*bMessageCountsOperationSuccess = false;
 		*MessageCountResult = -1;
 		PubnubSubsystem->MessageCounts(TestChannel, *InitialTimetoken, MessageCountsCallback);
-	}, 1.0f));
+	}, 0.1f));
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessageCountsOperationDone]() { return *bMessageCountsOperationDone; }, MAX_WAIT_TIME));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, MessageCountResult, bMessageCountsOperationSuccess, bMessageCountsOperationDone]()
 	{
-		TestTrue("MessageCounts (after 1st publish) operation should have completed (callback fired)", *bMessageCountsOperationDone);
+		TestTrue("MessageCounts (after 1st publish) operation should have completed", *bMessageCountsOperationDone);
+		TestTrue("MessageCounts (after 1st publish) operation should have succeeded", *bMessageCountsOperationSuccess);
 		if (*bMessageCountsOperationSuccess)
 		{
 			TestEqual("Message count after 1st publish should be 1", *MessageCountResult, 1);
-		} else {
-			AddError("MessageCounts (after 1st publish) operation was marked as failed, likely via OnPubnubErrorNative.");
 		}
 	}, 0.1f));
 
 	// Step 4: Publish message 2 (StoreInHistory = false)
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage2]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage2, PublishMessage2Callback, bPublishMessage2Done, bPublishMessage2Success]()
 	{
+		*bPublishMessage2Done = false;
+		*bPublishMessage2Success = false;
 		FPubnubPublishSettings PublishSettings;
 		PublishSettings.StoreInHistory = false;
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage2, PublishSettings);
-	}, 0.2f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Wait for publish to be processed
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage2, PublishMessage2Callback, PublishSettings);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessage2Done]() { return *bPublishMessage2Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessage2Success]()
+	{
+		TestTrue("PublishMessage2 should have succeeded", *bPublishMessage2Success);
+	}, 0.1f));
 
 	// Step 5: Call MessageCounts again, expect 1 (still)
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, InitialTimetoken, MessageCountsCallback, bMessageCountsOperationDone, bMessageCountsOperationSuccess, MessageCountResult]()
@@ -127,12 +171,11 @@ bool FPubnubMessageCountsTest::RunTest(const FString& Parameters)
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessageCountsOperationDone]() { return *bMessageCountsOperationDone; }, MAX_WAIT_TIME));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, MessageCountResult, bMessageCountsOperationSuccess, bMessageCountsOperationDone]()
 	{
-		TestTrue("MessageCounts (after 2nd publish, no store) operation should have completed (callback fired)", *bMessageCountsOperationDone);
+		TestTrue("MessageCounts (after 2nd publish, no store) operation should have completed", *bMessageCountsOperationDone);
+		TestTrue("MessageCounts (after 2nd publish, no store) operation should have succeeded", *bMessageCountsOperationSuccess);
 		if (*bMessageCountsOperationSuccess)
 		{
 			TestEqual("Message count after 2nd publish (no store) should still be 1", *MessageCountResult, 1);
-		} else {
-			AddError("MessageCounts (after 2nd publish, no store) operation was marked as failed, likely via OnPubnubErrorNative.");
 		}
 	}, 0.1f));
 	
@@ -155,7 +198,29 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 	TSharedPtr<bool> bFetchHistorySuccess = MakeShared<bool>(false);
 	TSharedPtr<TArray<FPubnubHistoryMessageData>> ReceivedHistoryMessages = MakeShared<TArray<FPubnubHistoryMessageData>>();
 
-	// Callback Definition
+	// Variables to track publish operations
+	TSharedPtr<bool> bPublishMessage1Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage1Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage2Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage2Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishJsonMessageDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishJsonMessageSuccess = MakeShared<bool>(false);
+
+	if (!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubFetchHistoryTest");
+		return false;
+	}
+
+	PubnubSubsystem->SetUserID(TestUser);
+	
+	// General error handler
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubFetchHistoryTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+	});
+
+	// FetchHistory Callback Definition
 	FOnFetchHistoryResponseNative FetchHistoryCallback;
 	FetchHistoryCallback.BindLambda([this, bFetchHistoryDone, bFetchHistorySuccess, ReceivedHistoryMessages](const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages)
 	{
@@ -172,39 +237,87 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	if (!InitTest())
+	// PublishMessage callbacks
+	FOnPublishMessageResponseNative PublishMessage1Callback;
+	PublishMessage1Callback.BindLambda([this, bPublishMessage1Done, bPublishMessage1Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
 	{
-		AddError("TestInitialization failed for FPubnubFetchHistoryTest");
-		return false;
-	}
-
-	PubnubSubsystem->SetUserID(TestUser);
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubFetchHistoryTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+		*bPublishMessage1Done = true;
+		*bPublishMessage1Success = !Result.Error && Result.Status == 200;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("PublishMessage1 failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
 	});
 
-	// Step 2: Publish Message 1
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage1Content]()
+	FOnPublishMessageResponseNative PublishMessage2Callback;
+	PublishMessage2Callback.BindLambda([this, bPublishMessage2Done, bPublishMessage2Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage1Content);
-	}, 1.2f));
+		*bPublishMessage2Done = true;
+		*bPublishMessage2Success = !Result.Error && Result.Status == 200;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("PublishMessage2 failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
+	});
 
-	// Step 3: Publish Message 2
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage2Content]()
+	FOnPublishMessageResponseNative PublishJsonMessageCallback;
+	PublishJsonMessageCallback.BindLambda([this, bPublishJsonMessageDone, bPublishJsonMessageSuccess](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage2Content);
-	}, 0.2f));
+		*bPublishJsonMessageDone = true;
+		*bPublishJsonMessageSuccess = !Result.Error && Result.Status == 200;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("PublishJsonMessage failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	// Step 1: Publish Message 1
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage1Content, PublishMessage1Callback, bPublishMessage1Done, bPublishMessage1Success]()
+	{
+		*bPublishMessage1Done = false;
+		*bPublishMessage1Success = false;
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage1Content, PublishMessage1Callback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessage1Done]() { return *bPublishMessage1Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessage1Success]()
+	{
+		TestTrue("PublishMessage1 should have succeeded", *bPublishMessage1Success);
+	}, 0.1f));
+
+	// Step 2: Publish Message 2
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage2Content, PublishMessage2Callback, bPublishMessage2Done, bPublishMessage2Success]()
+	{
+		*bPublishMessage2Done = false;
+		*bPublishMessage2Success = false;
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage2Content, PublishMessage2Callback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessage2Done]() { return *bPublishMessage2Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessage2Success]()
+	{
+		TestTrue("PublishMessage2 should have succeeded", *bPublishMessage2Success);
+	}, 0.1f));
 	
-	// Step 4: Publish JSON Message (New)
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestJsonMessageContent]()
+	// Step 3: Publish JSON Message
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestJsonMessageContent, PublishJsonMessageCallback, bPublishJsonMessageDone, bPublishJsonMessageSuccess]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestJsonMessageContent);
-	}, 0.2f));
+		*bPublishJsonMessageDone = false;
+		*bPublishJsonMessageSuccess = false;
+		PubnubSubsystem->PublishMessage(TestChannel, TestJsonMessageContent, PublishJsonMessageCallback);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishJsonMessageDone]() { return *bPublishJsonMessageDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishJsonMessageSuccess]()
+	{
+		TestTrue("PublishJsonMessage should have succeeded", *bPublishJsonMessageSuccess);
+	}, 0.1f));
 
-	// Step 6: Fetch History
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, FetchHistoryCallback, TimetokenAtTestStart]()
+	// Step 4: Fetch History
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, FetchHistoryCallback, TimetokenAtTestStart, bFetchHistoryDone, bFetchHistorySuccess]()
 	{
+		*bFetchHistoryDone = false;
+		*bFetchHistorySuccess = false;
 		FPubnubFetchHistorySettings Settings;
 		Settings.End = *TimetokenAtTestStart;
 		Settings.Start = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
@@ -212,11 +325,10 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 		Settings.IncludeUserID = true;
 
 		PubnubSubsystem->FetchHistory(TestChannel, FetchHistoryCallback, Settings);
-	}, 1.5f));
-
-	// Step 7: Verify History
+	}, 0.1f));
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bFetchHistoryDone]() { return *bFetchHistoryDone; }, MAX_WAIT_TIME));
 
+	// Step 5: Verify History
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUser, TestMessage1Content, TestMessage2Content, TestJsonMessageContent, ReceivedHistoryMessages, bFetchHistorySuccess]()
 	{
 		TestTrue("FetchHistory operation was reported as successful by callback.", *bFetchHistorySuccess);
@@ -263,7 +375,6 @@ bool FPubnubFetchHistoryTest::RunTest(const FString& Parameters)
 
 	}, 0.1f));
 
-	// Step 8: CleanUp
 	CleanUp();
 	return true;
 }

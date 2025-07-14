@@ -36,6 +36,12 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     UserDataToSet.Type = "PremiumUser";
     UserDataToSet.Custom = "{\"mood\": \"elated\", \"points\": 1000}";
     
+    // Shared state for operation callbacks
+    TSharedPtr<bool> bSetUserMetaDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetUserMetaSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveUserMetaDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveUserMetaSuccess = MakeShared<bool>(false);
+    
     TSharedPtr<bool> bGetUserMetaDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetUserMetaSuccess = MakeShared<bool>(false);
     TSharedPtr<FPubnubUserData> ReceivedUserData = MakeShared<FPubnubUserData>();
@@ -47,8 +53,35 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     TSharedPtr<bool> bGetUserMetaAfterRemoveDone = MakeShared<bool>(false);
     TSharedPtr<int> GetUserMetaAfterRemoveStatus = MakeShared<int>(0);
 
+    // Define callbacks
+    FOnSetUserMetadataResponseNative SetUserMetadataCallback;
+    SetUserMetadataCallback.BindLambda([this, bSetUserMetaDone, bSetUserMetaSuccess](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
+    {
+        *bSetUserMetaDone = true;
+        if (!Result.Error && Result.Status == 200)
+        {
+            *bSetUserMetaSuccess = true;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("SetUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
 
-    // Callbacks
+    FOnRemoveUserMetadataResponseNative RemoveUserMetadataCallback;
+    RemoveUserMetadataCallback.BindLambda([this, bRemoveUserMetaDone, bRemoveUserMetaSuccess](const FPubnubOperationResult& Result)
+    {
+        *bRemoveUserMetaDone = true;
+        if (!Result.Error && Result.Status == 200)
+        {
+            *bRemoveUserMetaSuccess = true;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("RemoveUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     FOnGetUserMetadataResponseNative GetUserMetadataCallback;
     GetUserMetadataCallback.BindLambda([this, bGetUserMetaDone, bGetUserMetaSuccess, ReceivedUserData](FPubnubOperationResult Result, FPubnubUserData UserData)
     {
@@ -104,11 +137,17 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
 	}, 0.1f));
 
     // Step 1: SetUserMetadata
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, UserDataToSet]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, UserDataToSet, SetUserMetadataCallback, bSetUserMetaDone, bSetUserMetaSuccess]()
     {
-        PubnubSubsystem->SetUserMetadata(TestUserID, UserDataToSet, nullptr, FPubnubGetMetadataInclude::FromValue(true)); 
+        *bSetUserMetaDone = false;
+        *bSetUserMetaSuccess = false;
+        PubnubSubsystem->SetUserMetadata(TestUserID, UserDataToSet, SetUserMetadataCallback, FPubnubGetMetadataInclude::FromValue(true)); 
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetUserMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetUserMetaDone]() { return *bSetUserMetaDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetUserMetaSuccess]()
+    {
+        TestTrue("SetUserMetadata should succeed", *bSetUserMetaSuccess);
+    }, 0.1f));
 
     // Step 2: GetUserMetadata and Compare
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetUserMetadataCallback, bGetUserMetaDone, bGetUserMetaSuccess, ReceivedUserData]()
@@ -185,11 +224,17 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     }, 0.1f));
     
     // Step 4: RemoveUserMetadata
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, RemoveUserMetadataCallback, bRemoveUserMetaDone, bRemoveUserMetaSuccess]()
     {
-        PubnubSubsystem->RemoveUserMetadata(TestUserID);
+        *bRemoveUserMetaDone = false;
+        *bRemoveUserMetaSuccess = false;
+        PubnubSubsystem->RemoveUserMetadata(TestUserID, RemoveUserMetadataCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for RemoveUserMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveUserMetaDone]() { return *bRemoveUserMetaDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveUserMetaSuccess]()
+    {
+        TestTrue("RemoveUserMetadata should succeed", *bRemoveUserMetaSuccess);
+    }, 0.1f));
 
     // Step 6: Verify Removal (using GetAllUserMetadata Filtered)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetAllUserMetadataCallback, bGetAllUserMetaDone, bGetAllUserMetaSuccess, ReceivedAllUsersData]()
@@ -233,6 +278,12 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     ChannelDataToSet.Type = "PublicDiscussion";
     ChannelDataToSet.Custom = "{\"topic\":\"testing\",\"moderated\":true}";
 
+    // Shared state for operation callbacks
+    TSharedPtr<bool> bSetChannelMetaDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetChannelMetaSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveChannelMetaDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveChannelMetaSuccess = MakeShared<bool>(false);
+
     TSharedPtr<bool> bGetChannelMetaDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetChannelMetaSuccess = MakeShared<bool>(false);
     TSharedPtr<FPubnubChannelData> ReceivedChannelData = MakeShared<FPubnubChannelData>();
@@ -244,7 +295,35 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     TSharedPtr<bool> bGetChannelMetaAfterRemoveDone = MakeShared<bool>(false);
     TSharedPtr<int> GetChannelMetaAfterRemoveStatus = MakeShared<int>(0);
 
-    // Callbacks
+    // Define callbacks
+    FOnSetChannelMetadataResponseNative SetChannelMetadataCallback;
+    SetChannelMetadataCallback.BindLambda([this, bSetChannelMetaDone, bSetChannelMetaSuccess](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
+    {
+        *bSetChannelMetaDone = true;
+        if (!Result.Error && Result.Status == 200)
+        {
+            *bSetChannelMetaSuccess = true;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("SetChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    FOnRemoveChannelMetadataResponseNative RemoveChannelMetadataCallback;
+    RemoveChannelMetadataCallback.BindLambda([this, bRemoveChannelMetaDone, bRemoveChannelMetaSuccess](const FPubnubOperationResult& Result)
+    {
+        *bRemoveChannelMetaDone = true;
+        if (!Result.Error && Result.Status == 200)
+        {
+            *bRemoveChannelMetaSuccess = true;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("RemoveChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     FOnGetChannelMetadataResponseNative GetChannelMetadataCallback;
     GetChannelMetadataCallback.BindLambda([this, bGetChannelMetaDone, bGetChannelMetaSuccess, ReceivedChannelData](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
     {
@@ -300,11 +379,17 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 1: SetChannelMetadata
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, SetChannelMetadataCallback, bSetChannelMetaDone, bSetChannelMetaSuccess]()
     {
-        PubnubSubsystem->SetChannelMetadata(ChannelDataToSet.ChannelID, ChannelDataToSet, nullptr, FPubnubGetMetadataInclude::FromValue(true));
+        *bSetChannelMetaDone = false;
+        *bSetChannelMetaSuccess = false;
+        PubnubSubsystem->SetChannelMetadata(ChannelDataToSet.ChannelID, ChannelDataToSet, SetChannelMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetChannelMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMetaDone]() { return *bSetChannelMetaDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMetaSuccess]()
+    {
+        TestTrue("SetChannelMetadata should succeed", *bSetChannelMetaSuccess);
+    }, 0.1f));
 
     // Step 2: GetChannelMetadata and Compare
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, GetChannelMetadataCallback, bGetChannelMetaDone, bGetChannelMetaSuccess, ReceivedChannelData]()
@@ -377,11 +462,17 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     }, 0.1f));
     
     // Step 4: RemoveChannelMetadata
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, RemoveChannelMetadataCallback, bRemoveChannelMetaDone, bRemoveChannelMetaSuccess]()
     {
-        PubnubSubsystem->RemoveChannelMetadata(ChannelDataToSet.ChannelID);
+        *bRemoveChannelMetaDone = false;
+        *bRemoveChannelMetaSuccess = false;
+        PubnubSubsystem->RemoveChannelMetadata(ChannelDataToSet.ChannelID, RemoveChannelMetadataCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for RemoveChannelMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelMetaDone]() { return *bRemoveChannelMetaDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveChannelMetaSuccess]()
+    {
+        TestTrue("RemoveChannelMetadata should succeed", *bRemoveChannelMetaSuccess);
+    }, 0.1f));
 
     // Step 6: Verify Removal (using GetAllChannelMetadata Filtered)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, GetAllChannelMetadataCallback, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData]()
@@ -447,13 +538,24 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
     ChannelSortCData.ChannelID = ChannelSortPrefix + "Gamma";
     ChannelSortCData.ChannelName = "Sort Channel Gamma";
 
+    // Shared state for operations
     TSharedPtr<bool> bGetAllDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetAllSuccess = MakeShared<bool>(false);
     TSharedPtr<TArray<FPubnubChannelData>> ReceivedChannels = MakeShared<TArray<FPubnubChannelData>>();
     TSharedPtr<FString> NextPage = MakeShared<FString>();
     TSharedPtr<FString> PrevPage = MakeShared<FString>();
 
-    // Callback
+    // Shared state for setup operations
+    TSharedPtr<int> SetupCounter = MakeShared<int>(0);
+    TSharedPtr<int> SetupErrors = MakeShared<int>(0);
+    const int TotalSetupOperations = 5; // 5 channels to set up
+
+    // Shared state for cleanup operations
+    TSharedPtr<int> CleanupCounter = MakeShared<int>(0);
+    TSharedPtr<int> CleanupErrors = MakeShared<int>(0);
+    const int TotalCleanupOperations = 5; // 5 channels to clean up
+
+    // Callback for GetAllChannelMetadata
     FOnGetAllChannelMetadataResponseNative GetAllCallback;
     GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedChannels, NextPage, PrevPage](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNextStr, FString PagePrevStr)
     {
@@ -472,6 +574,30 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         }
     });
 
+    // Callback for SetChannelMetadata operations
+    FOnSetChannelMetadataResponseNative SetChannelMetadataCallback;
+    SetChannelMetadataCallback.BindLambda([this, SetupCounter, SetupErrors](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
+    {
+        (*SetupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*SetupErrors)++;
+            AddError(FString::Printf(TEXT("SetChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Callback for RemoveChannelMetadata operations
+    FOnRemoveChannelMetadataResponseNative RemoveChannelMetadataCallback;
+    RemoveChannelMetadataCallback.BindLambda([this, CleanupCounter, CleanupErrors](const FPubnubOperationResult& Result)
+    {
+        (*CleanupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*CleanupErrors)++;
+            AddError(FString::Printf(TEXT("RemoveChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     if (!InitTest())
     {
         AddError("TestInitialization failed for FPubnubGetAllChannelMetadataWithOptionsTest");
@@ -484,21 +610,40 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         AddError(FString::Printf(TEXT("General Pubnub Error: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // Initial Setup: Set metadata for all test channels
-    auto SetMeta = [this](const FPubnubChannelData& Meta, const FPubnubGetMetadataInclude IncludeFields = FPubnubGetMetadataInclude(true, false, false))
+    // Initial Setup: Set metadata for all test channels using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelAData, SetChannelMetadataCallback, SetupCounter, SetupErrors]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Meta, IncludeFields]()
-        {
-            PubnubSubsystem->SetChannelMetadata(Meta.ChannelID, Meta, nullptr, IncludeFields);
-        }, 0.1f));
-    };
+        *SetupCounter = 0;
+        *SetupErrors = 0;
+        PubnubSubsystem->SetChannelMetadata(ChannelAData.ChannelID, ChannelAData, SetChannelMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
+    }, 0.1f));
 
-    SetMeta(ChannelAData, FPubnubGetMetadataInclude::FromValue(true));
-    SetMeta(ChannelBData);
-    SetMeta(ChannelSortAData);
-    SetMeta(ChannelSortBData);
-    SetMeta(ChannelSortCData);
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); // Wait for all SetChannelMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelBData, SetChannelMetadataCallback]()
+    {
+        PubnubSubsystem->SetChannelMetadata(ChannelBData.ChannelID, ChannelBData, SetChannelMetadataCallback, FPubnubGetMetadataInclude(true, false, false));
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortAData, SetChannelMetadataCallback]()
+    {
+        PubnubSubsystem->SetChannelMetadata(ChannelSortAData.ChannelID, ChannelSortAData, SetChannelMetadataCallback, FPubnubGetMetadataInclude(true, false, false));
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortBData, SetChannelMetadataCallback]()
+    {
+        PubnubSubsystem->SetChannelMetadata(ChannelSortBData.ChannelID, ChannelSortBData, SetChannelMetadataCallback, FPubnubGetMetadataInclude(true, false, false));
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortCData, SetChannelMetadataCallback]()
+    {
+        PubnubSubsystem->SetChannelMetadata(ChannelSortCData.ChannelID, ChannelSortCData, SetChannelMetadataCallback, FPubnubGetMetadataInclude(true, false, false));
+    }, 0.1f));
+
+    // Wait for all setup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SetupCounter, TotalSetupOperations]() { return *SetupCounter >= TotalSetupOperations; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetupErrors]()
+    {
+        TestEqual("Setup operations should complete without errors", *SetupErrors, 0);
+    }, 0.1f));
 
     // --- Scenario 1: Filter by a Custom Field ---
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, bGetAllDone, bGetAllSuccess, ReceivedChannels]()
@@ -631,17 +776,36 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         else if(*bGetAllSuccess) AddError(FString::Printf(TEXT("S5: Expected 1 channel for include test, got %d"), ReceivedChannels->Num()));
     }, 0.1f));
 
-    // Cleanup
-    auto RemoveMeta = [this](const FString& ChanID)
+    // Cleanup: Remove metadata for all test channels using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelAData, RemoveChannelMetadataCallback, CleanupCounter, CleanupErrors]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID]()
-        {
-            PubnubSubsystem->RemoveChannelMetadata(ChanID);
-        }, 0.1f));
-    };
-    RemoveMeta(ChannelAData.ChannelID); RemoveMeta(ChannelBData.ChannelID);
-    RemoveMeta(ChannelSortAData.ChannelID); RemoveMeta(ChannelSortBData.ChannelID); RemoveMeta(ChannelSortCData.ChannelID);
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Wait for removals
+        *CleanupCounter = 0;
+        *CleanupErrors = 0;
+        PubnubSubsystem->RemoveChannelMetadata(ChannelAData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelBData, RemoveChannelMetadataCallback]()
+    {
+        PubnubSubsystem->RemoveChannelMetadata(ChannelBData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortAData, RemoveChannelMetadataCallback]()
+    {
+        PubnubSubsystem->RemoveChannelMetadata(ChannelSortAData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortBData, RemoveChannelMetadataCallback]()
+    {
+        PubnubSubsystem->RemoveChannelMetadata(ChannelSortBData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortCData, RemoveChannelMetadataCallback]()
+    {
+        PubnubSubsystem->RemoveChannelMetadata(ChannelSortCData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    // Wait for all cleanup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([CleanupCounter, TotalCleanupOperations]() { return *CleanupCounter >= TotalCleanupOperations; }, MAX_WAIT_TIME));
 
     CleanUp();
     return true;
@@ -688,13 +852,24 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
 
     TArray<FPubnubUserData> AllTestUsers = {UserAData, UserBData, UserSortAData, UserSortBData, UserSortCData, UserSortDData};
 
+    // Shared state for operations
     TSharedPtr<bool> bGetAllDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetAllSuccess = MakeShared<bool>(false);
     TSharedPtr<TArray<FPubnubUserData>> ReceivedUsers = MakeShared<TArray<FPubnubUserData>>();
     TSharedPtr<FString> NextPage = MakeShared<FString>();
     TSharedPtr<FString> PrevPage = MakeShared<FString>();
 
-    // Callback
+    // Shared state for setup operations
+    TSharedPtr<int> SetupCounter = MakeShared<int>(0);
+    TSharedPtr<int> SetupErrors = MakeShared<int>(0);
+    const int TotalSetupOperations = AllTestUsers.Num(); // 6 users to set up
+
+    // Shared state for cleanup operations
+    TSharedPtr<int> CleanupCounter = MakeShared<int>(0);
+    TSharedPtr<int> CleanupErrors = MakeShared<int>(0);
+    const int TotalCleanupOperations = AllTestUsers.Num(); // 6 users to clean up
+
+    // Callback for GetAllUserMetadata
     FOnGetAllUserMetadataResponseNative GetAllCallback;
     GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedUsers, NextPage, PrevPage](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNextStr, FString PagePrevStr)
     {
@@ -713,6 +888,30 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
         }
     });
 
+    // Callback for SetUserMetadata operations
+    FOnSetUserMetadataResponseNative SetUserMetadataCallback;
+    SetUserMetadataCallback.BindLambda([this, SetupCounter, SetupErrors](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
+    {
+        (*SetupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*SetupErrors)++;
+            AddError(FString::Printf(TEXT("SetUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Callback for RemoveUserMetadata operations
+    FOnRemoveUserMetadataResponseNative RemoveUserMetadataCallback;
+    RemoveUserMetadataCallback.BindLambda([this, CleanupCounter, CleanupErrors](const FPubnubOperationResult& Result)
+    {
+        (*CleanupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*CleanupErrors)++;
+            AddError(FString::Printf(TEXT("RemoveUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     if (!InitTest())
     {
         AddError("TestInitialization failed for FPubnubGetAllUsersMetadataWithOptionsTest");
@@ -725,19 +924,25 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
         AddError(FString::Printf(TEXT("General Pubnub Error: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // Initial Setup: Set metadata for all test users
-    auto SetMeta = [this](const FPubnubUserData& Meta)
+    // Initial Setup: Set metadata for all test users using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetUserMetadataCallback, SetupCounter, SetupErrors, AllTestUsers]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Meta]()
+        *SetupCounter = 0;
+        *SetupErrors = 0;
+        
+        // Set metadata for all users
+        for (const auto& User : AllTestUsers)
         {
-            PubnubSubsystem->SetUserMetadata(Meta.UserID, Meta, nullptr, FPubnubGetMetadataInclude::FromValue(true));
-        }, 0.05f));
-    };
-    for (const auto& User : AllTestUsers)
+            PubnubSubsystem->SetUserMetadata(User.UserID, User, SetUserMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
+        }
+    }, 0.1f));
+
+    // Wait for all setup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SetupCounter, TotalSetupOperations]() { return *SetupCounter >= TotalSetupOperations; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetupErrors]()
     {
-	    SetMeta(User);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f));
+        TestEqual("Setup operations should complete without errors", *SetupErrors, 0);
+    }, 0.1f));
 
     // --- Scenario 1: Filter by a Custom Field ---
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
@@ -925,19 +1130,21 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
         else if(*bGetAllSuccess) AddError(FString::Printf(TEXT("S5b: Expected 1 user for include test (custom only), got %d"), ReceivedUsers->Num()));
     }, 0.1f));
 
-    // Cleanup
-    auto RemoveMeta = [this](const FString& UserID)
+    // Cleanup: Remove metadata for all test users using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RemoveUserMetadataCallback, CleanupCounter, CleanupErrors, AllTestUsers]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID]()
+        *CleanupCounter = 0;
+        *CleanupErrors = 0;
+        
+        // Remove metadata for all users
+        for(const auto& User : AllTestUsers)
         {
-            PubnubSubsystem->RemoveUserMetadata(UserID);
-        }, 0.05f));
-    };
-    for(const auto& User : AllTestUsers)
-    {
-        RemoveMeta(User.UserID);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f));
+            PubnubSubsystem->RemoveUserMetadata(User.UserID, RemoveUserMetadataCallback);
+        }
+    }, 0.1f));
+
+    // Wait for all cleanup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([CleanupCounter, TotalCleanupOperations]() { return *CleanupCounter >= TotalCleanupOperations; }, MAX_WAIT_TIME));
 
     CleanUp();
     return true;
@@ -1004,12 +1211,30 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
 
     TArray<FPubnubMembershipInputData> AllMemberships = {MembershipA, MembershipB, MembershipC, MembershipD};
 
+    // Shared state for operations
     TSharedPtr<bool> bGetMembershipsDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetMembershipsSuccess = MakeShared<bool>(false);
     TSharedPtr<TArray<FPubnubMembershipData>> ReceivedMemberships = MakeShared<TArray<FPubnubMembershipData>>();
     TSharedPtr<FString> NextPageToken = MakeShared<FString>();
     TSharedPtr<FString> PrevPageToken = MakeShared<FString>();
 
+    // Shared state for setup operations
+    TSharedPtr<int> SetupCounter = MakeShared<int>(0);
+    TSharedPtr<int> SetupErrors = MakeShared<int>(0);
+    const int TotalSetupOperations = AllTestChannels.Num(); // 4 channels to set up
+
+    // Shared state for cleanup operations
+    TSharedPtr<int> CleanupCounter = MakeShared<int>(0);
+    TSharedPtr<int> CleanupErrors = MakeShared<int>(0);
+    const int TotalCleanupOperations = AllTestChannels.Num(); // 4 channels to clean up
+
+    // Shared state for membership operations
+    TSharedPtr<bool> bSetMembershipsDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetMembershipsSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveMembershipsDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveMembershipsSuccess = MakeShared<bool>(false);
+
+    // Callback for GetMemberships
     FOnGetMembershipsResponseNative GetMembershipsCallback;
     GetMembershipsCallback.BindLambda(
         [this, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships, NextPageToken, PrevPageToken]
@@ -1030,6 +1255,62 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         }
     });
 
+    // Callback for SetChannelMetadata operations
+    FOnSetChannelMetadataResponseNative SetChannelMetadataCallback;
+    SetChannelMetadataCallback.BindLambda([this, SetupCounter, SetupErrors](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
+    {
+        (*SetupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*SetupErrors)++;
+            AddError(FString::Printf(TEXT("SetChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Callback for SetMemberships operations
+    FOnSetMembershipsResponseNative SetMembershipsCallback;
+    SetMembershipsCallback.BindLambda([this, bSetMembershipsDone, bSetMembershipsSuccess](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+    {
+        *bSetMembershipsDone = true;
+        if (Result.Error || Result.Status != 200)
+        {
+            *bSetMembershipsSuccess = false;
+            AddError(FString::Printf(TEXT("SetMemberships failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+        else
+        {
+            *bSetMembershipsSuccess = true;
+        }
+    });
+
+    // Callback for RemoveMemberships operations
+    FOnRemoveMembershipsResponseNative RemoveMembershipsCallback;
+    RemoveMembershipsCallback.BindLambda([this, bRemoveMembershipsDone, bRemoveMembershipsSuccess](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+    {
+        *bRemoveMembershipsDone = true;
+        if (Result.Error || Result.Status != 200)
+        {
+            *bRemoveMembershipsSuccess = false;
+            AddError(FString::Printf(TEXT("RemoveMemberships failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+        else
+        {
+            *bRemoveMembershipsSuccess = true;
+        }
+    });
+
+    // Callback for RemoveChannelMetadata operations
+    FOnRemoveChannelMetadataResponseNative RemoveChannelMetadataCallback;
+    RemoveChannelMetadataCallback.BindLambda([this, CleanupCounter, CleanupErrors](const FPubnubOperationResult& Result)
+    {
+        (*CleanupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*CleanupErrors)++;
+            AddError(FString::Printf(TEXT("RemoveChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     if (!InitTest())
     {
         AddError("TestInitialization failed for FPubnubMembershipManagementWithOptionsTest");
@@ -1042,26 +1323,38 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         AddError(FString::Printf(TEXT("General Pubnub Error in MembershipManagementTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // --- Initial Setup: Create Channel Metadata ---
-    auto CreateChannelMeta = [this](const FPubnubChannelData& Meta)
+    // --- Initial Setup: Create Channel Metadata using callbacks ---
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetChannelMetadataCallback, SetupCounter, SetupErrors, AllTestChannels]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Meta]()
+        *SetupCounter = 0;
+        *SetupErrors = 0;
+        
+        // Set metadata for all channels
+        for(const auto& Channel : AllTestChannels)
         {
-            PubnubSubsystem->SetChannelMetadata(Meta.ChannelID, Meta, nullptr, FPubnubGetMetadataInclude::FromValue(true));
-        }, 0.05f));
-    };
-    for(const auto& Channel : AllTestChannels)
+            PubnubSubsystem->SetChannelMetadata(Channel.ChannelID, Channel, SetChannelMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
+        }
+    }, 0.1f));
+
+    // Wait for all setup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SetupCounter, TotalSetupOperations]() { return *SetupCounter >= TotalSetupOperations; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetupErrors]()
     {
-	    CreateChannelMeta(Channel);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.5f));
+        TestEqual("Setup operations should complete without errors", *SetupErrors, 0);
+    }, 0.1f));
 
     // --- Scenario 1: SetMemberships ---
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, AllMemberships]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, AllMemberships, SetMembershipsCallback, bSetMembershipsDone, bSetMembershipsSuccess]()
     {
-        PubnubSubsystem->SetMemberships(TestUserID, AllMemberships);
+        *bSetMembershipsDone = false;
+        *bSetMembershipsSuccess = false;
+        PubnubSubsystem->SetMemberships(TestUserID, AllMemberships, SetMembershipsCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetMembershipsDone]() { return *bSetMembershipsDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetMembershipsSuccess]()
+    {
+        TestTrue("SetMemberships should succeed", *bSetMembershipsSuccess);
+    }, 0.1f));
 
     // --- Scenario 1b: Basic GetMemberships & Verification ---
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships]()
@@ -1085,7 +1378,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
             if (Membership.Channel.ChannelID == AllTestChannels[0].ChannelID)
             {
                 bFoundA = true;
-                TestEqual("S1b_A: Channel Name", Membership.Channel.ChannelName, AllMemberships[0].Channel);
+                TestEqual("S1b_A: Channel ID", Membership.Channel.ChannelID, AllMemberships[0].Channel);
                 TestTrue("S1b_A: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, AllMemberships[0].Custom));
                 TestEqual("S1b_A: Membership Status", Membership.Status, AllMemberships[0].Status);
                 TestEqual("S1b_A: Membership Type", Membership.Type, AllMemberships[0].Type);
@@ -1093,7 +1386,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
             else if (Membership.Channel.ChannelID == AllTestChannels[1].ChannelID)
             {
                 bFoundB = true;
-                TestEqual("S1b_B: Channel Name", Membership.Channel.ChannelName, AllMemberships[1].Channel);
+                TestEqual("S1b_B: Channel ID", Membership.Channel.ChannelID, AllMemberships[1].Channel);
                 TestTrue("S1b_B: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, AllMemberships[1].Custom));
                 TestEqual("S1b_B: Membership Status", Membership.Status, AllMemberships[1].Status);
                 TestTrue("S1b_B: Membership Type (should be empty)", Membership.Type.IsEmpty());
@@ -1101,7 +1394,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
             else if (Membership.Channel.ChannelID == AllTestChannels[2].ChannelID)
             {
                 bFoundC = true;
-                TestEqual("S1b_C: Channel Name", Membership.Channel.ChannelName, AllMemberships[2].Channel);
+                TestEqual("S1b_C: Channel ID", Membership.Channel.ChannelID, AllMemberships[2].Channel);
                 TestTrue("S1b_C: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, AllMemberships[2].Custom));
                 TestTrue("S1b_C: Membership Status (should be empty)", Membership.Status.IsEmpty());
                 TestEqual("S1b_C: Membership Type", Membership.Type, AllMemberships[2].Type);
@@ -1109,7 +1402,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
             else if (Membership.Channel.ChannelID == AllTestChannels[3].ChannelID)
 			{
 				bFoundD = true;
-				TestEqual("S1b_D: Channel Name", Membership.Channel.ChannelName, AllMemberships[3].Channel);
+				TestEqual("S1b_D: Channel ID", Membership.Channel.ChannelID, AllMemberships[3].Channel);
 				TestTrue("S1b_D: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, AllMemberships[3].Custom));
 				TestTrue("S1b_D: Membership Status (should be empty)", Membership.Status.IsEmpty());
 				TestTrue("S1b_D: Membership Type (should be empty)", Membership.Type.IsEmpty());
@@ -1266,11 +1559,17 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
 
     // --- Scenario 6: RemoveMemberships ---
     TArray<FString> ChannelsToRemove = {ChannelAData.ChannelID, ChannelCData.ChannelID};
-     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, ChannelsToRemove]()
+     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, ChannelsToRemove, RemoveMembershipsCallback, bRemoveMembershipsDone, bRemoveMembershipsSuccess]()
     {
-        PubnubSubsystem->RemoveMemberships(TestUserID, ChannelsToRemove);
+        *bRemoveMembershipsDone = false;
+        *bRemoveMembershipsSuccess = false;
+        PubnubSubsystem->RemoveMemberships(TestUserID, ChannelsToRemove, RemoveMembershipsCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveMembershipsDone]() { return *bRemoveMembershipsDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveMembershipsSuccess]()
+    {
+        TestTrue("RemoveMemberships should succeed", *bRemoveMembershipsSuccess);
+    }, 0.1f));
 
     // Verify removal
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships]()
@@ -1302,25 +1601,29 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
 
     // Cleanup: Remove remaining memberships
     TArray<FString> FinalChannelsToRemove = {ChannelBData.ChannelID, ChannelDData.ChannelID};
-     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, FinalChannelsToRemove]()
+     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, FinalChannelsToRemove, RemoveMembershipsCallback, bRemoveMembershipsDone, bRemoveMembershipsSuccess]()
     {
-        PubnubSubsystem->RemoveMemberships(TestUserID, FinalChannelsToRemove);
+        *bRemoveMembershipsDone = false;
+        *bRemoveMembershipsSuccess = false;
+        PubnubSubsystem->RemoveMemberships(TestUserID, FinalChannelsToRemove, RemoveMembershipsCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveMembershipsDone]() { return *bRemoveMembershipsDone; }, MAX_WAIT_TIME));
     
-    // Cleanup: Remove channel metadata
-    auto RemoveChannelMeta = [this](const FString& ChanID)
+    // Cleanup: Remove channel metadata using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RemoveChannelMetadataCallback, CleanupCounter, CleanupErrors, AllTestChannels]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID]()
+        *CleanupCounter = 0;
+        *CleanupErrors = 0;
+        
+        // Remove metadata for all channels
+        for(const auto& Channel : AllTestChannels)
         {
-            PubnubSubsystem->RemoveChannelMetadata(ChanID);
-        }, 0.05f));
-    };
-    for(const auto& Channel : AllTestChannels)
-    {
-        RemoveChannelMeta(Channel.ChannelID);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+            PubnubSubsystem->RemoveChannelMetadata(Channel.ChannelID, RemoveChannelMetadataCallback);
+        }
+    }, 0.1f));
+
+    // Wait for all cleanup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([CleanupCounter, TotalCleanupOperations]() { return *CleanupCounter >= TotalCleanupOperations; }, MAX_WAIT_TIME));
 
     CleanUp();
     return true;
@@ -1407,12 +1710,30 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
     MemberE.Status = TEXT("JustJoined");
     MemberE.Type = TEXT("FreshMeat");
 
+    // Shared state for operations
     TSharedPtr<bool> bGetMembersDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetMembersSuccess = MakeShared<bool>(false);
     TSharedPtr<TArray<FPubnubChannelMemberData>> ReceivedMembers = MakeShared<TArray<FPubnubChannelMemberData>>();
     TSharedPtr<FString> NextPage = MakeShared<FString>();
     TSharedPtr<FString> PrevPage = MakeShared<FString>();
 
+    // Shared state for setup operations
+    TSharedPtr<int> SetupCounter = MakeShared<int>(0);
+    TSharedPtr<int> SetupErrors = MakeShared<int>(0);
+    const int TotalSetupOperations = AllTestUsers.Num(); // 5 users to set up
+
+    // Shared state for cleanup operations
+    TSharedPtr<int> CleanupCounter = MakeShared<int>(0);
+    TSharedPtr<int> CleanupErrors = MakeShared<int>(0);
+    const int TotalCleanupOperations = AllTestUsers.Num(); // 5 users to clean up
+
+    // Shared state for channel member operations
+    TSharedPtr<bool> bSetChannelMembersDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetChannelMembersSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveChannelMembersDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveChannelMembersSuccess = MakeShared<bool>(false);
+
+    // Callback for GetChannelMembers
     FOnGetChannelMembersResponseNative GetMembersCallback;
     GetMembersCallback.BindLambda(
         [this, bGetMembersDone, bGetMembersSuccess, ReceivedMembers, NextPage, PrevPage]
@@ -1433,6 +1754,62 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
         }
     });
 
+    // Callback for SetUserMetadata operations
+    FOnSetUserMetadataResponseNative SetUserMetadataCallback;
+    SetUserMetadataCallback.BindLambda([this, SetupCounter, SetupErrors](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
+    {
+        (*SetupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*SetupErrors)++;
+            AddError(FString::Printf(TEXT("SetUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Callback for SetChannelMembers operations
+    FOnSetChannelMembersResponseNative SetChannelMembersCallback;
+    SetChannelMembersCallback.BindLambda([this, bSetChannelMembersDone, bSetChannelMembersSuccess](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+    {
+        *bSetChannelMembersDone = true;
+        if (Result.Error || Result.Status != 200)
+        {
+            *bSetChannelMembersSuccess = false;
+            AddError(FString::Printf(TEXT("SetChannelMembers failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+        else
+        {
+            *bSetChannelMembersSuccess = true;
+        }
+    });
+
+    // Callback for RemoveChannelMembers operations
+    FOnRemoveChannelMembersResponseNative RemoveChannelMembersCallback;
+    RemoveChannelMembersCallback.BindLambda([this, bRemoveChannelMembersDone, bRemoveChannelMembersSuccess](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+    {
+        *bRemoveChannelMembersDone = true;
+        if (Result.Error || Result.Status != 200)
+        {
+            *bRemoveChannelMembersSuccess = false;
+            AddError(FString::Printf(TEXT("RemoveChannelMembers failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+        else
+        {
+            *bRemoveChannelMembersSuccess = true;
+        }
+    });
+
+    // Callback for RemoveUserMetadata operations
+    FOnRemoveUserMetadataResponseNative RemoveUserMetadataCallback;
+    RemoveUserMetadataCallback.BindLambda([this, CleanupCounter, CleanupErrors](const FPubnubOperationResult& Result)
+    {
+        (*CleanupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*CleanupErrors)++;
+            AddError(FString::Printf(TEXT("RemoveUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     if (!InitTest())
     {
         AddError("TestInitialization failed for FPubnubChannelMembersManagementWithOptionsTest");
@@ -1445,27 +1822,39 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
         AddError(FString::Printf(TEXT("General Pubnub Error in ChannelMembersManagementTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // --- Initial Setup: Create User Metadata ---
-    auto CreateUserMeta = [this](const FPubnubUserData& Meta)
+    // --- Initial Setup: Create User Metadata using callbacks ---
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetUserMetadataCallback, SetupCounter, SetupErrors, AllTestUsers]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Meta]()
+        *SetupCounter = 0;
+        *SetupErrors = 0;
+        
+        // Set metadata for all users
+        for (const auto& User : AllTestUsers)
         {
-            PubnubSubsystem->SetUserMetadata(Meta.UserID, Meta, nullptr, FPubnubGetMetadataInclude::FromValue(true)); 
-        }, 0.05f));
-    };
-    for (const auto& User : AllTestUsers)
+            PubnubSubsystem->SetUserMetadata(User.UserID, User, SetUserMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
+        }
+    }, 0.1f));
+
+    // Wait for all setup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SetupCounter, TotalSetupOperations]() { return *SetupCounter >= TotalSetupOperations; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetupErrors]()
     {
-	    CreateUserMeta(User);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); 
+        TestEqual("Setup operations should complete without errors", *SetupErrors, 0);
+    }, 0.1f)); 
 
     // --- Scenario 1: SetChannelMembers (Initial members A, B) ---
     TArray<FPubnubChannelMemberInputData> SetMembers_AB = {MemberA, MemberB};
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_AB]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_AB, SetChannelMembersCallback, bSetChannelMembersDone, bSetChannelMembersSuccess]()
     {
-        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_AB);
+        *bSetChannelMembersDone = false;
+        *bSetChannelMembersSuccess = false;
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_AB, SetChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMembersDone]() { return *bSetChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMembersSuccess]()
+    {
+        TestTrue("SetChannelMembers (A,B) should succeed", *bSetChannelMembersSuccess);
+    }, 0.1f));
 
     // Verify A, B are members
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
@@ -1501,12 +1890,18 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
 
     // --- Scenario 1b: SetChannelMembers (Upserting UserC) ---
     TArray<FPubnubChannelMemberInputData> SetMembers_C = {MemberC};
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_C]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_C, SetChannelMembersCallback, bSetChannelMembersDone, bSetChannelMembersSuccess]()
     {
+        *bSetChannelMembersDone = false;
+        *bSetChannelMembersSuccess = false;
         // This should ADD UserC because SetChannelMembers acts as an UPSERT
-        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_C);
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_C, SetChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMembersDone]() { return *bSetChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMembersSuccess]()
+    {
+        TestTrue("SetChannelMembers (Upsert C) should succeed", *bSetChannelMembersSuccess);
+    }, 0.1f));
 
     // Verify A, B, C are members
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
@@ -1541,11 +1936,17 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
 
     // --- Scenario 2: Explicit Remove (A,B) then Set (D,E) to achieve replacement ---
     TArray<FString> RemoveMembers_AB = {MemberA.User, MemberB.User};
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, RemoveMembers_AB]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, RemoveMembers_AB, RemoveChannelMembersCallback, bRemoveChannelMembersDone, bRemoveChannelMembersSuccess]()
     {
-        PubnubSubsystem->RemoveChannelMembers(TestChannelID, RemoveMembers_AB);
+        *bRemoveChannelMembersDone = false;
+        *bRemoveChannelMembersSuccess = false;
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, RemoveMembers_AB, RemoveChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelMembersDone]() { return *bRemoveChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveChannelMembersSuccess]()
+    {
+        TestTrue("RemoveChannelMembers (A,B) should succeed", *bRemoveChannelMembersSuccess);
+    }, 0.1f));
 
     // Verify C is the only member
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
@@ -1567,11 +1968,17 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
 
     // Now Set D, E. Members should become C, D, E
     TArray<FPubnubChannelMemberInputData> SetMembers_DE = {MemberD, MemberE};
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_DE]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_DE, SetChannelMembersCallback, bSetChannelMembersDone, bSetChannelMembersSuccess]()
     {
-        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_DE);
+        *bSetChannelMembersDone = false;
+        *bSetChannelMembersSuccess = false;
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_DE, SetChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMembersDone]() { return *bSetChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMembersSuccess]()
+    {
+        TestTrue("SetChannelMembers (D,E) should succeed", *bSetChannelMembersSuccess);
+    }, 0.1f));
 
     // Verify C,D,E are members
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
@@ -1603,19 +2010,31 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
     AllMembers.Add(MemberC);
     AllMembers.Add(MemberD);
     AllMembers.Add(MemberE);
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, AllMembers]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, AllMembers, SetChannelMembersCallback, bSetChannelMembersDone, bSetChannelMembersSuccess]()
     {
-        PubnubSubsystem->SetChannelMembers(TestChannelID, AllMembers);
+        *bSetChannelMembersDone = false;
+        *bSetChannelMembersSuccess = false;
+        PubnubSubsystem->SetChannelMembers(TestChannelID, AllMembers, SetChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.5f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMembersDone]() { return *bSetChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMembersSuccess]()
+    {
+        TestTrue("SetChannelMembers (All members) should succeed", *bSetChannelMembersSuccess);
+    }, 0.1f));
 
     // --- Scenario 7: RemoveChannelMembers & Verification ---
     TArray<FString> UsersToRemove_AD = {MemberA.User, MemberD.User};
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, UsersToRemove_AD]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, UsersToRemove_AD, RemoveChannelMembersCallback, bRemoveChannelMembersDone, bRemoveChannelMembersSuccess]()
     {
-        PubnubSubsystem->RemoveChannelMembers(TestChannelID, UsersToRemove_AD);
+        *bRemoveChannelMembersDone = false;
+        *bRemoveChannelMembersSuccess = false;
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, UsersToRemove_AD, RemoveChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelMembersDone]() { return *bRemoveChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveChannelMembersSuccess]()
+    {
+        TestTrue("RemoveChannelMembers (A,D) should succeed", *bRemoveChannelMembersSuccess);
+    }, 0.1f));
     
     // Verify B,C,E are members
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
@@ -1646,25 +2065,29 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
 
     // Cleanup: Remove remaining members
     TArray<FString> FinalUsersToRemove = {MemberB.User, MemberC.User, MemberE.User};
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, FinalUsersToRemove]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, FinalUsersToRemove, RemoveChannelMembersCallback, bRemoveChannelMembersDone, bRemoveChannelMembersSuccess]()
     {
-        PubnubSubsystem->RemoveChannelMembers(TestChannelID, FinalUsersToRemove);
+        *bRemoveChannelMembersDone = false;
+        *bRemoveChannelMembersSuccess = false;
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, FinalUsersToRemove, RemoveChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelMembersDone]() { return *bRemoveChannelMembersDone; }, MAX_WAIT_TIME));
 
-    // Cleanup: Remove user metadata
-    auto RemoveUserMeta = [this](const FString& UserID)
+    // Cleanup: Remove user metadata using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RemoveUserMetadataCallback, CleanupCounter, CleanupErrors, AllTestUsers]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID]()
+        *CleanupCounter = 0;
+        *CleanupErrors = 0;
+        
+        // Remove metadata for all users
+        for(const auto& User : AllTestUsers)
         {
-            PubnubSubsystem->RemoveUserMetadata(UserID);
-        }, 0.05f));
-    };
-    for(const auto& User : AllTestUsers)
-    {
-        RemoveUserMeta(User.UserID);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+            PubnubSubsystem->RemoveUserMetadata(User.UserID, RemoveUserMetadataCallback);
+        }
+    }, 0.1f));
+
+    // Wait for all cleanup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([CleanupCounter, TotalCleanupOperations]() { return *CleanupCounter >= TotalCleanupOperations; }, MAX_WAIT_TIME));
     
     CleanUp();
     return true;
