@@ -27,7 +27,7 @@ FString UPubnubJsonUtilities::JsonArrayToString(TArray<TSharedPtr<FJsonValue>> J
 {
 	if(JsonArray.IsEmpty())
 	{
-		return "";
+		return "[]";
 	}
 	
 	FString JsonString;
@@ -818,6 +818,11 @@ TArray<FPubnubMembershipData> UPubnubJsonUtilities::GetMembershipsDataArrayFromJ
 
 FString UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(const TArray<FPubnubMembershipInputData>& MembershipsInputData)
 {
+	if(MembershipsInputData.IsEmpty())
+	{
+		return "[]";
+	}
+	
 	TArray<TSharedPtr<FJsonValue>> JsonArray;
 	for (const auto& MembershipData : MembershipsInputData)
 	{
@@ -930,11 +935,6 @@ TArray<FPubnubChannelMemberData> UPubnubJsonUtilities::GetChannelMembersDataArra
 
 TArray<FPubnubChannelMemberData> UPubnubJsonUtilities::GetChannelMembersDataArrayFromJson(TSharedPtr<FJsonObject> JsonObject)
 {
-	if(!JsonObject)
-	{
-		return {};
-	}
-	
 	TArray<FPubnubChannelMemberData> ChannelMembersDataArray;
 
 	if (JsonObject->HasField(ANSI_TO_TCHAR("data")))

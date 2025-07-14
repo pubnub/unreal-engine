@@ -2,7 +2,6 @@
 
 #include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
-#include "PubnubSubsystem.h"
 #include "PubnubStructLibrary.h"
 
 
@@ -51,19 +50,7 @@ void UPubnubTokenUtilities::AddChannelPermissionsToJson(TArray<FChannelGrant> Ch
 	
 	for(auto Channel : Channels)
 	{
-		//Create bit mask value from all permissions
-		struct pam_permission ChPerm;
-		ChPerm.read = Channel.Permissions.Read;
-		ChPerm.write = Channel.Permissions.Write;
-		ChPerm.del = Channel.Permissions.Delete;
-		ChPerm.get = Channel.Permissions.Get;
-		ChPerm.update = Channel.Permissions.Update;
-		ChPerm.manage = Channel.Permissions.Manage;
-		ChPerm.join = Channel.Permissions.Join;
-		ChPerm.create = false;
-		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
-
-		ChannelsObject->SetNumberField(Channel.Channel, PermBitMask);
+		ChannelsObject->SetNumberField(Channel.Channel, CalculateChannelPermissionsBitmask(Channel.Permissions));
 	}
 
 	JsonObject->SetObjectField(ANSI_TO_TCHAR("channels"), ChannelsObject);
@@ -78,19 +65,7 @@ void UPubnubTokenUtilities::AddChannelGroupPermissionsToJson(TArray<FChannelGrou
 	
 	for(auto ChannelGroup : ChannelGroups)
 	{
-		//Create bit mask value from all permissions
-		struct pam_permission ChPerm;
-		ChPerm.read = ChannelGroup.Permissions.Read;
-		ChPerm.manage = ChannelGroup.Permissions.Manage;
-		ChPerm.write = false;
-		ChPerm.del = false;
-		ChPerm.get = false;
-		ChPerm.update = false;
-		ChPerm.join = false;
-		ChPerm.create = false;
-		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
-
-		ChannelGroupsObject->SetNumberField(ChannelGroup.ChannelGroup, PermBitMask);
+		ChannelGroupsObject->SetNumberField(ChannelGroup.ChannelGroup, CalculateChannelGroupPermissionsBitmask(ChannelGroup.Permissions));
 	}
 	
 	JsonObject->SetObjectField(ANSI_TO_TCHAR("groups"), ChannelGroupsObject);
@@ -105,19 +80,7 @@ void UPubnubTokenUtilities::AddUserPermissionsToJson(TArray<FUserGrant> Users, T
 	
 	for(auto User : Users)
 	{
-		//Create bit mask value from all permissions
-		struct pam_permission ChPerm;
-		ChPerm.del = User.Permissions.Delete;
-		ChPerm.get = User.Permissions.Get;
-		ChPerm.update = User.Permissions.Update;
-		ChPerm.read = false;
-		ChPerm.write = false;
-		ChPerm.manage = false;
-		ChPerm.join = false;
-		ChPerm.create = false;
-		int PermBitMask = pubnub_get_grant_bit_mask_value(ChPerm);
-
-		UsersObject->SetNumberField(User.User, PermBitMask);
+		UsersObject->SetNumberField(User.User, CalculateUserPermissionsBitmask(User.Permissions));
 	}
 
 	JsonObject->SetObjectField(ANSI_TO_TCHAR("uuids"), UsersObject);
@@ -252,6 +215,42 @@ FString UPubnubTokenUtilities::ReworkParsedToken(const FString& ParsedToken)
 	return UPubnubJsonUtilities::JsonObjectToString(ReworkedTokenObject);
 }
 
+int UPubnubTokenUtilities::CalculateChannelPermissionsBitmask(const FPubnubChannelPermissions& Perms)
+{
+	// Calculate bitmask for channel permissions based on individual permission flags
+	// Bit values: READ=1, WRITE=2, MANAGE=4, DELETE=8, GET=32, UPDATE=64, JOIN=128
+	int Bitmask = 0;
+	if (Perms.Read) Bitmask |= 1;
+	if (Perms.Write) Bitmask |= 2;
+	if (Perms.Manage) Bitmask |= 4;
+	if (Perms.Delete) Bitmask |= 8;
+	if (Perms.Get) Bitmask |= 32;
+	if (Perms.Update) Bitmask |= 64;
+	if (Perms.Join) Bitmask |= 128;
+	return Bitmask;
+}
+
+int UPubnubTokenUtilities::CalculateChannelGroupPermissionsBitmask(const FPubnubChannelGroupPermissions& Perms)
+{
+	// Calculate bitmask for channel group permissions based on individual permission flags
+	// Bit values: READ=1, MANAGE=4
+	int Bitmask = 0;
+	if (Perms.Read) Bitmask |= 1;
+	if (Perms.Manage) Bitmask |= 4;
+	return Bitmask;
+}
+
+int UPubnubTokenUtilities::CalculateUserPermissionsBitmask(const FPubnubUserPermissions& Perms)
+{
+	// Calculate bitmask for user permissions based on individual permission flags
+	// Bit values: DELETE=8, GET=32, UPDATE=64
+	int Bitmask = 0;
+	if (Perms.Delete) Bitmask |= 8;
+	if (Perms.Get) Bitmask |= 32;
+	if (Perms.Update) Bitmask |= 64;
+	return Bitmask;
+}
+
 TSharedPtr<FJsonObject> UPubnubTokenUtilities::ConvertChannelPermissionsFromBitmask(const TSharedPtr<FJsonObject>& SourceObject)
 {
 	TSharedPtr<FJsonObject> ConvertedObject = MakeShareable(new FJsonObject);
@@ -261,7 +260,7 @@ TSharedPtr<FJsonObject> UPubnubTokenUtilities::ConvertChannelPermissionsFromBitm
 		if (Pair.Value.IsValid() && Pair.Value->Type == EJson::Number)
 		{
 			int Bitmask = static_cast<int>(Pair.Value->AsNumber());
-			TSharedPtr<FJsonObject> PermissionsObject = CreateChannelPermissionsObject(Bitmask);
+			TSharedPtr<FJsonObject> PermissionsObject = CreateChannelPermissionsFromBitmask(Bitmask);
 			ConvertedObject->SetObjectField(Pair.Key, PermissionsObject);
 		}
 	}
@@ -278,7 +277,7 @@ TSharedPtr<FJsonObject> UPubnubTokenUtilities::ConvertChannelGroupPermissionsFro
 		if (Pair.Value.IsValid() && Pair.Value->Type == EJson::Number)
 		{
 			int Bitmask = static_cast<int>(Pair.Value->AsNumber());
-			TSharedPtr<FJsonObject> PermissionsObject = CreateChannelGroupPermissionsObject(Bitmask);
+			TSharedPtr<FJsonObject> PermissionsObject = CreateChannelGroupPermissionsFromBitmask(Bitmask);
 			ConvertedObject->SetObjectField(Pair.Key, PermissionsObject);
 		}
 	}
@@ -295,7 +294,7 @@ TSharedPtr<FJsonObject> UPubnubTokenUtilities::ConvertUserPermissionsFromBitmask
 		if (Pair.Value.IsValid() && Pair.Value->Type == EJson::Number)
 		{
 			int Bitmask = static_cast<int>(Pair.Value->AsNumber());
-			TSharedPtr<FJsonObject> PermissionsObject = CreateUserPermissionsObject(Bitmask);
+			TSharedPtr<FJsonObject> PermissionsObject = CreateUserPermissionsFromBitmask(Bitmask);
 			ConvertedObject->SetObjectField(Pair.Key, PermissionsObject);
 		}
 	}
@@ -303,7 +302,7 @@ TSharedPtr<FJsonObject> UPubnubTokenUtilities::ConvertUserPermissionsFromBitmask
 	return ConvertedObject;
 }
 
-TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateChannelPermissionsObject(int Bitmask)
+TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateChannelPermissionsFromBitmask(int Bitmask)
 {
 	TSharedPtr<FJsonObject> PermissionsObject = MakeShareable(new FJsonObject);
 	
@@ -322,7 +321,7 @@ TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateChannelPermissionsObject(in
 	return PermissionsObject;
 }
 
-TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateChannelGroupPermissionsObject(int Bitmask)
+TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateChannelGroupPermissionsFromBitmask(int Bitmask)
 {
 	TSharedPtr<FJsonObject> PermissionsObject = MakeShareable(new FJsonObject);
 	
@@ -336,7 +335,7 @@ TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateChannelGroupPermissionsObje
 	return PermissionsObject;
 }
 
-TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateUserPermissionsObject(int Bitmask)
+TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateUserPermissionsFromBitmask(int Bitmask)
 {
 	TSharedPtr<FJsonObject> PermissionsObject = MakeShareable(new FJsonObject);
 	

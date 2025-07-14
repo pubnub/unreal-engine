@@ -31,6 +31,29 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAddMessageActionJsonToDataUnitTest, "Pubnub.aU
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipsJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipsJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMembersJsonToDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMembersJsonToData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetOperationResultFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetOperationResultFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FJsonObjectToStringUnitTest, "Pubnub.aUnit.JsonUtilities.JsonObjectToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FJsonArrayToStringUnitTest, "Pubnub.aUnit.JsonUtilities.JsonArrayToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FStringToJsonObjectUnitTest, "Pubnub.aUnit.JsonUtilities.StringToJsonObject", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FStringToJsonArrayUnitTest, "Pubnub.aUnit.JsonUtilities.StringToJsonArray", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSerializeStringUnitTest, "Pubnub.aUnit.JsonUtilities.SerializeString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDeserializeStringUnitTest, "Pubnub.aUnit.JsonUtilities.DeserializeString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FIsCorrectJsonStringUnitTest, "Pubnub.aUnit.JsonUtilities.IsCorrectJsonString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAreJsonObjectStringsEqualUnitTest, "Pubnub.aUnit.JsonUtilities.AreJsonObjectStringsEqual", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetUserDataFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetUserDataFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromUserDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromUserData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelDataFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelDataFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromChannelData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipDataFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipDataFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipInputDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipInputData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipsDataArrayFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipsDataArrayFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipsDataArrayUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipsDataArray", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMemberDataFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMemberDataFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMemberDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromChannelMemberData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMembersDataArrayFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMembersDataArrayFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMembersDataArrayUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromChannelMembersDataArray", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipsToRemoveUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipsToRemove", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMembersToRemoveUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromChannelMembersToRemove", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetOperationResultFromJsonAppContextUnitTest, "Pubnub.aUnit.JsonUtilities.GetOperationResultFromJsonAppContext", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 
 
 
@@ -1462,6 +1485,715 @@ bool FGetOperationResultFromJsonUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Partial JSON Error: Status should be 0 (default)", ResultPartialError.Status, 0);
 	TestTrue("Partial JSON Error: Error should be true", ResultPartialError.Error);
 	TestEqual("Partial JSON Error: ErrorMessage should be 'A specific error'", ResultPartialError.ErrorMessage, "A specific error");
+
+	return true;
+}
+
+bool FJsonObjectToStringUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with valid JSON object
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetStringField("name", "test");
+	JsonObject->SetNumberField("value", 42);
+	JsonObject->SetBoolField("active", true);
+	
+	FString Result = UPubnubJsonUtilities::JsonObjectToString(JsonObject);
+	TestTrue("Should contain name field", Result.Contains("\"name\":\"test\""));
+	TestTrue("Should contain value field", Result.Contains("\"value\":42"));
+	TestTrue("Should contain active field", Result.Contains("\"active\":true"));
+
+	// Test with null JsonObject
+	TSharedPtr<FJsonObject> NullObject = nullptr;
+	FString NullResult = UPubnubJsonUtilities::JsonObjectToString(NullObject);
+	TestEqual("Null JsonObject should return empty string", NullResult, "");
+
+	// Test with empty JsonObject
+	TSharedPtr<FJsonObject> EmptyObject = MakeShareable(new FJsonObject);
+	FString EmptyResult = UPubnubJsonUtilities::JsonObjectToString(EmptyObject);
+	TestEqual("Empty JsonObject should return {}", EmptyResult, "{}");
+
+	return true;
+}
+
+bool FJsonArrayToStringUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with valid JSON array
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	JsonArray.Add(MakeShareable(new FJsonValueString("test1")));
+	JsonArray.Add(MakeShareable(new FJsonValueNumber(42)));
+	JsonArray.Add(MakeShareable(new FJsonValueBoolean(true)));
+	
+	FString Result = UPubnubJsonUtilities::JsonArrayToString(JsonArray);
+	TestTrue("Should contain string value", Result.Contains("\"test1\""));
+	TestTrue("Should contain number value", Result.Contains("42"));
+	TestTrue("Should contain boolean value", Result.Contains("true"));
+
+	// Test with empty array
+	TArray<TSharedPtr<FJsonValue>> EmptyArray;
+	FString EmptyResult = UPubnubJsonUtilities::JsonArrayToString(EmptyArray);
+	TestEqual("Empty array should return empty string", EmptyResult, "[]");
+
+	return true;
+}
+
+bool FStringToJsonObjectUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with valid JSON string
+	FString ValidJson = "{\"name\":\"test\",\"value\":42,\"active\":true}";
+	TSharedPtr<FJsonObject> JsonObject;
+	bool Success = UPubnubJsonUtilities::StringToJsonObject(ValidJson, JsonObject);
+	
+	TestTrue("Should successfully parse valid JSON", Success);
+	TestTrue("JsonObject should not be null", JsonObject.IsValid());
+	TestEqual("Should parse name field correctly", JsonObject->GetStringField(ANSI_TO_TCHAR("name")), "test");
+	TestEqual("Should parse value field correctly", JsonObject->GetIntegerField(ANSI_TO_TCHAR("value")), 42);
+	TestTrue("Should parse active field correctly", JsonObject->GetBoolField(ANSI_TO_TCHAR("active")));
+
+	// Test with invalid JSON string
+	FString InvalidJson = "this is not json";
+	TSharedPtr<FJsonObject> InvalidObject;
+	bool InvalidSuccess = UPubnubJsonUtilities::StringToJsonObject(InvalidJson, InvalidObject);
+	
+	TestFalse("Should fail to parse invalid JSON", InvalidSuccess);
+
+	// Test with empty string
+	FString EmptyJson = "";
+	TSharedPtr<FJsonObject> EmptyObject;
+	bool EmptySuccess = UPubnubJsonUtilities::StringToJsonObject(EmptyJson, EmptyObject);
+	
+	TestFalse("Should fail to parse empty string", EmptySuccess);
+
+	return true;
+}
+
+bool FStringToJsonArrayUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with valid JSON array string
+	FString ValidJson = "[\"test1\",42,true]";
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	bool Success = UPubnubJsonUtilities::StringToJsonArray(ValidJson, JsonArray);
+	
+	TestTrue("Should successfully parse valid JSON array", Success);
+	TestEqual("Should have 3 elements", JsonArray.Num(), 3);
+	TestEqual("First element should be string", JsonArray[0]->AsString(), "test1");
+	TestEqual("Second element should be number", (int)JsonArray[1]->AsNumber(), 42);
+	TestTrue("Third element should be boolean", JsonArray[2]->AsBool());
+
+	// Test with invalid JSON string
+	FString InvalidJson = "this is not json";
+	TArray<TSharedPtr<FJsonValue>> InvalidArray;
+	bool InvalidSuccess = UPubnubJsonUtilities::StringToJsonArray(InvalidJson, InvalidArray);
+	
+	TestFalse("Should fail to parse invalid JSON", InvalidSuccess);
+
+	// Test with empty string
+	FString EmptyJson = "";
+	TArray<TSharedPtr<FJsonValue>> EmptyArray;
+	bool EmptySuccess = UPubnubJsonUtilities::StringToJsonArray(EmptyJson, EmptyArray);
+	
+	TestFalse("Should fail to parse empty string", EmptySuccess);
+
+	return true;
+}
+
+bool FSerializeStringUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with simple string
+	FString SimpleString = "hello world";
+	FString SerializedSimple = UPubnubJsonUtilities::SerializeString(SimpleString);
+	TestEqual("Simple string should be quoted", SerializedSimple, "\"hello world\"");
+
+	// Test with string containing quotes
+	FString QuotedString = "hello \"world\"";
+	FString SerializedQuoted = UPubnubJsonUtilities::SerializeString(QuotedString);
+	TestEqual("Quotes should be escaped", SerializedQuoted, "\"hello \\\"world\\\"\"");
+
+	// Test with string containing backslashes
+	FString BackslashString = "hello\\world";
+	FString SerializedBackslash = UPubnubJsonUtilities::SerializeString(BackslashString);
+	TestEqual("Backslashes should be escaped", SerializedBackslash, "\"hello\\\\world\"");
+
+	// Test with string containing special characters
+	FString SpecialString = "hello\nworld\ttab";
+	FString SerializedSpecial = UPubnubJsonUtilities::SerializeString(SpecialString);
+	TestTrue("Newlines should be escaped", SerializedSpecial.Contains("\\n"));
+	TestTrue("Tabs should be escaped", SerializedSpecial.Contains("\\t"));
+
+	// Test with empty string
+	FString EmptyString = "";
+	FString SerializedEmpty = UPubnubJsonUtilities::SerializeString(EmptyString);
+	TestEqual("Empty string should become empty quotes", SerializedEmpty, "\"\"");
+
+	return true;
+}
+
+bool FDeserializeStringUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with simple quoted string
+	FString QuotedString = "\"hello world\"";
+	FString DeserializedSimple = UPubnubJsonUtilities::DeserializeString(QuotedString);
+	TestEqual("Quoted string should be unquoted", DeserializedSimple, "hello world");
+
+	// Test with escaped quotes
+	FString EscapedQuotes = "\"hello \\\"world\\\"\"";
+	FString DeserializedQuotes = UPubnubJsonUtilities::DeserializeString(EscapedQuotes);
+	TestEqual("Escaped quotes should be unescaped", DeserializedQuotes, "hello \"world\"");
+
+	// Test with escaped backslashes
+	FString EscapedBackslash = "\"hello\\\\world\"";
+	FString DeserializedBackslash = UPubnubJsonUtilities::DeserializeString(EscapedBackslash);
+	TestEqual("Escaped backslashes should be unescaped", DeserializedBackslash, "hello\\world");
+
+	// Test with unquoted string (should return as-is)
+	FString UnquotedString = "hello world";
+	FString DeserializedUnquoted = UPubnubJsonUtilities::DeserializeString(UnquotedString);
+	TestEqual("Unquoted string should return as-is", DeserializedUnquoted, UnquotedString);
+
+	// Test with empty quotes
+	FString EmptyQuotes = "\"\"";
+	FString DeserializedEmpty = UPubnubJsonUtilities::DeserializeString(EmptyQuotes);
+	TestEqual("Empty quotes should become empty string", DeserializedEmpty, "");
+
+	return true;
+}
+
+bool FIsCorrectJsonStringUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with valid JSON object
+	FString ValidObject = "{\"name\":\"test\",\"value\":42}";
+	TestTrue("Valid JSON object should return true", UPubnubJsonUtilities::IsCorrectJsonString(ValidObject));
+
+	// Test with valid JSON array
+	FString ValidArray = "[\"test\",42,true]";
+	TestTrue("Valid JSON array should return true", UPubnubJsonUtilities::IsCorrectJsonString(ValidArray));
+
+	// Test with quoted string (simple type)
+	FString QuotedString = "\"hello world\"";
+	TestTrue("Quoted string should return true with AllowSimpleTypes=true", UPubnubJsonUtilities::IsCorrectJsonString(QuotedString, true));
+	TestFalse("Quoted string should return false with AllowSimpleTypes=false", UPubnubJsonUtilities::IsCorrectJsonString(QuotedString, false));
+
+	// Test with numeric string
+	FString NumericString = "42";
+	TestTrue("Numeric string should return true with AllowSimpleTypes=true", UPubnubJsonUtilities::IsCorrectJsonString(NumericString, true));
+	TestFalse("Numeric string should return false with AllowSimpleTypes=false", UPubnubJsonUtilities::IsCorrectJsonString(NumericString, false));
+
+	// Test with boolean string
+	FString BooleanTrue = "true";
+	FString BooleanFalse = "false";
+	TestTrue("Boolean true should return true with AllowSimpleTypes=true", UPubnubJsonUtilities::IsCorrectJsonString(BooleanTrue, true));
+	TestTrue("Boolean false should return true with AllowSimpleTypes=true", UPubnubJsonUtilities::IsCorrectJsonString(BooleanFalse, true));
+	TestFalse("Boolean should return false with AllowSimpleTypes=false", UPubnubJsonUtilities::IsCorrectJsonString(BooleanTrue, false));
+
+	// Test with invalid JSON
+	FString InvalidJson = "this is not json";
+	TestFalse("Invalid JSON should return false", UPubnubJsonUtilities::IsCorrectJsonString(InvalidJson, true));
+
+	// Test with empty string
+	FString EmptyString = "";
+	TestFalse("Empty string should return false", UPubnubJsonUtilities::IsCorrectJsonString(EmptyString, true));
+
+	return true;
+}
+
+bool FAreJsonObjectStringsEqualUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with identical strings
+	FString Json1 = "{\"name\":\"test\",\"value\":42}";
+	FString Json2 = "{\"name\":\"test\",\"value\":42}";
+	TestTrue("Identical JSON strings should be equal", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Json1, Json2));
+
+	// Test with same content but different formatting
+	FString Json3 = "{\"name\":\"test\",\"value\":42}";
+	FString Json4 = "{ \"value\" : 42 , \"name\" : \"test\" }";
+	TestTrue("JSON with same content but different formatting should be equal", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Json3, Json4));
+
+	// Test with different content
+	FString Json5 = "{\"name\":\"test\",\"value\":42}";
+	FString Json6 = "{\"name\":\"different\",\"value\":42}";
+	TestFalse("JSON with different content should not be equal", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Json5, Json6));
+
+	// Test with different number of fields
+	FString Json7 = "{\"name\":\"test\",\"value\":42}";
+	FString Json8 = "{\"name\":\"test\",\"value\":42,\"extra\":\"field\"}";
+	TestFalse("JSON with different number of fields should not be equal", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Json7, Json8));
+
+	// Test with invalid JSON
+	FString Json9 = "{\"name\":\"test\"}";
+	FString Json10 = "invalid json";
+	TestFalse("Invalid JSON should return false", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Json9, Json10));
+
+	return true;
+}
+
+bool FGetUserDataFromJsonUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete user data
+	FString CompleteJson = "{\"id\":\"user123\",\"name\":\"Test User\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile\",\"email\":\"test@example.com\",\"custom\":{\"age\":25,\"location\":\"New York\"},\"status\":\"active\",\"type\":\"premium\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"test-etag\"}";
+	FPubnubUserData UserData = UPubnubJsonUtilities::GetUserDataFromJson(CompleteJson);
+	
+	TestEqual("User ID should be parsed correctly", UserData.UserID, "user123");
+	TestEqual("User name should be parsed correctly", UserData.UserName, "Test User");
+	TestEqual("External ID should be parsed correctly", UserData.ExternalID, "ext456");
+	TestEqual("Profile URL should be parsed correctly", UserData.ProfileUrl, "https://example.com/profile");
+	TestEqual("Email should be parsed correctly", UserData.Email, "test@example.com");
+	TestEqual("Custom data should be parsed correctly", UserData.Custom, "{\"age\":25,\"location\":\"New York\"}");
+	TestEqual("Status should be parsed correctly", UserData.Status, "active");
+	TestEqual("Type should be parsed correctly", UserData.Type, "premium");
+	TestEqual("Updated should be parsed correctly", UserData.Updated, "2024-10-28T09:03:32.977029Z");
+	TestEqual("ETag should be parsed correctly", UserData.ETag, "test-etag");
+
+	// Test with minimal user data
+	FString MinimalJson = "{\"id\":\"user456\"}";
+	FPubnubUserData MinimalUserData = UPubnubJsonUtilities::GetUserDataFromJson(MinimalJson);
+	
+	TestEqual("Minimal user ID should be parsed correctly", MinimalUserData.UserID, "user456");
+	TestEqual("Other fields should be empty", MinimalUserData.UserName, "");
+
+	// Test with invalid JSON
+	FString InvalidJson = "invalid json";
+	FPubnubUserData InvalidUserData = UPubnubJsonUtilities::GetUserDataFromJson(InvalidJson);
+	
+	TestEqual("Invalid JSON should return empty user data", InvalidUserData.UserID, "");
+
+	return true;
+}
+
+bool FGetJsonFromUserDataUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete user data
+	FPubnubUserData UserData;
+	UserData.UserID = "user123";
+	UserData.UserName = "Test User";
+	UserData.ExternalID = "ext456";
+	UserData.ProfileUrl = "https://example.com/profile";
+	UserData.Email = "test@example.com";
+	UserData.Custom = "{\"age\":25,\"location\":\"New York\"}";
+	UserData.Status = "active";
+	UserData.Type = "premium";
+	UserData.Updated = "2024-10-28T09:03:32.977029Z";
+	UserData.ETag = "test-etag";
+	
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromUserData(UserData);
+	
+	TestTrue("Should contain user ID", JsonString.Contains("\"id\":\"user123\""));
+	TestTrue("Should contain user name", JsonString.Contains("\"name\":\"Test User\""));
+	TestTrue("Should contain external ID", JsonString.Contains("\"externalId\":\"ext456\""));
+	TestTrue("Should contain profile URL", JsonString.Contains("\"profileUrl\":\"https://example.com/profile\""));
+	TestTrue("Should contain email", JsonString.Contains("\"email\":\"test@example.com\""));
+	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
+	TestTrue("Should contain type", JsonString.Contains("\"type\":\"premium\""));
+	TestTrue("Should contain updated", JsonString.Contains("\"updated\":\"2024-10-28T09:03:32.977029Z\""));
+	TestTrue("Should contain eTag", JsonString.Contains("\"eTag\":\"test-etag\""));
+
+	// Test with minimal user data (only required fields)
+	FPubnubUserData MinimalUserData;
+	MinimalUserData.UserID = "user456";
+	
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromUserData(MinimalUserData);
+	
+	TestTrue("Should contain user ID for minimal data", MinimalJsonString.Contains("\"id\":\"user456\""));
+	TestFalse("Should not contain empty name field", MinimalJsonString.Contains("\"name\":\"\""));
+
+	return true;
+}
+
+bool FGetChannelDataFromJsonUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete channel data
+	FString CompleteJson = "{\"id\":\"channel123\",\"name\":\"Test Channel\",\"description\":\"A test channel\",\"custom\":{\"category\":\"test\",\"priority\":1},\"status\":\"active\",\"type\":\"public\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"test-etag\"}";
+	FPubnubChannelData ChannelData = UPubnubJsonUtilities::GetChannelDataFromJson(CompleteJson);
+	
+	TestEqual("Channel ID should be parsed correctly", ChannelData.ChannelID, "channel123");
+	TestEqual("Channel name should be parsed correctly", ChannelData.ChannelName, "Test Channel");
+	TestEqual("Description should be parsed correctly", ChannelData.Description, "A test channel");
+	TestEqual("Custom data should be parsed correctly", ChannelData.Custom, "{\"category\":\"test\",\"priority\":1}");
+	TestEqual("Status should be parsed correctly", ChannelData.Status, "active");
+	TestEqual("Type should be parsed correctly", ChannelData.Type, "public");
+	TestEqual("Updated should be parsed correctly", ChannelData.Updated, "2024-10-28T09:03:32.977029Z");
+	TestEqual("ETag should be parsed correctly", ChannelData.ETag, "test-etag");
+
+	// Test with minimal channel data
+	FString MinimalJson = "{\"id\":\"channel456\"}";
+	FPubnubChannelData MinimalChannelData = UPubnubJsonUtilities::GetChannelDataFromJson(MinimalJson);
+	
+	TestEqual("Minimal channel ID should be parsed correctly", MinimalChannelData.ChannelID, "channel456");
+	TestEqual("Other fields should be empty", MinimalChannelData.ChannelName, "");
+
+	// Test with invalid JSON
+	FString InvalidJson = "invalid json";
+	FPubnubChannelData InvalidChannelData = UPubnubJsonUtilities::GetChannelDataFromJson(InvalidJson);
+	
+	TestEqual("Invalid JSON should return empty channel data", InvalidChannelData.ChannelID, "");
+
+	return true;
+}
+
+bool FGetJsonFromChannelDataUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete channel data
+	FPubnubChannelData ChannelData;
+	ChannelData.ChannelID = "channel123";
+	ChannelData.ChannelName = "Test Channel";
+	ChannelData.Description = "A test channel";
+	ChannelData.Custom = "{\"category\":\"test\",\"priority\":1}";
+	ChannelData.Status = "active";
+	ChannelData.Type = "public";
+	ChannelData.Updated = "2024-10-28T09:03:32.977029Z";
+	ChannelData.ETag = "test-etag";
+	
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelData(ChannelData);
+	
+	TestTrue("Should contain channel ID", JsonString.Contains("\"id\":\"channel123\""));
+	TestTrue("Should contain channel name", JsonString.Contains("\"name\":\"Test Channel\""));
+	TestTrue("Should contain description", JsonString.Contains("\"description\":\"A test channel\""));
+	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
+	TestTrue("Should contain type", JsonString.Contains("\"type\":\"public\""));
+	TestTrue("Should contain updated", JsonString.Contains("\"updated\":\"2024-10-28T09:03:32.977029Z\""));
+	TestTrue("Should contain eTag", JsonString.Contains("\"eTag\":\"test-etag\""));
+
+	// Test with minimal channel data
+	FPubnubChannelData MinimalChannelData;
+	MinimalChannelData.ChannelID = "channel456";
+	
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelData(MinimalChannelData);
+	
+	TestTrue("Should contain channel ID for minimal data", MinimalJsonString.Contains("\"id\":\"channel456\""));
+	TestFalse("Should not contain empty name field", MinimalJsonString.Contains("\"name\":\"\""));
+
+	return true;
+}
+
+bool FGetMembershipDataFromJsonUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete membership data
+	FString CompleteJson = "{\"channel\":{\"id\":\"channel123\",\"name\":\"Test Channel\",\"description\":\"A test channel\",\"custom\":{\"category\":\"test\"},\"status\":\"active\",\"type\":\"public\"},\"custom\":{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"},\"status\":\"active\",\"type\":\"member\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"test-etag\"}";
+	FPubnubMembershipData MembershipData = UPubnubJsonUtilities::GetMembershipDataFromJson(CompleteJson);
+	
+	TestEqual("Channel ID should be parsed correctly", MembershipData.Channel.ChannelID, "channel123");
+	TestEqual("Channel name should be parsed correctly", MembershipData.Channel.ChannelName, "Test Channel");
+	TestEqual("Channel description should be parsed correctly", MembershipData.Channel.Description, "A test channel");
+	TestEqual("Custom data should be parsed correctly", MembershipData.Custom, "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}");
+	TestEqual("Status should be parsed correctly", MembershipData.Status, "active");
+	TestEqual("Type should be parsed correctly", MembershipData.Type, "member");
+	TestEqual("Updated should be parsed correctly", MembershipData.Updated, "2024-10-28T09:03:32.977029Z");
+	TestEqual("ETag should be parsed correctly", MembershipData.ETag, "test-etag");
+
+	// Test with minimal membership data
+	FString MinimalJson = "{\"channel\":{\"id\":\"channel456\"}}";
+	FPubnubMembershipData MinimalMembershipData = UPubnubJsonUtilities::GetMembershipDataFromJson(MinimalJson);
+	
+	TestEqual("Minimal channel ID should be parsed correctly", MinimalMembershipData.Channel.ChannelID, "channel456");
+	TestEqual("Other fields should be empty", MinimalMembershipData.Status, "");
+
+	// Test with invalid JSON
+	FString InvalidJson = "invalid json";
+	FPubnubMembershipData InvalidMembershipData = UPubnubJsonUtilities::GetMembershipDataFromJson(InvalidJson);
+	
+	TestEqual("Invalid JSON should return empty membership data", InvalidMembershipData.Channel.ChannelID, "");
+
+	return true;
+}
+
+bool FGetJsonFromMembershipInputDataUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete membership input data
+	FPubnubMembershipInputData MembershipInputData;
+	MembershipInputData.Channel = "channel123";
+	MembershipInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
+	MembershipInputData.Status = "active";
+	MembershipInputData.Type = "member";
+	
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(MembershipInputData);
+	
+	TestTrue("Should contain channel ID", JsonString.Contains("\"channel\":{\"id\":\"channel123\"}"));
+	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
+	TestTrue("Should contain type", JsonString.Contains("\"type\":\"member\""));
+
+	// Test with minimal membership input data
+	FPubnubMembershipInputData MinimalMembershipInputData;
+	MinimalMembershipInputData.Channel = "channel456";
+	
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(MinimalMembershipInputData);
+	
+	TestTrue("Should contain channel ID for minimal data", MinimalJsonString.Contains("\"channel\":{\"id\":\"channel456\"}"));
+	TestFalse("Should not contain empty status field", MinimalJsonString.Contains("\"status\":\"\""));
+
+	return true;
+}
+
+bool FGetMembershipsDataArrayFromJsonUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with multiple memberships
+	FString MultipleJson = "{\"data\":[{\"channel\":{\"id\":\"channel1\",\"name\":\"Channel 1\"},\"custom\":{\"role\":\"admin\"},\"status\":\"active\"},{\"channel\":{\"id\":\"channel2\",\"name\":\"Channel 2\"},\"custom\":{\"role\":\"member\"},\"status\":\"pending\"}]}";
+	TArray<FPubnubMembershipData> MembershipsArray = UPubnubJsonUtilities::GetMembershipsDataArrayFromJson(MultipleJson);
+	
+	TestEqual("Should have 2 memberships", MembershipsArray.Num(), 2);
+	TestEqual("First membership channel ID should be correct", MembershipsArray[0].Channel.ChannelID, "channel1");
+	TestEqual("First membership channel name should be correct", MembershipsArray[0].Channel.ChannelName, "Channel 1");
+	TestEqual("Second membership channel ID should be correct", MembershipsArray[1].Channel.ChannelID, "channel2");
+	TestEqual("Second membership channel name should be correct", MembershipsArray[1].Channel.ChannelName, "Channel 2");
+
+	// Test with empty data array
+	FString EmptyJson = "{\"data\":[]}";
+	TArray<FPubnubMembershipData> EmptyArray = UPubnubJsonUtilities::GetMembershipsDataArrayFromJson(EmptyJson);
+	
+	TestEqual("Should have 0 memberships for empty data", EmptyArray.Num(), 0);
+
+	// Test with invalid JSON
+	FString InvalidJson = "invalid json";
+	TArray<FPubnubMembershipData> InvalidArray = UPubnubJsonUtilities::GetMembershipsDataArrayFromJson(InvalidJson);
+	
+	TestEqual("Should have 0 memberships for invalid JSON", InvalidArray.Num(), 0);
+
+	return true;
+}
+
+bool FGetJsonFromMembershipsDataArrayUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with multiple membership input data
+	TArray<FPubnubMembershipInputData> MembershipsInputData;
+	
+	FPubnubMembershipInputData Membership1;
+	Membership1.Channel = "channel1";
+	Membership1.Custom = "{\"role\":\"admin\"}";
+	Membership1.Status = "active";
+	
+	FPubnubMembershipInputData Membership2;
+	Membership2.Channel = "channel2";
+	Membership2.Custom = "{\"role\":\"member\"}";
+	Membership2.Status = "pending";
+	
+	MembershipsInputData.Add(Membership1);
+	MembershipsInputData.Add(Membership2);
+	
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(MembershipsInputData);
+	
+	TestTrue("Should contain first channel", JsonString.Contains("\"channel\":{\"id\":\"channel1\"}"));
+	TestTrue("Should contain second channel", JsonString.Contains("\"channel\":{\"id\":\"channel2\"}"));
+	TestTrue("Should be an array", JsonString.StartsWith("[") && JsonString.EndsWith("]"));
+
+	// Test with empty array
+	TArray<FPubnubMembershipInputData> EmptyArray;
+	FString EmptyJsonString = UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(EmptyArray);
+	
+	TestEqual("Empty array should return empty JSON array", EmptyJsonString, "[]");
+
+	return true;
+}
+
+bool FGetChannelMemberDataFromJsonUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete channel member data
+	FString CompleteJson = "{\"uuid\":{\"id\":\"user123\",\"name\":\"Test User\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile\",\"email\":\"test@example.com\",\"custom\":{\"age\":25},\"status\":\"active\",\"type\":\"premium\"},\"custom\":{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"},\"status\":\"active\",\"type\":\"member\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"test-etag\"}";
+	FPubnubChannelMemberData MemberData = UPubnubJsonUtilities::GetChannelMemberDataFromJson(CompleteJson);
+	
+	TestEqual("User ID should be parsed correctly", MemberData.User.UserID, "user123");
+	TestEqual("User name should be parsed correctly", MemberData.User.UserName, "Test User");
+	TestEqual("User external ID should be parsed correctly", MemberData.User.ExternalID, "ext456");
+	TestEqual("Custom data should be parsed correctly", MemberData.Custom, "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}");
+	TestEqual("Status should be parsed correctly", MemberData.Status, "active");
+	TestEqual("Type should be parsed correctly", MemberData.Type, "member");
+	TestEqual("Updated should be parsed correctly", MemberData.Updated, "2024-10-28T09:03:32.977029Z");
+	TestEqual("ETag should be parsed correctly", MemberData.ETag, "test-etag");
+
+	// Test with minimal channel member data
+	FString MinimalJson = "{\"uuid\":{\"id\":\"user456\"}}";
+	FPubnubChannelMemberData MinimalMemberData = UPubnubJsonUtilities::GetChannelMemberDataFromJson(MinimalJson);
+	
+	TestEqual("Minimal user ID should be parsed correctly", MinimalMemberData.User.UserID, "user456");
+	TestEqual("Other fields should be empty", MinimalMemberData.Status, "");
+
+	// Test with invalid JSON
+	FString InvalidJson = "invalid json";
+	FPubnubChannelMemberData InvalidMemberData = UPubnubJsonUtilities::GetChannelMemberDataFromJson(InvalidJson);
+	
+	TestEqual("Invalid JSON should return empty member data", InvalidMemberData.User.UserID, "");
+
+	return true;
+}
+
+bool FGetJsonFromChannelMemberDataUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete channel member input data
+	FPubnubChannelMemberInputData MemberInputData;
+	MemberInputData.User = "user123";
+	MemberInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
+	MemberInputData.Status = "active";
+	MemberInputData.Type = "member";
+	
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(MemberInputData);
+	
+	TestTrue("Should contain user ID", JsonString.Contains("\"uuid\":{\"id\":\"user123\"}"));
+	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
+	TestTrue("Should contain type", JsonString.Contains("\"type\":\"member\""));
+
+	// Test with minimal channel member input data
+	FPubnubChannelMemberInputData MinimalMemberInputData;
+	MinimalMemberInputData.User = "user456";
+	
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(MinimalMemberInputData);
+	
+	TestTrue("Should contain user ID for minimal data", MinimalJsonString.Contains("\"uuid\":{\"id\":\"user456\"}"));
+	TestFalse("Should not contain empty status field", MinimalJsonString.Contains("\"status\":\"\""));
+
+	return true;
+}
+
+bool FGetChannelMembersDataArrayFromJsonUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with multiple channel members
+	FString MultipleJson = "{\"data\":[{\"uuid\":{\"id\":\"user1\",\"name\":\"User 1\"},\"custom\":{\"role\":\"admin\"},\"status\":\"active\"},{\"uuid\":{\"id\":\"user2\",\"name\":\"User 2\"},\"custom\":{\"role\":\"member\"},\"status\":\"pending\"}]}";
+	TArray<FPubnubChannelMemberData> MembersArray = UPubnubJsonUtilities::GetChannelMembersDataArrayFromJson(MultipleJson);
+	
+	TestEqual("Should have 2 members", MembersArray.Num(), 2);
+	TestEqual("First member user ID should be correct", MembersArray[0].User.UserID, "user1");
+	TestEqual("First member user name should be correct", MembersArray[0].User.UserName, "User 1");
+	TestEqual("Second member user ID should be correct", MembersArray[1].User.UserID, "user2");
+	TestEqual("Second member user name should be correct", MembersArray[1].User.UserName, "User 2");
+
+	// Test with empty data array
+	FString EmptyJson = "{\"data\":[]}";
+	TArray<FPubnubChannelMemberData> EmptyArray = UPubnubJsonUtilities::GetChannelMembersDataArrayFromJson(EmptyJson);
+	
+	TestEqual("Should have 0 members for empty data", EmptyArray.Num(), 0);
+
+	// Test with invalid JSON
+	FString InvalidJson = "invalid json";
+	TArray<FPubnubChannelMemberData> InvalidArray = UPubnubJsonUtilities::GetChannelMembersDataArrayFromJson(InvalidJson);
+	
+	TestEqual("Should have 0 members for invalid JSON", InvalidArray.Num(), 0);
+
+	return true;
+}
+
+bool FGetJsonFromChannelMembersDataArrayUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with multiple channel member input data
+	TArray<FPubnubChannelMemberInputData> MembersInputData;
+	
+	FPubnubChannelMemberInputData Member1;
+	Member1.User = "user1";
+	Member1.Custom = "{\"role\":\"admin\"}";
+	Member1.Status = "active";
+	
+	FPubnubChannelMemberInputData Member2;
+	Member2.User = "user2";
+	Member2.Custom = "{\"role\":\"member\"}";
+	Member2.Status = "pending";
+	
+	MembersInputData.Add(Member1);
+	MembersInputData.Add(Member2);
+	
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(MembersInputData);
+	
+	TestTrue("Should contain first user", JsonString.Contains("\"uuid\":{\"id\":\"user1\"}"));
+	TestTrue("Should contain second user", JsonString.Contains("\"uuid\":{\"id\":\"user2\"}"));
+	TestTrue("Should be an array", JsonString.StartsWith("[") && JsonString.EndsWith("]"));
+
+	// Test with empty array
+	TArray<FPubnubChannelMemberInputData> EmptyArray;
+	FString EmptyJsonString = UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(EmptyArray);
+	
+	TestEqual("Empty array should return empty JSON array", EmptyJsonString, "[]");
+
+	return true;
+}
+
+bool FGetJsonFromMembershipsToRemoveUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with multiple channel IDs
+	TArray<FString> ChannelIds = {"channel1", "channel2", "channel3"};
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(ChannelIds);
+	
+	TestTrue("Should contain first channel", JsonString.Contains("\"channel\":{\"id\":\"channel1\"}"));
+	TestTrue("Should contain second channel", JsonString.Contains("\"channel\":{\"id\":\"channel2\"}"));
+	TestTrue("Should contain third channel", JsonString.Contains("\"channel\":{\"id\":\"channel3\"}"));
+	TestTrue("Should be an array", JsonString.StartsWith("[") && JsonString.EndsWith("]"));
+
+	// Test with single channel ID
+	TArray<FString> SingleChannel = {"single_channel"};
+	FString SingleJsonString = UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(SingleChannel);
+	
+	TestTrue("Should contain single channel", SingleJsonString.Contains("\"channel\":{\"id\":\"single_channel\"}"));
+	TestTrue("Should be an array with one element", SingleJsonString.StartsWith("[") && SingleJsonString.EndsWith("]"));
+
+	// Test with empty array
+	TArray<FString> EmptyChannels;
+	FString EmptyJsonString = UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(EmptyChannels);
+	
+	TestEqual("Empty array should return empty JSON array", EmptyJsonString, "[]");
+
+	return true;
+}
+
+bool FGetJsonFromChannelMembersToRemoveUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with multiple user IDs
+	TArray<FString> UserIds = {"user1", "user2", "user3"};
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(UserIds);
+	
+	TestTrue("Should contain first user", JsonString.Contains("\"uuid\":{\"id\":\"user1\"}"));
+	TestTrue("Should contain second user", JsonString.Contains("\"uuid\":{\"id\":\"user2\"}"));
+	TestTrue("Should contain third user", JsonString.Contains("\"uuid\":{\"id\":\"user3\"}"));
+	TestTrue("Should be an array", JsonString.StartsWith("[") && JsonString.EndsWith("]"));
+
+	// Test with single user ID
+	TArray<FString> SingleUser = {"single_user"};
+	FString SingleJsonString = UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(SingleUser);
+	
+	TestTrue("Should contain single user", SingleJsonString.Contains("\"uuid\":{\"id\":\"single_user\"}"));
+	TestTrue("Should be an array with one element", SingleJsonString.StartsWith("[") && SingleJsonString.EndsWith("]"));
+
+	// Test with empty array
+	TArray<FString> EmptyUsers;
+	FString EmptyJsonString = UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(EmptyUsers);
+	
+	TestEqual("Empty array should return empty JSON array", EmptyJsonString, "[]");
+
+	return true;
+}
+
+bool FGetOperationResultFromJsonAppContextUnitTest::RunTest(const FString& Parameters)
+{
+	// Test successful App Context response
+	FString TestJsonSuccess = "{\"status\": 200}";
+	FPubnubOperationResult ResultSuccess = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(TestJsonSuccess);
+
+	TestEqual("Successful response: Status should be 200", ResultSuccess.Status, 200);
+	TestFalse("Successful response: Error should be false", ResultSuccess.Error);
+	TestEqual("Successful response: ErrorMessage should be empty", ResultSuccess.ErrorMessage, "");
+
+	// Test App Context error response with error object
+	FString TestJsonError = "{\"status\": 400, \"error\": {\"message\": \"Invalid request\", \"details\": \"Field validation failed\"}}";
+	FPubnubOperationResult ResultError = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(TestJsonError);
+
+	TestEqual("Error response: Status should be 400", ResultError.Status, 400);
+	TestTrue("Error response: Error should be true", ResultError.Error);
+	TestTrue("Error response: ErrorMessage should contain error object", ResultError.ErrorMessage.Contains("\"message\":\"Invalid request\""));
+
+	// Test App Context error response with message field (PAM access denied)
+	FString TestJsonPAMError = "{\"status\": 403, \"message\": \"Access denied\"}";
+	FPubnubOperationResult ResultPAMError = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(TestJsonPAMError);
+
+	TestEqual("PAM Error response: Status should be 403", ResultPAMError.Status, 403);
+	TestTrue("PAM Error response: Error should be true", ResultPAMError.Error);
+	TestEqual("PAM Error response: ErrorMessage should be 'Access denied'", ResultPAMError.ErrorMessage, "Access denied");
+
+	// Test App Context error response without error object or message
+	FString TestJsonNoError = "{\"status\": 500}";
+	FPubnubOperationResult ResultNoError = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(TestJsonNoError);
+
+	TestEqual("No error object: Status should be 500", ResultNoError.Status, 500);
+	TestTrue("No error object: Error should be true", ResultNoError.Error);
+	TestEqual("No error object: ErrorMessage should be empty", ResultNoError.ErrorMessage, "");
+
+	// Test invalid JSON
+	FString TestJsonInvalid = "this is not a valid json";
+	FPubnubOperationResult ResultInvalid = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(TestJsonInvalid);
+
+	TestEqual("Invalid JSON: Status should be 0 (default)", ResultInvalid.Status, 0);
+	TestFalse("Invalid JSON: Error should be false (default)", ResultInvalid.Error);
+	TestEqual("Invalid JSON: ErrorMessage should be empty (default)", ResultInvalid.ErrorMessage, "");
 
 	return true;
 }
