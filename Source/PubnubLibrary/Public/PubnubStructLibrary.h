@@ -555,9 +555,9 @@ struct FPubnubMessageData
 	/** Subscription match or the channel group */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MatchOrGroup = "";
 	/** Region of the message - not interesting in most cases */
-	int region = 0;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int region = 0;
 	/** Message flags */
-	int flags = 0;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int flags = 0;
 };
 
 

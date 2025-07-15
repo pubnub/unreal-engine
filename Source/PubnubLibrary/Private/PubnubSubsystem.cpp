@@ -900,12 +900,12 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString Channel, FOnRemoveChannelMe
 	});
 }
 
-void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipsResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	FOnGetMembershipsResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+	NativeCallback.BindLambda([OnGetMembershipsResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
-		OnGetMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
+		OnGetMembershipsResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
 	});
 
 	GetMembershipsRaw(User, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
@@ -922,9 +922,9 @@ void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse
 	});
 }
 
-void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipsResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
 {
-	GetMembershipsRaw(User, OnGetMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+	GetMembershipsRaw(User, OnGetMembershipsResponse, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
 }
 
 void UPubnubSubsystem::GetMemberships(FString User, FOnGetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
@@ -2683,7 +2683,7 @@ void UPubnubSubsystem::GetMemberships_JSON_priv(FString User, FOnPubnubResponse 
 	});
 }
 
-void UPubnubSubsystem::GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponseNative OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+void UPubnubSubsystem::GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponseNative OnGetMembershipsResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -2694,7 +2694,7 @@ void UPubnubSubsystem::GetMemberships_DATA_priv(FString User, FOnGetMembershipsR
 	FString JsonResponse = GetMemberships_pn(User, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
 
 	//Delegate needs to be executed back on Game Thread
-	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembershipResponse, JsonResponse]()
+	AsyncTask(ENamedThreads::GameThread, [this, OnGetMembershipsResponse, JsonResponse]()
 	{
 		//Parse Json response into data
 		FPubnubOperationResult Result;
@@ -2704,7 +2704,7 @@ void UPubnubSubsystem::GetMemberships_DATA_priv(FString User, FOnGetMembershipsR
 		UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, Result, MembershipsData, PageNext, PagePrev);
 
 		//Broadcast bound delegate with parsed response
-		OnGetMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
+		OnGetMembershipsResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
 	});
 }
 

@@ -583,18 +583,6 @@ public:
 	/**
 	 * Parses an access token and retrieves information about its permissions.
 	 * 
-	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
-	 *
-	 * Permissions are written in bit mask int:
-	 * READ = 1
-	 * WRITE = 2
-	 * MANAGE = 4
-	 * DELETE = 8
-	 * CREATE = 16
-	 * GET = 32
-	 * UPDATE = 64
-	 * JOIN = 128
-	 * 
 	 * @param Token The access token to parse.
 	 * @return Parsed token
 	 */
@@ -1157,7 +1145,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param User The user ID for whom to retrieve memberships.
-	 * @param OnGetMembershipResponse The callback function used to handle the result.
+	 * @param OnGetMembershipsResponse The callback function used to handle the result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1168,7 +1156,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -1195,7 +1183,7 @@ public:
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
 	 * @param User The user ID for whom to retrieve memberships.
-	 * @param OnGetMembershipResponse The callback function used to handle the result.
+	 * @param OnGetMembershipsResponse The callback function used to handle the result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 * @param Limit (Optional) The maximum number of results to return (default: 100).
 	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
@@ -1204,7 +1192,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
-	void GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -1889,7 +1877,7 @@ private:
 	void RemoveChannelMetadata_priv(FString Channel, FOnRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse);
 	FString GetMemberships_pn(FString User, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void GetMemberships_JSON_priv(FString User, FOnPubnubResponse OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponseNative OnGetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	void GetMemberships_DATA_priv(FString User, FOnGetMembershipsResponseNative OnGetMembershipsResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void SetMemberships_priv(FString User, FString SetObj, FOnSetMembershipsResponseNative OnSetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void RemoveMemberships_priv(FString User, FString RemoveObj, FOnRemoveMembershipsResponseNative OnRemoveMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	FString GetChannelMembers_pn(FString Channel, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
