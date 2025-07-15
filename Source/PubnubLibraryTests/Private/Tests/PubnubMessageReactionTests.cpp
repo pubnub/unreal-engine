@@ -174,7 +174,7 @@ bool FPubnubAddAndGetMessageActionsTest::RunTest(const FString& Parameters)
     {
         // Use a wide enough time range to catch the actions
         FString StartTimetoken = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
-        PubnubSubsystem->GetMessageActions(TestChannel, StartTimetoken, TestStartTimetoken, 10, GetActionsCallback);
+        PubnubSubsystem->GetMessageActions(TestChannel, GetActionsCallback, StartTimetoken, TestStartTimetoken, 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetActionsDone]() { return *bGetActionsDone; }, MAX_WAIT_TIME));
 
@@ -555,7 +555,7 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, GetActionsCallback_Initial, TestRunStartTimetoken]()
     {
         FString CurrentTimetoken = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
-        PubnubSubsystem->GetMessageActions(TestChannel, CurrentTimetoken, *TestRunStartTimetoken, 10, GetActionsCallback_Initial);
+        PubnubSubsystem->GetMessageActions(TestChannel, GetActionsCallback_Initial, CurrentTimetoken, *TestRunStartTimetoken, 10);
     }, 0.1f)); 
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetActionsDone_Initial]() { return *bGetActionsDone_Initial; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand(
@@ -605,7 +605,7 @@ bool FPubnubRemoveMessageActionTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, GetActionsCallback_AfterRemove, TestRunStartTimetoken]()
     {
         FString CurrentTimetoken = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
-        PubnubSubsystem->GetMessageActions(TestChannel, CurrentTimetoken, *TestRunStartTimetoken, 10, GetActionsCallback_AfterRemove);
+        PubnubSubsystem->GetMessageActions(TestChannel, GetActionsCallback_AfterRemove, CurrentTimetoken, *TestRunStartTimetoken, 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetActionsDone_AfterRemove]() { return *bGetActionsDone_AfterRemove; }, MAX_WAIT_TIME));
     

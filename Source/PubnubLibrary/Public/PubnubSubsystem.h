@@ -1684,24 +1684,24 @@ public:
 	 * Retrieves message actions for a specified channel within a given time range.
 	 * 
 	 * @param Channel The ID of the channel.
+	 * @param OnGetMessageActionsResponse The callback function used to handle the result.
 	 * @param Start The starting timetoken for the range. Has to be greater (newer) than the End timetoken. 
 	 * @param End The ending timetoken for the range.
 	 * @param Limit The maximum number of actions to retrieve.
-	 * @param OnGetMessageActionsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
-	void GetMessageActions(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponse OnGetMessageActionsResponse);
+	void GetMessageActions(FString Channel, FOnGetMessageActionsResponse OnGetMessageActionsResponse, FString Start = "", FString End = "", int Limit = 0);
 
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
 	 * 
 	 * @param Channel The ID of the channel.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * @param Start The starting timetoken for the range. Has to be greater (newer) than the End timetoken. 
 	 * @param End The ending timetoken for the range.
 	 * @param Limit The maximum number of actions to retrieve.
-	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 */
-	void GetMessageActions(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponseNative NativeCallback);
+	void GetMessageActions(FString Channel, FOnGetMessageActionsResponseNative NativeCallback, FString Start = "", FString End = "", int Limit = 0);
 
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
@@ -1890,7 +1890,7 @@ private:
 	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative OnRemoveMessageActionResponse);
 	FString GetMessageActions_pn(FString Channel, FString Start, FString End, int Limit);
 	void GetMessageActions_JSON_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnPubnubResponse OnGetMessageActionsResponse);
-	void GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse);
+	void GetMessageActions_DATA_priv(FString Channel, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse, FString Start, FString End, int Limit);
 	void GetMessageActionsContinue_priv(FOnPubnubResponse OnGetMessageActionsContinueResponse);
 
 #pragma endregion

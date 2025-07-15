@@ -1149,24 +1149,24 @@ void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoke
 	});
 }
 
-void UPubnubSubsystem::GetMessageActions(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponse OnGetMessageActionsResponse)
+void UPubnubSubsystem::GetMessageActions(FString Channel, FOnGetMessageActionsResponse OnGetMessageActionsResponse, FString Start, FString End, int Limit)
 {
 	FOnGetMessageActionsResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnGetMessageActionsResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
 	{
 		OnGetMessageActionsResponse.ExecuteIfBound(Result, MessageActions);
 	});
-	GetMessageActions(Channel, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), NativeCallback);
+	GetMessageActions(Channel, NativeCallback, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit));
 }
 
-void UPubnubSubsystem::GetMessageActions(FString Channel, FString Start, FString End, int Limit, FOnGetMessageActionsResponseNative NativeCallback)
+void UPubnubSubsystem::GetMessageActions(FString Channel, FOnGetMessageActionsResponseNative NativeCallback, FString Start, FString End, int Limit)
 {
 	if(!CheckIsPubnubInitialized() || !CheckQuickActionThreadValidity())
 	{return;}
 	
 	QuickActionThread->AddFunctionToQueue( [this, Channel, Start, End, Limit, NativeCallback]
 	{
-		GetMessageActions_DATA_priv(Channel, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), NativeCallback);
+		GetMessageActions_DATA_priv(Channel, NativeCallback, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit));
 	});
 }
 
@@ -3151,7 +3151,7 @@ void UPubnubSubsystem::GetMessageActions_JSON_priv(FString Channel, FString Star
 	});
 }
 
-void UPubnubSubsystem::GetMessageActions_DATA_priv(FString Channel, FString Start, FString End, int SizeLimit, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse)
+void UPubnubSubsystem::GetMessageActions_DATA_priv(FString Channel, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse, FString Start, FString End, int Limit)
 {
 	if(!CheckIsUserIDSet())
 	{return;}
@@ -3159,7 +3159,7 @@ void UPubnubSubsystem::GetMessageActions_DATA_priv(FString Channel, FString Star
 	if(CheckIsFieldEmpty(Channel, "Channel", "HistoryWithMessageActions"))
 	{return;}
 
-	FString JsonResponse = GetMessageActions_pn(Channel, Start, End, SizeLimit);
+	FString JsonResponse = GetMessageActions_pn(Channel, Start, End, Limit);
 
 	//Delegate needs to be executed back on Game Thread
 	AsyncTask(ENamedThreads::GameThread, [this, OnGetMessageActionsResponse, JsonResponse]()

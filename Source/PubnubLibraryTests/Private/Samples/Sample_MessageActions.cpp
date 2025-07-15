@@ -168,7 +168,7 @@ void ASample_MessageActions::GetMessageActionsSample()
 
 	//Get message actions from a channel
 	FString Channel = TEXT("message-actions-channel");
-	PubnubSubsystem->GetMessageActions(Channel, "", "", 0, OnGetMessageActionsResponse);
+	PubnubSubsystem->GetMessageActions(Channel, OnGetMessageActionsResponse);
 }
 
 // snippet.get_message_actions_with_settings
@@ -193,7 +193,7 @@ void ASample_MessageActions::GetMessageActionsWithSettingsSample()
 	FString StartTimetoken = TEXT("17298418380000000"); // Newer timetoken
 	FString EndTimetoken = TEXT("17298418360000000");   // Older timetoken
 	int Limit = 5;
-	PubnubSubsystem->GetMessageActions(Channel, StartTimetoken, EndTimetoken, Limit, OnGetMessageActionsResponse);
+	PubnubSubsystem->GetMessageActions(Channel, OnGetMessageActionsResponse, StartTimetoken, EndTimetoken, Limit);
 }
 
 // ACTION REQUIRED: Replace ASample_MessageActions with name of your Actor class
@@ -247,7 +247,7 @@ void ASample_MessageActions::GetMessageActionsWithLambdaSample()
 	
 	//Get message actions from a channel
 	FString Channel = TEXT("message-actions-channel");
-	PubnubSubsystem->GetMessageActions(Channel, "", "", 0, OnGetMessageActionsResponse);
+	PubnubSubsystem->GetMessageActions(Channel, OnGetMessageActionsResponse);
 }
 
 // snippet.remove_message_action

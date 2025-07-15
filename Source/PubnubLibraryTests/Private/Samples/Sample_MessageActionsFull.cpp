@@ -99,7 +99,7 @@ void ASample_MessageActionsFull::GetAllMessageActions()
 	UE_LOG(LogTemp, Log, TEXT("Message Actions example: getting all actions..."));
 	FOnGetMessageActionsResponse OnGetMessageActionsResponse;
 	OnGetMessageActionsResponse.BindDynamic(this, &ASample_MessageActionsFull::OnGetMessageActionsResponse);
-	PubnubSubsystem->GetMessageActions(TestChannel, "", "", 0, OnGetMessageActionsResponse);
+	PubnubSubsystem->GetMessageActions(TestChannel, OnGetMessageActionsResponse);
 }
 
 void ASample_MessageActionsFull::OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions)
