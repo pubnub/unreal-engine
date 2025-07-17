@@ -73,4 +73,39 @@ public:
 	static pubnub_subscription_t* EEGetSubscriptionForChannelGroup(pubnub_t* Context, FString ChannelGroup, FPubnubSubscribeSettings Options);
 	static bool EEAddListenerAndSubscribe(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem);
 	static bool EERemoveListenerAndUnsubscribe(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem);
+
+
+	/* TEMPLATES TO CALL PUBNUB DELEGATES */
+
+	//Template to call any Delegate in case of providing incorrect parameters. Provide error message and FPubnubOperationResult will be made out of it
+	template<typename DelegateType, typename... Args>
+	static void CallPubnubDelegateWithInvalidArgumentResult(const DelegateType& Delegate, const FString &ErrorMessage,  Args&&... args)
+	{
+		CallPubnubDelegate(Delegate, FPubnubOperationResult{0, false, ErrorMessage}, std::forward<Args>(args)...);
+	}
+
+	//Main template to execute Pubnub delegate as an AsyncTask on the GameThread. Make sure to provide all required parameters for the delegate.
+	template<typename DelegateType, typename... Args>
+	static void CallPubnubDelegate(const DelegateType& Delegate, Args&&... args)
+	{
+		if (Delegate.IsBound())
+		{
+			auto CopiedDelegate = Delegate;
+			auto ArgsTuple = std::make_tuple(std::forward<Args>(args)...);
+
+			// Launch the async task, all such delegates should be called on GameThread to work well with widgets and other systems
+			AsyncTask(ENamedThreads::GameThread, [CopiedDelegate, ArgsTuple = std::move(ArgsTuple)]() mutable
+			{
+				CallDelegateWithTuple(CopiedDelegate, std::move(ArgsTuple),
+									  std::make_index_sequence<sizeof...(Args)>{});
+			});
+		}
+	}
+
+	// Helper to unpack tuple and call Delegate.Execute(...)
+	template<typename DelegateType, typename TupleType, size_t... Indices>
+	static void CallDelegateWithTuple(DelegateType& Delegate, TupleType&& Tuple, std::index_sequence<Indices...>)
+	{
+		Delegate.Execute(std::get<Indices>(std::forward<TupleType>(Tuple))...);
+	}
 };
