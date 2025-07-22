@@ -51,6 +51,9 @@ public:
 	static FString RemoveOuterQuotesFromString(const FString InString);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
 
+	//This is to remove class name and "_priv" from __FUNCTION__ macro output
+	static FString GetNameFromFunctionMacro(FString FunctionName);
+
 	/* CONVERTING INCLUDES */
 	
 	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);

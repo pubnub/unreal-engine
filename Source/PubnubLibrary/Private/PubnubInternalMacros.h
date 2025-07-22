@@ -20,13 +20,13 @@
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), ANSI_TO_TCHAR(__FUNCTION__))); \
+			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("Pubnub subsystem is not initialized."), ##__VA_ARGS__); \
 			return; \
 		} \
 		if (!QuickActionThread) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: QuickActionThread is null. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), ANSI_TO_TCHAR(__FUNCTION__))); \
+			PubnubError(FString::Printf(TEXT("[%s]: QuickActionThread is null. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("QuickActionThread is invalid."), ##__VA_ARGS__); \
 			return; \
 		} \
@@ -46,12 +46,12 @@
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), ANSI_TO_TCHAR(__FUNCTION__))); \
+			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return; \
 		} \
 		if (!QuickActionThread) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: QuickActionThread is null. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), ANSI_TO_TCHAR(__FUNCTION__))); \
+			PubnubError(FString::Printf(TEXT("[%s]: QuickActionThread is null. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return; \
 		} \
 	} while (false)
@@ -69,7 +69,7 @@
 	do { \
 		if (!IsUserIDSet) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), ANSI_TO_TCHAR(__FUNCTION__))); \
+			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("Pubnub user ID is not set."), ##__VA_ARGS__); \
 			return; \
 		} \
@@ -87,7 +87,7 @@
 	do { \
 		if (!IsUserIDSet) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), ANSI_TO_TCHAR(__FUNCTION__))); \
+			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return __VA_ARGS__; \
 	} \
 } while (false)
@@ -110,7 +110,7 @@
 	do { \
 		if (Field.IsEmpty()) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), ANSI_TO_TCHAR(__FUNCTION__), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
+			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, FString::Printf(TEXT("Missing required input: '%s' (field is empty). Operation aborted."), TEXT(#Field)), ##__VA_ARGS__); \
 		return; \
 		} \
@@ -132,7 +132,7 @@
 	do { \
 		if (Field.IsEmpty()) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), ANSI_TO_TCHAR(__FUNCTION__), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
+			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
 			return __VA_ARGS__; \
 		} \
 	} while (false)

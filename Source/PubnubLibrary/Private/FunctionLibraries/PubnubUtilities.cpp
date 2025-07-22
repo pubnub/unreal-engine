@@ -65,6 +65,18 @@ FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block
 	return FString(Converter.Length(), Converter.Get());
 }
 
+FString UPubnubUtilities::GetNameFromFunctionMacro(FString FunctionName)
+{
+	if(FunctionName.IsEmpty()) {return "";}
+	int Index = -1;
+	FunctionName.FindLastChar(TEXT(':'), Index);
+	//Leave Class name, just take function name
+	FString FinalFunctionName = FunctionName.Mid(Index + 1);
+	//Remove "_priv" from function name
+	FinalFunctionName.ReplaceInline(TEXT("_priv"), TEXT(""));
+	return FinalFunctionName;
+}
+
 FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude)
 {
 	FString FinalString = "";
