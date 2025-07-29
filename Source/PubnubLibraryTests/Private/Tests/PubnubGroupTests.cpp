@@ -34,6 +34,8 @@ bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Param
 	TSharedPtr<bool> bPublishDone = MakeShared<bool>(false);
 	TSharedPtr<bool> bPublishSuccess = MakeShared<bool>(false);
 	TSharedPtr<bool> bRemoveChannelFromGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bSubscribeToGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bUnsubscribeFromGroupDone = MakeShared<bool>(false);
 	
 	if(!InitTest())
 	{
@@ -79,6 +81,19 @@ bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Param
 		}
 	});
 
+	FOnSubscribeOperationResponseNative SubscribeToGroupCallback;
+	SubscribeToGroupCallback.BindLambda([this, bSubscribeToGroupDone](const FPubnubOperationResult& Result)
+	{
+		*bSubscribeToGroupDone = true;
+		TestFalse("SubscribeToGroup operation should not have failed", Result.Error);
+		TestEqual("SubscribeToGroup HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("SubscribeToGroup failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
 	FOnPublishMessageResponseNative PublishCallback;
 	PublishCallback.BindLambda([this, bPublishDone, bPublishSuccess](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
 	{
@@ -90,6 +105,19 @@ bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Param
 		else
 		{
 			AddError(FString::Printf(TEXT("PublishMessage failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnSubscribeOperationResponseNative UnsubscribeFromGroupCallback;
+	UnsubscribeFromGroupCallback.BindLambda([this, bUnsubscribeFromGroupDone](const FPubnubOperationResult& Result)
+	{
+		*bUnsubscribeFromGroupDone = true;
+		TestFalse("UnsubscribeFromGroup operation should not have failed", Result.Error);
+		TestEqual("UnsubscribeFromGroup HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("UnsubscribeFromGroup failed with error: %s"), *Result.ErrorMessage));
 		}
 	});
 
@@ -117,11 +145,25 @@ bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Param
 	}, 0.1f));
 
 	// Step 2: Subscribe to the group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, SubscribeToGroupCallback, bSubscribeToGroupDone]()
 	{
-		PubnubSubsystem->SubscribeToGroup(TestGroup);
+		*bSubscribeToGroupDone = false;
+		PubnubSubsystem->SubscribeToGroup(TestGroup, SubscribeToGroupCallback);
 	}, 0.1f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); // Allow subscription to establish
+
+	//Wait until subscribe to group result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToGroupDone]() -> bool {
+		return *bSubscribeToGroupDone;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe to group result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToGroupDone]()
+	{
+		if(!*bSubscribeToGroupDone)
+		{
+			AddError("SubscribeToGroup result callback was not received");
+		}
+	}, 0.1f));
 
 	// Step 3: Publish a message to the channel (which is in the subscribed group)
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage, PublishCallback, bPublishDone, bPublishSuccess]()
@@ -147,10 +189,25 @@ bool FPubnubAddChannelToGroupAndReceiveMessageTest::RunTest(const FString& Param
 		TestTrue("Message should be received on channel within a group", *TestMessageReceived);
 	}, 0.1f));
 
-	// Cleanup
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	// Cleanup: Unsubscribe from group
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, UnsubscribeFromGroupCallback, bUnsubscribeFromGroupDone]()
 	{
-		PubnubSubsystem->UnsubscribeFromGroup(TestGroup);
+		*bUnsubscribeFromGroupDone = false;
+		PubnubSubsystem->UnsubscribeFromGroup(TestGroup, UnsubscribeFromGroupCallback);
+	}, 0.1f));
+
+	//Wait until unsubscribe from group result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromGroupDone]() -> bool {
+		return *bUnsubscribeFromGroupDone;
+	}, MAX_WAIT_TIME));
+
+	//Check whether unsubscribe from group result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromGroupDone]()
+	{
+		if(!*bUnsubscribeFromGroupDone)
+		{
+			AddError("UnsubscribeFromGroup result callback was not received");
+		}
 	}, 0.1f));
 	
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup, RemoveChannelCallback, bRemoveChannelFromGroupDone]()
@@ -407,6 +464,8 @@ bool FPubnubUnsubscribeFromGroupTest::RunTest(const FString& Parameters)
 	TSharedPtr<bool> bPublishDone = MakeShared<bool>(false);
 	TSharedPtr<bool> bPublishSuccess = MakeShared<bool>(false);
 	TSharedPtr<bool> bRemoveChannelFromGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bSubscribeToGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bUnsubscribeFromGroupDone = MakeShared<bool>(false);
 
 	if (!InitTest())
 	{
@@ -442,6 +501,32 @@ bool FPubnubUnsubscribeFromGroupTest::RunTest(const FString& Parameters)
 		else
 		{
 			AddError(FString::Printf(TEXT("AddChannelToGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnSubscribeOperationResponseNative SubscribeToGroupCallback;
+	SubscribeToGroupCallback.BindLambda([this, bSubscribeToGroupDone](const FPubnubOperationResult& Result)
+	{
+		*bSubscribeToGroupDone = true;
+		TestFalse("SubscribeToGroup operation should not have failed", Result.Error);
+		TestEqual("SubscribeToGroup HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("SubscribeToGroup failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	FOnSubscribeOperationResponseNative UnsubscribeFromGroupCallback;
+	UnsubscribeFromGroupCallback.BindLambda([this, bUnsubscribeFromGroupDone](const FPubnubOperationResult& Result)
+	{
+		*bUnsubscribeFromGroupDone = true;
+		TestFalse("UnsubscribeFromGroup operation should not have failed", Result.Error);
+		TestEqual("UnsubscribeFromGroup HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("UnsubscribeFromGroup failed with error: %s"), *Result.ErrorMessage));
 		}
 	});
 
@@ -483,18 +568,46 @@ bool FPubnubUnsubscribeFromGroupTest::RunTest(const FString& Parameters)
 	}, 0.1f));
 
 	// Step 2: Subscribe to the group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, SubscribeToGroupCallback, bSubscribeToGroupDone]()
 	{
-		PubnubSubsystem->SubscribeToGroup(TestGroup);
+		*bSubscribeToGroupDone = false;
+		PubnubSubsystem->SubscribeToGroup(TestGroup, SubscribeToGroupCallback);
 	}, 0.1f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); // Allow subscription to establish
+
+	//Wait until subscribe to group result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToGroupDone]() -> bool {
+		return *bSubscribeToGroupDone;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe to group result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToGroupDone]()
+	{
+		if(!*bSubscribeToGroupDone)
+		{
+			AddError("SubscribeToGroup result callback was not received");
+		}
+	}, 0.1f));
 
 	// Step 3: Unsubscribe from the group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, UnsubscribeFromGroupCallback, bUnsubscribeFromGroupDone]()
 	{
-		PubnubSubsystem->UnsubscribeFromGroup(TestGroup);
-	}, 2.0f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); // Allow unsubscription to process
+		*bUnsubscribeFromGroupDone = false;
+		PubnubSubsystem->UnsubscribeFromGroup(TestGroup, UnsubscribeFromGroupCallback);
+	}, 0.1f));
+
+	//Wait until unsubscribe from group result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromGroupDone]() -> bool {
+		return *bUnsubscribeFromGroupDone;
+	}, MAX_WAIT_TIME));
+
+	//Check whether unsubscribe from group result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromGroupDone]()
+	{
+		if(!*bUnsubscribeFromGroupDone)
+		{
+			AddError("UnsubscribeFromGroup result callback was not received");
+		}
+	}, 0.1f));
 
 	// Step 4: Publish a message to the channel (that was in the group)
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage, PublishCallback, bPublishDone, bPublishSuccess]()
@@ -552,6 +665,9 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 	TSharedPtr<bool> bPublish2Done = MakeShared<bool>(false);
 	TSharedPtr<bool> bPublish2Success = MakeShared<bool>(false);
 	TSharedPtr<bool> bRemoveChannelFromGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bSubscribeToChannelDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bSubscribeToGroupDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bUnsubscribeFromAllDone = MakeShared<bool>(false);
 
 
 	if (!InitTest())
@@ -593,6 +709,45 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 		else
 		{
 			AddError(FString::Printf(TEXT("AddChannelToGroup failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnSubscribeOperationResponseNative SubscribeToChannelCallback;
+	SubscribeToChannelCallback.BindLambda([this, bSubscribeToChannelDone](const FPubnubOperationResult& Result)
+	{
+		*bSubscribeToChannelDone = true;
+		TestFalse("SubscribeToChannel operation should not have failed", Result.Error);
+		TestEqual("SubscribeToChannel HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("SubscribeToChannel failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	FOnSubscribeOperationResponseNative SubscribeToGroupCallback;
+	SubscribeToGroupCallback.BindLambda([this, bSubscribeToGroupDone](const FPubnubOperationResult& Result)
+	{
+		*bSubscribeToGroupDone = true;
+		TestFalse("SubscribeToGroup operation should not have failed", Result.Error);
+		TestEqual("SubscribeToGroup HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("SubscribeToGroup failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	FOnSubscribeOperationResponseNative UnsubscribeFromAllCallback;
+	UnsubscribeFromAllCallback.BindLambda([this, bUnsubscribeFromAllDone](const FPubnubOperationResult& Result)
+	{
+		*bUnsubscribeFromAllDone = true;
+		TestFalse("UnsubscribeFromAll operation should not have failed", Result.Error);
+		TestEqual("UnsubscribeFromAll HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("UnsubscribeFromAll failed with error: %s"), *Result.ErrorMessage));
 		}
 	});
 
@@ -648,22 +803,67 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 	}, 0.1f));
 
 	// Step 2: Subscribe to the channel
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelForAll]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelForAll, SubscribeToChannelCallback, bSubscribeToChannelDone]()
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannelForAll);
-	}, 2.2f));
+		*bSubscribeToChannelDone = false;
+		PubnubSubsystem->SubscribeToChannel(TestChannelForAll, SubscribeToChannelCallback);
+	}, 0.1f));
+
+	//Wait until subscribe to channel result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelDone]() -> bool {
+		return *bSubscribeToChannelDone;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe to channel result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelDone]()
+	{
+		if(!*bSubscribeToChannelDone)
+		{
+			AddError("SubscribeToChannel result callback was not received");
+		}
+	}, 0.1f));
 
 	// Step 3: Subscribe to the group
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroupForAll]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroupForAll, SubscribeToGroupCallback, bSubscribeToGroupDone]()
 	{
-		PubnubSubsystem->SubscribeToGroup(TestGroupForAll);
-	}, 0.5f));
+		*bSubscribeToGroupDone = false;
+		PubnubSubsystem->SubscribeToGroup(TestGroupForAll, SubscribeToGroupCallback);
+	}, 0.1f));
+
+	//Wait until subscribe to group result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToGroupDone]() -> bool {
+		return *bSubscribeToGroupDone;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe to group result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToGroupDone]()
+	{
+		if(!*bSubscribeToGroupDone)
+		{
+			AddError("SubscribeToGroup result callback was not received");
+		}
+	}, 0.1f));
 
 	// Step 4: Unsubscribe from all
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UnsubscribeFromAllCallback, bUnsubscribeFromAllDone]()
 	{
-		PubnubSubsystem->UnsubscribeFromAll();
-	}, 1.0f));
+		*bUnsubscribeFromAllDone = false;
+		PubnubSubsystem->UnsubscribeFromAll(UnsubscribeFromAllCallback);
+	}, 0.1f));
+
+	//Wait until unsubscribe from all result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromAllDone]() -> bool {
+		return *bUnsubscribeFromAllDone;
+	}, MAX_WAIT_TIME));
+
+	//Check whether unsubscribe from all result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromAllDone]()
+	{
+		if(!*bUnsubscribeFromAllDone)
+		{
+			AddError("UnsubscribeFromAll result callback was not received");
+		}
+	}, 0.1f));
 
 	// Step 5: Publish a message to the direct channel
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelForAll, TestMessageForChannel, PublishCallback1, bPublish1Done, bPublish1Success]()
@@ -671,12 +871,12 @@ bool FPubnubUnsubscribeFromAllTest::RunTest(const FString& Parameters)
 		*bPublish1Done = false;
 		*bPublish1Success = false;
 		PubnubSubsystem->PublishMessage(TestChannelForAll, TestMessageForChannel, PublishCallback1);
-	}, 0.3f));
+	}, 0.1f));
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublish1Done]() { return *bPublish1Done; }, MAX_WAIT_TIME));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublish1Success]()
 	{
 		TestTrue("PublishMessage 1 should succeed", *bPublish1Success);
-	}, 0.3f));
+	}, 0.1f));
 
 	// Step 6: Publish a message to the channel that was in the group
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelInGroupForAll, TestMessageForGroupChannel, PublishCallback2, bPublish2Done, bPublish2Success]()

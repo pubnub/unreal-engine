@@ -396,6 +396,8 @@ bool FPubnubDeleteMessagesTest::RunTest(const FString& Parameters)
 	TSharedPtr<bool> bDeleteMessagesDone = MakeShared<bool>(false);
 	TSharedPtr<FPubnubOperationResult> DeleteMessagesResult = MakeShared<FPubnubOperationResult>();
 
+	TSharedPtr<bool> bSubscribeToChannelDone = MakeShared<bool>(false);
+
 	FString TestStartTimetoken = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken();
 
 	if (!InitTest() || !PubnubSubsystem)
@@ -418,11 +420,39 @@ bool FPubnubDeleteMessagesTest::RunTest(const FString& Parameters)
 			}
 		});
 
+	//Create subscribe result callback
+	FOnSubscribeOperationResponseNative SubscribeToChannelCallback;
+	SubscribeToChannelCallback.BindLambda([this, bSubscribeToChannelDone](const FPubnubOperationResult& Result)
+	{
+		*bSubscribeToChannelDone = true;
+		TestFalse("SubscribeToChannel operation should not have failed", Result.Error);
+		TestEqual("SubscribeToChannel HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("SubscribeToChannel failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
 	// Subscribe to the test channel
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]() {
-		PubnubSubsystem->SubscribeToChannel(TestChannel);
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeToChannelCallback, bSubscribeToChannelDone]() {
+		*bSubscribeToChannelDone = false;
+		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeToChannelCallback);
 	}, 0.1f));
-	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f)); 
+
+	//Wait until subscribe to channel result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelDone]() -> bool {
+		return *bSubscribeToChannelDone;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe to channel result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelDone]()
+	{
+		if(!*bSubscribeToChannelDone)
+		{
+			AddError("SubscribeToChannel result callback was not received");
+		}
+	}, 0.1f));
 
 	// Define other Callbacks
 	FOnFetchHistoryResponseNative FetchHistoryCallback;

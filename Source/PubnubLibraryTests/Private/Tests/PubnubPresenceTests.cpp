@@ -31,6 +31,9 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
     TSharedPtr<TArray<FString>> CurrentListedUserIDs = MakeShared<TArray<FString>>();
     TSharedPtr<int> CurrentOccupancy = MakeShared<int>(0);
 
+    TSharedPtr<bool> bSubscribeToChannelDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannelDone = MakeShared<bool>(false);
+
     if (!InitTest())
     {
         AddError("TestInitialization failed for FPubnubListUsersFromChannelTest");
@@ -62,6 +65,34 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
         }
     });
 
+    //Create subscribe result callback
+    FOnSubscribeOperationResponseNative SubscribeToChannelCallback;
+    SubscribeToChannelCallback.BindLambda([this, bSubscribeToChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannelDone = true;
+        TestFalse("SubscribeToChannel operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    //Create unsubscribe result callback
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannelCallback;
+    UnsubscribeFromChannelCallback.BindLambda([this, bUnsubscribeFromChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannelDone = true;
+        TestFalse("UnsubscribeFromChannel operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
     // Set UserID first
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
     {
@@ -69,10 +100,25 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 1: Subscribe to channel
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, SubscribeToChannelCallback, bSubscribeToChannelDone]()
     {
-        PubnubSubsystem->SubscribeToChannel(TestChannelName);
-    }, 0.2f));
+        *bSubscribeToChannelDone = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannelName, SubscribeToChannelCallback);
+    }, 0.1f));
+
+    //Wait until subscribe to channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelDone]() -> bool {
+        return *bSubscribeToChannelDone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether subscribe to channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelDone]()
+    {
+        if(!*bSubscribeToChannelDone)
+        {
+            AddError("SubscribeToChannel result callback was not received");
+        }
+    }, 0.1f));
 
     // Step 2: List users and verify TestUserID is present
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
@@ -82,7 +128,7 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
         FPubnubListUsersFromChannelSettings Settings;
         Settings.DisableUserID = false;
         PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
-    }, 0.5f)); 
+    }, 0.1f)); 
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
     {
@@ -95,10 +141,25 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 3: Unsubscribe from channel
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, UnsubscribeFromChannelCallback, bUnsubscribeFromChannelDone]()
     {
-        PubnubSubsystem->UnsubscribeFromChannel(TestChannelName);
-    }, 0.3f));
+        *bUnsubscribeFromChannelDone = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannelName, UnsubscribeFromChannelCallback);
+    }, 0.1f));
+
+    //Wait until unsubscribe from channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannelDone]() -> bool {
+        return *bUnsubscribeFromChannelDone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether unsubscribe from channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannelDone]()
+    {
+        if(!*bUnsubscribeFromChannelDone)
+        {
+            AddError("UnsubscribeFromChannel result callback was not received");
+        }
+    }, 0.1f));
 
     // Step 4: List users again and verify TestUserID is NOT present
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
@@ -108,7 +169,7 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
         FPubnubListUsersFromChannelSettings Settings;
         Settings.DisableUserID = false;
         PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
-    }, 0.5f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
     {
@@ -134,6 +195,11 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     TSharedPtr<bool> bListChannelsOpDone = MakeShared<bool>(false);
     TSharedPtr<bool> bListChannelsOpSuccess = MakeShared<bool>(false);
     TSharedPtr<TArray<FString>> ReceivedSubscribedChannels = MakeShared<TArray<FString>>();
+
+    TSharedPtr<bool> bSubscribeToChannelADone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSubscribeToChannelBDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannelADone = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannelBDone = MakeShared<bool>(false);
 
     if (!InitTest())
     {
@@ -162,6 +228,60 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
         }
     });
 
+    //Create subscribe result callbacks
+    FOnSubscribeOperationResponseNative SubscribeToChannelACallback;
+    SubscribeToChannelACallback.BindLambda([this, bSubscribeToChannelADone](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannelADone = true;
+        TestFalse("SubscribeToChannelA operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannelA HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannelA failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    FOnSubscribeOperationResponseNative SubscribeToChannelBCallback;
+    SubscribeToChannelBCallback.BindLambda([this, bSubscribeToChannelBDone](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannelBDone = true;
+        TestFalse("SubscribeToChannelB operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannelB HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannelB failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    //Create unsubscribe result callbacks
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannelACallback;
+    UnsubscribeFromChannelACallback.BindLambda([this, bUnsubscribeFromChannelADone](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannelADone = true;
+        TestFalse("UnsubscribeFromChannelA operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannelA HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannelA failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannelBCallback;
+    UnsubscribeFromChannelBCallback.BindLambda([this, bUnsubscribeFromChannelBDone](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannelBDone = true;
+        TestFalse("UnsubscribeFromChannelB operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannelB HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannelB failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
     // Set UserID first
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
     {
@@ -169,17 +289,32 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 1: Subscribe to Channel A
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA, SubscribeToChannelACallback, bSubscribeToChannelADone]()
     {
-        PubnubSubsystem->SubscribeToChannel(TestChannelA);
-    }, 0.2f));
+        *bSubscribeToChannelADone = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannelA, SubscribeToChannelACallback);
+    }, 0.1f));
+
+    //Wait until subscribe to channel A result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelADone]() -> bool {
+        return *bSubscribeToChannelADone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether subscribe to channel A result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelADone]()
+    {
+        if(!*bSubscribeToChannelADone)
+        {
+            AddError("SubscribeToChannelA result callback was not received");
+        }
+    }, 0.1f));
 
     // Step 2: List and Verify Channel A
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, ListChannelsCallback, bListChannelsOpDone, bListChannelsOpSuccess, ReceivedSubscribedChannels]()
     {
         *bListChannelsOpDone = false; *bListChannelsOpSuccess = false; ReceivedSubscribedChannels->Empty();
         PubnubSubsystem->ListUserSubscribedChannels(TestUserID, ListChannelsCallback);
-    }, 0.5f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListChannelsOpDone]() { return *bListChannelsOpDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA, ReceivedSubscribedChannels, bListChannelsOpSuccess]()
     {
@@ -192,17 +327,32 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 3: Subscribe to Channel B
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelB]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelB, SubscribeToChannelBCallback, bSubscribeToChannelBDone]()
     {
-        PubnubSubsystem->SubscribeToChannel(TestChannelB);
-    }, 0.2f));
+        *bSubscribeToChannelBDone = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannelB, SubscribeToChannelBCallback);
+    }, 0.1f));
+
+    //Wait until subscribe to channel B result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelBDone]() -> bool {
+        return *bSubscribeToChannelBDone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether subscribe to channel B result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelBDone]()
+    {
+        if(!*bSubscribeToChannelBDone)
+        {
+            AddError("SubscribeToChannelB result callback was not received");
+        }
+    }, 0.1f));
 
     // Step 4: List and Verify Channel A & B
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, ListChannelsCallback, bListChannelsOpDone, bListChannelsOpSuccess, ReceivedSubscribedChannels]()
     {
         *bListChannelsOpDone = false; *bListChannelsOpSuccess = false; ReceivedSubscribedChannels->Empty();
         PubnubSubsystem->ListUserSubscribedChannels(TestUserID, ListChannelsCallback);
-    }, 0.5f));
+    }, 2.0f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListChannelsOpDone]() { return *bListChannelsOpDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA, TestChannelB, ReceivedSubscribedChannels, bListChannelsOpSuccess]()
     {
@@ -216,17 +366,32 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 5: Unsubscribe from Channel A
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA, UnsubscribeFromChannelACallback, bUnsubscribeFromChannelADone]()
     {
-        PubnubSubsystem->UnsubscribeFromChannel(TestChannelA);
-    }, 0.2f));
+        *bUnsubscribeFromChannelADone = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannelA, UnsubscribeFromChannelACallback);
+    }, 0.1f));
+
+    //Wait until unsubscribe from channel A result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannelADone]() -> bool {
+        return *bUnsubscribeFromChannelADone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether unsubscribe from channel A result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannelADone]()
+    {
+        if(!*bUnsubscribeFromChannelADone)
+        {
+            AddError("UnsubscribeFromChannelA result callback was not received");
+        }
+    }, 0.1f));
 
     // Step 6: List and Verify Only Channel B
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, ListChannelsCallback, bListChannelsOpDone, bListChannelsOpSuccess, ReceivedSubscribedChannels]()
     {
         *bListChannelsOpDone = false; *bListChannelsOpSuccess = false; ReceivedSubscribedChannels->Empty();
         PubnubSubsystem->ListUserSubscribedChannels(TestUserID, ListChannelsCallback);
-    }, 0.5f));
+    }, 2.0f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListChannelsOpDone]() { return *bListChannelsOpDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelA, TestChannelB, ReceivedSubscribedChannels, bListChannelsOpSuccess]()
     {
@@ -240,17 +405,32 @@ bool FPubnubListUserSubscribedChannelsTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 7: Unsubscribe from Channel B
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelB]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelB, UnsubscribeFromChannelBCallback, bUnsubscribeFromChannelBDone]()
     {
-        PubnubSubsystem->UnsubscribeFromChannel(TestChannelB);
-    }, 0.2f));
+        *bUnsubscribeFromChannelBDone = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannelB, UnsubscribeFromChannelBCallback);
+    }, 0.1f));
+
+    //Wait until unsubscribe from channel B result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannelBDone]() -> bool {
+        return *bUnsubscribeFromChannelBDone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether unsubscribe from channel B result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannelBDone]()
+    {
+        if(!*bUnsubscribeFromChannelBDone)
+        {
+            AddError("UnsubscribeFromChannelB result callback was not received");
+        }
+    }, 2.0f));
 
     // Step 8: List and Verify Empty List
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, ListChannelsCallback, bListChannelsOpDone, bListChannelsOpSuccess, ReceivedSubscribedChannels]()
     {
         *bListChannelsOpDone = false; *bListChannelsOpSuccess = false; ReceivedSubscribedChannels->Empty();
         PubnubSubsystem->ListUserSubscribedChannels(TestUserID, ListChannelsCallback);
-    }, 0.5f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListChannelsOpDone]() { return *bListChannelsOpDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedSubscribedChannels, bListChannelsOpSuccess]()
     {
@@ -279,6 +459,9 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     TSharedPtr<bool> bSetInitialStateSuccess = MakeShared<bool>(false);
     TSharedPtr<bool> bSetUpdatedStateDone = MakeShared<bool>(false);
     TSharedPtr<bool> bSetUpdatedStateSuccess = MakeShared<bool>(false);
+
+    TSharedPtr<bool> bSubscribeToChannelDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannelDone = MakeShared<bool>(false);
 
     if (!InitTest())
     {
@@ -320,6 +503,34 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
         }
     });
 
+    //Create subscribe result callback
+    FOnSubscribeOperationResponseNative SubscribeToChannelCallback;
+    SubscribeToChannelCallback.BindLambda([this, bSubscribeToChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannelDone = true;
+        TestFalse("SubscribeToChannel operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    //Create unsubscribe result callback
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannelCallback;
+    UnsubscribeFromChannelCallback.BindLambda([this, bUnsubscribeFromChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannelDone = true;
+        TestFalse("UnsubscribeFromChannel operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
     // Set UserID first
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
     {
@@ -327,10 +538,25 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 1: Subscribe to Channel
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, SubscribeToChannelCallback, bSubscribeToChannelDone]()
     {
-        PubnubSubsystem->SubscribeToChannel(TestChannelName);
-    }, 0.2f));
+        *bSubscribeToChannelDone = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannelName, SubscribeToChannelCallback);
+    }, 0.1f));
+
+    //Wait until subscribe to channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelDone]() -> bool {
+        return *bSubscribeToChannelDone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether subscribe to channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelDone]()
+    {
+        if(!*bSubscribeToChannelDone)
+        {
+            AddError("SubscribeToChannel result callback was not received");
+        }
+    }, 0.1f));
 
     // Step 2: Set Initial State
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, InitialStateJson, SetInitialStateCallback, bSetInitialStateDone, bSetInitialStateSuccess]()
@@ -338,7 +564,7 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
         *bSetInitialStateDone = false;
         *bSetInitialStateSuccess = false;
         PubnubSubsystem->SetState(TestChannelName, InitialStateJson, SetInitialStateCallback);
-    }, 0.2f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetInitialStateDone]() { return *bSetInitialStateDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetInitialStateSuccess]()
     {
@@ -437,10 +663,25 @@ bool FPubnubChannelSetGetStateTest::RunTest(const FString& Parameters)
     }, 0.1f));
     
     // Step 6: Unsubscribe (optional, but good for hygiene before CleanUp)
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, UnsubscribeFromChannelCallback, bUnsubscribeFromChannelDone]()
     {
-        PubnubSubsystem->UnsubscribeFromChannel(TestChannelName);
-    }, 0.2f));
+        *bUnsubscribeFromChannelDone = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannelName, UnsubscribeFromChannelCallback);
+    }, 0.1f));
+
+    //Wait until unsubscribe from channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannelDone]() -> bool {
+        return *bUnsubscribeFromChannelDone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether unsubscribe from channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannelDone]()
+    {
+        if(!*bUnsubscribeFromChannelDone)
+        {
+            AddError("UnsubscribeFromChannel result callback was not received");
+        }
+    }, 0.1f));
 
     CleanUp();
     return true;
@@ -462,6 +703,11 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
     TSharedPtr<bool> bSetState1Success = MakeShared<bool>(false);
     TSharedPtr<bool> bSetState2Done = MakeShared<bool>(false);
     TSharedPtr<bool> bSetState2Success = MakeShared<bool>(false);
+
+    TSharedPtr<bool> bSubscribeToChannel1Done = MakeShared<bool>(false);
+    TSharedPtr<bool> bSubscribeToChannel2Done = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannel1Done = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannel2Done = MakeShared<bool>(false);
 
     if (!InitTest())
     {
@@ -503,6 +749,60 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
         }
     });
 
+    //Create subscribe result callbacks
+    FOnSubscribeOperationResponseNative SubscribeToChannel1Callback;
+    SubscribeToChannel1Callback.BindLambda([this, bSubscribeToChannel1Done](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannel1Done = true;
+        TestFalse("SubscribeToChannel1 operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannel1 HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannel1 failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    FOnSubscribeOperationResponseNative SubscribeToChannel2Callback;
+    SubscribeToChannel2Callback.BindLambda([this, bSubscribeToChannel2Done](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannel2Done = true;
+        TestFalse("SubscribeToChannel2 operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannel2 HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannel2 failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    //Create unsubscribe result callbacks
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannel1Callback;
+    UnsubscribeFromChannel1Callback.BindLambda([this, bUnsubscribeFromChannel1Done](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannel1Done = true;
+        TestFalse("UnsubscribeFromChannel1 operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannel1 HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannel1 failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannel2Callback;
+    UnsubscribeFromChannel2Callback.BindLambda([this, bUnsubscribeFromChannel2Done](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannel2Done = true;
+        TestFalse("UnsubscribeFromChannel2 operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannel2 HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannel2 failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
     // Set UserID first
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
     {
@@ -510,16 +810,46 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
     }, 0.1f));
 
     // Subscribe to Channel 1
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name, SubscribeToChannel1Callback, bSubscribeToChannel1Done]()
     {
-        PubnubSubsystem->SubscribeToChannel(TestChannel1Name);
-    }, 0.2f));
+        *bSubscribeToChannel1Done = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannel1Name, SubscribeToChannel1Callback);
+    }, 0.1f));
+
+    //Wait until subscribe to channel 1 result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannel1Done]() -> bool {
+        return *bSubscribeToChannel1Done;
+    }, MAX_WAIT_TIME));
+
+    //Check whether subscribe to channel 1 result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannel1Done]()
+    {
+        if(!*bSubscribeToChannel1Done)
+        {
+            AddError("SubscribeToChannel1 result callback was not received");
+        }
+    }, 0.1f));
 
     // Subscribe to Channel 2
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name, SubscribeToChannel2Callback, bSubscribeToChannel2Done]()
     {
-        PubnubSubsystem->SubscribeToChannel(TestChannel2Name);
-    }, 0.5f));
+        *bSubscribeToChannel2Done = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannel2Name, SubscribeToChannel2Callback);
+    }, 0.1f));
+
+    //Wait until subscribe to channel 2 result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannel2Done]() -> bool {
+        return *bSubscribeToChannel2Done;
+    }, MAX_WAIT_TIME));
+
+    //Check whether subscribe to channel 2 result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannel2Done]()
+    {
+        if(!*bSubscribeToChannel2Done)
+        {
+            AddError("SubscribeToChannel2 result callback was not received");
+        }
+    }, 0.1f));
 
     // Set State for Channel 1
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name, State1Json, SetState1Callback, bSetState1Done, bSetState1Success]()
@@ -527,7 +857,7 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
         *bSetState1Done = false;
         *bSetState1Success = false;
         PubnubSubsystem->SetState(TestChannel1Name, State1Json, SetState1Callback);
-    }, 0.3f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetState1Done]() { return *bSetState1Done; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetState1Success]()
     {
@@ -540,7 +870,7 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
         *bSetState2Done = false;
         *bSetState2Success = false;
         PubnubSubsystem->SetState(TestChannel2Name, State2Json, SetState2Callback);
-    }, 0.3f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetState2Done]() { return *bSetState2Done; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetState2Success]()
     {
@@ -618,14 +948,45 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
     }, 0.1f));
     
     // Unsubscribe from channels
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1Name, UnsubscribeFromChannel1Callback, bUnsubscribeFromChannel1Done]()
     {
-        PubnubSubsystem->UnsubscribeFromChannel(TestChannel1Name);
-    }, 0.2f));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name]()
+        *bUnsubscribeFromChannel1Done = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannel1Name, UnsubscribeFromChannel1Callback);
+    }, 0.1f));
+
+    //Wait until unsubscribe from channel 1 result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannel1Done]() -> bool {
+        return *bUnsubscribeFromChannel1Done;
+    }, MAX_WAIT_TIME));
+
+    //Check whether unsubscribe from channel 1 result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannel1Done]()
     {
-        PubnubSubsystem->UnsubscribeFromChannel(TestChannel2Name);
-    }, 0.2f));
+        if(!*bUnsubscribeFromChannel1Done)
+        {
+            AddError("UnsubscribeFromChannel1 result callback was not received");
+        }
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2Name, UnsubscribeFromChannel2Callback, bUnsubscribeFromChannel2Done]()
+    {
+        *bUnsubscribeFromChannel2Done = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannel2Name, UnsubscribeFromChannel2Callback);
+    }, 0.1f));
+
+    //Wait until unsubscribe from channel 2 result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannel2Done]() -> bool {
+        return *bUnsubscribeFromChannel2Done;
+    }, MAX_WAIT_TIME));
+
+    //Check whether unsubscribe from channel 2 result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannel2Done]()
+    {
+        if(!*bUnsubscribeFromChannel2Done)
+        {
+            AddError("UnsubscribeFromChannel2 result callback was not received");
+        }
+    }, 0.1f));
 
     CleanUp();
     return true;

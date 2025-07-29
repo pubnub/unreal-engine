@@ -249,6 +249,8 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
     TSharedPtr<FString> ReceivedEventActionValue = MakeShared<FString>();
     TSharedPtr<FString> ReceivedEventUserID = MakeShared<FString>();
 
+    TSharedPtr<bool> bSubscribeToChannelDone = MakeShared<bool>(false);
+
     if (!InitTest())
     {
         AddError(TEXT("TestInitialization failed for FPubnubReceiveMessageActionEventTest"));
@@ -311,6 +313,20 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
             }
         });
 
+    //Create subscribe result callback
+    FOnSubscribeOperationResponseNative SubscribeToChannelCallback;
+    SubscribeToChannelCallback.BindLambda([this, bSubscribeToChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannelDone = true;
+        TestFalse("SubscribeToChannel operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
     // Callback for AddMessageAction
     FOnAddMessageActionResponseNative AddActionCallback;
     AddActionCallback.BindLambda([this, bAddActionDone, bAddActionSuccess, AddedActionTimetoken](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
@@ -328,9 +344,24 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
     });
 
     // Step 1: Subscribe to Channel
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeToChannelCallback, bSubscribeToChannelDone]()
     {
-        PubnubSubsystem->SubscribeToChannel(TestChannel);
+        *bSubscribeToChannelDone = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeToChannelCallback);
+    }, 0.1f));
+
+    //Wait until subscribe to channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelDone]() -> bool {
+        return *bSubscribeToChannelDone;
+    }, MAX_WAIT_TIME));
+
+    //Check whether subscribe to channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelDone]()
+    {
+        if(!*bSubscribeToChannelDone)
+        {
+            AddError("SubscribeToChannel result callback was not received");
+        }
     }, 0.1f));
 
     // Step 2: Publish Message (immediate - using publish callback to get timetoken)
@@ -339,7 +370,7 @@ bool FPubnubReceiveMessageActionEventTest::RunTest(const FString& Parameters)
         FPubnubPublishSettings PublishSettings;
         PublishSettings.StoreInHistory = true; // Ensure it can have actions
         PubnubSubsystem->PublishMessage(TestChannel, TestMessageContent, PublishCallback, PublishSettings);
-    }, 0.5f));
+    }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessageDone]() { return *bPublishMessageDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessageSuccess, PublishedMessageTimetoken]()
     {
