@@ -37,6 +37,8 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, FPubnubOperationRe
 DECLARE_DELEGATE_TwoParams(FOnPublishMessageResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSignalResponse, FPubnubOperationResult, Result, FPubnubMessageData, SignalMessage);
 DECLARE_DELEGATE_TwoParams(FOnSignalResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnSubscribeOperationResponse, FPubnubOperationResult, Result);
+DECLARE_DELEGATE_OneParam(FOnSubscribeOperationResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAddChannelToGroupResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnAddChannelToGroupResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRemoveChannelFromGroupResponse, FPubnubOperationResult, Result);
@@ -249,9 +251,31 @@ public:
 	 * Use OnMessageReceived Callback to get those messages.
 	 * 
 	 * @param Channel The ID of the channel to subscribe to.
+	 * @param OnSubscribeToChannelResponse Optional delegate to listen for the subscribe result.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnSubscribeToChannelResponse"))
+	void SubscribeToChannel(FString Channel, FOnSubscribeOperationResponse OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+
+	/**
+	 * Subscribes to a specified channel - start listening for messages on that channel.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param Channel The ID of the channel to subscribe to.
+	 * @param NativeCallback Optional delegate to listen for the subscribe result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if subscribe result is not needed.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 */
+	void SubscribeToChannel(FString Channel, FOnSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+
+	/**
+	 * Subscribes to a specified channel - start listening for messages on that channel. Overload without delegate to get subscribe result.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param Channel The ID of the channel to subscribe to.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 */
+	void SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings);
 	
 	/**
 	 * Subscribes to a specified group - start listening for messages on that group.
@@ -1666,7 +1690,7 @@ private:
 	void SetUserID_priv(FString UserID);
 	void PublishMessage_priv(FString Channel, FString Message, FOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void Signal_priv(FString Channel, FString Message, FOnSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
-	void SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	void SubscribeToChannel_priv(FString Channel, FOnSubscribeOperationResponseNative OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void SubscribeToGroup_priv(FString GroupName, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void UnsubscribeFromChannel_priv(FString Channel);
 	void UnsubscribeFromGroup_priv(FString GroupName);
@@ -1737,6 +1761,8 @@ private:
 	
 	//Function that is sent to Pubnub sdk (c-core) to pass sdk logs to Unreal
 	static void PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message);
+
+	TArray<FOnSubscribeOperationResponseNative> SubscriptionResultDelegates;
 
 	void OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data);
 };

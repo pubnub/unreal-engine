@@ -181,14 +181,32 @@ void UPubnubSubsystem::Signal(FString Channel, FString Message, FPubnubSignalSet
 	});
 }
 
+void UPubnubSubsystem::SubscribeToChannel(FString Channel, FOnSubscribeOperationResponse OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings)
+{
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSubscribeToChannelResponse](FPubnubOperationResult Result)
+	{
+		OnSubscribeToChannelResponse.ExecuteIfBound(Result);
+	});
+
+	SubscribeToChannel(Channel, NativeCallback, SubscribeSettings);
+}
+
+void UPubnubSubsystem::SubscribeToChannel(FString Channel, FOnSubscribeOperationResponseNative NativeCallback, FPubnubSubscribeSettings SubscribeSettings)
+{
+	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
+
+	SubscriptionResultDelegates.Add(NativeCallback);
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback, SubscribeSettings]
+	{
+		SubscribeToChannel_priv(Channel, NativeCallback, SubscribeSettings);
+	});
+}
+
 void UPubnubSubsystem::SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings)
 {
-	PUBNUB_RETURN_IF_NOT_INITIALIZED();
-	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, SubscribeSettings]
-	{
-		SubscribeToChannel_priv(Channel, SubscribeSettings);
-	});
+	SubscribeToChannel(Channel, nullptr, SubscribeSettings);
 }
 
 void UPubnubSubsystem::SubscribeToGroup(FString GroupName, FPubnubSubscribeSettings SubscribeSettings)
@@ -1264,6 +1282,12 @@ void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FOn
 	PublishResult.Status = pubnub_last_http_code(ctx_pub);
 	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
 	PublishResult.Error = PublishResultStatus != PNR_OK;
+
+	//In case error message is empty, we just put status there, it might be more useful than nothing
+	if(PublishResult.ErrorMessage.IsEmpty())
+	{
+		PublishResult.ErrorMessage = pubnub_res_2_string(PublishResultStatus);
+	}
 	
 	if(PublishResultStatus == PNR_OK)
 	{
@@ -1326,23 +1350,31 @@ void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FOnSignalRe
 	UPubnubUtilities::CallPubnubDelegate(OnSignalResponse, PublishResult, SignalMessage);
 }
 
-void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings)
+void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FOnSubscribeOperationResponseNative OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings)
 {
-	PUBNUB_RETURN_IF_USER_ID_NOT_SET();
-	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel);
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSubscribeToChannelResponse);
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnSubscribeToChannelResponse);
 
 	if(ChannelSubscriptions.Contains(Channel))
-	{return;}
+	{
+		PubnubError("[SubscribeToChannel]: Already subscribed to chis channel. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeToChannelResponse, "[SubscribeToChannel]: Already subscribed to chis channel. Aborting operation.");
+		return;
+	}
+
+	QuickActionThread->LockForSubscribeOperation();
 
 	//Create subscription for channel entity
 	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannel(ctx_ee, Channel, SubscribeSettings);
 
 	if(nullptr == Subscription)
 	{
-		PubnubError("Failed to subscribe to channel. Pubnub_subscription_alloc didn't create subscription");
+		PubnubError("[SubscribeToChannel]: Failed to subscribe to channel. Pubnub_subscription_alloc didn't create subscription.");
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeToChannelResponse, "[SubscribeToChannel]: Failed to subscribe to channel. Pubnub_subscription_alloc didn't create subscription.");
+		QuickActionThread->UnlockAfterSubscriptionOperationFinished();
 		return;
 	}
-
+	
 	//Create callback that will be triggered by the c-core event engine
 	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
@@ -1361,7 +1393,9 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FPubnubSubscribe
 	//Add subscription listener and subscribe with subscription
 	if(!UPubnubUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
 	{
-		PubnubError("Failed to subscribe to channel.");
+		PubnubError("[SubscribeToChannel]: Failed to subscribe to channel.");
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeToChannelResponse, "[SubscribeToChannel]: Failed to subscribe to channel.");
+		QuickActionThread->UnlockAfterSubscriptionOperationFinished();
 		return;
 	}
 
@@ -1604,7 +1638,8 @@ void UPubnubSubsystem::SetState_priv(FString Channel, FString StateJson, FOnSetS
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(StateJson, false))
 	{
-		PubnubError("Can't Set State, StateJson has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		PubnubError("[SetState]: StateJson has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetStateResponse, "[SetState]: StateJson has to be a correct Json Object. Operation aborted.");
 		return;
 	}
 	
@@ -1862,7 +1897,8 @@ void UPubnubSubsystem::SetUserMetadata_priv(FString User, FString UserMetadataOb
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(UserMetadataObj, false))
 	{
-		PubnubError("Can't Set User Metadata, UserMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		PubnubError("[SetUserMetadata]: UserMetadataObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetUserMetadataResponse, "[SetUserMetadata]: UserMetadataObj has to be a correct Json Object. Operation aborted.", FPubnubUserData());
 		return;
 	}
 	
@@ -1979,7 +2015,8 @@ void UPubnubSubsystem::SetChannelMetadata_priv(FString Channel, FString ChannelM
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(ChannelMetadataObj, false))
 	{
-		PubnubError("Can't Set Channel Metadata, ChannelMetadataObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		PubnubError("[SetChannelMetadata]: ChannelMetadataObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetChannelMetadataResponse, "[SetChannelMetadata]: ChannelMetadataObj has to be a correct Json Object. Operation aborted.", FPubnubChannelData());
 		return;
 	}
 	
@@ -2100,7 +2137,8 @@ void UPubnubSubsystem::SetMemberships_priv(FString User, FString SetObj, FOnSetM
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
 	{
-		PubnubError("Can't Set Memberships, SetObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		PubnubError("[SetMemberships]: SetObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetMembershipResponse, "[SetMemberships]: SetObj has to be a correct Json Object. Operation aborted.", TArray<FPubnubMembershipData>(), FString(), FString());
 		return;
 	}
 
@@ -2149,7 +2187,8 @@ void UPubnubSubsystem::RemoveMemberships_priv(FString User, FString RemoveObj, F
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
 	{
-		PubnubError("Can't Remove Memberships, RemoveObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		PubnubError("[RemoveMemberships]: RemoveObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnRemoveMembershipResponse, "[RemoveMemberships]: RemoveObj has to be a correct Json Object. Operation aborted.", TArray<FPubnubMembershipData>(), FString(), FString());
 		return;
 	}
 
@@ -2239,7 +2278,8 @@ void UPubnubSubsystem::SetChannelMembers_priv(FString Channel, FString SetObj, F
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
 	{
-		PubnubError("Can't Set Channel Members, SetObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		PubnubError("[SetChannelMembers]: SetObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetMembersResponse, "[SetChannelMembers]: SetObj has to be a correct Json Object. Operation aborted.", TArray<FPubnubChannelMemberData>(), FString(), FString());
 		return;
 	}
 
@@ -2287,7 +2327,8 @@ void UPubnubSubsystem::RemoveChannelMembers_priv(FString Channel, FString Remove
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
 	{
-		PubnubError("Can't Remove Channel Members, RemoveObj has to be a correct Json Object", EPubnubErrorType::PET_Warning);
+		PubnubError("[RemoveChannelMembers]: RemoveObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnRemoveMembersResponse, "[RemoveChannelMembers]: RemoveObj has to be a correct Json Object. Operation aborted.", TArray<FPubnubChannelMemberData>(), FString(), FString());
 		return;
 	}
 
@@ -2643,23 +2684,42 @@ void UPubnubSubsystem::PubnubSDKLogConverter(enum pubnub_log_level log_level, co
 
 void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data)
 {
+	if(!SubscriptionResultDelegates.IsEmpty())
+	{
+		FPubnubOperationResult Result;
+		Result.Error = status == PNSS_SUBSCRIPTION_STATUS_CONNECTION_ERROR || status == PNSS_SUBSCRIPTION_STATUS_DISCONNECTED_UNEXPECTEDLY;
+		Result.Status = Result.Error ? 503 : 200;
+		Result.ErrorMessage = pubnub_res_2_string(status_data.reason);
+		SubscriptionResultDelegates[0].ExecuteIfBound(Result);
+
+		SubscriptionResultDelegates.RemoveAt(0);
+	}
+
+	QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+	
 	//Don't waste resources to translate data if there is no delegate bound to it
 	if(!OnSubscriptionStatusChanged.IsBound() && !OnSubscriptionStatusChangedNative.IsBound())
 	{return;}
 
 	FPubnubSubscriptionStatusData SubscriptionStatusData;
 	SubscriptionStatusData.Reason = pubnub_res_2_string(status_data.reason);
-	if (NULL != status_data.channels)
+
+	//If status is disconnected we don't need to give subscribed channels
+	if(status != PNSS_SUBSCRIPTION_STATUS_DISCONNECTED)
 	{
-		FUTF8ToTCHAR Converter(status_data.channels);
-		FString Channels(Converter.Length(), Converter.Get());
-		Channels.ParseIntoArray(SubscriptionStatusData.Channels, TEXT(","));
-	}
-	if (NULL != status_data.channel_groups)
-	{
-		FUTF8ToTCHAR Converter(status_data.channel_groups);
-		FString ChannelGroups(Converter.Length(), Converter.Get());
-		ChannelGroups.ParseIntoArray(SubscriptionStatusData.ChannelGroups, TEXT(","));
+		//Fill channels and channel groups data, from C-Core
+		if (NULL != status_data.channels)
+		{
+			FUTF8ToTCHAR Converter(status_data.channels);
+			FString Channels(Converter.Length(), Converter.Get());
+			Channels.ParseIntoArray(SubscriptionStatusData.Channels, TEXT(","));
+		}
+		if (NULL != status_data.channel_groups)
+		{
+			FUTF8ToTCHAR Converter(status_data.channel_groups);
+			FString ChannelGroups(Converter.Length(), Converter.Get());
+			ChannelGroups.ParseIntoArray(SubscriptionStatusData.ChannelGroups, TEXT(","));
+		}
 	}
 	
 	OnSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
