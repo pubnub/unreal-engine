@@ -196,6 +196,7 @@ void UPubnubSubsystem::SubscribeToChannel(FString Channel, FOnSubscribeOperation
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 
+	//Save this delegate, so it can be called when Subscription Status is changed
 	SubscriptionResultDelegates.Add(NativeCallback);
 	
 	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback, SubscribeSettings]
@@ -209,43 +210,104 @@ void UPubnubSubsystem::SubscribeToChannel(FString Channel, FPubnubSubscribeSetti
 	SubscribeToChannel(Channel, nullptr, SubscribeSettings);
 }
 
-void UPubnubSubsystem::SubscribeToGroup(FString GroupName, FPubnubSubscribeSettings SubscribeSettings)
+void UPubnubSubsystem::SubscribeToGroup(FString ChannelGroup, FOnSubscribeOperationResponse OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings)
 {
-	PUBNUB_RETURN_IF_NOT_INITIALIZED();
-	
-	QuickActionThread->AddFunctionToQueue( [this, GroupName, SubscribeSettings]
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSubscribeToGroupResponse](FPubnubOperationResult Result)
 	{
-		SubscribeToGroup_priv(GroupName, SubscribeSettings);
+		OnSubscribeToGroupResponse.ExecuteIfBound(Result);
+	});
+
+	SubscribeToGroup(ChannelGroup, NativeCallback, SubscribeSettings);
+}
+
+void UPubnubSubsystem::SubscribeToGroup(FString ChannelGroup, FOnSubscribeOperationResponseNative NativeCallback, FPubnubSubscribeSettings SubscribeSettings)
+{
+	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(NativeCallback);
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, NativeCallback, SubscribeSettings]
+	{
+		SubscribeToGroup_priv(ChannelGroup, NativeCallback, SubscribeSettings);
 	});
 }
 
-void UPubnubSubsystem::UnsubscribeFromChannel(FString Channel)
+void UPubnubSubsystem::SubscribeToGroup(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings)
 {
-	PUBNUB_RETURN_IF_NOT_INITIALIZED();
-	
-	QuickActionThread->AddFunctionToQueue( [this, Channel]
+	SubscribeToGroup(ChannelGroup, nullptr, SubscribeSettings);
+}
+
+void UPubnubSubsystem::UnsubscribeFromChannel(FString Channel, FOnSubscribeOperationResponse OnUnsubscribeFromChannelResponse)
+{
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnUnsubscribeFromChannelResponse](FPubnubOperationResult Result)
 	{
-		UnsubscribeFromChannel_priv(Channel);
+		OnUnsubscribeFromChannelResponse.ExecuteIfBound(Result);
+	});
+
+	UnsubscribeFromChannel(Channel, NativeCallback);
+}
+
+void UPubnubSubsystem::UnsubscribeFromChannel(FString Channel, FOnSubscribeOperationResponseNative NativeCallback)
+{
+	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(NativeCallback);
+	
+	QuickActionThread->AddFunctionToQueue( [this, Channel, NativeCallback]
+	{
+		UnsubscribeFromChannel_priv(Channel, NativeCallback);
 	});
 }
 
-void UPubnubSubsystem::UnsubscribeFromGroup(FString GroupName)
+void UPubnubSubsystem::UnsubscribeFromGroup(FString ChannelGroup, FOnSubscribeOperationResponse OnUnsubscribeFromGroupResponse)
 {
-	PUBNUB_RETURN_IF_NOT_INITIALIZED();
-	
-	QuickActionThread->AddFunctionToQueue( [this, GroupName]
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnUnsubscribeFromGroupResponse](FPubnubOperationResult Result)
 	{
-		UnsubscribeFromGroup_priv(GroupName);
+		OnUnsubscribeFromGroupResponse.ExecuteIfBound(Result);
+	});
+
+	UnsubscribeFromGroup(ChannelGroup, NativeCallback);
+}
+
+void UPubnubSubsystem::UnsubscribeFromGroup(FString ChannelGroup, FOnSubscribeOperationResponseNative NativeCallback)
+{
+	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(NativeCallback);
+	
+	QuickActionThread->AddFunctionToQueue( [this, ChannelGroup, NativeCallback]
+	{
+		UnsubscribeFromGroup_priv(ChannelGroup, NativeCallback);
 	});
 }
 
-void UPubnubSubsystem::UnsubscribeFromAll()
+void UPubnubSubsystem::UnsubscribeFromAll(FOnSubscribeOperationResponse OnUnsubscribeFromAllResponse)
 {
-	PUBNUB_RETURN_IF_NOT_INITIALIZED();
-	
-	QuickActionThread->AddFunctionToQueue( [this]
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnUnsubscribeFromAllResponse](FPubnubOperationResult Result)
 	{
-		UnsubscribeFromAll_priv();
+		OnUnsubscribeFromAllResponse.ExecuteIfBound(Result);
+	});
+
+	UnsubscribeFromAll(NativeCallback);
+}
+
+void UPubnubSubsystem::UnsubscribeFromAll(FOnSubscribeOperationResponseNative NativeCallback)
+{
+	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(NativeCallback);
+	
+	QuickActionThread->AddFunctionToQueue( [this, NativeCallback]
+	{
+		UnsubscribeFromAll_priv(NativeCallback);
 	});
 }
 
@@ -1362,6 +1424,8 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FOnSubscribeOper
 		return;
 	}
 
+	//All subscription related operations are non blocking, so we lock ActionThread manually,
+	//make it wait with calling other function until we have subscription result
 	QuickActionThread->LockForSubscribeOperation();
 
 	//Create subscription for channel entity
@@ -1404,16 +1468,24 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FOnSubscribeOper
 	ChannelSubscriptions.Add(Channel, SubscriptionData);
 }
 
-void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName, FPubnubSubscribeSettings SubscribeSettings)
+void UPubnubSubsystem::SubscribeToGroup_priv(FString ChannelGroup, FOnSubscribeOperationResponseNative OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings)
 {
-	PUBNUB_RETURN_IF_USER_ID_NOT_SET();
-	PUBNUB_RETURN_IF_FIELD_EMPTY(GroupName);
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSubscribeToGroupResponse);
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(ChannelGroup, OnSubscribeToGroupResponse);
 
-	if(ChannelGroupSubscriptions.Contains(GroupName))
-	{return;}
+	if(ChannelGroupSubscriptions.Contains(ChannelGroup))
+	{
+		PubnubError("[SubscribeToGroup]: Already subscribed to chis channel. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeToGroupResponse, "[SubscribeToGroup]: Already subscribed to chis channel group. Aborting operation.");
+		return;
+	}
+
+	//All subscription related operations are non blocking, so we lock ActionThread manually,
+	//make it wait with calling other function until we have subscription result
+	QuickActionThread->LockForSubscribeOperation();
 	
 	//Create subscription for channel group entity
-	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannelGroup(ctx_ee, GroupName, SubscribeSettings);
+	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannelGroup(ctx_ee, ChannelGroup, SubscribeSettings);
 
 	if(nullptr == Subscription)
 	{
@@ -1447,10 +1519,10 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString GroupName, FPubnubSubscribe
 
 	//Save Callback and Subscription, so later we can use it to unsubscribe
 	CCoreSubscriptionData SubscriptionData{Callback, Subscription};
-	ChannelGroupSubscriptions.Add(GroupName, SubscriptionData);
+	ChannelGroupSubscriptions.Add(ChannelGroup, SubscriptionData);
 }
 
-void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString Channel)
+void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString Channel, FOnSubscribeOperationResponseNative OnUnsubscribeFromChannelResponse)
 {
 	PUBNUB_RETURN_IF_USER_ID_NOT_SET();
 	
@@ -1474,11 +1546,11 @@ void UPubnubSubsystem::UnsubscribeFromChannel_priv(FString Channel)
 	ChannelSubscriptions.Remove(Channel);
 }
 
-void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
+void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString ChannelGroup, FOnSubscribeOperationResponseNative OnUnsubscribeFromGroupResponse)
 {
 	PUBNUB_RETURN_IF_USER_ID_NOT_SET();
 
-	CCoreSubscriptionData* SubscriptionData =  ChannelGroupSubscriptions.Find(GroupName);
+	CCoreSubscriptionData* SubscriptionData =  ChannelGroupSubscriptions.Find(ChannelGroup);
 	if(!SubscriptionData)
 	{
 		PubnubError("Failed to unsubscribe from channel. There is no such subscription");
@@ -1495,10 +1567,10 @@ void UPubnubSubsystem::UnsubscribeFromGroup_priv(FString GroupName)
 	//Free subscription memory
 	pubnub_subscription_free(&SubscriptionData->Subscription);
 
-	ChannelGroupSubscriptions.Remove(GroupName);
+	ChannelGroupSubscriptions.Remove(ChannelGroup);
 }
 
-void UPubnubSubsystem::UnsubscribeFromAll_priv()
+void UPubnubSubsystem::UnsubscribeFromAll_priv(FOnSubscribeOperationResponseNative OnUnsubscribeFromAllResponse)
 {
 	if(ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty())
 	{return;}
