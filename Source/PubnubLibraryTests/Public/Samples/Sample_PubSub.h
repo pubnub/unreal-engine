@@ -90,6 +90,16 @@ public:
 	UFUNCTION()
 	void OnMessageReceived_SubscribeWithPresenceSample(FPubnubMessageData Message);
 
+	// snippet.subscribe_with_result
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void SubscribeWithResultSample();
+
+	UFUNCTION()
+	void OnMessageReceived_SubscribeWithResultSample(FPubnubMessageData Message);
+
+	UFUNCTION()
+	void OnSubscribeResultReceived(FPubnubOperationResult Result);
+
 	// snippet.unsubscribe_from_channel
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void UnsubscribeFromChannelSample();

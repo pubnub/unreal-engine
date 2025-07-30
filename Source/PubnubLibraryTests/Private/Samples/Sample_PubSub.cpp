@@ -393,6 +393,52 @@ void ASample_PubSub::OnMessageReceived_SubscribeWithPresenceSample(FPubnubMessag
 	}
 }
 
+// snippet.subscribe_with_result
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+void ASample_PubSub::SubscribeWithResultSample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set UserID
+	FString UserID = TEXT("Player_001");
+	PubnubSubsystem->SetUserID(UserID);
+
+	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
+	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeSample);
+
+	//Add Listener/Delegate that will be called when subscribe operation is established with it's result
+	//Note:: this is not listener for messages incoming to the subscribed channel
+	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+	FOnSubscribeOperationResponse OnSubscribeOperationResponse;
+	OnSubscribeOperationResponse.BindDynamic(this, &ASample_PubSub::OnSubscribeResultReceived);
+	
+	//Subscribe to the Channel
+	FString Channel = TEXT("guild_chat");
+	PubnubSubsystem->SubscribeToChannel(Channel, OnSubscribeOperationResponse);
+}
+
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+void ASample_PubSub::OnMessageReceived_SubscribeWithResultSample(FPubnubMessageData Message)
+{
+	UE_LOG(LogTemp, Log, TEXT("Message received on Channel: %s, Message Content: %s"), *Message.Channel, *Message.Message);
+}
+
+// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
+void ASample_PubSub::OnSubscribeResultReceived(FPubnubOperationResult Result)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to subscribe to channel. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Subscribed to channel successfully."));
+	}
+}
+
 // snippet.unsubscribe_from_channel
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::UnsubscribeFromChannelSample()
