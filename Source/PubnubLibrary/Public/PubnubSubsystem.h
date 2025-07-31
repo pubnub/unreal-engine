@@ -17,6 +17,7 @@ class FJsonObject;
 class UPubnubSettings;
 class FPubnubFunctionThread;
 class UPubnubChatSystem;
+class UPubnubCryptoModule;
 
 struct CCoreSubscriptionData
 {
@@ -1661,6 +1662,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
 	void DisconnectSubscriptions();
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	void SetCryptoModule(UPubnubCryptoModule* InCryptoModule);
+
 #pragma endregion
 
 	
@@ -1724,6 +1728,11 @@ private:
 	void SavePubnubConfig(const FPubnubConfig &Config);
 
 #pragma endregion
+
+	/* CRYPTO */
+	
+	UPROPERTY()
+	UPubnubCryptoModule* CryptoModule = nullptr;
 
 	/* INITIALIZATION CHECKS */
 	
@@ -1808,12 +1817,14 @@ private:
 	TSharedPtr<FJsonObject> AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions);
 	TSharedPtr<FJsonObject> AddUserPermissionsToJson(TArray<FString> Users, TArray<FPubnubUserPermissions> UserPermissions);
 
+	//C-Core logging
 	static TArray<FString> FalseCCoreLogPhrases;
 	static bool ShouldCCoreLogBeSkipped(FString Message);
 	
 	//Function that is sent to Pubnub sdk (c-core) to pass sdk logs to Unreal
 	static void PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message);
 
+	//Array storing delegates for all queued subscription operations
 	TArray<FOnSubscribeOperationResponseNative> SubscriptionResultDelegates;
 
 	void OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data);

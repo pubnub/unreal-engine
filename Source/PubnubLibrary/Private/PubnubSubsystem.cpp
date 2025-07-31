@@ -7,6 +7,7 @@
 #include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
 #include "PubnubInternalMacros.h"
+#include "Crypto/PubnubCryptoModule.h"
 #include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
@@ -1106,6 +1107,19 @@ void UPubnubSubsystem::ReconnectSubscriptions()
 void UPubnubSubsystem::DisconnectSubscriptions()
 {
 	pubnub_disconnect(ctx_ee);
+}
+
+void UPubnubSubsystem::SetCryptoModule(UPubnubCryptoModule* InCryptoModule)
+{
+	if(!InCryptoModule)
+	{
+		PubnubError("[SetCryptoModule]: Provided Crypto Module is invalid.");
+		return;;
+	}
+
+	CryptoModule = InCryptoModule;
+	pubnub_set_crypto_module(ctx_pub, CryptoModule->crypto_module);
+	pubnub_set_crypto_module(ctx_ee, CryptoModule->crypto_module);
 }
 
 FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
