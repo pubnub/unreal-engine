@@ -70,7 +70,7 @@ void ASample_Crypto::EncryptSample()
 	FString EcyptedMessage = CryptoModule->Encrypt(Message);
 }
 
-// snippet.encrypt
+// snippet.decrypt
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
 void ASample_Crypto::DecryptSample()
 {
