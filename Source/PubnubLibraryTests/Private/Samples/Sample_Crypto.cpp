@@ -3,7 +3,8 @@
 
 #include "Samples/Sample_Crypto.h"
 // snippet.includes
-#include "Crypto/PubnubCryptoModule.h"
+#include "Crypto/PubnubAesCryptor.h"
+#include "Crypto/PubnubCryptorInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
 
@@ -32,9 +33,9 @@ void ASample_Crypto::RunSamples()
 {
 	Super::RunSamples();
 	
-	SetCryptoModuleSample();
-	EncryptSample();
-	DecryptSample();
+	//SetCryptoModuleSample();
+	//EncryptSample();
+	//DecryptSample();
 }
 //Internal function, don't copy it with the samples
 ASample_Crypto::ASample_Crypto()
@@ -45,7 +46,7 @@ ASample_Crypto::ASample_Crypto()
 
 /* SAMPLE FUNCTIONS */
 
-// snippet.set_crypto_module
+/*// snippet.set_crypto_module
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
 void ASample_Crypto::SetCryptoModuleSample()
 {
@@ -64,23 +65,25 @@ void ASample_Crypto::EncryptSample()
 {
 	FString Message = TEXT("my_message");
 
+	FString CryptoKey = "Enigma";
+
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
 	CryptoModule->Initialize("enigma");
 
-	FString EcyptedMessage = CryptoModule->Encrypt(Message);
+	FString EncryptedMessage = IPubnubCryptoInterface::Execute_Encrypt(CryptoModule, Message);
 }
 
 // snippet.decrypt
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
 void ASample_Crypto::DecryptSample()
 {
-	FString EncryptedMessage = TEXT("dsadsdasda");
+	FString EncryptedMessage = TEXT("UE5FRAFBQ1JIEGrHplXUX5ae8WWtHWKFNgV3HnZIoG8DuFgky0T0G8Pe");
 
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
 	CryptoModule->Initialize("enigma");
 
-	FString DecryptedMessage = CryptoModule->Decrypt(EncryptedMessage);
-}
+	FString DecryptedMessage = IPubnubCryptoInterface::Execute_Decrypt(CryptoModule, EncryptedMessage);
+}*/
 
 
 // snippet.end

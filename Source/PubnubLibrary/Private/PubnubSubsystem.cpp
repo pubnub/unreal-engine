@@ -7,7 +7,7 @@
 #include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
 #include "PubnubInternalMacros.h"
-#include "Crypto/PubnubCryptoModule.h"
+#include "Crypto/PubnubAesCryptor.h"
 #include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
@@ -73,15 +73,22 @@ void UPubnubSubsystem::DeinitPubnub()
 	UnsubscribeFromAll_priv();
 	
 	IsInitialized = false;
-	
-	if(ctx_pub)
+
+	if(ctx_pub && ctx_ee)
 	{
+		//We set this to prevent crash from C-Core when it's trying to clean up provider made in UE
+		pubnub_set_crypto_module(ctx_pub, nullptr);
+		pubnub_set_crypto_module(ctx_ee, nullptr);
+
+		//Clean up Crypto bridge if it was created
+		if(CryptoBridge)
+		{
+			CryptoBridge->CleanUpCryptoBridge();
+		}
+
 		pubnub_free(ctx_pub);
-		ctx_pub = nullptr;
-	}
-	if(ctx_ee)
-	{
 		pubnub_free(ctx_ee);
+		ctx_pub = nullptr;
 		ctx_ee = nullptr;
 	}
 	
@@ -1109,17 +1116,40 @@ void UPubnubSubsystem::DisconnectSubscriptions()
 	pubnub_disconnect(ctx_ee);
 }
 
-void UPubnubSubsystem::SetCryptoModule(UPubnubCryptoModule* InCryptoModule)
+void UPubnubSubsystem::SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule)
 {
-	if(!InCryptoModule)
+	// Clean up previous crypto bridge if it was already set.
+	if(CryptoBridge)
 	{
-		PubnubError("[SetCryptoModule]: Provided Crypto Module is invalid.");
-		return;;
+		CryptoBridge->CleanUpCryptoBridge();
 	}
 
-	CryptoModule = InCryptoModule;
-	pubnub_set_crypto_module(ctx_pub, CryptoModule->crypto_module);
-	pubnub_set_crypto_module(ctx_ee, CryptoModule->crypto_module);
+	// If empty object is given, just clean up the module
+	UObject* CryptorObject = CryptoModule.GetObject();
+	if(!CryptorObject)
+	{
+		pubnub_set_crypto_module(ctx_pub, nullptr);
+		pubnub_set_crypto_module(ctx_ee, nullptr);
+		CryptoBridge = nullptr;
+	}
+	else
+	{
+		CryptoBridge = NewObject<UPubnubCryptoBridge>(this);
+		CryptoBridge->InitCryptoBridge(CryptoModule);
+
+		pubnub_set_crypto_module(ctx_pub, CryptoBridge->GetProvider());
+		pubnub_set_crypto_module(ctx_ee, CryptoBridge->GetProvider());
+	}
+}
+
+TScriptInterface<IPubnubCryptoProviderInterface> UPubnubSubsystem::GetCryptoModule()
+{
+	if(CryptoBridge)
+	{
+		return CryptoBridge->GetUECryptoModule();
+	}
+
+	return nullptr;
 }
 
 FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
@@ -1897,18 +1927,37 @@ void UPubnubSubsystem::FetchHistory_priv(FString Channel, FOnFetchHistoryRespons
 	
 	pubnub_fetch_history(ctx_pub, ChannelHolder.Get(), FetchHistoryOptions);
 	
-	FString JsonResponse = GetLastResponse(ctx_pub);
+	//FString JsonResponse = GetLastResponse(ctx_pub);
+
+
+	FString HistoryResponse = "";
+	
+	
+	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	if (PNR_OK == PubnubResponse) {
+
+		//Convert it keeping UTF8 characters valid
+		pubnub_chamebl_t HistoryMemBlock = pubnub_get_fetch_history(ctx_pub);
+		HistoryResponse = UPubnubUtilities::PubnubCharMemBlockToString(HistoryMemBlock);
+	}
+	else
+	{
+		PubnubResponseError(PubnubResponse, "Failed to get last response.");
+	}
+
+
+	
 
 	//If response is empty, there was server error. 
-	if(JsonResponse.IsEmpty())
+	if(HistoryResponse.IsEmpty())
 	{
-		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		HistoryResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
 	//Parse Json response into data
 	FPubnubOperationResult Result;
 	TArray<FPubnubHistoryMessageData> Messages;
-	UPubnubJsonUtilities::FetchHistoryJsonToData(JsonResponse, Result, Messages);
+	UPubnubJsonUtilities::FetchHistoryJsonToData(HistoryResponse, Result, Messages);
 				
 	//Execute provided delegate with results
 	UPubnubUtilities::CallPubnubDelegate(OnFetchHistoryResponse, Result, Messages);

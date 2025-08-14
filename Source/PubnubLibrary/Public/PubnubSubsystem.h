@@ -6,6 +6,8 @@
 #include "PubNub.h"
 #include "PubnubStructLibrary.h"
 #include "PubnubEnumLibrary.h"
+#include "Crypto/PubnubCryptorInterface.h"
+#include "Crypto/PubnubCryptoBridge.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "PubnubSubsystem.generated.h"
 
@@ -17,7 +19,7 @@ class FJsonObject;
 class UPubnubSettings;
 class FPubnubFunctionThread;
 class UPubnubChatSystem;
-class UPubnubCryptoModule;
+class UPubnubAesCryptor;
 
 struct CCoreSubscriptionData
 {
@@ -1662,8 +1664,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
 	void DisconnectSubscriptions();
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void SetCryptoModule(UPubnubCryptoModule* InCryptoModule);
+	/** Sets the provider-level crypto module to use for PubNub.
+	 *
+	 * Expects an object implementing IPubnubCryptoProviderInterface.
+	 * Use UPubnubCryptoModule for default PubNub encryption implementation.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto")
+	void SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule);
+
+	/** Gets the currently configured provider-level crypto module.
+	 *
+	 * Returns the module previously set via SetCryptoModule.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto")
+	TScriptInterface<IPubnubCryptoProviderInterface> GetCryptoModule();
 
 #pragma endregion
 
@@ -1730,9 +1744,10 @@ private:
 #pragma endregion
 
 	/* CRYPTO */
-	
+
+	//CryptoBridge class that holds provided CryptoModule and inserts it into C-Core system - it keeps all required references alive
 	UPROPERTY()
-	UPubnubCryptoModule* CryptoModule = nullptr;
+	TObjectPtr<UPubnubCryptoBridge> CryptoBridge;
 
 	/* INITIALIZATION CHECKS */
 	

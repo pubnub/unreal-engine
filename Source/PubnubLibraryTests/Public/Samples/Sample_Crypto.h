@@ -28,7 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.set_crypto_module
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
+	/*UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void SetCryptoModuleSample();
 
 	// snippet.encrypt
@@ -37,7 +37,7 @@ public:
 
 	// snippet.decrypt
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void DecryptSample();
+	void DecryptSample();*/
 	
 	// snippet.end
 };

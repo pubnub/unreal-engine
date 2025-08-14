@@ -15,7 +15,8 @@ public class PubnubLibrary : ModuleRules
 			{
 				"Core",
 				"PubNubModule",
-    			"Projects"
+    			"Projects",
+                "OpenSSL"
 			}
 			);
 			

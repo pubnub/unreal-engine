@@ -751,3 +751,12 @@ struct FPubnubOperationResult
 	/**In case of error should contain useful information about the error */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ErrorMessage = "";
 };
+
+USTRUCT(BlueprintType)
+struct FPubnubEncryptedData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString EncryptedData = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Metadata = "";
+};
