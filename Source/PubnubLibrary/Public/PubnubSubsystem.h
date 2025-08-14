@@ -1825,6 +1825,8 @@ private:
 	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
 	void FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
 	static FPubnubMessageData UEMessageFromPubnub(pubnub_v2_message PubnubMessage);
+
+	void DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages);
 	
 	/* GRANT TOKEN HELPERS */
 

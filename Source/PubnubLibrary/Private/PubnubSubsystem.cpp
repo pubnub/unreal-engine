@@ -1958,6 +1958,7 @@ void UPubnubSubsystem::FetchHistory_priv(FString Channel, FOnFetchHistoryRespons
 	FPubnubOperationResult Result;
 	TArray<FPubnubHistoryMessageData> Messages;
 	UPubnubJsonUtilities::FetchHistoryJsonToData(HistoryResponse, Result, Messages);
+	DecryptHistoryMessages(Messages);
 				
 	//Execute provided delegate with results
 	UPubnubUtilities::CallPubnubDelegate(OnFetchHistoryResponse, Result, Messages);
@@ -2687,6 +2688,26 @@ FPubnubMessageData UPubnubSubsystem::UEMessageFromPubnub(pubnub_v2_message Pubnu
 	MessageData.CustomMessageType = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.custom_message_type);
 	MessageData.MatchOrGroup = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.match_or_group);
 	return MessageData;
+}
+
+void UPubnubSubsystem::DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages)
+{
+	//If crypto module is not set, we can't encrypt anything
+	if(!CryptoBridge || !CryptoBridge->GetUECryptoModule() || !CryptoBridge->GetUECryptoModule().GetObject())
+	{ return; }
+
+	for(auto& Message : Messages)
+	{
+		FString ReworkedMessage = IPubnubCryptoProviderInterface::Execute_ProviderDecrypt(CryptoBridge->GetUECryptoModule().GetObject(), Message.Message);
+		
+		// If encryption failed - for example when history message was not encrypted, but crypto module is set, just leave the message as it is
+		if(ReworkedMessage.IsEmpty())
+		{ continue; }
+
+		//Not encrypted messages are deserialized automatically, but in case of encrypted once we need to Deserialize them ourselves
+		ReworkedMessage = UPubnubJsonUtilities::DeserializeString(ReworkedMessage);
+		Message.Message = ReworkedMessage;
+	}
 }
 
 //This functions assumes that Channels and Permissions are already checked. It means that there is the same amount of permissions as channels or there is exactly one permission
