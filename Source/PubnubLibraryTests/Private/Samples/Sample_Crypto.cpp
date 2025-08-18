@@ -85,7 +85,7 @@ void ASample_Crypto::SetCryptoModuleWithLegacySample()
 	// Create Legacy Cryptor
 	// Legacy Cryptor is only needed if you need compatibility with other PubNub SDKs that already use Legacy encryption
 	UPubnubLegacyCryptor* LegacyCryptor = NewObject<UPubnubLegacyCryptor>(this);
-	AesCryptor->SetCipherKey("enigma");
+	LegacyCryptor->SetCipherKey("enigma");
 
 	// Create CryptoModule and Init it with Aes Cryptor as the default Cryptor and Legacy Cryptor as an additional one
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
