@@ -39,21 +39,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void GetCryptoModuleSample();
 
-	// snippet.encrypt
+	// snippet.provider_encrypt
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void EncryptSample();
+	void ProviderEncryptSample();
 
-	// snippet.decrypt
+	// snippet.provider_decrypt
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void DecryptSample();
+	void ProviderDecryptSample();
 
-	// snippet.encrypt_from_module
+	// snippet.provider_encrypt_from_module
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void EncryptUsingAlreadySetModuleSample();
+	void ProviderEncryptUsingAlreadySetModuleSample();
 
-	// snippet.decrypt_from_module
+	// snippet.provider_decrypt_from_module
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void DecryptUsingAlreadySetModuleSample();
+	void ProviderDecryptUsingAlreadySetModuleSample();
 	
 	// snippet.end
 };

@@ -116,9 +116,9 @@ void ASample_Crypto::GetCryptoModuleSample()
 }
 
 
-// snippet.encrypt
+// snippet.provider_encrypt
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
-void ASample_Crypto::EncryptSample()
+void ASample_Crypto::ProviderEncryptSample()
 {
 	// Create Aes Cryptor - our main encryption algorithm
 	UPubnubAesCryptor* AesCryptor = NewObject<UPubnubAesCryptor>(this);
@@ -132,9 +132,9 @@ void ASample_Crypto::EncryptSample()
 	FString EncryptedMessage = IPubnubCryptoProviderInterface::Execute_ProviderEncrypt(CryptoModule, MessageToEncrypt);
 }
 
-// snippet.decrypt
+// snippet.provider_decrypt
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
-void ASample_Crypto::DecryptSample()
+void ASample_Crypto::ProviderDecryptSample()
 {
 	// Create Aes Cryptor - our main encryption algorithm
 	UPubnubAesCryptor* AesCryptor = NewObject<UPubnubAesCryptor>(this);
@@ -148,9 +148,9 @@ void ASample_Crypto::DecryptSample()
 	FString DecryptedMessage = IPubnubCryptoProviderInterface::Execute_ProviderDecrypt(CryptoModule, EncryptedMessage);
 }
 
-// snippet.encrypt
+// snippet.provider_encrypt_from_module
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
-void ASample_Crypto::EncryptUsingAlreadySetModuleSample()
+void ASample_Crypto::ProviderEncryptUsingAlreadySetModuleSample()
 {
 	// Get PubnubSubsystem from GameInstance
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
@@ -168,9 +168,9 @@ void ASample_Crypto::EncryptUsingAlreadySetModuleSample()
 	}
 }
 
-// snippet.decrypt
+// snippet.provider_decrypt_from_module
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
-void ASample_Crypto::DecryptUsingAlreadySetModuleSample()
+void ASample_Crypto::ProviderDecryptUsingAlreadySetModuleSample()
 {
 	// Get PubnubSubsystem from GameInstance
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
