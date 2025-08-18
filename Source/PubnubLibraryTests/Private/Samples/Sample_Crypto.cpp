@@ -61,7 +61,7 @@ void ASample_Crypto::SetCryptoModuleSample()
 
 	// Create CryptoModule and Init it with Aes Cryptor
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
-	CryptoModule->InitCryptoModule(CryptoModule, {});
+	CryptoModule->InitCryptoModule(AesCryptor, {});
 
 	// Set CryptoModule to Pubnub Subsystem
 	PubnubSubsystem->SetCryptoModule(CryptoModule);
@@ -89,7 +89,7 @@ void ASample_Crypto::SetCryptoModuleWithLegacySample()
 
 	// Create CryptoModule and Init it with Aes Cryptor as the default Cryptor and Legacy Cryptor as an additional one
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
-	CryptoModule->InitCryptoModule(CryptoModule, {LegacyCryptor});
+	CryptoModule->InitCryptoModule(AesCryptor, {LegacyCryptor});
 
 	// Set CryptoModule to Pubnub Subsystem
 	PubnubSubsystem->SetCryptoModule(CryptoModule);
@@ -126,7 +126,7 @@ void ASample_Crypto::ProviderEncryptSample()
 
 	// Create CryptoModule and Init it with Aes Cryptor
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
-	CryptoModule->InitCryptoModule(CryptoModule, {});
+	CryptoModule->InitCryptoModule(AesCryptor, {});
 
 	FString MessageToEncrypt = TEXT("Ready for action!");
 	FString EncryptedMessage = IPubnubCryptoProviderInterface::Execute_ProviderEncrypt(CryptoModule, MessageToEncrypt);
@@ -142,7 +142,7 @@ void ASample_Crypto::ProviderDecryptSample()
 
 	// Create CryptoModule and Init it with Aes Cryptor
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
-	CryptoModule->InitCryptoModule(CryptoModule, {});
+	CryptoModule->InitCryptoModule(AesCryptor, {});
 	
 	FString EncryptedMessage = TEXT("UE5FRAFBQ1JIEAiPzR+6d0U+p/7iTcrvsBuoiJEjvqP90rLD8iC1NKLr7AQJFUv7NiI1pIRZKmtFWQ==");
 	FString DecryptedMessage = IPubnubCryptoProviderInterface::Execute_ProviderDecrypt(CryptoModule, EncryptedMessage);

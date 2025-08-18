@@ -28,8 +28,6 @@ void ASample_CryptoFull::RunCryptoFullExample()
 	FString UserID = TEXT("Player_001");
 	PubnubSubsystem->SetUserID(UserID);
 
-	FPlatformProcess::Sleep(3);
-
 	UE_LOG(LogTemp, Log, TEXT("Crypto example, User ID is set"));
 	
 	// Set Crypto Module With Aes Cryptor
@@ -38,10 +36,8 @@ void ASample_CryptoFull::RunCryptoFullExample()
 	UPubnubAesCryptor* AesCryptor = NewObject<UPubnubAesCryptor>(this);
 	AesCryptor->SetCipherKey("enigma");
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
-	CryptoModule->InitCryptoModule(CryptoModule, {});
+	CryptoModule->InitCryptoModule(AesCryptor, {});
 	PubnubSubsystem->SetCryptoModule(CryptoModule);
-
-	FPlatformProcess::Sleep(3);
 
 	UE_LOG(LogTemp, Log, TEXT("Crypto example, Crypto Module is set"));
 
