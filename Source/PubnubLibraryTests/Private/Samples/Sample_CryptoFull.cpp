@@ -33,6 +33,8 @@ void ASample_CryptoFull::RunCryptoFullExample()
 	UE_LOG(LogTemp, Log, TEXT("Crypto example, User ID is set"));
 	
 	// Set Crypto Module With Aes Cryptor
+	// Setting crypto module automatically encrypts all published messages and decrypts received messages
+	// Messages fetched from history are alsodecrypted automatically
 	UPubnubAesCryptor* AesCryptor = NewObject<UPubnubAesCryptor>(this);
 	AesCryptor->SetCipherKey("enigma");
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
