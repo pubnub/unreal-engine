@@ -37,8 +37,6 @@ struct FPubnubPublishSettings
 
 	//If true, the message is stored in history. If false, the message is not stored in history.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StoreInHistory = true;
-	//TODO: CipherKey is deprecated, decide what to do (hide variable or mark is as deprecated)
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString CipherKey = "";
 	//If true, the message is replicated, thus will be received by all subscribers. If false, the message is not replicated
 	//and will be delivered only to Function event handlers. Setting false here and false on store is referred to as a Fire (instead of a publish).
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Replicate = true;

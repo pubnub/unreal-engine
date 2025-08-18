@@ -165,7 +165,6 @@ bool UPubnubCryptoModule::ParseHeader(const uint8* buf, size_t bufSize, uint8 ou
     } else {
         if (o + 2 > bufSize) return false;
         const uint16 hdr16 = static_cast<uint16>((buf[o] << 8) | buf[o+1]);
-        o += 2;
         headerSize = hdr16;
         // headerSize = base + 3 + metaSize  => metaSize = headerSize - (base + 3)
         const size_t base = SentinelLen + 1 + IdentLen;

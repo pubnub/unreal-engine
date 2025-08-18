@@ -115,8 +115,8 @@ void UPubnubSubsystem::SetSecretKey()
 {
 	if(!CheckIsPubnubInitialized())
 	{return;}
-	
-	if(std::strlen(SecretKey) == 0)
+
+	if(!SecretKey || SecretKey[0] == '\0')
 	{
 		PubnubError("Can't set Secret Key. Secret Key is empty.");
 		return;
@@ -1286,13 +1286,13 @@ void UPubnubSubsystem::InitPubnub_priv(const FPubnubConfig& Config)
 	{return;}
 	
 	//Make sure that keys are filled
-	if(std::strlen(PublishKey) == 0 )
+	if(!PublishKey || PublishKey[0] == '\0')
 	{
 		PubnubError("Publish key is empty, can't initialize Pubnub");
 		return;
 	}
 
-	if(std::strlen(SubscribeKey) == 0 )
+	if(!SubscribeKey || SubscribeKey[0] == '\0')
 	{
 		PubnubError("Subscribe key is empty, can't initialize Pubnub");
 		return;

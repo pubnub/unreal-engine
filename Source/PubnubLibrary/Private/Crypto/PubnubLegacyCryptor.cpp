@@ -144,19 +144,18 @@ bool UPubnubLegacyCryptor::Aes256CbcEncrypt(const TArray<uint8>& Key, const uint
         return false;
     }
 
-    int len = 0, total = 0;
+    int len = 0;
     bool ok = false;
 
     do {
         if (EVP_EncryptInit_ex(Ctx, EVP_aes_256_cbc(), nullptr, Key.GetData(), IV) != 1) break;
 
         if (EVP_EncryptUpdate(Ctx, Out.GetData(), &len, In.GetData(), In.Num()) != 1) break;
-        total = len;
 
-        if (EVP_EncryptFinal_ex(Ctx, Out.GetData() + total, &len) != 1) break;
-        total += len;
+        int written = len;
+        if (EVP_EncryptFinal_ex(Ctx, Out.GetData() + written, &len) != 1) break;
 
-        Out.SetNum(total);
+        Out.SetNum(written + len);
         ok = true;
     } while (false);
 

@@ -32,10 +32,10 @@ void ASample_Crypto::RunSamples()
 	SetCryptoModuleSample();
 	SetCryptoModuleWithLegacySample();
 	GetCryptoModuleSample();
-	EncryptSample();
-	DecryptSample();
-	EncryptUsingAlreadySetModuleSample();
-	DecryptUsingAlreadySetModuleSample();
+	ProviderEncryptSample();
+	ProviderDecryptSample();
+	ProviderEncryptUsingAlreadySetModuleSample();
+	ProviderDecryptUsingAlreadySetModuleSample();
 }
 //Internal function, don't copy it with the samples
 ASample_Crypto::ASample_Crypto()
