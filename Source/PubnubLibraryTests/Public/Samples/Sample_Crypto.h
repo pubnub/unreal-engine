@@ -28,8 +28,16 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.set_crypto_module
-	/*UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void SetCryptoModuleSample();
+
+	// snippet.set_crypto_module_with_legacy
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
+	void SetCryptoModuleWithLegacySample();
+	
+	// snippet.get_crypto_module
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
+	void GetCryptoModuleSample();
 
 	// snippet.encrypt
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
@@ -37,7 +45,15 @@ public:
 
 	// snippet.decrypt
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void DecryptSample();*/
+	void DecryptSample();
+
+	// snippet.encrypt_from_module
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
+	void EncryptUsingAlreadySetModuleSample();
+
+	// snippet.decrypt_from_module
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
+	void DecryptUsingAlreadySetModuleSample();
 	
 	// snippet.end
 };
