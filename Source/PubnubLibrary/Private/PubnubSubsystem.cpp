@@ -1244,13 +1244,10 @@ void UPubnubSubsystem::SavePubnubConfig(const FPubnubConfig& Config)
 {
 	PubnubConfig = Config;
 	
-	//Copy memory for chars containing keys
-	FMemory::Memcpy(PublishKey, TCHAR_TO_ANSI(*Config.PublishKey), PublishKeySize);
-	FMemory::Memcpy(SubscribeKey, TCHAR_TO_ANSI(*Config.SubscribeKey), PublishKeySize);
-	FMemory::Memcpy(SecretKey, TCHAR_TO_ANSI(*Config.SecretKey), SecretKeySize);
-	PublishKey[PublishKeySize] = '\0';
-	SubscribeKey[PublishKeySize] = '\0';
-	SecretKey[SecretKeySize] = '\0';
+	// Safely copy all keys using the utility function
+	UPubnubUtilities::SafeCopyFStringToCharBuffer(PublishKey, PublishKeySize + 1, Config.PublishKey, TEXT("PublishKey"));
+	UPubnubUtilities::SafeCopyFStringToCharBuffer(SubscribeKey, PublishKeySize + 1, Config.SubscribeKey, TEXT("SubscribeKey"));
+	UPubnubUtilities::SafeCopyFStringToCharBuffer(SecretKey, SecretKeySize + 1, Config.SecretKey, TEXT("SecretKey"));
 }
 
 //This functions is a wrapper to IsInitialized bool, so it can print error if user is trying to do anything before initializing Pubnub correctly

@@ -1101,7 +1101,8 @@ bool FAddMessageActionJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Action timetoken should be correct", MessageActionData.ActionTimetoken, "17302756806526160");
 
 	// Test successful response with different action types and special characters
-	FString TestJsonSpecialChars = "{\"status\": 200, \"data\": {\"messageTimetoken\": \"17302756128241999\", \"type\": \"custom_emoji\", \"uuid\": \"User@Special#123\", \"value\": \"🔥💯\", \"actionTimetoken\": \"17302756806526200\"}}";
+	// Using Unicode escape sequences to ensure cross-platform compatibility
+	FString TestJsonSpecialChars = TEXT("{\"status\": 200, \"data\": {\"messageTimetoken\": \"17302756128241999\", \"type\": \"custom_emoji\", \"uuid\": \"User@Special#123\", \"value\": \"\\ud83d\\udd25\\ud83d\\udcaf\", \"actionTimetoken\": \"17302756806526200\"}}");
 	Result = FPubnubOperationResult();
 	MessageActionData = FPubnubMessageActionData();
 	
@@ -1111,7 +1112,16 @@ bool FAddMessageActionJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestFalse("Special chars: Error should be false", Result.Error);
 	TestEqual("Special chars: Action type should be 'custom_emoji'", MessageActionData.Type, "custom_emoji");
 	TestEqual("Special chars: User ID should contain special characters", MessageActionData.UserID, "User@Special#123");
-	TestEqual("Special chars: Action value should contain emojis", MessageActionData.Value, "🔥💯");
+	
+	// Create expected emoji string using UTF-16 surrogate pairs for cross-platform compatibility
+	// Fire emoji (🔥) = U+1F525 -> UTF-16: 0xD83D 0xDD25
+	// 100 emoji (💯) = U+1F4AF -> UTF-16: 0xD83D 0xDCAF
+	FString ExpectedEmojiValue;
+	ExpectedEmojiValue.AppendChar(0xD83D); // High surrogate for 🔥
+	ExpectedEmojiValue.AppendChar(0xDD25); // Low surrogate for 🔥
+	ExpectedEmojiValue.AppendChar(0xD83D); // High surrogate for 💯
+	ExpectedEmojiValue.AppendChar(0xDCAF); // Low surrogate for 💯
+	TestEqual("Special chars: Action value should contain emojis", MessageActionData.Value, ExpectedEmojiValue);
 
 	// Test error response with 400 status
 	FString TestJsonError = "{\"status\": 400, \"error\": true, \"message\": \"Invalid message timetoken\", \"data\": {}}";

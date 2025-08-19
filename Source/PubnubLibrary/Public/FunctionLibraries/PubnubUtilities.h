@@ -52,6 +52,16 @@ public:
 	static FString RemoveOuterQuotesFromString(const FString InString);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
 
+	/**
+	 * Safely copies an FString to a char buffer with proper bounds checking and null termination.
+	 * @param Destination The destination char buffer
+	 * @param DestSize The size of the destination buffer (including space for null terminator)
+	 * @param Source The source FString to copy
+	 * @param KeyName Optional name for logging purposes (defaults to "String")
+	 * @return true if copy was successful, false if conversion failed
+	 */
+	static bool SafeCopyFStringToCharBuffer(char* Destination, int DestSize, const FString& Source, const TCHAR* KeyName = TEXT("String"));
+
 	//This is to remove class name and "_priv" from __FUNCTION__ macro output
 	static FString GetNameFromFunctionMacro(FString FunctionName);
 

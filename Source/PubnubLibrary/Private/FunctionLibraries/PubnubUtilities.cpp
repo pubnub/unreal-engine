@@ -65,6 +65,49 @@ FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block
 	return FString(Converter.Length(), Converter.Get());
 }
 
+bool UPubnubUtilities::SafeCopyFStringToCharBuffer(char* Destination, int DestSize, const FString& Source, const TCHAR* KeyName)
+{
+	if (!Destination || DestSize <= 0)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("SafeCopyFStringToCharBuffer: Invalid destination buffer for %s"), KeyName);
+		return false;
+	}
+
+	if (Source.IsEmpty())
+	{
+		Destination[0] = '\0';
+		return true;
+	}
+
+	// Use UTF8 conversion with proper lifetime management (same pattern as FUTF8StringHolder)
+	FTCHARToUTF8 Converter(*Source);
+	const char* Utf8Source = Converter.Get();
+	
+	if (!Utf8Source)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("SafeCopyFStringToCharBuffer: Failed to convert %s to UTF8"), KeyName);
+		Destination[0] = '\0';
+		return false;
+	}
+
+	// Get source length
+	const int SourceLen = Converter.Length();
+	
+	// Check if source fits in destination (leaving space for null terminator)
+	if (SourceLen >= DestSize)
+	{
+		UE_LOG(PubnubLog, Warning, TEXT("SafeCopyFStringToCharBuffer: %s is too long (%d chars), truncating to %d chars"), 
+			KeyName, SourceLen, DestSize - 1);
+	}
+
+	// Copy with bounds checking - copy at most (DestSize - 1) characters
+	const int CopyLen = FMath::Min(SourceLen, DestSize - 1);
+	FMemory::Memcpy(Destination, Utf8Source, CopyLen);
+	Destination[CopyLen] = '\0';
+
+	return true;
+}
+
 FString UPubnubUtilities::GetNameFromFunctionMacro(FString FunctionName)
 {
 	if(FunctionName.IsEmpty()) {return "";}

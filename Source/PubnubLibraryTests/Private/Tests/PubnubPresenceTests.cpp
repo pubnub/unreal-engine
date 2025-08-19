@@ -169,7 +169,7 @@ bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
         FPubnubListUsersFromChannelSettings Settings;
         Settings.DisableUserID = false;
         PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
-    }, 0.1f));
+    }, 2.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
     {
