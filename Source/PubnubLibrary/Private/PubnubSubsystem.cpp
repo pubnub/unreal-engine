@@ -2,7 +2,6 @@
 
 #include "PubnubSubsystem.h"
 
-#include "Async/Async.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
@@ -116,7 +115,7 @@ void UPubnubSubsystem::SetSecretKey()
 	if(!CheckIsPubnubInitialized())
 	{return;}
 
-	if(!SecretKey || SecretKey[0] == '\0')
+	if(SecretKey[0] == '\0')
 	{
 		PubnubError("Can't set Secret Key. Secret Key is empty.");
 		return;
@@ -1286,13 +1285,13 @@ void UPubnubSubsystem::InitPubnub_priv(const FPubnubConfig& Config)
 	{return;}
 	
 	//Make sure that keys are filled
-	if(!PublishKey || PublishKey[0] == '\0')
+	if(PublishKey[0] == '\0')
 	{
 		PubnubError("Publish key is empty, can't initialize Pubnub");
 		return;
 	}
 
-	if(!SubscribeKey || SubscribeKey[0] == '\0')
+	if(SubscribeKey[0] == '\0')
 	{
 		PubnubError("Subscribe key is empty, can't initialize Pubnub");
 		return;

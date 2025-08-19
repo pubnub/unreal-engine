@@ -11,7 +11,6 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Tests/PubnubTestsUtils.h"
-#include "Tests/AutomationCommon.h"
 #include "Misc/AutomationTest.h"
 
 using namespace PubnubTests;

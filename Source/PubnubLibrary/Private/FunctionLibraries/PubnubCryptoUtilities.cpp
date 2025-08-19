@@ -1,6 +1,7 @@
 // Copyright 2024 PubNub Inc. All Rights Reserved.
 
 #include "FunctionLibraries/PubnubCryptoUtilities.h"
+#include "Misc/Base64.h"
 
 
 bool UPubnubCryptoUtilities::Base64Decode(const FString& In, TArray<uint8>& Out)

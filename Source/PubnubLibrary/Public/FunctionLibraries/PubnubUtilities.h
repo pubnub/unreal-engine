@@ -4,6 +4,7 @@
 
 #include "PubnubSubsystem.h"
 #include "CoreMinimal.h"
+#include "Async/Async.h"
 #include "PubnubStructLibrary.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PubnubUtilities.generated.h"

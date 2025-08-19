@@ -1,7 +1,5 @@
 // Copyright 2024 PubNub Inc. All Rights Reserved.
 
-#pragma once
-
 #include "Crypto/PubnubCryptoBridge.h"
 #include "PubnubSubsystem.h"
 #include "FunctionLibraries/PubnubCryptoUtilities.h"

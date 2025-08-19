@@ -6,6 +6,9 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PubnubTokenUtilities.generated.h"
 
+class FJsonObject;
+class FJsonValue;
+
 struct FPubnubGrantTokenPermissions;
 struct FChannelGrant;
 struct FChannelGroupGrant;

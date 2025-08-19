@@ -3,6 +3,8 @@
 #include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "PubnubStructLibrary.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 
 
 FString UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta)

@@ -1685,7 +1685,7 @@ public:
 private:
 	
 	//Thread for quick operations, generally everything except subscribe
-	TObjectPtr<FPubnubFunctionThread> QuickActionThread = nullptr;
+	FPubnubFunctionThread* QuickActionThread = nullptr;
 
 	//Pubnub context for the most of the pubnub operations
 	pubnub_t *ctx_pub = nullptr;
@@ -1734,9 +1734,9 @@ private:
 	//Containers for keys stored from settings
 	static const int PublishKeySize = 42;
 	static const int SecretKeySize = 54;
-	char PublishKey[PublishKeySize + 1];
-	char SubscribeKey[PublishKeySize + 1];
-	char SecretKey[SecretKeySize + 1];
+	char PublishKey[PublishKeySize + 1] = {};
+	char SubscribeKey[PublishKeySize + 1] = {};
+	char SecretKey[SecretKeySize + 1] = {};
 	
 	void LoadPluginSettings();
 	void SavePubnubConfig(const FPubnubConfig &Config);

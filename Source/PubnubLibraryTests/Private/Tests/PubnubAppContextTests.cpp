@@ -5,6 +5,7 @@
 #include "PubnubStructLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "Dom/JsonValue.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -620,22 +621,22 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
 
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelBData, SetChannelMetadataCallback]()
     {
-        PubnubSubsystem->SetChannelMetadata(ChannelBData.ChannelID, ChannelBData, SetChannelMetadataCallback, FPubnubGetMetadataInclude(true, false, false));
+        PubnubSubsystem->SetChannelMetadata(ChannelBData.ChannelID, ChannelBData, SetChannelMetadataCallback, FPubnubGetMetadataInclude({true, false, false}));
     }, 0.1f));
 
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortAData, SetChannelMetadataCallback]()
     {
-        PubnubSubsystem->SetChannelMetadata(ChannelSortAData.ChannelID, ChannelSortAData, SetChannelMetadataCallback, FPubnubGetMetadataInclude(true, false, false));
+        PubnubSubsystem->SetChannelMetadata(ChannelSortAData.ChannelID, ChannelSortAData, SetChannelMetadataCallback, FPubnubGetMetadataInclude({true, false, false}));
     }, 0.1f));
 
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortBData, SetChannelMetadataCallback]()
     {
-        PubnubSubsystem->SetChannelMetadata(ChannelSortBData.ChannelID, ChannelSortBData, SetChannelMetadataCallback, FPubnubGetMetadataInclude(true, false, false));
+        PubnubSubsystem->SetChannelMetadata(ChannelSortBData.ChannelID, ChannelSortBData, SetChannelMetadataCallback, FPubnubGetMetadataInclude({true, false, false}));
     }, 0.1f));
 
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortCData, SetChannelMetadataCallback]()
     {
-        PubnubSubsystem->SetChannelMetadata(ChannelSortCData.ChannelID, ChannelSortCData, SetChannelMetadataCallback, FPubnubGetMetadataInclude(true, false, false));
+        PubnubSubsystem->SetChannelMetadata(ChannelSortCData.ChannelID, ChannelSortCData, SetChannelMetadataCallback, FPubnubGetMetadataInclude({true, false, false}));
     }, 0.1f));
 
     // Wait for all setup operations to complete
