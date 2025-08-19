@@ -17,7 +17,25 @@ struct FPubnubEncryptedDataInternal
 };
 
 /**
+ * AES-based cryptor implementation for PubNub message encryption and decryption.
  * 
+ * This class provides AES (Advanced Encryption Standard) encryption/decryption functionality
+ * for PubNub messages. It implements the IPubnubCryptorInterface to provide a standardized
+ * encryption interface that can be used with PubNub's crypto module.
+ * 
+ * Features:
+ * - AES encryption with 256-bit keys
+ * - Random IV generation for each encryption operation
+ * - SHA-256 key hashing for enhanced security
+ * - Blueprint-compatible interface for Unreal Engine projects
+ * 
+ * Usage:
+ * 1. Create an instance of UPubnubAesCryptor
+ * 2. Set the cipher key using SetCipherKey()
+ * 3. Use the cryptor with PubNub's crypto module for automatic message encryption/decryption
+ * 
+ * @note The cipher key must be set before performing any encryption/decryption operations.
+ * @note Each encryption operation generates a unique random IV for security.
  */
 UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubAesCryptor : public UObject, public IPubnubCryptorInterface

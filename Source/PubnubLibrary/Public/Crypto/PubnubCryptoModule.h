@@ -10,7 +10,30 @@
 
 
 /**
+ * Crypto module implementation for PubNub message encryption and decryption.
  * 
+ * This class provides a modular system for managing multiple encryption/decryption methods
+ * within a single PubNub instance. It implements the IPubnubCryptoProviderInterface to
+ * provide a unified interface for encrypting/decrypting messages using different cryptors.
+ * 
+ * Key Features:
+ * - Supports multiple encryption/decryption methods (cryptors)
+ * - Automatic routing based on cryptor identifier in header
+ * - Blueprint-compatible interface for Unreal Engine projects
+ * - Supports legacy encryption methods for backward compatibility
+ * 
+ * Usage:
+ * 1. Create an instance of UPubnubCryptoModule
+ * 2. Initialize it with a default cryptor and optional additional cryptors
+ * 3. Use the module with PubNub's crypto module for message encryption/decryption
+ * 
+ * @note In Blueprints, the cryptors must be cast to IPubnubCryptorInterface before being
+ *       provided to InitCryptoModule. Don't plug them directly as UObjects, as this will
+ *       compile, but empty Crypto object will be provided.
+ * @note The module stores strong UPROPERTY references to the cryptors to prevent GC during use.
+ * @note The module is designed to be used with PubNub's crypto module for automatic message
+ *       encryption/decryption.
+ */
  */
 UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubCryptoModule : public UObject, public IPubnubCryptoProviderInterface

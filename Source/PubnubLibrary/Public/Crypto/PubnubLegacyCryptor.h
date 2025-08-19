@@ -12,7 +12,33 @@ struct pubnub_crypto_provider_t;
 struct FPubnubEncryptedDataInternal;
 
 /**
+ * Legacy cryptor implementation for backward compatibility with older PubNub encryption methods. 
+ * Don't use it unless you need to support legacy encryption methods from other PubNub SDKs.
  * 
+ * This class provides compatibility with legacy PubNub encryption implementations that may have
+ * used different approaches than the current AES cryptor. It implements the IPubnubCryptorInterface
+ * to maintain consistency with the modern crypto module while supporting older encryption schemes.
+ * 
+ * Key Features:
+ * - AES-256-CBC encryption for compatibility with legacy implementations
+ * - Configurable IV behavior (random vs fixed) via UseRandomIV property
+ * - Support for legacy key formatting and processing
+ * - Blueprint-compatible interface for Unreal Engine projects
+ * 
+ * IV Behavior:
+ * - UseRandomIV = true (recommended): Generates random 16-byte IV and prefixes it to ciphertext
+ * - UseRandomIV = false (legacy): Uses fixed IV "0123456789012345" (less secure, for compatibility only)
+ * 
+ * Usage:
+ * 1. Create an instance of UPubnubLegacyCryptor
+ * 2. Set the cipher key using SetCipherKey()
+ * 3. Configure UseRandomIV based on compatibility requirements
+ * 4. Use with PubNub's crypto module for message encryption/decryption
+ * 
+ * @warning Using UseRandomIV = false (fixed IV) is less secure and should only be used
+ *          when compatibility with very old PubNub implementations is required.
+ * @note For new implementations, prefer UPubnubAesCryptor unless legacy compatibility is needed.
+ * @note The cipher key must be set before performing any encryption/decryption operations.
  */
 UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubLegacyCryptor : public UObject, public IPubnubCryptorInterface
