@@ -1,4 +1,4 @@
-// Copyright 2024 PubNub Inc. All Rights Reserved.
+// Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -31,5 +31,4 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pubnub|Samples")
 	FString SamplesName = "";
 	
-
 };

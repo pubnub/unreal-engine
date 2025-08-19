@@ -1,7 +1,8 @@
-// Copyright 2024 PubNub Inc. All Rights Reserved.
+// Copyright 2025 PubNub Inc. All Rights Reserved.
 
 
 #include "Threads/PubnubFunctionThread.h"
+#include "PubnubSubsystem.h"
 #if PLATFORM_WINDOWS
 #include "Windows/WindowsPlatformProcess.h"
 #elif PLATFORM_MAC
@@ -33,6 +34,12 @@ uint32 FPubnubFunctionThread::Run()
 			for(int i = 0; i <  PubnubAsyncFunctionsQueue.Num(); i++)
 			{
 				PubnubAsyncFunctionsQueue[i]();
+				
+				//If last called operation is subscribe operation, we need to wait until it's finished as it's not blocking
+				if(IsLockedForSubscription)
+				{
+					WaitForSubscriptionOperationEnd();
+				}
 			}
 			
 			//Clear queue
@@ -46,7 +53,7 @@ uint32 FPubnubFunctionThread::Run()
 		PubnubAsyncFunctionsBuffer.Empty();
 		Mutex.Unlock();
 		
-		FPlatformProcess::Sleep(0.05f);
+		FPlatformProcess::Sleep(QueueLoopDelay);
 	}
 	return 0;
 }
@@ -68,4 +75,30 @@ void FPubnubFunctionThread::AddFunctionToQueue(TFunction<void()> InFunction)
 	Mutex.Lock();
 	PubnubAsyncFunctionsBuffer.Add(InFunction);
 	Mutex.Unlock();
+}
+
+void FPubnubFunctionThread::LockForSubscribeOperation()
+{
+	IsLockedForSubscription = true;
+}
+
+void FPubnubFunctionThread::UnlockAfterSubscriptionOperationFinished()
+{
+	IsLockedForSubscription = false;
+}
+
+void FPubnubFunctionThread::WaitForSubscriptionOperationEnd()
+{
+	int LoopCount = 0;
+	while(IsLockedForSubscription)
+	{
+		FPlatformProcess::Sleep(WaitForSubscriptionDelay);
+		LoopCount++;
+		if(LoopCount > WaitForSubscriptionDelayMaxCount)
+		{
+			UE_LOG(PubnubLog, Error, TEXT("WaitForSubscriptionOperationEnd exausted all tries. Skipping waiting for subscription result."))
+			break;
+		}
+
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2024 PubNub Inc. All Rights Reserved.
+// Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -27,17 +27,24 @@ public:
 	
 	/* SAMPLE FUNCTIONS */
 	
-	// snippet.simple_publish
+	// snippet.publish_simple
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
-	void SimplePublishSample();
+	void PublishSimpleSample();
 
-	// snippet.advance_publish
+	// snippet.publish_with_settings
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
-	void AdvancedPublishSample();
+	void PublishWithSettingsSample();
 
-	// snippet.publish_with_ttl
+	// snippet.publish_with_result
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
-	void PublishWithTTLSample();
+	void PublishWithResultSample();
+	
+	UFUNCTION()
+	void PublishedMessageResponse(FPubnubOperationResult Result, FPubnubMessageData Message);
+
+	// snippet.publish_with_result_lambda
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void PublishWithResultLambdaSample();
 
 	// snippet.simple_signal
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
@@ -47,11 +54,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SignalWithSettingsSample();
 
+	// snippet.signal_with_result
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void SignalWithResultSample();
+
+	UFUNCTION()
+	void SignalMessageResponse(FPubnubOperationResult Result, FPubnubMessageData Message);
+
+	// snippet.signal_with_result_lambda
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void SignalWithResultLambdaSample();
+
 	// snippet.subscribe
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SubscribeSample();
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	UFUNCTION()
 	void OnMessageReceived_SubscribeSample(FPubnubMessageData Message);
 	
 	// snippet.subscribe_with_lambda
@@ -62,21 +80,31 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SubscribeToGroupSample();
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	UFUNCTION()
 	void OnMessageReceived_SubscribeToGroupSample(FPubnubMessageData Message);
 
 	// snippet.subscribe_with_presence
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SubscribeWithPresenceSample();
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	UFUNCTION()
 	void OnMessageReceived_SubscribeWithPresenceSample(FPubnubMessageData Message);
+
+	// snippet.subscribe_with_result
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void SubscribeWithResultSample();
+
+	UFUNCTION()
+	void OnMessageReceived_SubscribeWithResultSample(FPubnubMessageData Message);
+
+	UFUNCTION()
+	void OnSubscribeResultReceived(FPubnubOperationResult Result);
 
 	// snippet.unsubscribe_from_channel
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void UnsubscribeFromChannelSample();
 	
-	// snippet.unsubscribe_from_channel
+	// snippet.unsubscribe_from_group
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void UnsubscribeFromGroupSample();
 
@@ -85,7 +113,6 @@ public:
 	void UnsubscribeFromAllSample();
 	
 	// snippet.end
-	
 };
 
 

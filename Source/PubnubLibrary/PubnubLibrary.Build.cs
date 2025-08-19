@@ -1,4 +1,4 @@
-// Copyright 2024 PubNub Inc. All Rights Reserved.
+// Copyright 2025 PubNub Inc. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -15,7 +15,8 @@ public class PubnubLibrary : ModuleRules
 			{
 				"Core",
 				"PubNubModule",
-    			"Projects"
+    			"Projects",
+                "OpenSSL"
 			}
 			);
 			

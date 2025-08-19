@@ -1,9 +1,9 @@
-// Copyright 2024 PubNub Inc. All Rights Reserved.
+// Copyright 2025 PubNub Inc. All Rights Reserved.
 
 
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "Config/PubnubSettings.h"
-#include "Runtime/Launch/Resources/Version.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
 FPubnubConfig UPubnubUtilities::PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings)
@@ -15,6 +15,18 @@ FPubnubConfig UPubnubUtilities::PubnubConfigFromPluginSettings(UPubnubSettings* 
 	Config.SetSecretKeyAutomatically = PubnubSettings->SetSecretKeyAutomatically;
 
 	return Config;
+}
+
+FString UPubnubUtilities::PubnubGetLastServerHttpResponse(pubnub_t* Context)
+{
+	pubnub_char_mem_block LastServerResponse;
+	pubnub_last_http_response_body(Context, &LastServerResponse);
+	return PubnubCharMemBlockToString(LastServerResponse);
+}
+
+int UPubnubUtilities::RoundLimitForPubnubFunctions(int ProvidedLimit)
+{
+	return UKismetMathLibrary::Clamp(ProvidedLimit, 0, PUBNUB_MAX_LIMIT);
 }
 
 FString UPubnubUtilities::AddQuotesToString(const FString InString, bool SkipIfHasQuotes)
@@ -44,17 +56,68 @@ FString UPubnubUtilities::RemoveOuterQuotesFromString(const FString InString)
 
 FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar)
 {
-	if(!PnChar.ptr)
+	if (!PnChar.ptr || PnChar.size == 0)
 	{
-		return "";
+		return FString();
+	}
+	
+	FUTF8ToTCHAR Converter(reinterpret_cast<const ANSICHAR*>(PnChar.ptr), PnChar.size);
+	return FString(Converter.Length(), Converter.Get());
+}
+
+bool UPubnubUtilities::SafeCopyFStringToCharBuffer(char* Destination, int DestSize, const FString& Source, const TCHAR* KeyName)
+{
+	if (!Destination || DestSize <= 0)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("SafeCopyFStringToCharBuffer: Invalid destination buffer for %s"), KeyName);
+		return false;
 	}
 
-#if ENGINE_MINOR_VERSION <= 3
-	//This constructor is deprecated since 5.4
-	return FString(PnChar.size, PnChar.ptr);
-#else
-	return FString::ConstructFromPtrSize(PnChar.ptr, PnChar.size);
-#endif
+	if (Source.IsEmpty())
+	{
+		Destination[0] = '\0';
+		return true;
+	}
+
+	// Use UTF8 conversion with proper lifetime management (same pattern as FUTF8StringHolder)
+	FTCHARToUTF8 Converter(*Source);
+	const char* Utf8Source = Converter.Get();
+	
+	if (!Utf8Source)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("SafeCopyFStringToCharBuffer: Failed to convert %s to UTF8"), KeyName);
+		Destination[0] = '\0';
+		return false;
+	}
+
+	// Get source length
+	const int SourceLen = Converter.Length();
+	
+	// Check if source fits in destination (leaving space for null terminator)
+	if (SourceLen >= DestSize)
+	{
+		UE_LOG(PubnubLog, Warning, TEXT("SafeCopyFStringToCharBuffer: %s is too long (%d chars), truncating to %d chars"), 
+			KeyName, SourceLen, DestSize - 1);
+	}
+
+	// Copy with bounds checking - copy at most (DestSize - 1) characters
+	const int CopyLen = FMath::Min(SourceLen, DestSize - 1);
+	FMemory::Memcpy(Destination, Utf8Source, CopyLen);
+	Destination[CopyLen] = '\0';
+
+	return true;
+}
+
+FString UPubnubUtilities::GetNameFromFunctionMacro(FString FunctionName)
+{
+	if(FunctionName.IsEmpty()) {return "";}
+	int Index = -1;
+	FunctionName.FindLastChar(TEXT(':'), Index);
+	//Leave Class name, just take function name
+	FString FinalFunctionName = FunctionName.Mid(Index + 1);
+	//Remove "_priv" from function name
+	FinalFunctionName.ReplaceInline(TEXT("_priv"), TEXT(""));
+	return FinalFunctionName;
 }
 
 FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude)
@@ -106,6 +169,22 @@ FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetA
 	if(GetAllInclude.IncludeStatus)			{FinalString.Append("status,");}
 	if(GetAllInclude.IncludeType)			{FinalString.Append("type,");}
 	//Total count is passed as a separate parameter, so it's not included directly in the final string
+
+	//If there was any include remove the last comma
+	if(!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude)
+{
+	FString FinalString = "";
+	if(GetMetadataInclude.IncludeCustom)			{FinalString.Append("custom,");}
+	if(GetMetadataInclude.IncludeStatus)			{FinalString.Append("status,");}
+	if(GetMetadataInclude.IncludeType)			{FinalString.Append("type,");}
 
 	//If there was any include remove the last comma
 	if(!FinalString.IsEmpty())
@@ -236,13 +315,14 @@ FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllIncl
 	return FinalString;
 }
 
-
 pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForChannel(pubnub_t* Context, FString Channel, FPubnubSubscribeSettings Options)
 {
 	pubnub_subscription_options_t PnOptions = pubnub_subscription_options_defopts();
 	PnOptions.receive_presence_events = Options.ReceivePresenceEvents;
 
-	pubnub_channel_t* PubnubChannel = pubnub_channel_alloc(Context, TCHAR_TO_ANSI(*Channel));
+	FUTF8StringHolder ChannelHolder(Channel);
+
+	pubnub_channel_t* PubnubChannel = pubnub_channel_alloc(Context, ChannelHolder.Get());
 	
 	pubnub_subscription_t* Subscription = pubnub_subscription_alloc((pubnub_entity_t*)PubnubChannel, &PnOptions);
 	
@@ -256,7 +336,9 @@ pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForChannelGroup(pubnub
 	pubnub_subscription_options_t PnOptions = pubnub_subscription_options_defopts();
 	PnOptions.receive_presence_events = Options.ReceivePresenceEvents;
 
-	pubnub_channel_group_t* PubnubChannelGroup = pubnub_channel_group_alloc(Context, TCHAR_TO_ANSI(*ChannelGroup));
+	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
+
+	pubnub_channel_group_t* PubnubChannelGroup = pubnub_channel_group_alloc(Context, ChannelGroupHolder.Get());
 	
 	pubnub_subscription_t* Subscription = pubnub_subscription_alloc((pubnub_entity_t*)PubnubChannelGroup, &PnOptions);
 	

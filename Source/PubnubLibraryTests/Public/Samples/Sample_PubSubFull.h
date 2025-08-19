@@ -1,4 +1,4 @@
-// Copyright 2024 PubNub Inc. All Rights Reserved.
+// Copyright 2025 PubNub Inc. All Rights Reserved.
 
 // snippet.full_pubsub_example
 #pragma once
@@ -9,7 +9,7 @@
 #include "PubnubSampleBase.h"
 #include "Sample_PubSubFull.generated.h"
 
-// Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
+// ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
 UCLASS()
 class PUBNUBLIBRARYTESTS_API ASample_PubSubFull : public AActor
 {
@@ -23,8 +23,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|PubSub")
 	void RunPubSubFullExample();
 
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|FullExamples|PubSub")
+	UFUNCTION()
 	void OnPubnubMessageReceived(FPubnubMessageData Message);
+
+	UFUNCTION()
+	void OnPublishResult(FPubnubOperationResult Result, FPubnubMessageData Message);
 };
 
 // snippet.end

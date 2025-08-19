@@ -1,10 +1,11 @@
-// Copyright 2024 PubNub Inc. All Rights Reserved.
+// Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #include "PubnubSubsystem.h"
 #include "PubnubEnumLibrary.h"
 #include "PubnubStructLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "Dom/JsonValue.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -26,31 +27,22 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
 {
     // Initial variables
     const FString TestUserID = SDK_PREFIX + "appctx_user_meta_test";
-    const FString TestUserName = "E2E AppContext User";
-    const FString TestUserEmail = "appcontext.user@pubnubsdk.test";
-    const FString TestUserExternalID = SDK_PREFIX + "ext_id_123";
-    const FString TestUserProfileUrl = "https://example.com/avatar.png";
-    const FString TestUserStatus = "Online";
-    const FString TestUserType = "PremiumUser";
-    const FString TestUserCustomJson = "{\"mood\": \"elated\", \"points\": 1000}";
     
-    const FString FullMetadataToSet = FString::Printf(TEXT("{")
-        TEXT("\"name\":\"%s\",")
-        TEXT("\"email\":\"%s\",")
-        TEXT("\"externalId\":\"%s\",")
-        TEXT("\"profileUrl\":\"%s\",")
-        TEXT("\"status\":\"%s\",")
-        TEXT("\"type\":\"%s\",")
-        TEXT("\"custom\":%s") 
-        TEXT("}"), 
-        *TestUserName, 
-        *TestUserEmail, 
-        *TestUserExternalID, 
-        *TestUserProfileUrl, 
-        *TestUserStatus,
-        *TestUserType,
-        *TestUserCustomJson);
-
+    FPubnubUserData UserDataToSet;
+    UserDataToSet.UserName = "E2E AppContext User";
+    UserDataToSet.Email = "appcontext.user@pubnubsdk.test";
+    UserDataToSet.ExternalID = SDK_PREFIX + "ext_id_123";
+    UserDataToSet.ProfileUrl = "https://example.com/avatar.png";
+    UserDataToSet.Status = "Online";
+    UserDataToSet.Type = "PremiumUser";
+    UserDataToSet.Custom = "{\"mood\": \"elated\", \"points\": 1000}";
+    
+    // Shared state for operation callbacks
+    TSharedPtr<bool> bSetUserMetaDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetUserMetaSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveUserMetaDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveUserMetaSuccess = MakeShared<bool>(false);
+    
     TSharedPtr<bool> bGetUserMetaDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetUserMetaSuccess = MakeShared<bool>(false);
     TSharedPtr<FPubnubUserData> ReceivedUserData = MakeShared<FPubnubUserData>();
@@ -62,45 +54,71 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
     TSharedPtr<bool> bGetUserMetaAfterRemoveDone = MakeShared<bool>(false);
     TSharedPtr<int> GetUserMetaAfterRemoveStatus = MakeShared<int>(0);
 
+    // Define callbacks
+    FOnSetUserMetadataResponseNative SetUserMetadataCallback;
+    SetUserMetadataCallback.BindLambda([this, bSetUserMetaDone, bSetUserMetaSuccess](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
+    {
+        *bSetUserMetaDone = true;
+        if (!Result.Error && Result.Status == 200)
+        {
+            *bSetUserMetaSuccess = true;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("SetUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
 
-    // Callbacks
+    FOnRemoveUserMetadataResponseNative RemoveUserMetadataCallback;
+    RemoveUserMetadataCallback.BindLambda([this, bRemoveUserMetaDone, bRemoveUserMetaSuccess](const FPubnubOperationResult& Result)
+    {
+        *bRemoveUserMetaDone = true;
+        if (!Result.Error && Result.Status == 200)
+        {
+            *bRemoveUserMetaSuccess = true;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("RemoveUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     FOnGetUserMetadataResponseNative GetUserMetadataCallback;
-    GetUserMetadataCallback.BindLambda([this, bGetUserMetaDone, bGetUserMetaSuccess, ReceivedUserData](int Status, FPubnubUserData UserData)
+    GetUserMetadataCallback.BindLambda([this, bGetUserMetaDone, bGetUserMetaSuccess, ReceivedUserData](FPubnubOperationResult Result, FPubnubUserData UserData)
     {
         *bGetUserMetaDone = true;
-        *bGetUserMetaSuccess = (Status == 200);
+        *bGetUserMetaSuccess = (Result.Status == 200);
         if (*bGetUserMetaSuccess)
         {
             *ReceivedUserData = UserData;
         }
         else
         {
-            AddError(FString::Printf(TEXT("GetUserMetadata failed. Status: %d"), Status));
+            AddError(FString::Printf(TEXT("GetUserMetadata failed. Status: %d"), Result.Status));
         }
     });
 
     FOnGetAllUserMetadataResponseNative GetAllUserMetadataCallback;
-    GetAllUserMetadataCallback.BindLambda([this, bGetAllUserMetaDone, bGetAllUserMetaSuccess, ReceivedAllUsersData](int Status, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+    GetAllUserMetadataCallback.BindLambda([this, bGetAllUserMetaDone, bGetAllUserMetaSuccess, ReceivedAllUsersData](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
     {
         *bGetAllUserMetaDone = true;
-        *bGetAllUserMetaSuccess = (Status == 200);
+        *bGetAllUserMetaSuccess = (Result.Status == 200);
         if (*bGetAllUserMetaSuccess)
         {
             *ReceivedAllUsersData = UsersData;
         }
         else
         {
-            AddError(FString::Printf(TEXT("GetAllUserMetadata failed. Status: %d. Next: %s, Prev: %s"), Status, *PageNext, *PagePrev));
+            AddError(FString::Printf(TEXT("GetAllUserMetadata failed. Status: %d. Next: %s, Prev: %s"), Result.Status, *PageNext, *PagePrev));
         }
     });
     
     FOnGetUserMetadataResponseNative GetUserMetadataCallback_AfterRemove;
-    GetUserMetadataCallback_AfterRemove.BindLambda([this, bGetUserMetaAfterRemoveDone, GetUserMetaAfterRemoveStatus](int Status, FPubnubUserData UserData)
+    GetUserMetadataCallback_AfterRemove.BindLambda([this, bGetUserMetaAfterRemoveDone, GetUserMetaAfterRemoveStatus](FPubnubOperationResult Result, FPubnubUserData UserData)
     {
         *bGetUserMetaAfterRemoveDone = true;
-        *GetUserMetaAfterRemoveStatus = Status; // We expect this to be non-200 for a removed user
+        *GetUserMetaAfterRemoveStatus = Result.Status; // We expect this to be non-200 for a removed user
     });
-
 
     if (!InitTest())
     {
@@ -120,11 +138,17 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
 	}, 0.1f));
 
     // Step 1: SetUserMetadata
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, FullMetadataToSet]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, UserDataToSet, SetUserMetadataCallback, bSetUserMetaDone, bSetUserMetaSuccess]()
     {
-        PubnubSubsystem->SetUserMetadata(TestUserID, FullMetadataToSet, "custom,externalId,profileUrl,status,type"); 
+        *bSetUserMetaDone = false;
+        *bSetUserMetaSuccess = false;
+        PubnubSubsystem->SetUserMetadata(TestUserID, UserDataToSet, SetUserMetadataCallback, FPubnubGetMetadataInclude::FromValue(true)); 
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetUserMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetUserMetaDone]() { return *bSetUserMetaDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetUserMetaSuccess]()
+    {
+        TestTrue("SetUserMetadata should succeed", *bSetUserMetaSuccess);
+    }, 0.1f));
 
     // Step 2: GetUserMetadata and Compare
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetUserMetadataCallback, bGetUserMetaDone, bGetUserMetaSuccess, ReceivedUserData]()
@@ -132,28 +156,28 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
         *bGetUserMetaDone = false;
         *bGetUserMetaSuccess = false;
         ReceivedUserData->UserID.Empty(); // Reset
-        PubnubSubsystem->GetUserMetadata(TestUserID, GetUserMetadataCallback, "custom,externalId,profileUrl,status,type");
+        PubnubSubsystem->GetUserMetadata(TestUserID, GetUserMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetUserMetaDone]() { return *bGetUserMetaDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, TestUserName, TestUserEmail, TestUserExternalID, TestUserProfileUrl, TestUserStatus, TestUserType, TestUserCustomJson, ReceivedUserData, bGetUserMetaSuccess]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, UserDataToSet, ReceivedUserData, bGetUserMetaSuccess]()
     {
         TestTrue("GetUserMetadata operation was successful after Set.", *bGetUserMetaSuccess);
         if (*bGetUserMetaSuccess)
         {
             TestEqual("GetUserMetadata: UserID match", ReceivedUserData->UserID, TestUserID);
-            TestEqual("GetUserMetadata: UserName match", ReceivedUserData->UserName, TestUserName);
-            TestEqual("GetUserMetadata: Email match", ReceivedUserData->Email, TestUserEmail);
-            TestEqual("GetUserMetadata: ExternalID match", ReceivedUserData->ExternalID, TestUserExternalID);
-            TestEqual("GetUserMetadata: ProfileUrl match", ReceivedUserData->ProfileUrl, TestUserProfileUrl);
-            TestEqual("GetUserMetadata: Status match", ReceivedUserData->Status, TestUserStatus);
-            TestEqual("GetUserMetadata: Type match", ReceivedUserData->Type, TestUserType);
+            TestEqual("GetUserMetadata: UserName match", ReceivedUserData->UserName, UserDataToSet.UserName);
+            TestEqual("GetUserMetadata: Email match", ReceivedUserData->Email, UserDataToSet.Email);
+            TestEqual("GetUserMetadata: ExternalID match", ReceivedUserData->ExternalID, UserDataToSet.ExternalID);
+            TestEqual("GetUserMetadata: ProfileUrl match", ReceivedUserData->ProfileUrl, UserDataToSet.ProfileUrl);
+            TestEqual("GetUserMetadata: Status match", ReceivedUserData->Status, UserDataToSet.Status);
+            TestEqual("GetUserMetadata: Type match", ReceivedUserData->Type, UserDataToSet.Type);
             TestFalse("GetUserMetadata: Updated should not be empty", ReceivedUserData->Updated.IsEmpty());
             TestFalse("GetUserMetadata: ETag should not be empty", ReceivedUserData->ETag.IsEmpty());
-            bool bCustomJsonMatch = UPubnubJsonUtilities::AreJsonObjectStringsEqual(ReceivedUserData->Custom, TestUserCustomJson);
+            bool bCustomJsonMatch = UPubnubJsonUtilities::AreJsonObjectStringsEqual(ReceivedUserData->Custom, UserDataToSet.Custom);
             TestTrue("GetUserMetadata: Custom JSON match", bCustomJsonMatch);
             if(!bCustomJsonMatch)
             {
-                AddError(FString::Printf(TEXT("Custom JSON mismatch. Expected: %s, Got: %s"), *TestUserCustomJson, *ReceivedUserData->Custom));
+                AddError(FString::Printf(TEXT("Custom JSON mismatch. Expected: %s, Got: %s"), *UserDataToSet.Custom, *ReceivedUserData->Custom));
             }
         }
     }, 0.1f));
@@ -172,7 +196,7 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
         PubnubSubsystem->GetAllUserMetadata(GetAllUserMetadataCallback, IncludeSettings, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllUserMetaDone]() { return *bGetAllUserMetaDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, TestUserName, TestUserEmail, TestUserExternalID, TestUserProfileUrl, TestUserStatus, TestUserType, TestUserCustomJson, ReceivedAllUsersData, bGetAllUserMetaSuccess]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, UserDataToSet, ReceivedAllUsersData, bGetAllUserMetaSuccess]()
     {
         TestTrue("GetAllUserMetadata (filtered) operation was successful.", *bGetAllUserMetaSuccess);
         if (*bGetAllUserMetaSuccess)
@@ -182,30 +206,36 @@ bool FPubnubUserMetadataFlowTest::RunTest(const FString& Parameters)
             {
                 const FPubnubUserData& User = (*ReceivedAllUsersData)[0];
                 TestEqual("GetAllUserMetadata (filtered): UserID match", User.UserID, TestUserID);
-                TestEqual("GetAllUserMetadata (filtered): UserName match", User.UserName, TestUserName);
-                TestEqual("GetAllUserMetadata (filtered): Email match", User.Email, TestUserEmail);
-                TestEqual("GetAllUserMetadata (filtered): ExternalID match", User.ExternalID, TestUserExternalID);
-                TestEqual("GetAllUserMetadata (filtered): ProfileUrl match", User.ProfileUrl, TestUserProfileUrl);
-                TestEqual("GetAllUserMetadata (filtered): Status match", User.Status, TestUserStatus);
-                TestEqual("GetAllUserMetadata (filtered): Type match", User.Type, TestUserType);
+                TestEqual("GetAllUserMetadata (filtered): UserName match", User.UserName, UserDataToSet.UserName);
+                TestEqual("GetAllUserMetadata (filtered): Email match", User.Email, UserDataToSet.Email);
+                TestEqual("GetAllUserMetadata (filtered): ExternalID match", User.ExternalID, UserDataToSet.ExternalID);
+                TestEqual("GetAllUserMetadata (filtered): ProfileUrl match", User.ProfileUrl, UserDataToSet.ProfileUrl);
+                TestEqual("GetAllUserMetadata (filtered): Status match", User.Status, UserDataToSet.Status);
+                TestEqual("GetAllUserMetadata (filtered): Type match", User.Type, UserDataToSet.Type);
                 TestFalse("GetAllUserMetadata (filtered): Updated should not be empty", User.Updated.IsEmpty());
                 TestFalse("GetAllUserMetadata (filtered): ETag should not be empty", User.ETag.IsEmpty());
-                bool bCustomJsonMatch = UPubnubJsonUtilities::AreJsonObjectStringsEqual(User.Custom, TestUserCustomJson);
+                bool bCustomJsonMatch = UPubnubJsonUtilities::AreJsonObjectStringsEqual(User.Custom, UserDataToSet.Custom);
                 TestTrue("GetAllUserMetadata (filtered): Custom JSON match", bCustomJsonMatch);
                  if(!bCustomJsonMatch)
                 {
-                    AddError(FString::Printf(TEXT("Filtered GetAll Custom JSON mismatch. Expected: %s, Got: %s"), *TestUserCustomJson, *User.Custom));
+                    AddError(FString::Printf(TEXT("Filtered GetAll Custom JSON mismatch. Expected: %s, Got: %s"), *UserDataToSet.Custom, *User.Custom));
                 }
             }
         }
     }, 0.1f));
     
     // Step 4: RemoveUserMetadata
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, RemoveUserMetadataCallback, bRemoveUserMetaDone, bRemoveUserMetaSuccess]()
     {
-        PubnubSubsystem->RemoveUserMetadata(TestUserID);
+        *bRemoveUserMetaDone = false;
+        *bRemoveUserMetaSuccess = false;
+        PubnubSubsystem->RemoveUserMetadata(TestUserID, RemoveUserMetadataCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for RemoveUserMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveUserMetaDone]() { return *bRemoveUserMetaDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveUserMetaSuccess]()
+    {
+        TestTrue("RemoveUserMetadata should succeed", *bRemoveUserMetaSuccess);
+    }, 0.1f));
 
     // Step 6: Verify Removal (using GetAllUserMetadata Filtered)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetAllUserMetadataCallback, bGetAllUserMetaDone, bGetAllUserMetaSuccess, ReceivedAllUsersData]()
@@ -240,25 +270,20 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
 {
     // Initial variables
     const FString TestUserID = SDK_PREFIX + "appctx_channel_meta_test";
-    const FString TestChannelID = SDK_PREFIX + "appctx_chan_meta_test";
-    const FString TestChannelName = "E2E AppContext Channel";
-    const FString TestChannelDescription = "This is a test channel for App Context E2E tests.";
-    const FString TestChannelStatus = "Active";
-    const FString TestChannelType = "PublicDiscussion";
-    const FString TestChannelCustomJson = "{\"topic\":\"testing\",\"moderated\":true}";
+    
+    FPubnubChannelData ChannelDataToSet;
+	ChannelDataToSet.ChannelID = SDK_PREFIX + "appctx_chan_meta_test";
+    ChannelDataToSet.ChannelName = "E2E AppContext Channel";
+    ChannelDataToSet.Description = "This is a test channel for App Context E2E tests.";
+    ChannelDataToSet.Status = "Active";
+    ChannelDataToSet.Type = "PublicDiscussion";
+    ChannelDataToSet.Custom = "{\"topic\":\"testing\",\"moderated\":true}";
 
-    const FString FullChannelMetadataToSet = FString::Printf(TEXT("{")
-        TEXT("\"name\":\"%s\",")
-        TEXT("\"description\":\"%s\",")
-        TEXT("\"status\":\"%s\",")
-        TEXT("\"type\":\"%s\",")
-        TEXT("\"custom\":%s")
-        TEXT("}"),
-        *TestChannelName,
-        *TestChannelDescription,
-        *TestChannelStatus,
-        *TestChannelType,
-        *TestChannelCustomJson);
+    // Shared state for operation callbacks
+    TSharedPtr<bool> bSetChannelMetaDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetChannelMetaSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveChannelMetaDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveChannelMetaSuccess = MakeShared<bool>(false);
 
     TSharedPtr<bool> bGetChannelMetaDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetChannelMetaSuccess = MakeShared<bool>(false);
@@ -271,42 +296,70 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     TSharedPtr<bool> bGetChannelMetaAfterRemoveDone = MakeShared<bool>(false);
     TSharedPtr<int> GetChannelMetaAfterRemoveStatus = MakeShared<int>(0);
 
-    // Callbacks
+    // Define callbacks
+    FOnSetChannelMetadataResponseNative SetChannelMetadataCallback;
+    SetChannelMetadataCallback.BindLambda([this, bSetChannelMetaDone, bSetChannelMetaSuccess](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
+    {
+        *bSetChannelMetaDone = true;
+        if (!Result.Error && Result.Status == 200)
+        {
+            *bSetChannelMetaSuccess = true;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("SetChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    FOnRemoveChannelMetadataResponseNative RemoveChannelMetadataCallback;
+    RemoveChannelMetadataCallback.BindLambda([this, bRemoveChannelMetaDone, bRemoveChannelMetaSuccess](const FPubnubOperationResult& Result)
+    {
+        *bRemoveChannelMetaDone = true;
+        if (!Result.Error && Result.Status == 200)
+        {
+            *bRemoveChannelMetaSuccess = true;
+        }
+        else
+        {
+            AddError(FString::Printf(TEXT("RemoveChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
     FOnGetChannelMetadataResponseNative GetChannelMetadataCallback;
-    GetChannelMetadataCallback.BindLambda([this, bGetChannelMetaDone, bGetChannelMetaSuccess, ReceivedChannelData](int Status, FPubnubChannelData ChannelData)
+    GetChannelMetadataCallback.BindLambda([this, bGetChannelMetaDone, bGetChannelMetaSuccess, ReceivedChannelData](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
     {
         *bGetChannelMetaDone = true;
-        *bGetChannelMetaSuccess = (Status == 200);
+        *bGetChannelMetaSuccess = (Result.Status == 200);
         if (*bGetChannelMetaSuccess)
         {
             *ReceivedChannelData = ChannelData;
         }
         else
         {
-            AddError(FString::Printf(TEXT("GetChannelMetadata failed. Status: %d"), Status));
+            AddError(FString::Printf(TEXT("GetChannelMetadata failed. Status: %d"), Result.Status));
         }
     });
 
     FOnGetAllChannelMetadataResponseNative GetAllChannelMetadataCallback;
-    GetAllChannelMetadataCallback.BindLambda([this, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData](int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+    GetAllChannelMetadataCallback.BindLambda([this, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
     {
         *bGetAllChannelMetaDone = true;
-        *bGetAllChannelMetaSuccess = (Status == 200);
+        *bGetAllChannelMetaSuccess = (Result.Status == 200);
         if (*bGetAllChannelMetaSuccess)
         {
             *ReceivedAllChannelsData = ChannelsData;
         }
         else
         {
-            AddError(FString::Printf(TEXT("GetAllChannelMetadata failed. Status: %d. Next: %s, Prev: %s"), Status, *PageNext, *PagePrev));
+            AddError(FString::Printf(TEXT("GetAllChannelMetadata failed. Status: %d. Next: %s, Prev: %s"), Result.Status, *PageNext, *PagePrev));
         }
     });
 
     FOnGetChannelMetadataResponseNative GetChannelMetadataCallback_AfterRemove;
-    GetChannelMetadataCallback_AfterRemove.BindLambda([this, bGetChannelMetaAfterRemoveDone, GetChannelMetaAfterRemoveStatus](int Status, FPubnubChannelData ChannelData)
+    GetChannelMetadataCallback_AfterRemove.BindLambda([this, bGetChannelMetaAfterRemoveDone, GetChannelMetaAfterRemoveStatus](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
     {
         *bGetChannelMetaAfterRemoveDone = true;
-        *GetChannelMetaAfterRemoveStatus = Status;
+        *GetChannelMetaAfterRemoveStatus = Result.Status;
     });
 
     if (!InitTest())
@@ -327,44 +380,50 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
     }, 0.1f));
 
     // Step 1: SetChannelMetadata
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, FullChannelMetadataToSet]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, SetChannelMetadataCallback, bSetChannelMetaDone, bSetChannelMetaSuccess]()
     {
-        PubnubSubsystem->SetChannelMetadata(TestChannelID, FullChannelMetadataToSet, "custom,status,type");
+        *bSetChannelMetaDone = false;
+        *bSetChannelMetaSuccess = false;
+        PubnubSubsystem->SetChannelMetadata(ChannelDataToSet.ChannelID, ChannelDataToSet, SetChannelMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for SetChannelMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMetaDone]() { return *bSetChannelMetaDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMetaSuccess]()
+    {
+        TestTrue("SetChannelMetadata should succeed", *bSetChannelMetaSuccess);
+    }, 0.1f));
 
     // Step 2: GetChannelMetadata and Compare
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetChannelMetadataCallback, bGetChannelMetaDone, bGetChannelMetaSuccess, ReceivedChannelData]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, GetChannelMetadataCallback, bGetChannelMetaDone, bGetChannelMetaSuccess, ReceivedChannelData]()
     {
         *bGetChannelMetaDone = false;
         *bGetChannelMetaSuccess = false;
         ReceivedChannelData->ChannelID.Empty(); // Reset
-        PubnubSubsystem->GetChannelMetadata(TestChannelID, GetChannelMetadataCallback, "custom,status,type");
+        PubnubSubsystem->GetChannelMetadata(ChannelDataToSet.ChannelID, GetChannelMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetChannelMetaDone]() { return *bGetChannelMetaDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, TestChannelName, TestChannelDescription, TestChannelStatus, TestChannelType, TestChannelCustomJson, ReceivedChannelData, bGetChannelMetaSuccess]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, ReceivedChannelData, bGetChannelMetaSuccess]()
     {
         TestTrue("GetChannelMetadata operation was successful after Set.", *bGetChannelMetaSuccess);
         if (*bGetChannelMetaSuccess)
         {
-            TestEqual("GetChannelMetadata: ChannelID match", ReceivedChannelData->ChannelID, TestChannelID);
-            TestEqual("GetChannelMetadata: ChannelName match", ReceivedChannelData->ChannelName, TestChannelName);
-            TestEqual("GetChannelMetadata: Description match", ReceivedChannelData->Description, TestChannelDescription);
-            TestEqual("GetChannelMetadata: Status match", ReceivedChannelData->Status, TestChannelStatus);
-            TestEqual("GetChannelMetadata: Type match", ReceivedChannelData->Type, TestChannelType);
+            TestEqual("GetChannelMetadata: ChannelID match", ReceivedChannelData->ChannelID, ChannelDataToSet.ChannelID);
+            TestEqual("GetChannelMetadata: ChannelName match", ReceivedChannelData->ChannelName, ChannelDataToSet.ChannelName);
+            TestEqual("GetChannelMetadata: Description match", ReceivedChannelData->Description, ChannelDataToSet.Description);
+            TestEqual("GetChannelMetadata: Status match", ReceivedChannelData->Status, ChannelDataToSet.Status);
+            TestEqual("GetChannelMetadata: Type match", ReceivedChannelData->Type, ChannelDataToSet.Type);
             TestFalse("GetChannelMetadata: Updated should not be empty", ReceivedChannelData->Updated.IsEmpty());
             TestFalse("GetChannelMetadata: ETag should not be empty", ReceivedChannelData->ETag.IsEmpty());
-            bool bCustomJsonMatch = UPubnubJsonUtilities::AreJsonObjectStringsEqual(ReceivedChannelData->Custom, TestChannelCustomJson);
+            bool bCustomJsonMatch = UPubnubJsonUtilities::AreJsonObjectStringsEqual(ReceivedChannelData->Custom, ChannelDataToSet.Custom);
             TestTrue("GetChannelMetadata: Custom JSON match", bCustomJsonMatch);
             if(!bCustomJsonMatch)
             {
-                AddError(FString::Printf(TEXT("Custom JSON mismatch. Expected: %s, Got: %s"), *TestChannelCustomJson, *ReceivedChannelData->Custom));
+                AddError(FString::Printf(TEXT("Custom JSON mismatch. Expected: %s, Got: %s"), *ChannelDataToSet.Custom, *ReceivedChannelData->Custom));
             }
         }
     }, 0.1f));
 
     // Step 3: GetAllChannelMetadata with filter
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetAllChannelMetadataCallback, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, GetAllChannelMetadataCallback, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData]()
     {
         *bGetAllChannelMetaDone = false;
         *bGetAllChannelMetaSuccess = false;
@@ -373,11 +432,11 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
         IncludeSettings.IncludeCustom = true;
         IncludeSettings.IncludeStatus = true;
         IncludeSettings.IncludeType = true;
-        FString Filter = FString::Printf(TEXT("id == '%s'"), *TestChannelID);
+        FString Filter = FString::Printf(TEXT("id == '%s'"), *ChannelDataToSet.ChannelID);
         PubnubSubsystem->GetAllChannelMetadata(GetAllChannelMetadataCallback, IncludeSettings, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllChannelMetaDone]() { return *bGetAllChannelMetaDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, TestChannelName, TestChannelDescription, TestChannelStatus, TestChannelType, TestChannelCustomJson, ReceivedAllChannelsData, bGetAllChannelMetaSuccess]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, ReceivedAllChannelsData, bGetAllChannelMetaSuccess]()
     {
         TestTrue("GetAllChannelMetadata (filtered) operation was successful.", *bGetAllChannelMetaSuccess);
         if (*bGetAllChannelMetaSuccess)
@@ -386,32 +445,38 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
             if (ReceivedAllChannelsData->Num() == 1)
             {
                 const FPubnubChannelData& Channel = (*ReceivedAllChannelsData)[0];
-                TestEqual("GetAllChannelMetadata (filtered): ChannelID match", Channel.ChannelID, TestChannelID);
-                TestEqual("GetAllChannelMetadata (filtered): ChannelName match", Channel.ChannelName, TestChannelName);
-                TestEqual("GetAllChannelMetadata (filtered): Description match", Channel.Description, TestChannelDescription);
-                TestEqual("GetAllChannelMetadata (filtered): Status match", Channel.Status, TestChannelStatus);
-                TestEqual("GetAllChannelMetadata (filtered): Type match", Channel.Type, TestChannelType);
+                TestEqual("GetAllChannelMetadata (filtered): ChannelID match", Channel.ChannelID, ChannelDataToSet.ChannelID);
+                TestEqual("GetAllChannelMetadata (filtered): ChannelName match", Channel.ChannelName, ChannelDataToSet.ChannelName);
+                TestEqual("GetAllChannelMetadata (filtered): Description match", Channel.Description, ChannelDataToSet.Description);
+                TestEqual("GetAllChannelMetadata (filtered): Status match", Channel.Status, ChannelDataToSet.Status);
+                TestEqual("GetAllChannelMetadata (filtered): Type match", Channel.Type, ChannelDataToSet.Type);
                 TestFalse("GetAllChannelMetadata (filtered): Updated should not be empty", Channel.Updated.IsEmpty());
                 TestFalse("GetAllChannelMetadata (filtered): ETag should not be empty", Channel.ETag.IsEmpty());
-                bool bCustomJsonMatch = UPubnubJsonUtilities::AreJsonObjectStringsEqual(Channel.Custom, TestChannelCustomJson);
+                bool bCustomJsonMatch = UPubnubJsonUtilities::AreJsonObjectStringsEqual(Channel.Custom, ChannelDataToSet.Custom);
                 TestTrue("GetAllChannelMetadata (filtered): Custom JSON match", bCustomJsonMatch);
                  if(!bCustomJsonMatch)
                 {
-                    AddError(FString::Printf(TEXT("Filtered GetAll Custom JSON mismatch. Expected: %s, Got: %s"), *TestChannelCustomJson, *Channel.Custom));
+                    AddError(FString::Printf(TEXT("Filtered GetAll Custom JSON mismatch. Expected: %s, Got: %s"), *ChannelDataToSet.Custom, *Channel.Custom));
                 }
             }
         }
     }, 0.1f));
     
     // Step 4: RemoveChannelMetadata
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, RemoveChannelMetadataCallback, bRemoveChannelMetaDone, bRemoveChannelMetaSuccess]()
     {
-        PubnubSubsystem->RemoveChannelMetadata(TestChannelID);
+        *bRemoveChannelMetaDone = false;
+        *bRemoveChannelMetaSuccess = false;
+        PubnubSubsystem->RemoveChannelMetadata(ChannelDataToSet.ChannelID, RemoveChannelMetadataCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Allow time for RemoveChannelMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelMetaDone]() { return *bRemoveChannelMetaDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveChannelMetaSuccess]()
+    {
+        TestTrue("RemoveChannelMetadata should succeed", *bRemoveChannelMetaSuccess);
+    }, 0.1f));
 
     // Step 6: Verify Removal (using GetAllChannelMetadata Filtered)
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetAllChannelMetadataCallback, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelDataToSet, GetAllChannelMetadataCallback, bGetAllChannelMetaDone, bGetAllChannelMetaSuccess, ReceivedAllChannelsData]()
     {
         *bGetAllChannelMetaDone = false;
         *bGetAllChannelMetaSuccess = false; // Reset for this call
@@ -420,11 +485,11 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
         IncludeSettings.IncludeCustom = true;
         IncludeSettings.IncludeStatus = true;
         IncludeSettings.IncludeType = true;
-        FString Filter = FString::Printf(TEXT("id == '%s'"), *TestChannelID);
+        FString Filter = FString::Printf(TEXT("id == '%s'"), *ChannelDataToSet.ChannelID);
         PubnubSubsystem->GetAllChannelMetadata(GetAllChannelMetadataCallback, IncludeSettings, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllChannelMetaDone]() { return *bGetAllChannelMetaDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedAllChannelsData, bGetAllChannelMetaSuccess, TestChannelID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedAllChannelsData, bGetAllChannelMetaSuccess, ChannelDataToSet]()
     {
         TestTrue("GetAllChannelMetadata (filtered, after remove) operation was successful (API call itself).", *bGetAllChannelMetaSuccess);
         if (*bGetAllChannelMetaSuccess)
@@ -432,7 +497,7 @@ bool FPubnubChannelMetadataFlowTest::RunTest(const FString& Parameters)
             TestEqual("GetAllChannelMetadata (filtered, after remove): Expected 0 channels.", ReceivedAllChannelsData->Num(), 0);
             if (ReceivedAllChannelsData->Num() != 0)
             {
-                AddError(FString::Printf(TEXT("Channel metadata with ID '%s' was still found via GetAllChannelMetadata after RemoveChannelMetadata was called."), *TestChannelID));
+                AddError(FString::Printf(TEXT("Channel metadata with ID '%s' was still found via GetAllChannelMetadata after RemoveChannelMetadata was called."), *ChannelDataToSet.ChannelID));
             }
         }
     }, 0.1f));
@@ -446,46 +511,57 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
     const FString TestRunPrefix = SDK_PREFIX + "gacm_opts_";
     const FString TestUserID = TestRunPrefix + "user";
 
-    // Channel A: For custom field filtering & specific include test
-    const FString ChannelAID = TestRunPrefix + "ChannelA";
-    const FString ChannelAName = "Channel A - Tech";
-    const FString ChannelACustom = "{\"category\":\"Tech\", \"priority\":1}";
-    const FString ChannelAStatus = "Active";
-    const FString ChannelAType = "TechnicalDiscussion";
-    const FString ChannelAMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *ChannelAName, *ChannelACustom, *ChannelAStatus, *ChannelAType);
+    // Channel A
+    FPubnubChannelData ChannelAData;
+    ChannelAData.ChannelID = TestRunPrefix + "ChannelA";
+    ChannelAData.ChannelName = "Channel A - Tech";
+    ChannelAData.Custom = "{\"category\":\"Tech\", \"priority\":1}";
+    ChannelAData.Status = "Active";
+    ChannelAData.Type = "TechnicalDiscussion";
 
-    // Channel B: For custom field filtering (different category)
-    const FString ChannelBID = TestRunPrefix + "ChannelB";
-    const FString ChannelBName = "Channel B - Finance";
-    const FString ChannelBCustom = "{\"category\":\"Finance\", \"priority\":2}";
-    const FString ChannelBMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s}"), *ChannelBName, *ChannelBCustom);
+    // Channel B
+    FPubnubChannelData ChannelBData;
+    ChannelBData.ChannelID = TestRunPrefix + "ChannelB";
+    ChannelBData.ChannelName = "Channel B - Finance";
+    ChannelBData.Custom = "{\"category\":\"Finance\", \"priority\":2}";
 
-    // Channels for Sorting & Limit Test (Channel_Sort_X)
+    // Channels for Sorting & Limit Test
     const FString ChannelSortPrefix = TestRunPrefix + "SortChan_";
-    const FString ChannelSortAID = ChannelSortPrefix + "Alpha";
-    const FString ChannelSortAName = "Sort Channel Alpha";
-    const FString ChannelSortAMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *ChannelSortAName);
+    FPubnubChannelData ChannelSortAData;
+    ChannelSortAData.ChannelID = ChannelSortPrefix + "Alpha";
+    ChannelSortAData.ChannelName = "Sort Channel Alpha";
 
-    const FString ChannelSortBID = ChannelSortPrefix + "Beta";
-    const FString ChannelSortBName = "Sort Channel Beta";
-    const FString ChannelSortBMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *ChannelSortBName);
+    FPubnubChannelData ChannelSortBData;
+    ChannelSortBData.ChannelID = ChannelSortPrefix + "Beta";
+    ChannelSortBData.ChannelName = "Sort Channel Beta";
 
-    const FString ChannelSortCID = ChannelSortPrefix + "Gamma";
-    const FString ChannelSortCName = "Sort Channel Gamma";
-    const FString ChannelSortCMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *ChannelSortCName);
+    FPubnubChannelData ChannelSortCData;
+    ChannelSortCData.ChannelID = ChannelSortPrefix + "Gamma";
+    ChannelSortCData.ChannelName = "Sort Channel Gamma";
 
+    // Shared state for operations
     TSharedPtr<bool> bGetAllDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetAllSuccess = MakeShared<bool>(false);
     TSharedPtr<TArray<FPubnubChannelData>> ReceivedChannels = MakeShared<TArray<FPubnubChannelData>>();
     TSharedPtr<FString> NextPage = MakeShared<FString>();
     TSharedPtr<FString> PrevPage = MakeShared<FString>();
 
-    // Callback
+    // Shared state for setup operations
+    TSharedPtr<int> SetupCounter = MakeShared<int>(0);
+    TSharedPtr<int> SetupErrors = MakeShared<int>(0);
+    const int TotalSetupOperations = 5; // 5 channels to set up
+
+    // Shared state for cleanup operations
+    TSharedPtr<int> CleanupCounter = MakeShared<int>(0);
+    TSharedPtr<int> CleanupErrors = MakeShared<int>(0);
+    const int TotalCleanupOperations = 5; // 5 channels to clean up
+
+    // Callback for GetAllChannelMetadata
     FOnGetAllChannelMetadataResponseNative GetAllCallback;
-    GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedChannels, NextPage, PrevPage](int Status, const TArray<FPubnubChannelData>& ChannelsData, FString PageNextStr, FString PagePrevStr)
+    GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedChannels, NextPage, PrevPage](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNextStr, FString PagePrevStr)
     {
         *bGetAllDone = true;
-        *bGetAllSuccess = (Status == 200);
+        *bGetAllSuccess = (Result.Status == 200);
         if (*bGetAllSuccess)
         {
             *ReceivedChannels = ChannelsData;
@@ -495,7 +571,31 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         else
         {
             ReceivedChannels->Empty();
-            AddError(FString::Printf(TEXT("GetAllChannelMetadata call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNextStr, *PagePrevStr));
+            AddError(FString::Printf(TEXT("GetAllChannelMetadata call failed. Status: %d. Next: '%s', Prev: '%s'"), Result.Status, *PageNextStr, *PagePrevStr));
+        }
+    });
+
+    // Callback for SetChannelMetadata operations
+    FOnSetChannelMetadataResponseNative SetChannelMetadataCallback;
+    SetChannelMetadataCallback.BindLambda([this, SetupCounter, SetupErrors](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
+    {
+        (*SetupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*SetupErrors)++;
+            AddError(FString::Printf(TEXT("SetChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Callback for RemoveChannelMetadata operations
+    FOnRemoveChannelMetadataResponseNative RemoveChannelMetadataCallback;
+    RemoveChannelMetadataCallback.BindLambda([this, CleanupCounter, CleanupErrors](const FPubnubOperationResult& Result)
+    {
+        (*CleanupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*CleanupErrors)++;
+            AddError(FString::Printf(TEXT("RemoveChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
         }
     });
 
@@ -511,21 +611,40 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         AddError(FString::Printf(TEXT("General Pubnub Error: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // Initial Setup: Set metadata for all test channels
-    auto SetMeta = [this](const FString& ChanID, const FString& Meta, const FString& IncludeFields = "custom")
+    // Initial Setup: Set metadata for all test channels using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelAData, SetChannelMetadataCallback, SetupCounter, SetupErrors]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID, Meta, IncludeFields]()
-        {
-            PubnubSubsystem->SetChannelMetadata(ChanID, Meta, IncludeFields);
-        }, 0.1f));
-    };
+        *SetupCounter = 0;
+        *SetupErrors = 0;
+        PubnubSubsystem->SetChannelMetadata(ChannelAData.ChannelID, ChannelAData, SetChannelMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
+    }, 0.1f));
 
-    SetMeta(ChannelAID, ChannelAMetadata, "custom,status,type");
-    SetMeta(ChannelBID, ChannelBMetadata);
-    SetMeta(ChannelSortAID, ChannelSortAMetadata);
-    SetMeta(ChannelSortBID, ChannelSortBMetadata);
-    SetMeta(ChannelSortCID, ChannelSortCMetadata);
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); // Wait for all SetChannelMetadata to process
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelBData, SetChannelMetadataCallback]()
+    {
+        PubnubSubsystem->SetChannelMetadata(ChannelBData.ChannelID, ChannelBData, SetChannelMetadataCallback, FPubnubGetMetadataInclude({true, false, false}));
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortAData, SetChannelMetadataCallback]()
+    {
+        PubnubSubsystem->SetChannelMetadata(ChannelSortAData.ChannelID, ChannelSortAData, SetChannelMetadataCallback, FPubnubGetMetadataInclude({true, false, false}));
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortBData, SetChannelMetadataCallback]()
+    {
+        PubnubSubsystem->SetChannelMetadata(ChannelSortBData.ChannelID, ChannelSortBData, SetChannelMetadataCallback, FPubnubGetMetadataInclude({true, false, false}));
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortCData, SetChannelMetadataCallback]()
+    {
+        PubnubSubsystem->SetChannelMetadata(ChannelSortCData.ChannelID, ChannelSortCData, SetChannelMetadataCallback, FPubnubGetMetadataInclude({true, false, false}));
+    }, 0.1f));
+
+    // Wait for all setup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SetupCounter, TotalSetupOperations]() { return *SetupCounter >= TotalSetupOperations; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetupErrors]()
+    {
+        TestEqual("Setup operations should complete without errors", *SetupErrors, 0);
+    }, 0.1f));
 
     // --- Scenario 1: Filter by a Custom Field ---
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, bGetAllDone, bGetAllSuccess, ReceivedChannels]()
@@ -536,39 +655,39 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         PubnubSubsystem->GetAllChannelMetadata(GetAllCallback, IncludeSettings, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelAID, ChannelAName, ChannelACustom]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelAData]()
     {
         TestTrue("S1: GetAllChannelMetadata with custom filter success.", *bGetAllSuccess);
         if(*bGetAllSuccess)
         {
             bool bFoundChannelA = false;
-            for(const auto& Chan : *ReceivedChannels) { if(Chan.ChannelID == ChannelAID) { bFoundChannelA = true; break; } }
-            TestTrue(FString::Printf(TEXT("S1: Channel A (ID: %s) should be in results for custom.category == 'Tech'. Count: %d"), *ChannelAID, ReceivedChannels->Num()), bFoundChannelA);
+            for(const auto& Chan : *ReceivedChannels) { if(Chan.ChannelID == ChannelAData.ChannelID) { bFoundChannelA = true; break; } }
+            TestTrue(FString::Printf(TEXT("S1: Channel A (ID: %s) should be in results for custom.category == 'Tech'. Count: %d"), *ChannelAData.ChannelID, ReceivedChannels->Num()), bFoundChannelA);
             if (bFoundChannelA && ReceivedChannels->Num() == 1) // Stricter check if only one is expected
             {
-                 TestEqual("S1: Channel A Name match", (*ReceivedChannels)[0].ChannelName, ChannelAName);
-                 TestTrue("S1: Channel A Custom match", UPubnubJsonUtilities::AreJsonObjectStringsEqual((*ReceivedChannels)[0].Custom, ChannelACustom));
+                 TestEqual("S1: Channel A Name match", (*ReceivedChannels)[0].ChannelName, ChannelAData.ChannelName);
+                 TestTrue("S1: Channel A Custom match", UPubnubJsonUtilities::AreJsonObjectStringsEqual((*ReceivedChannels)[0].Custom, ChannelAData.Custom));
             }
              else if (ReceivedChannels->Num() > 1) AddWarning("S1: Filter custom.category == 'Tech' returned multiple channels. Check keyset for conflicts.");
         }
     }, 0.1f));
 
     // --- Scenario 2: Filter by Name ---
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, ChannelAName, bGetAllDone, bGetAllSuccess, ReceivedChannels]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, ChannelAData, bGetAllDone, bGetAllSuccess, ReceivedChannels]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedChannels->Empty();
-        FString Filter = FString::Printf(TEXT("name == '%s'"), *ChannelAName);
+        FString Filter = FString::Printf(TEXT("name == '%s'"), *ChannelAData.ChannelName);
         PubnubSubsystem->GetAllChannelMetadata(GetAllCallback, FPubnubGetAllInclude(), 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelAID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelAData]()
     {
         TestTrue("S2: GetAllChannelMetadata with name filter success.", *bGetAllSuccess);
         if(*bGetAllSuccess)
         {
              bool bFoundChannelA = false;
-             for(const auto& Chan : *ReceivedChannels) { if(Chan.ChannelID == ChannelAID) { bFoundChannelA = true; break; } }
-             TestTrue(FString::Printf(TEXT("S2: Channel A (ID: %s) should be in results for name filter. Count: %d"), *ChannelAID, ReceivedChannels->Num()), bFoundChannelA);
+             for(const auto& Chan : *ReceivedChannels) { if(Chan.ChannelID == ChannelAData.ChannelID) { bFoundChannelA = true; break; } }
+             TestTrue(FString::Printf(TEXT("S2: Channel A (ID: %s) should be in results for name filter. Count: %d"), *ChannelAData.ChannelID, ReceivedChannels->Num()), bFoundChannelA);
              if (ReceivedChannels->Num() > 1) AddWarning("S2: Name filter returned multiple channels. Ensure name is unique for this test or filter is more specific.");
         }
     }, 0.1f));
@@ -583,14 +702,14 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         PubnubSubsystem->GetAllChannelMetadata(GetAllCallback, FPubnubGetAllInclude(), 10, SortTestFilter, SortSettings);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelSortAID, ChannelSortBID, ChannelSortCID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelSortAData, ChannelSortBData, ChannelSortCData]()
     {
         TestTrue("S3a: GetAllChannelMetadata with name:asc sort success.", *bGetAllSuccess);
         if(*bGetAllSuccess && ReceivedChannels->Num() == 3)
         {
-            TestEqual("S3a: Sort Order [0] ID", (*ReceivedChannels)[0].ChannelID, ChannelSortAID);
-            TestEqual("S3a: Sort Order [1] ID", (*ReceivedChannels)[1].ChannelID, ChannelSortBID);
-            TestEqual("S3a: Sort Order [2] ID", (*ReceivedChannels)[2].ChannelID, ChannelSortCID);
+            TestEqual("S3a: Sort Order [0] ID", (*ReceivedChannels)[0].ChannelID, ChannelSortAData.ChannelID);
+            TestEqual("S3a: Sort Order [1] ID", (*ReceivedChannels)[1].ChannelID, ChannelSortBData.ChannelID);
+            TestEqual("S3a: Sort Order [2] ID", (*ReceivedChannels)[2].ChannelID, ChannelSortCData.ChannelID);
         }
         else if (*bGetAllSuccess) AddError(FString::Printf(TEXT("S3a: Expected 3 channels for sort test, got %d"), ReceivedChannels->Num()));
     }, 0.1f));
@@ -602,14 +721,14 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
         PubnubSubsystem->GetAllChannelMetadata(GetAllCallback, FPubnubGetAllInclude(), 10, SortTestFilter, SortSettings);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelSortAID, ChannelSortBID, ChannelSortCID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelSortAData, ChannelSortBData, ChannelSortCData]()
     {
         TestTrue("S3b: GetAllChannelMetadata with name:desc sort success.", *bGetAllSuccess);
         if(*bGetAllSuccess && ReceivedChannels->Num() == 3)
         {
-            TestEqual("S3b: Sort Order [0] ID", (*ReceivedChannels)[0].ChannelID, ChannelSortCID);
-            TestEqual("S3b: Sort Order [1] ID", (*ReceivedChannels)[1].ChannelID, ChannelSortBID);
-            TestEqual("S3b: Sort Order [2] ID", (*ReceivedChannels)[2].ChannelID, ChannelSortAID);
+            TestEqual("S3b: Sort Order [0] ID", (*ReceivedChannels)[0].ChannelID, ChannelSortCData.ChannelID);
+            TestEqual("S3b: Sort Order [1] ID", (*ReceivedChannels)[1].ChannelID, ChannelSortBData.ChannelID);
+            TestEqual("S3b: Sort Order [2] ID", (*ReceivedChannels)[2].ChannelID, ChannelSortAData.ChannelID);
         }
          else if (*bGetAllSuccess) AddError(FString::Printf(TEXT("S3b: Expected 3 channels for sort test, got %d"), ReceivedChannels->Num()));
     }, 0.1f));
@@ -634,41 +753,60 @@ bool FPubnubGetAllChannelMetadataWithOptionsTest::RunTest(const FString& Paramet
     }, 0.1f));
 
     // --- Scenario 5: Test Include Options ---
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, ChannelAID, bGetAllDone, bGetAllSuccess, ReceivedChannels]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, ChannelAData, bGetAllDone, bGetAllSuccess, ReceivedChannels]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedChannels->Empty();
         FPubnubGetAllInclude IncludeSettings; 
         IncludeSettings.IncludeCustom = true;
         IncludeSettings.IncludeStatus = true;
         IncludeSettings.IncludeType = true;
-        FString Filter = FString::Printf(TEXT("id == '%s'"), *ChannelAID);
+        FString Filter = FString::Printf(TEXT("id == '%s'"), *ChannelAData.ChannelID);
         PubnubSubsystem->GetAllChannelMetadata(GetAllCallback, IncludeSettings, 1, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelACustom, ChannelAStatus, ChannelAType]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedChannels, bGetAllSuccess, ChannelAData]()
     {
         TestTrue("S5: GetAllChannelMetadata with specific Includes success.", *bGetAllSuccess);
         if(*bGetAllSuccess && ReceivedChannels->Num() == 1)
         {
             const auto& Chan = (*ReceivedChannels)[0];
-            TestTrue("S5: Custom data match", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Chan.Custom, ChannelACustom));
-            TestEqual("S5: Status match", Chan.Status, ChannelAStatus);
-            TestEqual("S5: Type match", Chan.Type, ChannelAType);
+            TestTrue("S5: Custom data match", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Chan.Custom, ChannelAData.Custom));
+            TestEqual("S5: Status match", Chan.Status, ChannelAData.Status);
+            TestEqual("S5: Type match", Chan.Type, ChannelAData.Type);
         }
         else if(*bGetAllSuccess) AddError(FString::Printf(TEXT("S5: Expected 1 channel for include test, got %d"), ReceivedChannels->Num()));
     }, 0.1f));
 
-    // Cleanup
-    auto RemoveMeta = [this](const FString& ChanID)
+    // Cleanup: Remove metadata for all test channels using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelAData, RemoveChannelMetadataCallback, CleanupCounter, CleanupErrors]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID]()
-        {
-            PubnubSubsystem->RemoveChannelMetadata(ChanID);
-        }, 0.1f));
-    };
-    RemoveMeta(ChannelAID); RemoveMeta(ChannelBID);
-    RemoveMeta(ChannelSortAID); RemoveMeta(ChannelSortBID); RemoveMeta(ChannelSortCID);
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Wait for removals
+        *CleanupCounter = 0;
+        *CleanupErrors = 0;
+        PubnubSubsystem->RemoveChannelMetadata(ChannelAData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelBData, RemoveChannelMetadataCallback]()
+    {
+        PubnubSubsystem->RemoveChannelMetadata(ChannelBData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortAData, RemoveChannelMetadataCallback]()
+    {
+        PubnubSubsystem->RemoveChannelMetadata(ChannelSortAData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortBData, RemoveChannelMetadataCallback]()
+    {
+        PubnubSubsystem->RemoveChannelMetadata(ChannelSortBData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelSortCData, RemoveChannelMetadataCallback]()
+    {
+        PubnubSubsystem->RemoveChannelMetadata(ChannelSortCData.ChannelID, RemoveChannelMetadataCallback);
+    }, 0.1f));
+
+    // Wait for all cleanup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([CleanupCounter, TotalCleanupOperations]() { return *CleanupCounter >= TotalCleanupOperations; }, MAX_WAIT_TIME));
 
     CleanUp();
     return true;
@@ -679,58 +817,65 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
     const FString TestRunPrefix = SDK_PREFIX + "gaum_opts_";
     const FString TestAdminUserID = TestRunPrefix + "admin_user";
 
-    // User A: For custom field filtering & specific include test
-    const FString UserAID = TestRunPrefix + "UserA";
-    const FString UserAName = "User A - Engineering Dept";
-    const FString UserAEmail = "user.a@example.com";
-    const FString UserACustom = "{\"department\":\"Engineering\", \"level\":5, \"active_project\":\"ProjectPhoenix\"}";
-    const FString UserAStatus = "Active";
-    const FString UserAType = "Engineer";
-    const FString UserAMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), 
-        *UserAName, *UserAEmail, *UserACustom, *UserAStatus, *UserAType);
+    // User A
+    FPubnubUserData UserAData;
+    UserAData.UserID = TestRunPrefix + "UserA";
+    UserAData.UserName = "User A - Engineering Dept";
+    UserAData.Email = "user.a@example.com";
+    UserAData.Custom = "{\"department\":\"Engineering\", \"level\":5, \"active_project\":\"ProjectPhoenix\"}";
+    UserAData.Status = "ActiveProject";
+    UserAData.Type = "Engineer";
 
-    // User B: For custom field filtering (different department)
-    const FString UserBID = TestRunPrefix + "UserB";
-    const FString UserBName = "User B - Marketing Dept";
-    const FString UserBEmail = "user.b@example.com";
-    const FString UserBCustom = "{\"department\":\"Marketing\", \"level\":3, \"campaign\":\"SummerSale\"}";
-    const FString UserBMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s}"), 
-        *UserBName, *UserBEmail, *UserBCustom);
+    // User B
+    FPubnubUserData UserBData;
+    UserBData.UserID = TestRunPrefix + "UserB";
+    UserBData.UserName = "User B - Marketing Dept";
+    UserBData.Email = "user.b@example.com";
+    UserBData.Custom = "{\"department\":\"Marketing\", \"level\":3, \"campaign\":\"SummerSale\"}";
 
-    // Users for Sorting & Limit Test (User_Sort_X)
+    // Users for Sorting & Limit Test
     const FString UserSortPrefix = TestRunPrefix + "SortUser_";
-    const FString UserSortAID = UserSortPrefix + "Charlie"; // Names chosen for easy sort verification
-    const FString UserSortAName = "Charlie Brown";
-    const FString UserSortAMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *UserSortAName);
+    FPubnubUserData UserSortAData;
+    UserSortAData.UserID = UserSortPrefix + "Charlie";
+    UserSortAData.UserName = "Charlie Brown";
 
-    const FString UserSortBID = UserSortPrefix + "Alice";
-    const FString UserSortBName = "Alice Wonderland";
-    const FString UserSortBMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *UserSortBName);
+    FPubnubUserData UserSortBData;
+    UserSortBData.UserID = UserSortPrefix + "Alice";
+    UserSortBData.UserName = "Alice Wonderland";
 
-    const FString UserSortCID = UserSortPrefix + "Bob";
-    const FString UserSortCName = "Bob The Builder";
-    const FString UserSortCMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *UserSortCName);
+    FPubnubUserData UserSortCData;
+    UserSortCData.UserID = UserSortPrefix + "Bob";
+    UserSortCData.UserName = "Bob The Builder";
     
-    // User D and E for pagination testing (enough to require a second page with limit 2)
-    const FString UserSortDID = UserSortPrefix + "David";
-    const FString UserSortDName = "David Copperfield";
-    const FString UserSortDMetadata = FString::Printf(TEXT("{\"name\":\"%s\"}"), *UserSortDName);
+    FPubnubUserData UserSortDData;
+    UserSortDData.UserID = UserSortPrefix + "David";
+    UserSortDData.UserName = "David Copperfield";
 
+    TArray<FPubnubUserData> AllTestUsers = {UserAData, UserBData, UserSortAData, UserSortBData, UserSortCData, UserSortDData};
 
-    TArray<FString> AllTestUserIDs = { UserAID, UserBID, UserSortAID, UserSortBID, UserSortCID, UserSortDID };
-
+    // Shared state for operations
     TSharedPtr<bool> bGetAllDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetAllSuccess = MakeShared<bool>(false);
     TSharedPtr<TArray<FPubnubUserData>> ReceivedUsers = MakeShared<TArray<FPubnubUserData>>();
     TSharedPtr<FString> NextPage = MakeShared<FString>();
-    TSharedPtr<FString> PrevPage = MakeShared<FString>(); // Though not explicitly tested for navigation, it's part of callback
+    TSharedPtr<FString> PrevPage = MakeShared<FString>();
 
-    // Callback
+    // Shared state for setup operations
+    TSharedPtr<int> SetupCounter = MakeShared<int>(0);
+    TSharedPtr<int> SetupErrors = MakeShared<int>(0);
+    const int TotalSetupOperations = AllTestUsers.Num(); // 6 users to set up
+
+    // Shared state for cleanup operations
+    TSharedPtr<int> CleanupCounter = MakeShared<int>(0);
+    TSharedPtr<int> CleanupErrors = MakeShared<int>(0);
+    const int TotalCleanupOperations = AllTestUsers.Num(); // 6 users to clean up
+
+    // Callback for GetAllUserMetadata
     FOnGetAllUserMetadataResponseNative GetAllCallback;
-    GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedUsers, NextPage, PrevPage](int Status, const TArray<FPubnubUserData>& UsersData, FString PageNextStr, FString PagePrevStr)
+    GetAllCallback.BindLambda([this, bGetAllDone, bGetAllSuccess, ReceivedUsers, NextPage, PrevPage](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNextStr, FString PagePrevStr)
     {
         *bGetAllDone = true;
-        *bGetAllSuccess = (Status == 200);
+        *bGetAllSuccess = (Result.Status == 200);
         if (*bGetAllSuccess)
         {
             *ReceivedUsers = UsersData;
@@ -740,7 +885,31 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
         else
         {
             ReceivedUsers->Empty();
-            AddError(FString::Printf(TEXT("GetAllUserMetadata call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNextStr, *PagePrevStr));
+            AddError(FString::Printf(TEXT("GetAllUserMetadata call failed. Status: %d. Next: '%s', Prev: '%s'"), Result.Status, *PageNextStr, *PagePrevStr));
+        }
+    });
+
+    // Callback for SetUserMetadata operations
+    FOnSetUserMetadataResponseNative SetUserMetadataCallback;
+    SetUserMetadataCallback.BindLambda([this, SetupCounter, SetupErrors](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
+    {
+        (*SetupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*SetupErrors)++;
+            AddError(FString::Printf(TEXT("SetUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Callback for RemoveUserMetadata operations
+    FOnRemoveUserMetadataResponseNative RemoveUserMetadataCallback;
+    RemoveUserMetadataCallback.BindLambda([this, CleanupCounter, CleanupErrors](const FPubnubOperationResult& Result)
+    {
+        (*CleanupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*CleanupErrors)++;
+            AddError(FString::Printf(TEXT("RemoveUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
         }
     });
 
@@ -756,24 +925,27 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
         AddError(FString::Printf(TEXT("General Pubnub Error: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // Initial Setup: Set metadata for all test users
-    auto SetMeta = [this](const FString& UserID, const FString& Meta, const FString& IncludeFields = "custom,status,type")
+    // Initial Setup: Set metadata for all test users using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetUserMetadataCallback, SetupCounter, SetupErrors, AllTestUsers]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta, IncludeFields]()
+        *SetupCounter = 0;
+        *SetupErrors = 0;
+        
+        // Set metadata for all users
+        for (const auto& User : AllTestUsers)
         {
-            PubnubSubsystem->SetUserMetadata(UserID, Meta, IncludeFields);
-        }, 0.05f)); // Shorter delay for setup
-    };
+            PubnubSubsystem->SetUserMetadata(User.UserID, User, SetUserMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
+        }
+    }, 0.1f));
 
-    SetMeta(UserAID, UserAMetadata);
-    SetMeta(UserBID, UserBMetadata);
-    SetMeta(UserSortAID, UserSortAMetadata);
-    SetMeta(UserSortBID, UserSortBMetadata);
-    SetMeta(UserSortCID, UserSortCMetadata);
-    SetMeta(UserSortDID, UserSortDMetadata);
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); // Wait for all SetUserMetadata to process
+    // Wait for all setup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SetupCounter, TotalSetupOperations]() { return *SetupCounter >= TotalSetupOperations; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetupErrors]()
+    {
+        TestEqual("Setup operations should complete without errors", *SetupErrors, 0);
+    }, 0.1f));
 
-    // --- Scenario 1: Filter by a Custom Field --- (e.g. department)
+    // --- Scenario 1: Filter by a Custom Field ---
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty();
@@ -782,97 +954,96 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, IncludeSettings, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserAID, UserAName, UserACustom]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserAData]()
     {
         TestTrue("S1: GetAllUserMetadata with custom.department filter success.", *bGetAllSuccess);
         if(*bGetAllSuccess)
         {
             bool bFoundUserA = false;
-            for(const auto& User : *ReceivedUsers) { if(User.UserID == UserAID) { bFoundUserA = true; break; } }
-            TestTrue(FString::Printf(TEXT("S1: User A (ID: %s) should be in results for custom.department == 'Engineering'. Count: %d"), *UserAID, ReceivedUsers->Num()), bFoundUserA);
+            for(const auto& User : *ReceivedUsers) { if(User.UserID == UserAData.UserID) { bFoundUserA = true; break; } }
+            TestTrue(FString::Printf(TEXT("S1: User A (ID: %s) should be in results for custom.department == 'Engineering'. Count: %d"), *UserAData.UserID, ReceivedUsers->Num()), bFoundUserA);
             if (bFoundUserA && ReceivedUsers->Num() == 1)
             {
-                 TestEqual("S1: User A Name match", (*ReceivedUsers)[0].UserName, UserAName);
-                 TestTrue("S1: User A Custom match", UPubnubJsonUtilities::AreJsonObjectStringsEqual((*ReceivedUsers)[0].Custom, UserACustom));
+                 TestEqual("S1: User A Name match", (*ReceivedUsers)[0].UserName, UserAData.UserName);
+                 TestTrue("S1: User A Custom match", UPubnubJsonUtilities::AreJsonObjectStringsEqual((*ReceivedUsers)[0].Custom, UserAData.Custom));
             }
              else if (ReceivedUsers->Num() > 1) AddWarning("S1: Filter custom.department == 'Engineering' returned multiple users. Check keyset for conflicts.");
         }
     }, 0.1f));
 
     // --- Scenario 2: Filter by Standard Field (Name) ---
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, UserAName, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, UserAData, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty();
-        FString Filter = FString::Printf(TEXT("name == '%s'"), *UserAName);
+        FString Filter = FString::Printf(TEXT("name == '%s'"), *UserAData.UserName);
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, FPubnubGetAllInclude(), 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserAID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserAData]()
     {
         TestTrue("S2: GetAllUserMetadata with name filter success.", *bGetAllSuccess);
         if(*bGetAllSuccess)
         {
              bool bFoundUserA = false;
-             for(const auto& User : *ReceivedUsers) { if(User.UserID == UserAID) { bFoundUserA = true; break; } }
-             TestTrue(FString::Printf(TEXT("S2: User A (ID: %s) should be in results for name filter. Count: %d"), *UserAID, ReceivedUsers->Num()), bFoundUserA);
+             for(const auto& User : *ReceivedUsers) { if(User.UserID == UserAData.UserID) { bFoundUserA = true; break; } }
+             TestTrue(FString::Printf(TEXT("S2: User A (ID: %s) should be in results for name filter. Count: %d"), *UserAData.UserID, ReceivedUsers->Num()), bFoundUserA);
              if (ReceivedUsers->Num() > 1) AddWarning("S2: Name filter returned multiple users. Ensure name is unique for this test or filter is more specific.");
         }
     }, 0.1f));
 
     // --- Scenario 3: Sort by Name (Ascending/Descending) ---
-    const FString SortTestFilter = FString::Printf(TEXT("id == '%s' || id == '%s' || id == '%s' || id == '%s'"), *UserSortAID, *UserSortBID, *UserSortCID, *UserSortDID); // Filter for our sort test users (Alice, Bob, Charlie, David)
-    // Ascending Sort by Name
+    const FString SortTestFilter = FString::Printf(TEXT("id == '%s' || id == '%s' || id == '%s' || id == '%s'"), *UserSortAData.UserID, *UserSortBData.UserID, *UserSortCData.UserID, *UserSortDData.UserID);
+    // Ascending
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, SortTestFilter, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty();
-        FPubnubGetAllSort SortSettings; SortSettings.GetAllSort.Add({EPubnubGetAllSortType::PGAST_Name, false}); // name:asc
+        FPubnubGetAllSort SortSettings; SortSettings.GetAllSort.Add({EPubnubGetAllSortType::PGAST_Name, false});
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, FPubnubGetAllInclude(), 10, SortTestFilter, SortSettings);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserSortAID, UserSortBID, UserSortCID, UserSortDID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserSortAData, UserSortBData, UserSortCData, UserSortDData]()
     {
         TestTrue("S3a: GetAllUserMetadata with name:asc sort success.", *bGetAllSuccess);
         if(*bGetAllSuccess && ReceivedUsers->Num() == 4)
         {
-            TestEqual("S3a: Sort Order [0] ID (Alice)", (*ReceivedUsers)[0].UserID, UserSortBID);
-            TestEqual("S3a: Sort Order [1] ID (Bob)", (*ReceivedUsers)[1].UserID, UserSortCID);
-            TestEqual("S3a: Sort Order [2] ID (Charlie)", (*ReceivedUsers)[2].UserID, UserSortAID);
-            TestEqual("S3a: Sort Order [3] ID (David)", (*ReceivedUsers)[3].UserID, UserSortDID);
+            TestEqual("S3a: Sort Order [0] ID (Alice)", (*ReceivedUsers)[0].UserID, UserSortBData.UserID);
+            TestEqual("S3a: Sort Order [1] ID (Bob)", (*ReceivedUsers)[1].UserID, UserSortCData.UserID);
+            TestEqual("S3a: Sort Order [2] ID (Charlie)", (*ReceivedUsers)[2].UserID, UserSortAData.UserID);
+            TestEqual("S3a: Sort Order [3] ID (David)", (*ReceivedUsers)[3].UserID, UserSortDData.UserID);
         }
         else if (*bGetAllSuccess) AddError(FString::Printf(TEXT("S3a: Expected 4 users for sort test, got %d"), ReceivedUsers->Num()));
     }, 0.1f));
-    // Descending Sort by Name
+    // Descending
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, SortTestFilter, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty();
-        FPubnubGetAllSort SortSettings; SortSettings.GetAllSort.Add({EPubnubGetAllSortType::PGAST_Name, true}); // name:desc
+        FPubnubGetAllSort SortSettings; SortSettings.GetAllSort.Add({EPubnubGetAllSortType::PGAST_Name, true});
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, FPubnubGetAllInclude(), 10, SortTestFilter, SortSettings);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserSortAID, UserSortBID, UserSortCID, UserSortDID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserSortAData, UserSortBData, UserSortCData, UserSortDData]()
     {
         TestTrue("S3b: GetAllUserMetadata with name:desc sort success.", *bGetAllSuccess);
         if(*bGetAllSuccess && ReceivedUsers->Num() == 4)
         {
-            TestEqual("S3b: Sort Order [0] ID (David)", (*ReceivedUsers)[0].UserID, UserSortDID);
-            TestEqual("S3b: Sort Order [1] ID (Charlie)", (*ReceivedUsers)[1].UserID, UserSortAID);
-            TestEqual("S3b: Sort Order [2] ID (Bob)", (*ReceivedUsers)[2].UserID, UserSortCID);
-            TestEqual("S3b: Sort Order [3] ID (Alice)", (*ReceivedUsers)[3].UserID, UserSortBID);
+            TestEqual("S3b: Sort Order [0] ID (David)", (*ReceivedUsers)[0].UserID, UserSortDData.UserID);
+            TestEqual("S3b: Sort Order [1] ID (Charlie)", (*ReceivedUsers)[1].UserID, UserSortAData.UserID);
+            TestEqual("S3b: Sort Order [2] ID (Bob)", (*ReceivedUsers)[2].UserID, UserSortCData.UserID);
+            TestEqual("S3b: Sort Order [3] ID (Alice)", (*ReceivedUsers)[3].UserID, UserSortBData.UserID);
         }
          else if (*bGetAllSuccess) AddError(FString::Printf(TEXT("S3b: Expected 4 users for sort test, got %d"), ReceivedUsers->Num()));
     }, 0.1f));
 
     // --- Scenario 4: Limit Number of Results & PageNext ---
-    // Using the same SortTestFilter and name:asc order for consistent pagination
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, SortTestFilter, NextPage, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty(); NextPage->Empty();
         FPubnubGetAllSort SortSettings; SortSettings.GetAllSort.Add({EPubnubGetAllSortType::PGAST_Name, false}); 
-        FPubnubGetAllInclude IncludeSettings; IncludeSettings.IncludeTotalCount = true; // Test IncludeTotalCount flag processing
+        FPubnubGetAllInclude IncludeSettings; IncludeSettings.IncludeTotalCount = true;
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, IncludeSettings, 2, SortTestFilter, SortSettings);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, NextPage, bGetAllSuccess, UserSortBID, UserSortCID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, NextPage, bGetAllSuccess, UserSortBData, UserSortCData]()
     {
         TestTrue("S4a: GetAllUserMetadata with Limit=2 (Page 1) success.", *bGetAllSuccess);
         if(*bGetAllSuccess)
@@ -880,8 +1051,8 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
             TestEqual("S4a: Received user count with Limit=2.", ReceivedUsers->Num(), 2);
             if(ReceivedUsers->Num() == 2)
             {
-                TestEqual("S4a: Page 1 User [0] ID (Alice)", (*ReceivedUsers)[0].UserID, UserSortBID);
-                TestEqual("S4a: Page 1 User [1] ID (Bob)", (*ReceivedUsers)[1].UserID, UserSortCID);
+                TestEqual("S4a: Page 1 User [0] ID (Alice)", (*ReceivedUsers)[0].UserID, UserSortBData.UserID);
+                TestEqual("S4a: Page 1 User [1] ID (Bob)", (*ReceivedUsers)[1].UserID, UserSortCData.UserID);
             }
             TestFalse("S4a: PageNext should be populated as more results exist.", NextPage->IsEmpty());
         }
@@ -892,12 +1063,12 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
         if (NextPage->IsEmpty()) { AddError("S4b: Cannot fetch page 2, NextPage token is empty."); *bGetAllDone = true; return; }
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty(); 
         FString CurrentNextPage = *NextPage;
-        NextPage->Empty(); // Clear for next potential pagination, though not expected here
+        NextPage->Empty();
         FPubnubGetAllSort SortSettings; SortSettings.GetAllSort.Add({EPubnubGetAllSortType::PGAST_Name, false});
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, FPubnubGetAllInclude(), 2, SortTestFilter, SortSettings, CurrentNextPage);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, NextPage, bGetAllSuccess, UserSortAID, UserSortDID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, NextPage, bGetAllSuccess, UserSortAData, UserSortDData]()
     {
         TestTrue("S4b: GetAllUserMetadata with Limit=2 (Page 2) success.", *bGetAllSuccess);
         if(*bGetAllSuccess)
@@ -905,77 +1076,76 @@ bool FPubnubGetAllUsersMetadataWithOptionsTest::RunTest(const FString& Parameter
             TestEqual("S4b: Received user count with Limit=2 for Page 2.", ReceivedUsers->Num(), 2);
              if(ReceivedUsers->Num() == 2)
             {
-                TestEqual("S4b: Page 2 User [0] ID (Charlie)", (*ReceivedUsers)[0].UserID, UserSortAID);
-                TestEqual("S4b: Page 2 User [1] ID (David)", (*ReceivedUsers)[1].UserID, UserSortDID);
+                TestEqual("S4b: Page 2 User [0] ID (Charlie)", (*ReceivedUsers)[0].UserID, UserSortAData.UserID);
+                TestEqual("S4b: Page 2 User [1] ID (David)", (*ReceivedUsers)[1].UserID, UserSortDData.UserID);
             }
-            // NextPage might be empty now if these are all users for the filter.
-            // AddTestEqual("S4b: PageNext should be empty as no more results.", NextPage->IsEmpty(), true); // This depends on exact total number of users matching the filter vs limit
         }
     }, 0.1f));
 
     // --- Scenario 5: Test Include Options (Custom, Status, Type) ---
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, UserAID, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, UserAData, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty();
         FPubnubGetAllInclude IncludeSettings; 
         IncludeSettings.IncludeCustom = true;
         IncludeSettings.IncludeStatus = true;
         IncludeSettings.IncludeType = true;
-        FString Filter = FString::Printf(TEXT("id == '%s'"), *UserAID);
+        FString Filter = FString::Printf(TEXT("id == '%s'"), *UserAData.UserID);
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, IncludeSettings, 1, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserACustom, UserAStatus, UserAType]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserAData]()
     {
         TestTrue("S5a: GetAllUserMetadata with specific Includes (Custom, Status, Type) success.", *bGetAllSuccess);
         if(*bGetAllSuccess && ReceivedUsers->Num() == 1)
         {
             const auto& User = (*ReceivedUsers)[0];
-            TestTrue("S5a: Custom data match", UPubnubJsonUtilities::AreJsonObjectStringsEqual(User.Custom, UserACustom));
-            TestEqual("S5a: Status match", User.Status, UserAStatus);
-            TestEqual("S5a: Type match", User.Type, UserAType);
+            TestTrue("S5a: Custom data match", UPubnubJsonUtilities::AreJsonObjectStringsEqual(User.Custom, UserAData.Custom));
+            TestEqual("S5a: Status match", User.Status, UserAData.Status);
+            TestEqual("S5a: Type match", User.Type, UserAData.Type);
         }
         else if(*bGetAllSuccess) AddError(FString::Printf(TEXT("S5a: Expected 1 user for include test, got %d"), ReceivedUsers->Num()));
     }, 0.1f));
     // Test with some includes false
-     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, UserAID, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
+     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, GetAllCallback, UserAData, bGetAllDone, bGetAllSuccess, ReceivedUsers]()
     {
         *bGetAllDone = false; *bGetAllSuccess = false; ReceivedUsers->Empty();
         FPubnubGetAllInclude IncludeSettings; 
-        IncludeSettings.IncludeCustom = true; // Keep custom true
+        IncludeSettings.IncludeCustom = true;
         IncludeSettings.IncludeStatus = false;
         IncludeSettings.IncludeType = false;
-        FString Filter = FString::Printf(TEXT("id == '%s'"), *UserAID);
+        FString Filter = FString::Printf(TEXT("id == '%s'"), *UserAData.UserID);
         PubnubSubsystem->GetAllUserMetadata(GetAllCallback, IncludeSettings, 1, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetAllDone]() { return *bGetAllDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserACustom, UserAStatus, UserAType]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedUsers, bGetAllSuccess, UserAData]()
     {
         TestTrue("S5b: GetAllUserMetadata with Includes (Status=false, Type=false) success.", *bGetAllSuccess);
         if(*bGetAllSuccess && ReceivedUsers->Num() == 1)
         {
             const auto& User = (*ReceivedUsers)[0];
-            TestTrue("S5b: Custom data should still match", UPubnubJsonUtilities::AreJsonObjectStringsEqual(User.Custom, UserACustom));
+            TestTrue("S5b: Custom data should still match", UPubnubJsonUtilities::AreJsonObjectStringsEqual(User.Custom, UserAData.Custom));
             TestTrue("S5b: Status should be empty as it was not included", User.Status.IsEmpty());
             TestTrue("S5b: Type should be empty as it was not included", User.Type.IsEmpty());
         }
         else if(*bGetAllSuccess) AddError(FString::Printf(TEXT("S5b: Expected 1 user for include test (custom only), got %d"), ReceivedUsers->Num()));
     }, 0.1f));
 
-
-    // Cleanup
-    auto RemoveMeta = [this](const FString& UserID)
+    // Cleanup: Remove metadata for all test users using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RemoveUserMetadataCallback, CleanupCounter, CleanupErrors, AllTestUsers]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID]()
+        *CleanupCounter = 0;
+        *CleanupErrors = 0;
+        
+        // Remove metadata for all users
+        for(const auto& User : AllTestUsers)
         {
-            PubnubSubsystem->RemoveUserMetadata(UserID);
-        }, 0.05f));
-    };
-    for(const FString& UserID : AllTestUserIDs)
-    {
-        RemoveMeta(UserID);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); // Wait for all removals
+            PubnubSubsystem->RemoveUserMetadata(User.UserID, RemoveUserMetadataCallback);
+        }
+    }, 0.1f));
+
+    // Wait for all cleanup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([CleanupCounter, TotalCleanupOperations]() { return *CleanupCounter >= TotalCleanupOperations; }, MAX_WAIT_TIME));
 
     CleanUp();
     return true;
@@ -985,63 +1155,94 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
 {
     const FString TestRunPrefix = SDK_PREFIX + "memb_opts_";
     const FString TestUserID = TestRunPrefix + "user_main";
-    const FString TestAdminUserID = TestRunPrefix + "admin_for_setuser"; // UserID for the PubnubSubsystem instance
+    const FString TestAdminUserID = TestRunPrefix + "admin_for_setuser";
 
     // Channel Definitions
-    const FString ChannelAID = TestRunPrefix + "ChannelA_Docs";
-    const FString ChannelAName = "Documentation Central";
-    const FString ChannelACustomJson = "{\"topic\":\"sdk_docs\", \"priority\":\"high\"}";
-    const FString ChannelAStatusVal = "active";
-    const FString ChannelAMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelAName, *ChannelACustomJson, *ChannelAStatusVal);
+    FPubnubChannelData ChannelAData;
+    ChannelAData.ChannelID = TestRunPrefix + "ChannelA_Docs";
+    ChannelAData.ChannelName = "Documentation Central";
+    ChannelAData.Custom = "{\"topic\":\"sdk_docs\", \"priority\":\"high\"}";
+    ChannelAData.Status = "active";
 
-    const FString ChannelBID = TestRunPrefix + "ChannelB_Dev";
-    const FString ChannelBName = "Development Zone";
-    const FString ChannelBCustomJson = "{\"topic\":\"core_dev\", \"priority\":\"medium\"}";
-    const FString ChannelBStatusVal = "active";
-    const FString ChannelBMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelBName, *ChannelBCustomJson, *ChannelBStatusVal);
+    FPubnubChannelData ChannelBData;
+    ChannelBData.ChannelID = TestRunPrefix + "ChannelB_Dev";
+    ChannelBData.ChannelName = "Development Zone";
+    ChannelBData.Custom = "{\"topic\":\"core_dev\", \"priority\":\"medium\"}";
+    ChannelBData.Status = "active";
 
-    const FString ChannelCID = TestRunPrefix + "ChannelC_General";
-    const FString ChannelCName = "General Discussion";
-    const FString ChannelCCustomJson = "{\"topic\":\"community\", \"priority\":\"low\"}";
-    const FString ChannelCStatusVal = "archived";
-    const FString ChannelCMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelCName, *ChannelCCustomJson, *ChannelCStatusVal);
+    FPubnubChannelData ChannelCData;
+    ChannelCData.ChannelID = TestRunPrefix + "ChannelC_General";
+    ChannelCData.ChannelName = "General Discussion";
+    ChannelCData.Custom = "{\"topic\":\"community\", \"priority\":\"low\"}";
+    ChannelCData.Status = "archived";
     
-    const FString ChannelDID = TestRunPrefix + "ChannelD_Support";
-	const FString ChannelDName = "Support Hub";
-	const FString ChannelDCustomJson = "{\"topic\":\"user_support\", \"priority\":\"high\"}";
-    const FString ChannelDStatusVal = TEXT("active");
-	const FString ChannelDMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelDName, *ChannelDCustomJson, *ChannelDStatusVal);
+    FPubnubChannelData ChannelDData;
+    ChannelDData.ChannelID = TestRunPrefix + "ChannelD_Support";
+	ChannelDData.ChannelName = "Support Hub";
+	ChannelDData.Custom = "{\"topic\":\"user_support\", \"priority\":\"high\"}";
+    ChannelDData.Status = TEXT("active");
 
-    TArray<FString> AllTestChannelIDs = {ChannelAID, ChannelBID, ChannelCID, ChannelDID};
+    TArray<FPubnubChannelData> AllTestChannels = {ChannelAData, ChannelBData, ChannelCData, ChannelDData};
+    TArray<FString> AllTestChannelIDs;
+    for (const auto& Channel : AllTestChannels)
+    {
+        AllTestChannelIDs.Add(Channel.ChannelID);
+    }
 
     // Membership specific data
-    const FString MembershipACustom = TEXT("{\"role\":\"editor\", \"last_access\":\"2024-01-01\"}");
-    const FString MembershipAStatus = TEXT("activeEditor");
-    const FString MembershipAType = TEXT("contentContributor");
+    FPubnubMembershipInputData MembershipA;
+    MembershipA.Channel = ChannelAData.ChannelID;
+    MembershipA.Custom = TEXT("{\"role\":\"editor\", \"last_access\":\"2024-01-01\"}");
+    MembershipA.Status = TEXT("activeEditor");
+    MembershipA.Type = TEXT("contentContributor");
 
-    const FString MembershipBCustom = TEXT("{\"role\":\"viewer\", \"last_access\":\"2024-01-15\"}");
-    const FString MembershipBStatus = TEXT("passiveViewer");
-    // MembershipBType will be default/empty
+    FPubnubMembershipInputData MembershipB;
+    MembershipB.Channel = ChannelBData.ChannelID;
+    MembershipB.Custom = TEXT("{\"role\":\"viewer\", \"last_access\":\"2024-01-15\"}");
+    MembershipB.Status = TEXT("passiveViewer");
 
-    const FString MembershipCCustom = TEXT("{\"role\":\"moderator\", \"last_access\":\"2023-12-01\"}");
-    // MembershipCStatus will be default/empty
-    const FString MembershipCType = TEXT("channelAdmin");
+    FPubnubMembershipInputData MembershipC;
+    MembershipC.Channel = ChannelCData.ChannelID;
+    MembershipC.Custom = TEXT("{\"role\":\"moderator\", \"last_access\":\"2023-12-01\"}");
+    MembershipC.Type = TEXT("channelAdmin");
     
-    const FString MembershipDCustom = TEXT("{\"role\":\"agent\", \"last_access\":\"2024-01-20\"}");
+    FPubnubMembershipInputData MembershipD;
+    MembershipD.Channel = ChannelDData.ChannelID;
+    MembershipD.Custom = TEXT("{\"role\":\"agent\", \"last_access\":\"2024-01-20\"}");
 
+    TArray<FPubnubMembershipInputData> AllMemberships = {MembershipA, MembershipB, MembershipC, MembershipD};
+
+    // Shared state for operations
     TSharedPtr<bool> bGetMembershipsDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetMembershipsSuccess = MakeShared<bool>(false);
-    TSharedPtr<TArray<FPubnubGetMembershipsWrapper>> ReceivedMemberships = MakeShared<TArray<FPubnubGetMembershipsWrapper>>();
+    TSharedPtr<TArray<FPubnubMembershipData>> ReceivedMemberships = MakeShared<TArray<FPubnubMembershipData>>();
     TSharedPtr<FString> NextPageToken = MakeShared<FString>();
     TSharedPtr<FString> PrevPageToken = MakeShared<FString>();
 
+    // Shared state for setup operations
+    TSharedPtr<int> SetupCounter = MakeShared<int>(0);
+    TSharedPtr<int> SetupErrors = MakeShared<int>(0);
+    const int TotalSetupOperations = AllTestChannels.Num(); // 4 channels to set up
+
+    // Shared state for cleanup operations
+    TSharedPtr<int> CleanupCounter = MakeShared<int>(0);
+    TSharedPtr<int> CleanupErrors = MakeShared<int>(0);
+    const int TotalCleanupOperations = AllTestChannels.Num(); // 4 channels to clean up
+
+    // Shared state for membership operations
+    TSharedPtr<bool> bSetMembershipsDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetMembershipsSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveMembershipsDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveMembershipsSuccess = MakeShared<bool>(false);
+
+    // Callback for GetMemberships
     FOnGetMembershipsResponseNative GetMembershipsCallback;
     GetMembershipsCallback.BindLambda(
         [this, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships, NextPageToken, PrevPageToken]
-        (int Status, const TArray<FPubnubGetMembershipsWrapper>& MembershipsData, FString PageNext, FString PagePrev)
+        (const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
     {
         *bGetMembershipsDone = true;
-        *bGetMembershipsSuccess = (Status == 200);
+        *bGetMembershipsSuccess = (Result.Status == 200);
         if (*bGetMembershipsSuccess)
         {
             *ReceivedMemberships = MembershipsData;
@@ -1051,7 +1252,63 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         else
         {
             ReceivedMemberships->Empty();
-            AddError(FString::Printf(TEXT("GetMemberships call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNext, *PagePrev));
+            AddError(FString::Printf(TEXT("GetMemberships call failed. Status: %d. Next: '%s', Prev: '%s'"), Result.Status, *PageNext, *PagePrev));
+        }
+    });
+
+    // Callback for SetChannelMetadata operations
+    FOnSetChannelMetadataResponseNative SetChannelMetadataCallback;
+    SetChannelMetadataCallback.BindLambda([this, SetupCounter, SetupErrors](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
+    {
+        (*SetupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*SetupErrors)++;
+            AddError(FString::Printf(TEXT("SetChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Callback for SetMemberships operations
+    FOnSetMembershipsResponseNative SetMembershipsCallback;
+    SetMembershipsCallback.BindLambda([this, bSetMembershipsDone, bSetMembershipsSuccess](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+    {
+        *bSetMembershipsDone = true;
+        if (Result.Error || Result.Status != 200)
+        {
+            *bSetMembershipsSuccess = false;
+            AddError(FString::Printf(TEXT("SetMemberships failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+        else
+        {
+            *bSetMembershipsSuccess = true;
+        }
+    });
+
+    // Callback for RemoveMemberships operations
+    FOnRemoveMembershipsResponseNative RemoveMembershipsCallback;
+    RemoveMembershipsCallback.BindLambda([this, bRemoveMembershipsDone, bRemoveMembershipsSuccess](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+    {
+        *bRemoveMembershipsDone = true;
+        if (Result.Error || Result.Status != 200)
+        {
+            *bRemoveMembershipsSuccess = false;
+            AddError(FString::Printf(TEXT("RemoveMemberships failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+        else
+        {
+            *bRemoveMembershipsSuccess = true;
+        }
+    });
+
+    // Callback for RemoveChannelMetadata operations
+    FOnRemoveChannelMetadataResponseNative RemoveChannelMetadataCallback;
+    RemoveChannelMetadataCallback.BindLambda([this, CleanupCounter, CleanupErrors](const FPubnubOperationResult& Result)
+    {
+        (*CleanupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*CleanupErrors)++;
+            AddError(FString::Printf(TEXT("RemoveChannelMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
         }
     });
 
@@ -1061,50 +1318,44 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         return false;
     }
 
-    PubnubSubsystem->SetUserID(TestAdminUserID); // User performing Set/Get/Remove operations
+    PubnubSubsystem->SetUserID(TestAdminUserID);
     PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
     {
         AddError(FString::Printf(TEXT("General Pubnub Error in MembershipManagementTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // --- Initial Setup: Create Channel Metadata ---
-    auto CreateChannelMeta = [this](const FString& ChanID, const FString& Meta)
+    // --- Initial Setup: Create Channel Metadata using callbacks ---
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetChannelMetadataCallback, SetupCounter, SetupErrors, AllTestChannels]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID, Meta]()
+        *SetupCounter = 0;
+        *SetupErrors = 0;
+        
+        // Set metadata for all channels
+        for(const auto& Channel : AllTestChannels)
         {
-            PubnubSubsystem->SetChannelMetadata(ChanID, Meta, TEXT("custom,status,type"));
-        }, 0.05f));
-    };
-    CreateChannelMeta(ChannelAID, ChannelAMetadata);
-    CreateChannelMeta(ChannelBID, ChannelBMetadata);
-    CreateChannelMeta(ChannelCID, ChannelCMetadata);
-    CreateChannelMeta(ChannelDID, ChannelDMetadata);
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.5f)); // Wait for channel metadata setup
+            PubnubSubsystem->SetChannelMetadata(Channel.ChannelID, Channel, SetChannelMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
+        }
+    }, 0.1f));
+
+    // Wait for all setup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SetupCounter, TotalSetupOperations]() { return *SetupCounter >= TotalSetupOperations; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetupErrors]()
+    {
+        TestEqual("Setup operations should complete without errors", *SetupErrors, 0);
+    }, 0.1f));
 
     // --- Scenario 1: SetMemberships ---
-    // Constructing channel objects for SetMemberships payload based on previously set metadata
-    const FString ChannelAContextForSet = FString::Printf(TEXT("{\"id\":\"%s\", \"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelAID, *ChannelAName, *ChannelACustomJson, *ChannelAStatusVal);
-    const FString ChannelBContextForSet = FString::Printf(TEXT("{\"id\":\"%s\", \"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelBID, *ChannelBName, *ChannelBCustomJson, *ChannelBStatusVal);
-    const FString ChannelCContextForSet = FString::Printf(TEXT("{\"id\":\"%s\", \"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelCID, *ChannelCName, *ChannelCCustomJson, *ChannelCStatusVal);
-    const FString ChannelDContextForSet = FString::Printf(TEXT("{\"id\":\"%s\", \"name\":\"%s\", \"custom\":%s, \"status\":\"%s\"}"), *ChannelDID, *ChannelDName, *ChannelDCustomJson, *ChannelDStatusVal);
-
-    const FString SetMembershipsJson = FString::Printf(TEXT("[")
-        TEXT("{\"channel\":%s, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")
-        TEXT("{\"channel\":%s, \"custom\":%s, \"status\":\"%s\"},") 
-        TEXT("{\"channel\":%s, \"custom\":%s, \"type\":\"%s\"},")   
-        TEXT("{\"channel\":%s, \"custom\":%s}") 
-        TEXT("]"),
-        *ChannelAContextForSet, *MembershipACustom, *MembershipAStatus, *MembershipAType,
-        *ChannelBContextForSet, *MembershipBCustom, *MembershipBStatus,
-        *ChannelCContextForSet, *MembershipCCustom, *MembershipCType,
-        *ChannelDContextForSet, *MembershipDCustom
-    );
-
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, SetMembershipsJson]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, AllMemberships, SetMembershipsCallback, bSetMembershipsDone, bSetMembershipsSuccess]()
     {
-        PubnubSubsystem->SetMemberships(TestUserID, SetMembershipsJson);
+        *bSetMembershipsDone = false;
+        *bSetMembershipsSuccess = false;
+        PubnubSubsystem->SetMemberships(TestUserID, AllMemberships, SetMembershipsCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f)); // Wait for SetMemberships to process
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetMembershipsDone]() { return *bSetMembershipsDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetMembershipsSuccess]()
+    {
+        TestTrue("SetMemberships should succeed", *bSetMembershipsSuccess);
+    }, 0.1f));
 
     // --- Scenario 1b: Basic GetMemberships & Verification ---
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships]()
@@ -1112,11 +1363,11 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         *bGetMembershipsDone = false; *bGetMembershipsSuccess = false; ReceivedMemberships->Empty();
         FPubnubMembershipInclude IncludeAll; 
         IncludeAll.IncludeCustom = true; IncludeAll.IncludeStatus = true; IncludeAll.IncludeType = true;
-        IncludeAll.IncludeChannel = true; IncludeAll.IncludeChannelCustom = true; IncludeAll.IncludeChannelStatus = true; IncludeAll.IncludeChannelType = true; // Although Channel Type is not explicitly set in our metadata example, include it.
+        IncludeAll.IncludeChannel = true; IncludeAll.IncludeChannelCustom = true; IncludeAll.IncludeChannelStatus = true; IncludeAll.IncludeChannelType = true;
         PubnubSubsystem->GetMemberships(TestUserID, GetMembershipsCallback, IncludeAll, 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembershipsDone]() { return *bGetMembershipsDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelAID, ChannelAName, ChannelACustomJson, ChannelAStatusVal, MembershipACustom, MembershipAStatus, MembershipAType, ChannelBID, ChannelBName, ChannelBCustomJson, ChannelBStatusVal, MembershipBCustom, MembershipBStatus, ChannelCID, ChannelCName, ChannelCCustomJson, ChannelCStatusVal, MembershipCCustom, MembershipCType, ChannelDID, ChannelDName, ChannelDCustomJson, ChannelDStatusVal, MembershipDCustom]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, AllTestChannels, AllMemberships]()
     {
         TestTrue("S1b: GetMemberships (initial) success.", *bGetMembershipsSuccess);
         if (!*bGetMembershipsSuccess) return;
@@ -1125,43 +1376,35 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         bool bFoundA = false, bFoundB = false, bFoundC = false, bFoundD = false;
         for (const auto& Membership : *ReceivedMemberships)
         {
-            if (Membership.Channel.ChannelID == ChannelAID)
+            if (Membership.Channel.ChannelID == AllTestChannels[0].ChannelID)
             {
                 bFoundA = true;
-                TestEqual("S1b_A: Channel Name", Membership.Channel.ChannelName, ChannelAName);
-                TestTrue("S1b_A: Channel Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Channel.Custom, ChannelACustomJson));
-                TestEqual("S1b_A: Channel Status", Membership.Channel.Status, ChannelAStatusVal);
-                TestTrue("S1b_A: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, MembershipACustom));
-                TestEqual("S1b_A: Membership Status", Membership.Status, MembershipAStatus);
-                TestEqual("S1b_A: Membership Type", Membership.Type, MembershipAType);
+                TestEqual("S1b_A: Channel ID", Membership.Channel.ChannelID, AllMemberships[0].Channel);
+                TestTrue("S1b_A: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, AllMemberships[0].Custom));
+                TestEqual("S1b_A: Membership Status", Membership.Status, AllMemberships[0].Status);
+                TestEqual("S1b_A: Membership Type", Membership.Type, AllMemberships[0].Type);
             }
-            else if (Membership.Channel.ChannelID == ChannelBID)
+            else if (Membership.Channel.ChannelID == AllTestChannels[1].ChannelID)
             {
                 bFoundB = true;
-                TestEqual("S1b_B: Channel Name", Membership.Channel.ChannelName, ChannelBName);
-                TestTrue("S1b_B: Channel Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Channel.Custom, ChannelBCustomJson));
-                TestEqual("S1b_B: Channel Status", Membership.Channel.Status, ChannelBStatusVal);
-                TestTrue("S1b_B: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, MembershipBCustom));
-                TestEqual("S1b_B: Membership Status", Membership.Status, MembershipBStatus);
+                TestEqual("S1b_B: Channel ID", Membership.Channel.ChannelID, AllMemberships[1].Channel);
+                TestTrue("S1b_B: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, AllMemberships[1].Custom));
+                TestEqual("S1b_B: Membership Status", Membership.Status, AllMemberships[1].Status);
                 TestTrue("S1b_B: Membership Type (should be empty)", Membership.Type.IsEmpty());
             }
-            else if (Membership.Channel.ChannelID == ChannelCID)
+            else if (Membership.Channel.ChannelID == AllTestChannels[2].ChannelID)
             {
                 bFoundC = true;
-                TestEqual("S1b_C: Channel Name", Membership.Channel.ChannelName, ChannelCName);
-                TestTrue("S1b_C: Channel Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Channel.Custom, ChannelCCustomJson));
-                TestEqual("S1b_C: Channel Status", Membership.Channel.Status, ChannelCStatusVal);
-                TestTrue("S1b_C: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, MembershipCCustom));
+                TestEqual("S1b_C: Channel ID", Membership.Channel.ChannelID, AllMemberships[2].Channel);
+                TestTrue("S1b_C: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, AllMemberships[2].Custom));
                 TestTrue("S1b_C: Membership Status (should be empty)", Membership.Status.IsEmpty());
-                TestEqual("S1b_C: Membership Type", Membership.Type, MembershipCType);
+                TestEqual("S1b_C: Membership Type", Membership.Type, AllMemberships[2].Type);
             }
-            else if (Membership.Channel.ChannelID == ChannelDID)
+            else if (Membership.Channel.ChannelID == AllTestChannels[3].ChannelID)
 			{
 				bFoundD = true;
-				TestEqual("S1b_D: Channel Name", Membership.Channel.ChannelName, ChannelDName);
-                TestTrue("S1b_D: Channel Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Channel.Custom, ChannelDCustomJson));
-                TestEqual("S1b_D: Channel Status", Membership.Channel.Status, ChannelDStatusVal);
-				TestTrue("S1b_D: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, MembershipDCustom));
+				TestEqual("S1b_D: Channel ID", Membership.Channel.ChannelID, AllMemberships[3].Channel);
+				TestTrue("S1b_D: Membership Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, AllMemberships[3].Custom));
 				TestTrue("S1b_D: Membership Status (should be empty)", Membership.Status.IsEmpty());
 				TestTrue("S1b_D: Membership Type (should be empty)", Membership.Type.IsEmpty());
 			}
@@ -1173,21 +1416,21 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
     }, 0.1f));
 
     // --- Scenario 2: GetMemberships with Include Options ---
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships, ChannelAID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships, ChannelAData]()
     {
         *bGetMembershipsDone = false; *bGetMembershipsSuccess = false; ReceivedMemberships->Empty();
         FPubnubMembershipInclude IncludeOpts;
-        IncludeOpts.IncludeCustom = true;      // Membership custom: YES
-        IncludeOpts.IncludeStatus = false;     // Membership status: NO
-        IncludeOpts.IncludeType = true;        // Membership type:  YES
-        IncludeOpts.IncludeChannel = true;     // Channel basic data: YES
-        IncludeOpts.IncludeChannelCustom = false; // Channel custom:   NO
-        IncludeOpts.IncludeChannelStatus = true;  // Channel status:   YES
-        FString Filter = FString::Printf(TEXT("channel.id == '%s'"), *ChannelAID); // Target Channel A
+        IncludeOpts.IncludeCustom = true;
+        IncludeOpts.IncludeStatus = false;
+        IncludeOpts.IncludeType = true;
+        IncludeOpts.IncludeChannel = true;
+        IncludeOpts.IncludeChannelCustom = false;
+        IncludeOpts.IncludeChannelStatus = true;
+        FString Filter = FString::Printf(TEXT("channel.id == '%s'"), *ChannelAData.ChannelID);
         PubnubSubsystem->GetMemberships(TestUserID, GetMembershipsCallback, IncludeOpts, 1, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembershipsDone]() { return *bGetMembershipsDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelAID, ChannelAName, MembershipACustom, MembershipAType, ChannelAStatusVal /*Use ChannelAStatusVal here*/]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, MembershipA]()
     {
         TestTrue("S2: GetMemberships with specific includes success.", *bGetMembershipsSuccess);
         if (!*bGetMembershipsSuccess || ReceivedMemberships->Num() != 1)
@@ -1196,27 +1439,24 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
              return;
         }
         const auto& Membership = (*ReceivedMemberships)[0];
-        TestEqual("S2: Channel ID", Membership.Channel.ChannelID, ChannelAID);
-        TestEqual("S2: Channel Name (Included)", Membership.Channel.ChannelName, ChannelAName);
+        TestEqual("S2: Channel ID", Membership.Channel.ChannelID, MembershipA.Channel);
         TestTrue("S2: Channel Custom (NOT Included, should be empty)", Membership.Channel.Custom.IsEmpty());
-        TestEqual("S2: Channel Status (Included)", Membership.Channel.Status, ChannelAStatusVal); // Compare with actual channel status
         
-        TestTrue("S2: Membership Custom (Included)", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, MembershipACustom));
+        TestTrue("S2: Membership Custom (Included)", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Membership.Custom, MembershipA.Custom));
         TestTrue("S2: Membership Status (NOT Included, should be empty)", Membership.Status.IsEmpty());
-        TestEqual("S2: Membership Type (Included)", Membership.Type, MembershipAType);
+        TestEqual("S2: Membership Type (Included)", Membership.Type, MembershipA.Type);
     }, 0.1f));
     
     // --- Scenario 3: GetMemberships with Filtering ---
-    // Filter by membership custom field
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships]()
     {
         *bGetMembershipsDone = false; *bGetMembershipsSuccess = false; ReceivedMemberships->Empty();
         FPubnubMembershipInclude IncludeAll; IncludeAll.IncludeCustom = true; IncludeAll.IncludeChannel = true;
-        FString Filter = TEXT("custom.role == 'editor'"); // Should only find Membership A
+        FString Filter = TEXT("custom.role == 'editor'");
         PubnubSubsystem->GetMemberships(TestUserID, GetMembershipsCallback, IncludeAll, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembershipsDone]() { return *bGetMembershipsDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelAID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelAData]()
     {
         TestTrue("S3a: GetMemberships filter by custom.role success.", *bGetMembershipsSuccess);
         if (*bGetMembershipsSuccess)
@@ -1224,20 +1464,19 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
             TestEqual("S3a: Expected 1 membership for custom.role='editor'.", ReceivedMemberships->Num(), 1);
             if (ReceivedMemberships->Num() == 1)
             {
-                TestEqual("S3a: Channel ID for 'editor' role", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelAID);
+                TestEqual("S3a: Channel ID for 'editor' role", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelAData.ChannelID);
             }
         }
     }, 0.1f));
-    // Filter by channel status (which is part of channel metadata)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships]()
     {
         *bGetMembershipsDone = false; *bGetMembershipsSuccess = false; ReceivedMemberships->Empty();
         FPubnubMembershipInclude IncludeChannelMeta; IncludeChannelMeta.IncludeChannel = true; IncludeChannelMeta.IncludeChannelStatus = true;
-        FString Filter = TEXT("channel.status == 'archived'"); // Should only find Channel C membership
+        FString Filter = TEXT("channel.status == 'archived'");
         PubnubSubsystem->GetMemberships(TestUserID, GetMembershipsCallback, IncludeChannelMeta, 10, Filter);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembershipsDone]() { return *bGetMembershipsDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelCID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelCData]()
     {
         TestTrue("S3b: GetMemberships filter by channel.status success.", *bGetMembershipsSuccess);
         if (*bGetMembershipsSuccess)
@@ -1245,37 +1484,33 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
             TestEqual("S3b: Expected 1 membership for channel.status='archived'.", ReceivedMemberships->Num(), 1);
             if (ReceivedMemberships->Num() == 1)
             {
-                TestEqual("S3b: Channel ID for 'archived' status", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelCID);
+                TestEqual("S3b: Channel ID for 'archived' status", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelCData.ChannelID);
             }
         }
     }, 0.1f));
 
     // --- Scenario 4: GetMemberships with Sorting ---
-    // Sort by Channel Name (Ascending: B, A, C, D -> Dev Zone, Docs Central, General Disc, Support Hub) - Need to adjust for actual set names.
-    // ChannelBName (Dev Zone), ChannelAName (Docs Central), ChannelCName (General Discussion), ChannelDName (Support Hub)
-    // Sorted: ChannelAName, ChannelBName, ChannelCName, ChannelDName
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships]()
     {
         *bGetMembershipsDone = false; *bGetMembershipsSuccess = false; ReceivedMemberships->Empty();
-        FPubnubMembershipInclude IncludeChannelName; IncludeChannelName.IncludeChannel = true; IncludeChannelName.IncludeChannel = true;
-        FPubnubMembershipSort SortSettings; SortSettings.MembershipSort.Add({EPubnubMembershipSortType::PMST_ChannelName, false /*asc*/});
+        FPubnubMembershipInclude IncludeChannelName; IncludeChannelName.IncludeChannel = true;
+        FPubnubMembershipSort SortSettings; SortSettings.MembershipSort.Add({EPubnubMembershipSortType::PMST_ChannelName, false});
         PubnubSubsystem->GetMemberships(TestUserID, GetMembershipsCallback, IncludeChannelName, 10, TEXT(""), SortSettings);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembershipsDone]() { return *bGetMembershipsDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelAID, ChannelBID, ChannelCID, ChannelDID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelAData, ChannelBData, ChannelCData, ChannelDData]()
     {
         TestTrue("S4a: GetMemberships sort by channel.name:asc success.", *bGetMembershipsSuccess);
         if (*bGetMembershipsSuccess && ReceivedMemberships->Num() == 4)
         {
-            TestEqual("S4a: Sort [0] (Dev)", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelBID);
-            TestEqual("S4a: Sort [1] (Docs)", (*ReceivedMemberships)[1].Channel.ChannelID, ChannelAID);
-            TestEqual("S4a: Sort [2] (General)", (*ReceivedMemberships)[2].Channel.ChannelID, ChannelCID);
-            TestEqual("S4a: Sort [3] (Support)", (*ReceivedMemberships)[3].Channel.ChannelID, ChannelDID);
+            TestEqual("S4a: Sort [0] (Dev)", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelBData.ChannelID);
+            TestEqual("S4a: Sort [1] (Docs)", (*ReceivedMemberships)[1].Channel.ChannelID, ChannelAData.ChannelID);
+            TestEqual("S4a: Sort [2] (General)", (*ReceivedMemberships)[2].Channel.ChannelID, ChannelCData.ChannelID);
+            TestEqual("S4a: Sort [3] (Support)", (*ReceivedMemberships)[3].Channel.ChannelID, ChannelDData.ChannelID);
         } else if (*bGetMembershipsSuccess) { AddError(FString::Printf(TEXT("S4a: Expected 4 memberships for sort, got %d"), ReceivedMemberships->Num())); }
     }, 0.1f));
 
     // --- Scenario 5: GetMemberships with Pagination ---
-    // Using ChannelID:asc sort (A, B, C, D)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, NextPageToken, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships]()
     {
         *bGetMembershipsDone = false; *bGetMembershipsSuccess = false; ReceivedMemberships->Empty(); NextPageToken->Empty();
@@ -1284,7 +1519,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         PubnubSubsystem->GetMemberships(TestUserID, GetMembershipsCallback, IncludeChannel, 2, TEXT(""), SortSettings);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembershipsDone]() { return *bGetMembershipsDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, NextPageToken, bGetMembershipsSuccess, ChannelAID, ChannelBID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, NextPageToken, bGetMembershipsSuccess, ChannelAData, ChannelBData]()
     {
         TestTrue("S5a: GetMemberships with Limit=2 (Page 1) success.", *bGetMembershipsSuccess);
         if (*bGetMembershipsSuccess)
@@ -1292,8 +1527,8 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
             TestEqual("S5a: Page 1 count.", ReceivedMemberships->Num(), 2);
             if (ReceivedMemberships->Num() == 2)
             {
-                TestEqual("S5a: Page 1 Item [0]", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelAID);
-                TestEqual("S5a: Page 1 Item [1]", (*ReceivedMemberships)[1].Channel.ChannelID, ChannelBID);
+                TestEqual("S5a: Page 1 Item [0]", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelAData.ChannelID);
+                TestEqual("S5a: Page 1 Item [1]", (*ReceivedMemberships)[1].Channel.ChannelID, ChannelBData.ChannelID);
             }
             TestFalse("S5a: NextPageToken should be populated as more results exist.", NextPageToken->IsEmpty());
         }
@@ -1309,7 +1544,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         PubnubSubsystem->GetMemberships(TestUserID, GetMembershipsCallback, IncludeChannel, 2, TEXT(""), SortSettings, PageTokenToUse);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembershipsDone]() { return *bGetMembershipsDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, NextPageToken, bGetMembershipsSuccess, ChannelCID, ChannelDID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, NextPageToken, bGetMembershipsSuccess, ChannelCData, ChannelDData]()
     {
         TestTrue("S5b: GetMemberships (Page 2) success.", *bGetMembershipsSuccess);
         if (*bGetMembershipsSuccess)
@@ -1317,23 +1552,25 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
             TestEqual("S5b: Page 2 count.", ReceivedMemberships->Num(), 2);
              if (ReceivedMemberships->Num() == 2)
             {
-                TestEqual("S5b: Page 2 Item [0]", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelCID);
-                TestEqual("S5b: Page 2 Item [1]", (*ReceivedMemberships)[1].Channel.ChannelID, ChannelDID);
+                TestEqual("S5b: Page 2 Item [0]", (*ReceivedMemberships)[0].Channel.ChannelID, ChannelCData.ChannelID);
+                TestEqual("S5b: Page 2 Item [1]", (*ReceivedMemberships)[1].Channel.ChannelID, ChannelDData.ChannelID);
             }
         }
     }, 0.1f));
 
     // --- Scenario 6: RemoveMemberships ---
-    // Remove membership for Channel A and Channel C
-    const FString RemoveMembershipsJson = FString::Printf(TEXT("[")
-        TEXT("{\"channel\":{\"id\":\"%s\"}},")
-        TEXT("{\"channel\":{\"id\":\"%s\"}}") 
-        TEXT("]"), *ChannelAID, *ChannelCID);
-     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, RemoveMembershipsJson]()
+    TArray<FString> ChannelsToRemove = {ChannelAData.ChannelID, ChannelCData.ChannelID};
+     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, ChannelsToRemove, RemoveMembershipsCallback, bRemoveMembershipsDone, bRemoveMembershipsSuccess]()
     {
-        PubnubSubsystem->RemoveMemberships(TestUserID, RemoveMembershipsJson);
+        *bRemoveMembershipsDone = false;
+        *bRemoveMembershipsSuccess = false;
+        PubnubSubsystem->RemoveMemberships(TestUserID, ChannelsToRemove, RemoveMembershipsCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveMembershipsDone]() { return *bRemoveMembershipsDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveMembershipsSuccess]()
+    {
+        TestTrue("RemoveMemberships should succeed", *bRemoveMembershipsSuccess);
+    }, 0.1f));
 
     // Verify removal
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, GetMembershipsCallback, bGetMembershipsDone, bGetMembershipsSuccess, ReceivedMemberships]()
@@ -1343,7 +1580,7 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         PubnubSubsystem->GetMemberships(TestUserID, GetMembershipsCallback, IncludeChannel, 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembershipsDone]() { return *bGetMembershipsDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelAID, ChannelBID, ChannelCID, ChannelDID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMemberships, bGetMembershipsSuccess, ChannelAData, ChannelBData, ChannelCData, ChannelDData]()
     {
         TestTrue("S6: GetMemberships after removal success.", *bGetMembershipsSuccess);
         if (!*bGetMembershipsSuccess) return;
@@ -1352,10 +1589,10 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         bool bFoundB = false, bFoundD = false;
         for (const auto& Membership : *ReceivedMemberships)
         {
-            if (Membership.Channel.ChannelID == ChannelAID) bFoundA = true;
-            else if (Membership.Channel.ChannelID == ChannelBID) bFoundB = true;
-            else if (Membership.Channel.ChannelID == ChannelCID) bFoundC = true;
-            else if (Membership.Channel.ChannelID == ChannelDID) bFoundD = true;
+            if (Membership.Channel.ChannelID == ChannelAData.ChannelID) bFoundA = true;
+            else if (Membership.Channel.ChannelID == ChannelBData.ChannelID) bFoundB = true;
+            else if (Membership.Channel.ChannelID == ChannelCData.ChannelID) bFoundC = true;
+            else if (Membership.Channel.ChannelID == ChannelDData.ChannelID) bFoundD = true;
         }
         TestFalse("S6: Membership A should be removed.", bFoundA);
         TestTrue("S6: Membership B should still exist.", bFoundB);
@@ -1363,28 +1600,31 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
         TestTrue("S6: Membership D should still exist.", bFoundD);
     }, 0.1f));
 
-    // Cleanup: Remove remaining memberships (B and D)
-    const FString FinalRemoveJson = FString::Printf(TEXT("[{\"channel\":{\"id\":\"%s\"}},{\"channel\":{\"id\":\"%s\"}}]"), *ChannelBID, *ChannelDID);
-     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, FinalRemoveJson]()
+    // Cleanup: Remove remaining memberships
+    TArray<FString> FinalChannelsToRemove = {ChannelBData.ChannelID, ChannelDData.ChannelID};
+     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, FinalChannelsToRemove, RemoveMembershipsCallback, bRemoveMembershipsDone, bRemoveMembershipsSuccess]()
     {
-        PubnubSubsystem->RemoveMemberships(TestUserID, FinalRemoveJson);
+        *bRemoveMembershipsDone = false;
+        *bRemoveMembershipsSuccess = false;
+        PubnubSubsystem->RemoveMemberships(TestUserID, FinalChannelsToRemove, RemoveMembershipsCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.5f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveMembershipsDone]() { return *bRemoveMembershipsDone; }, MAX_WAIT_TIME));
     
-    // Cleanup: Remove channel metadata
-    auto RemoveChannelMeta = [this](const FString& ChanID)
+    // Cleanup: Remove channel metadata using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RemoveChannelMetadataCallback, CleanupCounter, CleanupErrors, AllTestChannels]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChanID]()
+        *CleanupCounter = 0;
+        *CleanupErrors = 0;
+        
+        // Remove metadata for all channels
+        for(const auto& Channel : AllTestChannels)
         {
-            PubnubSubsystem->RemoveChannelMetadata(ChanID);
-        }, 0.05f));
-    };
-    for(const FString& ChanID : AllTestChannelIDs)
-    {
-        RemoveChannelMeta(ChanID);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+            PubnubSubsystem->RemoveChannelMetadata(Channel.ChannelID, RemoveChannelMetadataCallback);
+        }
+    }, 0.1f));
 
+    // Wait for all cleanup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([CleanupCounter, TotalCleanupOperations]() { return *CleanupCounter >= TotalCleanupOperations; }, MAX_WAIT_TIME));
 
     CleanUp();
     return true;
@@ -1394,88 +1634,114 @@ bool FPubnubMembershipManagementWithOptionsTest::RunTest(const FString& Paramete
 bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Parameters)
 {
     const FString TestRunPrefix = SDK_PREFIX + TEXT("cm_opts_");
-    const FString TestAdminUserID = TestRunPrefix + TEXT("admin"); // User performing the operations
+    const FString TestAdminUserID = TestRunPrefix + TEXT("admin");
     const FString TestChannelID = TestRunPrefix + TEXT("Channel_Main");
 
     // User Definitions
-    const FString UserAID = TestRunPrefix + TEXT("UserA_Eng");
-    const FString UserAName = TEXT("Alice Engineer");
-    const FString UserAEmail = TEXT("alice.eng@example.com");
-    const FString UserACustomJson = TEXT("{\"department\":\"Engineering\", \"skill\":\"C++\"}");
-    const FString UserAStatus = TEXT("ActiveProject");
-    const FString UserAType = TEXT("SeniorDev");
-    const FString UserAMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserAName, *UserAEmail, *UserACustomJson, *UserAStatus, *UserAType);
+    FPubnubUserData UserAData;
+    UserAData.UserID = TestRunPrefix + TEXT("UserA_Eng");
+    UserAData.UserName = TEXT("Alice Engineer");
+    UserAData.Email = TEXT("alice.eng@example.com");
+    UserAData.Custom = TEXT("{\"department\":\"Engineering\", \"skill\":\"C++\"}");
+    UserAData.Status = TEXT("ActiveProject");
+    UserAData.Type = TEXT("SeniorDev");
 
-    const FString UserBID = TestRunPrefix + TEXT("UserB_Sales");
-    const FString UserBName = TEXT("Bob Salesman");
-    const FString UserBEmail = TEXT("bob.sales@example.com");
-    const FString UserBCustomJson = TEXT("{\"department\":\"Sales\", \"region\":\"North\"}");
-    const FString UserBStatus = TEXT("OnQuota");
-    const FString UserBType = TEXT("AccountExec");
-    const FString UserBMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserBName, *UserBEmail, *UserBCustomJson, *UserBStatus, *UserBType);
+    FPubnubUserData UserBData;
+    UserBData.UserID = TestRunPrefix + TEXT("UserB_Sales");
+    UserBData.UserName = TEXT("Bob Salesman");
+    UserBData.Email = TEXT("bob.sales@example.com");
+    UserBData.Custom = TEXT("{\"department\":\"Sales\", \"region\":\"North\"}");
+    UserBData.Status = TEXT("OnQuota");
+    UserBData.Type = TEXT("AccountExec");
 
-    const FString UserCID = TestRunPrefix + TEXT("UserC_Support");
-    const FString UserCName = TEXT("Charlie Support");
-    const FString UserCEmail = TEXT("charlie.support@example.com");
-    const FString UserCCustomJson = TEXT("{\"department\":\"Support\", \"tier\":2}");
-    const FString UserCStatus = TEXT("Available"); 
-    const FString UserCType = TEXT("SupportAgent"); 
-    const FString UserCMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserCName, *UserCEmail, *UserCCustomJson, *UserCStatus, *UserCType);
+    FPubnubUserData UserCData;
+    UserCData.UserID = TestRunPrefix + TEXT("UserC_Support");
+    UserCData.UserName = TEXT("Charlie Support");
+    UserCData.Email = TEXT("charlie.support@example.com");
+    UserCData.Custom = TEXT("{\"department\":\"Support\", \"tier\":2}");
+    UserCData.Status = TEXT("Available"); 
+    UserCData.Type = TEXT("SupportAgent"); 
 
-    const FString UserDID = TestRunPrefix + TEXT("UserD_Marketing");
-    const FString UserDName = TEXT("Diana Marketing");
-    const FString UserDEmail = TEXT("diana.marketing@example.com");
-    const FString UserDCustomJson = TEXT("{\"department\":\"Marketing\", \"focus\":\"Digital\"}");
-    const FString UserDStatus = TEXT("CampaignLive"); 
-    const FString UserDType = TEXT("Specialist"); 
-    const FString UserDMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserDName, *UserDEmail, *UserDCustomJson, *UserDStatus, *UserDType);
+    FPubnubUserData UserDData;
+    UserDData.UserID = TestRunPrefix + TEXT("UserD_Marketing");
+    UserDData.UserName = TEXT("Diana Marketing");
+    UserDData.Email = TEXT("diana.marketing@example.com");
+    UserDData.Custom = TEXT("{\"department\":\"Marketing\", \"focus\":\"Digital\"}");
+    UserDData.Status = TEXT("CampaignLive"); 
+    UserDData.Type = TEXT("Specialist"); 
     
-    const FString UserEID = TestRunPrefix + TEXT("UserE_Ops");
-	const FString UserEName = TEXT("Evan Operations");
-	const FString UserEEmail = TEXT("evan.ops@example.com");
-	const FString UserECustomJson = TEXT("{\"department\":\"Operations\", \"role\":\"Manager\"}");
-    const FString UserEStatus = TEXT("Overseeing"); 
-    const FString UserEType = TEXT("LeadManager"); 
-	const FString UserEMetadata = FString::Printf(TEXT("{\"name\":\"%s\", \"email\":\"%s\", \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}"), *UserEName, *UserEEmail, *UserECustomJson, *UserEStatus, *UserEType);
+    FPubnubUserData UserEData;
+	UserEData.UserID = TestRunPrefix + TEXT("UserE_Ops");
+	UserEData.UserName = TEXT("Evan Operations");
+	UserEData.Email = TEXT("evan.ops@example.com");
+	UserEData.Custom = TEXT("{\"department\":\"Operations\", \"role\":\"Manager\"}");
+    UserEData.Status = TEXT("Overseeing"); 
+    UserEData.Type = TEXT("LeadManager"); 
 
-
-    TArray<FString> AllTestUserIDs = {UserAID, UserBID, UserCID, UserDID, UserEID};
+    TArray<FPubnubUserData> AllTestUsers = {UserAData, UserBData, UserCData, UserDData, UserEData};
 
     // Member-specific data definitions
-    const FString MemberACustomJson = TEXT("{\"channel_role\":\"LeadDev\", \"join_date\":\"2024-01-01\"}");
-    const FString MemberAStatus = TEXT("ActiveInChannel");
-    const FString MemberAType = TEXT("PrimaryContributor");
+    FPubnubChannelMemberInputData MemberA;
+    MemberA.User = UserAData.UserID;
+    MemberA.Custom = TEXT("{\"channel_role\":\"LeadDev\", \"join_date\":\"2024-01-01\"}");
+    MemberA.Status = TEXT("ActiveInChannel");
+    MemberA.Type = TEXT("PrimaryContributor");
 
-    const FString MemberBCustomJson = TEXT("{\"channel_role\":\"Participant\", \"last_active\":\"2024-01-15\"}");
-    const FString MemberBStatus_Membership = TEXT("Watching"); 
-    const FString MemberBType = TEXT("RegularMember");
+    FPubnubChannelMemberInputData MemberB;
+    MemberB.User = UserBData.UserID;
+    MemberB.Custom = TEXT("{\"channel_role\":\"Participant\", \"last_active\":\"2024-01-15\"}");
+    MemberB.Status = TEXT("Watching"); 
+    MemberB.Type = TEXT("RegularMember");
     
-    const FString MemberCCustomJson = TEXT("{\"channel_role\":\"Moderator\"}");
-    const FString MemberCStatus_Membership = TEXT("MonitoringChannel"); 
-    const FString MemberCType_Membership = TEXT("ChannelAdminAssist"); 
+    FPubnubChannelMemberInputData MemberC;
+    MemberC.User = UserCData.UserID;
+    MemberC.Custom = TEXT("{\"channel_role\":\"Moderator\"}");
+    MemberC.Status = TEXT("MonitoringChannel"); 
+    MemberC.Type = TEXT("ChannelAdminAssist"); 
 
-    const FString MemberDCustomJson = TEXT("{\"channel_role\":\"Reader\"}");
-    const FString MemberDStatus_Membership = TEXT("Lurking");
-    const FString MemberDType_Membership = TEXT("SilentObserver");
+    FPubnubChannelMemberInputData MemberD;
+    MemberD.User = UserDData.UserID;
+    MemberD.Custom = TEXT("{\"channel_role\":\"Reader\"}");
+    MemberD.Status = TEXT("Lurking");
+    MemberD.Type = TEXT("SilentObserver");
 
-    const FString MemberECustomJson = TEXT("{\"channel_role\":\"Newbie\"}");
-    const FString MemberEStatus_Membership = TEXT("JustJoined");
-    const FString MemberEType_Membership = TEXT("FreshMeat");
+    FPubnubChannelMemberInputData MemberE;
+    MemberE.User = UserEData.UserID;
+    MemberE.Custom = TEXT("{\"channel_role\":\"Newbie\"}");
+    MemberE.Status = TEXT("JustJoined");
+    MemberE.Type = TEXT("FreshMeat");
 
-
+    // Shared state for operations
     TSharedPtr<bool> bGetMembersDone = MakeShared<bool>(false);
     TSharedPtr<bool> bGetMembersSuccess = MakeShared<bool>(false);
-    TSharedPtr<TArray<FPubnubGetChannelMembersWrapper>> ReceivedMembers = MakeShared<TArray<FPubnubGetChannelMembersWrapper>>();
+    TSharedPtr<TArray<FPubnubChannelMemberData>> ReceivedMembers = MakeShared<TArray<FPubnubChannelMemberData>>();
     TSharedPtr<FString> NextPage = MakeShared<FString>();
     TSharedPtr<FString> PrevPage = MakeShared<FString>();
 
+    // Shared state for setup operations
+    TSharedPtr<int> SetupCounter = MakeShared<int>(0);
+    TSharedPtr<int> SetupErrors = MakeShared<int>(0);
+    const int TotalSetupOperations = AllTestUsers.Num(); // 5 users to set up
+
+    // Shared state for cleanup operations
+    TSharedPtr<int> CleanupCounter = MakeShared<int>(0);
+    TSharedPtr<int> CleanupErrors = MakeShared<int>(0);
+    const int TotalCleanupOperations = AllTestUsers.Num(); // 5 users to clean up
+
+    // Shared state for channel member operations
+    TSharedPtr<bool> bSetChannelMembersDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bSetChannelMembersSuccess = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveChannelMembersDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bRemoveChannelMembersSuccess = MakeShared<bool>(false);
+
+    // Callback for GetChannelMembers
     FOnGetChannelMembersResponseNative GetMembersCallback;
     GetMembersCallback.BindLambda(
         [this, bGetMembersDone, bGetMembersSuccess, ReceivedMembers, NextPage, PrevPage]
-        (int Status, const TArray<FPubnubGetChannelMembersWrapper>& MembersData, FString PageNextStr, FString PagePrevStr)
+        (const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNextStr, FString PagePrevStr)
     {
         *bGetMembersDone = true;
-        *bGetMembersSuccess = (Status == 200);
+        *bGetMembersSuccess = (Result.Status == 200);
         if (*bGetMembersSuccess)
         {
             *ReceivedMembers = MembersData;
@@ -1485,7 +1751,63 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
         else
         {
             ReceivedMembers->Empty();
-            AddError(FString::Printf(TEXT("GetChannelMembers call failed. Status: %d. Next: '%s', Prev: '%s'"), Status, *PageNextStr, *PagePrevStr));
+            AddError(FString::Printf(TEXT("GetChannelMembers call failed. Status: %d. Next: '%s', Prev: '%s'"), Result.Status, *PageNextStr, *PagePrevStr));
+        }
+    });
+
+    // Callback for SetUserMetadata operations
+    FOnSetUserMetadataResponseNative SetUserMetadataCallback;
+    SetUserMetadataCallback.BindLambda([this, SetupCounter, SetupErrors](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
+    {
+        (*SetupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*SetupErrors)++;
+            AddError(FString::Printf(TEXT("SetUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+    });
+
+    // Callback for SetChannelMembers operations
+    FOnSetChannelMembersResponseNative SetChannelMembersCallback;
+    SetChannelMembersCallback.BindLambda([this, bSetChannelMembersDone, bSetChannelMembersSuccess](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+    {
+        *bSetChannelMembersDone = true;
+        if (Result.Error || Result.Status != 200)
+        {
+            *bSetChannelMembersSuccess = false;
+            AddError(FString::Printf(TEXT("SetChannelMembers failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+        else
+        {
+            *bSetChannelMembersSuccess = true;
+        }
+    });
+
+    // Callback for RemoveChannelMembers operations
+    FOnRemoveChannelMembersResponseNative RemoveChannelMembersCallback;
+    RemoveChannelMembersCallback.BindLambda([this, bRemoveChannelMembersDone, bRemoveChannelMembersSuccess](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+    {
+        *bRemoveChannelMembersDone = true;
+        if (Result.Error || Result.Status != 200)
+        {
+            *bRemoveChannelMembersSuccess = false;
+            AddError(FString::Printf(TEXT("RemoveChannelMembers failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
+        }
+        else
+        {
+            *bRemoveChannelMembersSuccess = true;
+        }
+    });
+
+    // Callback for RemoveUserMetadata operations
+    FOnRemoveUserMetadataResponseNative RemoveUserMetadataCallback;
+    RemoveUserMetadataCallback.BindLambda([this, CleanupCounter, CleanupErrors](const FPubnubOperationResult& Result)
+    {
+        (*CleanupCounter)++;
+        if (Result.Error || Result.Status != 200)
+        {
+            (*CleanupErrors)++;
+            AddError(FString::Printf(TEXT("RemoveUserMetadata failed. Status: %d, Error: %s"), Result.Status, *Result.ErrorMessage));
         }
     });
 
@@ -1501,34 +1823,39 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
         AddError(FString::Printf(TEXT("General Pubnub Error in ChannelMembersManagementTest: %s, Type: %d"), *ErrorMessage, ErrorType));
     });
 
-    // --- Initial Setup: Create User Metadata ---
-    auto CreateUserMeta = [this](const FString& UserID, const FString& Meta)
+    // --- Initial Setup: Create User Metadata using callbacks ---
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetUserMetadataCallback, SetupCounter, SetupErrors, AllTestUsers]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID, Meta]()
+        *SetupCounter = 0;
+        *SetupErrors = 0;
+        
+        // Set metadata for all users
+        for (const auto& User : AllTestUsers)
         {
-            PubnubSubsystem->SetUserMetadata(UserID, Meta, TEXT("custom,status,type")); 
-        }, 0.05f));
-    };
-    CreateUserMeta(UserAID, UserAMetadata);
-    CreateUserMeta(UserBID, UserBMetadata);
-    CreateUserMeta(UserCID, UserCMetadata);
-    CreateUserMeta(UserDID, UserDMetadata);
-    CreateUserMeta(UserEID, UserEMetadata);
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f)); 
+            PubnubSubsystem->SetUserMetadata(User.UserID, User, SetUserMetadataCallback, FPubnubGetMetadataInclude::FromValue(true));
+        }
+    }, 0.1f));
+
+    // Wait for all setup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SetupCounter, TotalSetupOperations]() { return *SetupCounter >= TotalSetupOperations; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SetupErrors]()
+    {
+        TestEqual("Setup operations should complete without errors", *SetupErrors, 0);
+    }, 0.1f)); 
 
     // --- Scenario 1: SetChannelMembers (Initial members A, B) ---
-    const FString SetMembersJson_AB = FString::Printf(TEXT("[")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"} ")
-        TEXT("]"),
-        *UserAID, *MemberACustomJson, *MemberAStatus, *MemberAType,
-        *UserBID, *MemberBCustomJson, *MemberBStatus_Membership, *MemberBType
-    );
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembersJson_AB]()
+    TArray<FPubnubChannelMemberInputData> SetMembers_AB = {MemberA, MemberB};
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_AB, SetChannelMembersCallback, bSetChannelMembersDone, bSetChannelMembersSuccess]()
     {
-        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembersJson_AB);
+        *bSetChannelMembersDone = false;
+        *bSetChannelMembersSuccess = false;
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_AB, SetChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMembersDone]() { return *bSetChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMembersSuccess]()
+    {
+        TestTrue("SetChannelMembers (A,B) should succeed", *bSetChannelMembersSuccess);
+    }, 0.1f));
 
     // Verify A, B are members
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
@@ -1539,29 +1866,23 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
         PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeAll, 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID, UserAName, UserAStatus, UserAType, MemberACustomJson, MemberAStatus, MemberAType, UserBID, UserBName, UserBStatus, UserBType, MemberBCustomJson, MemberBStatus_Membership, MemberBType]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, MemberA, MemberB]()
     {
         TestTrue("S1: SetChannelMembers (A,B) & Get success.", *bGetMembersSuccess);
         if (!*bGetMembersSuccess) return;
         TestEqual("S1: Expected 2 members (A,B).", ReceivedMembers->Num(), 2);
         bool bFoundA = false, bFoundB = false;
         for (const auto& Member : *ReceivedMembers) {
-            if (Member.User.UserID == UserAID) { 
+            if (Member.User.UserID == MemberA.User) { 
                 bFoundA = true;
-                TestEqual("S1_A: User Name", Member.User.UserName, UserAName);
-                TestEqual("S1_A: User Status", Member.User.Status, UserAStatus);
-                TestEqual("S1_A: User Type", Member.User.Type, UserAType);
-                TestTrue("S1_A: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberACustomJson));
-                TestEqual("S1_A: Member Status", Member.Status, MemberAStatus);
-                TestEqual("S1_A: Member Type", Member.Type, MemberAType);
-            } else if (Member.User.UserID == UserBID) { 
+                TestTrue("S1_A: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberA.Custom));
+                TestEqual("S1_A: Member Status", Member.Status, MemberA.Status);
+                TestEqual("S1_A: Member Type", Member.Type, MemberA.Type);
+            } else if (Member.User.UserID == MemberB.User) { 
                 bFoundB = true;
-                TestEqual("S1_B: User Name", Member.User.UserName, UserBName);
-                TestEqual("S1_B: User Status", Member.User.Status, UserBStatus); 
-                TestEqual("S1_B: User Type", Member.User.Type, UserBType);     
-                TestTrue("S1_B: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberBCustomJson));
-                TestEqual("S1_B: Member Status", Member.Status, MemberBStatus_Membership);
-                TestEqual("S1_B: Member Type", Member.Type, MemberBType);
+                TestTrue("S1_B: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberB.Custom));
+                TestEqual("S1_B: Member Status", Member.Status, MemberB.Status);
+                TestEqual("S1_B: Member Type", Member.Type, MemberB.Type);
             }
         }
         TestTrue("S1: Found Member A.", bFoundA);
@@ -1569,18 +1890,19 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
     }, 0.1f));
 
     // --- Scenario 1b: SetChannelMembers (Upserting UserC) ---
-    // Members are A, B. Set with C. Expect A, B, C.
-    const FString SetMembersJson_C = FString::Printf(TEXT("[")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"}")
-        TEXT("]"),
-        *UserCID, *MemberCCustomJson, *MemberCStatus_Membership, *MemberCType_Membership
-    );
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembersJson_C]()
+    TArray<FPubnubChannelMemberInputData> SetMembers_C = {MemberC};
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_C, SetChannelMembersCallback, bSetChannelMembersDone, bSetChannelMembersSuccess]()
     {
+        *bSetChannelMembersDone = false;
+        *bSetChannelMembersSuccess = false;
         // This should ADD UserC because SetChannelMembers acts as an UPSERT
-        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembersJson_C);
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_C, SetChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMembersDone]() { return *bSetChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMembersSuccess]()
+    {
+        TestTrue("SetChannelMembers (Upsert C) should succeed", *bSetChannelMembersSuccess);
+    }, 0.1f));
 
     // Verify A, B, C are members
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
@@ -1591,23 +1913,20 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
         PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeAll, 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID, UserBID, UserCID, UserCName, UserCStatus, UserCType, MemberCCustomJson, MemberCStatus_Membership, MemberCType_Membership]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, MemberA, MemberB, MemberC]()
     {
         TestTrue("S1b: SetChannelMembers (Upsert C) & Get success.", *bGetMembersSuccess);
         if (!*bGetMembersSuccess) return;
         TestEqual("S1b: Expected 3 members (A,B,C).", ReceivedMembers->Num(), 3);
         bool bFoundA = false, bFoundB = false, bFoundC = false;
         for (const auto& Member : *ReceivedMembers) {
-            if(Member.User.UserID == UserAID) bFoundA = true;
-            else if(Member.User.UserID == UserBID) bFoundB = true;
-            else if (Member.User.UserID == UserCID) { 
+            if(Member.User.UserID == MemberA.User) bFoundA = true;
+            else if(Member.User.UserID == MemberB.User) bFoundB = true;
+            else if (Member.User.UserID == MemberC.User) { 
                 bFoundC = true;
-                TestEqual("S1b_C: User Name", Member.User.UserName, UserCName);
-                TestEqual("S1b_C: User Status", Member.User.Status, UserCStatus);
-                TestEqual("S1b_C: User Type", Member.User.Type, UserCType);
-                TestTrue("S1b_C: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberCCustomJson));
-                TestEqual("S1b_C: Member Status", Member.Status, MemberCStatus_Membership);
-                TestEqual("S1b_C: Member Type", Member.Type, MemberCType_Membership);
+                TestTrue("S1b_C: Member Custom", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberC.Custom));
+                TestEqual("S1b_C: Member Status", Member.Status, MemberC.Status);
+                TestEqual("S1b_C: Member Type", Member.Type, MemberC.Type);
             }
         }
         TestTrue("S1b: UserA still member.", bFoundA);
@@ -1617,16 +1936,18 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
 
 
     // --- Scenario 2: Explicit Remove (A,B) then Set (D,E) to achieve replacement ---
-    // Members are A, B, C. Remove A, B.
-    const FString RemoveMembersJson_AB = FString::Printf(TEXT("[")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}},")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}}") 
-        TEXT("]"), *UserAID, *UserBID);
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, RemoveMembersJson_AB]()
+    TArray<FString> RemoveMembers_AB = {MemberA.User, MemberB.User};
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, RemoveMembers_AB, RemoveChannelMembersCallback, bRemoveChannelMembersDone, bRemoveChannelMembersSuccess]()
     {
-        PubnubSubsystem->RemoveChannelMembers(TestChannelID, RemoveMembersJson_AB);
+        *bRemoveChannelMembersDone = false;
+        *bRemoveChannelMembersSuccess = false;
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, RemoveMembers_AB, RemoveChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelMembersDone]() { return *bRemoveChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveChannelMembersSuccess]()
+    {
+        TestTrue("RemoveChannelMembers (A,B) should succeed", *bRemoveChannelMembersSuccess);
+    }, 0.1f));
 
     // Verify C is the only member
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
@@ -1635,356 +1956,142 @@ bool FPubnubChannelMembersManagementWithOptionsTest::RunTest(const FString& Para
         PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, FPubnubMemberInclude(), 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserCID]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, MemberC]()
     {
-        TestTrue("S2.1: Remove (A,B) & Get success.", *bGetMembersSuccess);
+        TestTrue("S2a: GetChannelMembers after Remove (A,B) success.", *bGetMembersSuccess);
         if (!*bGetMembersSuccess) return;
-        TestEqual("S2.1: Expected 1 member (C).", ReceivedMembers->Num(), 1);
-        if (ReceivedMembers->Num() == 1) {
-            TestEqual("S2.1: Remaining member is C.", (*ReceivedMembers)[0].User.UserID, UserCID);
+        TestEqual("S2a: Expected 1 member (C).", ReceivedMembers->Num(), 1);
+        if (ReceivedMembers->Num() == 1)
+        {
+            TestEqual("S2a: Remaining member is C.", (*ReceivedMembers)[0].User.UserID, MemberC.User);
         }
     }, 0.1f));
 
-    // Now Set D, E. Members should become C, D, E (as Set is Upsert)
-    const FString SetMembersJson_DE = FString::Printf(TEXT("[")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"} ")
-        TEXT("]"),
-        *UserDID, *MemberDCustomJson, *MemberDStatus_Membership, *MemberDType_Membership,
-        *UserEID, *MemberECustomJson, *MemberEStatus_Membership, *MemberEType_Membership
-    );
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembersJson_DE]()
+    // Now Set D, E. Members should become C, D, E
+    TArray<FPubnubChannelMemberInputData> SetMembers_DE = {MemberD, MemberE};
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetMembers_DE, SetChannelMembersCallback, bSetChannelMembersDone, bSetChannelMembersSuccess]()
     {
-        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembersJson_DE);
+        *bSetChannelMembersDone = false;
+        *bSetChannelMembersSuccess = false;
+        PubnubSubsystem->SetChannelMembers(TestChannelID, SetMembers_DE, SetChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMembersDone]() { return *bSetChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMembersSuccess]()
+    {
+        TestTrue("SetChannelMembers (D,E) should succeed", *bSetChannelMembersSuccess);
+    }, 0.1f));
 
-    // Verify members are C, D, E
+    // Verify C,D,E are members
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
     {
         *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        FPubnubMemberInclude IncludeAll; IncludeAll.IncludeCustom = true; IncludeAll.IncludeStatus = true; IncludeAll.IncludeType = true;
-        IncludeAll.IncludeUser = true; IncludeAll.IncludeUserCustom = true; IncludeAll.IncludeUserStatus = true; IncludeAll.IncludeUserType = true;
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeAll, 10);
+        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, FPubnubMemberInclude(), 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserCID, UserCName, UserCStatus, UserCType, MemberCCustomJson, MemberCStatus_Membership, MemberCType_Membership, UserDID, UserDName, UserDStatus, UserDType, MemberDCustomJson, MemberDStatus_Membership, MemberDType_Membership, UserEID, UserEName, UserEStatus, UserEType, MemberECustomJson, MemberEStatus_Membership, MemberEType_Membership]()
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, MemberC, MemberD, MemberE]()
     {
-        TestTrue("S2.2: Set (D,E) after Remove (A,B) & Get success.", *bGetMembersSuccess);
+        TestTrue("S2b: GetChannelMembers after Set (D,E) success.", *bGetMembersSuccess);
         if (!*bGetMembersSuccess) return;
-        TestEqual("S2.2: Expected 3 members (C,D,E).", ReceivedMembers->Num(), 3);
+        TestEqual("S2b: Expected 3 members (C,D,E).", ReceivedMembers->Num(), 3);
         bool bFoundC = false, bFoundD = false, bFoundE = false;
         for (const auto& Member : *ReceivedMembers) {
-            if (Member.User.UserID == UserCID) { 
-                bFoundC = true; 
-                TestEqual("S2.2_C: User Name", Member.User.UserName, UserCName);
-                TestEqual("S2.2_C: Member Status", Member.Status, MemberCStatus_Membership);
-            } else if (Member.User.UserID == UserDID) { 
-                bFoundD = true;
-                TestEqual("S2.2_D: User Name", Member.User.UserName, UserDName);
-                TestEqual("S2.2_D: Member Status", Member.Status, MemberDStatus_Membership);
-            } else if (Member.User.UserID == UserEID) { 
-                bFoundE = true;
-                TestEqual("S2.2_E: User Name", Member.User.UserName, UserEName);
-                TestEqual("S2.2_E: Member Status", Member.Status, MemberEStatus_Membership);
-            }
+            if(Member.User.UserID == MemberC.User) bFoundC = true;
+            else if(Member.User.UserID == MemberD.User) bFoundD = true;
+            else if(Member.User.UserID == MemberE.User) bFoundE = true;
         }
-        TestTrue("S2.2: Found Member C.", bFoundC);
-        TestTrue("S2.2: Found Member D.", bFoundD);
-        TestTrue("S2.2: Found Member E.", bFoundE);
+        TestTrue("S2b: Found Member C.", bFoundC);
+        TestTrue("S2b: Found Member D.", bFoundD);
+        TestTrue("S2b: Found Member E.", bFoundE);
     }, 0.1f));
-
-    // --- Scenario 3: GetChannelMembers with Include Options ---
-    // Members are C, D, E. Target UserD.
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, UserDID, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    
+    // Setup for Filtering, Sorting, Pagination: Ensure all 5 users (A,B,C,D,E) are members
+    TArray<FPubnubChannelMemberInputData> AllMembers;
+    AllMembers.Add(MemberA);
+    AllMembers.Add(MemberB);
+    AllMembers.Add(MemberC);
+    AllMembers.Add(MemberD);
+    AllMembers.Add(MemberE);
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, AllMembers, SetChannelMembersCallback, bSetChannelMembersDone, bSetChannelMembersSuccess]()
     {
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        FPubnubMemberInclude IncludeOpts;
-        IncludeOpts.IncludeCustom = true;      
-        IncludeOpts.IncludeStatus = false;     
-        IncludeOpts.IncludeType = true;        
-        IncludeOpts.IncludeUser = true;        
-        IncludeOpts.IncludeUserCustom = false; 
-        IncludeOpts.IncludeUserStatus = true;  
-        IncludeOpts.IncludeUserType = false;   
-        FString Filter = FString::Printf(TEXT("uuid.id == '%s'"), *UserDID);
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeOpts, 1, Filter);
+        *bSetChannelMembersDone = false;
+        *bSetChannelMembersSuccess = false;
+        PubnubSubsystem->SetChannelMembers(TestChannelID, AllMembers, SetChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserDID, UserDName, UserDStatus, MemberDCustomJson, MemberDType_Membership]()
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSetChannelMembersDone]() { return *bSetChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSetChannelMembersSuccess]()
     {
-        TestTrue("S3: GetChannelMembers with specific includes success.", *bGetMembersSuccess);
-        if (!*bGetMembersSuccess || ReceivedMembers->Num() != 1) {
-             if (*bGetMembersSuccess) AddError(FString::Printf(TEXT("S3: Expected 1 member for include test, got %d"), ReceivedMembers->Num()));
-             return;
-        }
-        const auto& Member = (*ReceivedMembers)[0];
-        TestEqual("S3: User ID", Member.User.UserID, UserDID);
-        TestEqual("S3: User Name (Included)", Member.User.UserName, UserDName);
-        TestTrue("S3: User Custom (NOT Included, should be empty)", Member.User.Custom.IsEmpty());
-        TestEqual("S3: User Status (Included)", Member.User.Status, UserDStatus);
-        TestTrue("S3: User Type (NOT Included, should be empty)", Member.User.Type.IsEmpty());
-        TestTrue("S3: Member Custom (Included)", UPubnubJsonUtilities::AreJsonObjectStringsEqual(Member.Custom, MemberDCustomJson));
-        TestTrue("S3: Member Status (NOT Included, should be empty)", Member.Status.IsEmpty()); 
-        TestEqual("S3: Member Type (Included)", Member.Type, MemberDType_Membership);
+        TestTrue("SetChannelMembers (All members) should succeed", *bSetChannelMembersSuccess);
     }, 0.1f));
-
-    // Setup for Filtering, Sorting, Pagination: Ensure all 5 users (A,B,C,D,E) are members for broader testing.
-    // Current members: C,D,E. We need to add A and B back.
-    const FString SetFiveMembersJson = FString::Printf(TEXT("[")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")   // A
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")   // B
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")   // C (update)
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"},")   // D (update)
-        TEXT("{\"uuid\":{\"id\":\"%s\"}, \"custom\":%s, \"status\":\"%s\", \"type\":\"%s\"} ")  // E (update)
-        TEXT("]"),
-        *UserAID, *MemberACustomJson, *MemberAStatus, *MemberAType,
-        *UserBID, *MemberBCustomJson, *MemberBStatus_Membership, *MemberBType,
-        *UserCID, *MemberCCustomJson, *MemberCStatus_Membership, *MemberCType_Membership,
-        *UserDID, *MemberDCustomJson, *MemberDStatus_Membership, *MemberDType_Membership,
-        *UserEID, *MemberECustomJson, *MemberEStatus_Membership, *MemberEType_Membership
-    );
-     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, SetFiveMembersJson]()
-    {
-        // SetChannelMembers with all 5, will add A,B and update C,D,E
-        PubnubSubsystem->SetChannelMembers(TestChannelID, SetFiveMembersJson);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.5f));
-
-    // Verify all 5 are present before proceeding to filter/sort/page tests
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
-    {
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, FPubnubMemberInclude(), 10);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess]() {
-        TestTrue("Setup_AllFive: GetChannelMembers success", *bGetMembersSuccess);
-        TestEqual("Setup_AllFive: Expected 5 members.", ReceivedMembers->Num(), 5);
-    }, 0.1f));
-
-    // --- Scenario 4: GetChannelMembers with Filtering ---
-    // Filter by member custom field
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
-    {
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        FPubnubMemberInclude IncludeUserAndMemberCustom; 
-        IncludeUserAndMemberCustom.IncludeUser = true; 
-        IncludeUserAndMemberCustom.IncludeCustom = true; 
-        FString Filter = TEXT("custom.channel_role == 'Moderator'"); 
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUserAndMemberCustom, 10, Filter);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserCID]()
-    {
-        TestTrue("S4a: GetMembers filter by member custom.channel_role success.", *bGetMembersSuccess);
-        if (*bGetMembersSuccess)
-        {
-            TestEqual("S4a: Expected 1 member for custom.channel_role='Moderator'.", ReceivedMembers->Num(), 1);
-            if (ReceivedMembers->Num() == 1)
-            {
-                TestEqual("S4a: User ID for 'Moderator' role", (*ReceivedMembers)[0].User.UserID, UserCID);
-            }
-        }
-    }, 0.1f));
-    // Filter by user custom field
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
-    {
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        FPubnubMemberInclude IncludeUserAll; 
-        IncludeUserAll.IncludeUser = true; IncludeUserAll.IncludeUserCustom = true; 
-        FString Filter = TEXT("uuid.custom.department == 'Engineering'"); 
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUserAll, 10, Filter);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID]()
-    {
-        TestTrue("S4b: GetMembers filter by uuid.custom.department success.", *bGetMembersSuccess);
-        if (*bGetMembersSuccess)
-        {
-            TestEqual("S4b: Expected 1 member for uuid.custom.department='Engineering'.", ReceivedMembers->Num(), 1);
-            if (ReceivedMembers->Num() == 1)
-            {
-                TestEqual("S4b: User ID for 'Engineering' dept", (*ReceivedMembers)[0].User.UserID, UserAID);
-            }
-        }
-    }, 0.1f));
-
-    // --- Scenario 5: GetChannelMembers with Sorting ---
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
-    {
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true; 
-        FPubnubMemberSort SortSettings; SortSettings.MemberSort.Add({EPubnubMemberSortType::PMeST_UserName, false /*asc*/});
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 10, TEXT(""), SortSettings);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID, UserAName, UserBID, UserBName, UserCID, UserCName, UserDID, UserDName, UserEID, UserEName]()
-    {
-        TestTrue("S5a: GetMembers sort by user.name:asc success.", *bGetMembersSuccess);
-        if (*bGetMembersSuccess && ReceivedMembers->Num() == 5)
-        {
-            TestEqual("S5a: Sort [0] ID (Alice)", (*ReceivedMembers)[0].User.UserID, UserAID); TestEqual("S5a: Sort [0] Name", (*ReceivedMembers)[0].User.UserName, UserAName);
-            TestEqual("S5a: Sort [1] ID (Bob)", (*ReceivedMembers)[1].User.UserID, UserBID); TestEqual("S5a: Sort [1] Name", (*ReceivedMembers)[1].User.UserName, UserBName);
-            TestEqual("S5a: Sort [2] ID (Charlie)", (*ReceivedMembers)[2].User.UserID, UserCID); TestEqual("S5a: Sort [2] Name", (*ReceivedMembers)[2].User.UserName, UserCName);
-            TestEqual("S5a: Sort [3] ID (Diana)", (*ReceivedMembers)[3].User.UserID, UserDID); TestEqual("S5a: Sort [3] Name", (*ReceivedMembers)[3].User.UserName, UserDName);
-            TestEqual("S5a: Sort [4] ID (Evan)", (*ReceivedMembers)[4].User.UserID, UserEID); TestEqual("S5a: Sort [4] Name", (*ReceivedMembers)[4].User.UserName, UserEName);
-        } else if (*bGetMembersSuccess) { AddError(FString::Printf(TEXT("S5a: Expected 5 members for sort, got %d"), ReceivedMembers->Num())); }
-    }, 0.1f));
-
-    // --- Scenario 6: GetChannelMembers with Pagination ---
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, NextPage, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
-    {
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty(); NextPage->Empty();
-        FPubnubMemberSort SortSettings; SortSettings.MemberSort.Add({EPubnubMemberSortType::PMeST_UserName, false});
-        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true; IncludeUser.IncludeTotalCount = true;
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 2, TEXT(""), SortSettings);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, NextPage, bGetMembersSuccess, UserAID, UserBID]()
-    {
-        TestTrue("S6a: GetMembers with Limit=2 (Page 1) success.", *bGetMembersSuccess);
-        if (*bGetMembersSuccess)
-        {
-            TestEqual("S6a: Page 1 count.", ReceivedMembers->Num(), 2);
-            if (ReceivedMembers->Num() == 2)
-            {
-                TestEqual("S6a: Page 1 Item [0] (Alice)", (*ReceivedMembers)[0].User.UserID, UserAID);
-                TestEqual("S6a: Page 1 Item [1] (Bob)", (*ReceivedMembers)[1].User.UserID, UserBID);
-            }
-            TestFalse("S6a: NextPage should be populated as more results exist.", NextPage->IsEmpty());
-        }
-    }, 0.1f));
-    // Fetch Page 2
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, NextPage, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
-    {
-        if (NextPage->IsEmpty()) { AddError("S6b: NextPage token is empty, cannot fetch page 2."); *bGetMembersDone = true; return; }
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        FString PageTokenToUse = *NextPage; NextPage->Empty();
-        FPubnubMemberSort SortSettings; SortSettings.MemberSort.Add({EPubnubMemberSortType::PMeST_UserName, false});
-        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true;
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 2, TEXT(""), SortSettings, PageTokenToUse);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, NextPage, bGetMembersSuccess, UserCID, UserDID]()
-    {
-        TestTrue("S6b: GetMembers (Page 2) success.", *bGetMembersSuccess);
-        if (*bGetMembersSuccess)
-        {
-            TestEqual("S6b: Page 2 count.", ReceivedMembers->Num(), 2);
-             if (ReceivedMembers->Num() == 2)
-            {
-                TestEqual("S6b: Page 2 Item [0] (Charlie)", (*ReceivedMembers)[0].User.UserID, UserCID);
-                TestEqual("S6b: Page 2 Item [1] (Diana)", (*ReceivedMembers)[1].User.UserID, UserDID);
-            }
-            TestFalse("S6b: NextPage should be populated for page 3.", NextPage->IsEmpty());
-        }
-    }, 0.1f));
-     // Fetch Page 3
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, NextPage, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
-    {
-        if (NextPage->IsEmpty()) { AddError("S6c: NextPage token is empty, cannot fetch page 3."); *bGetMembersDone = true; return; }
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        FString PageTokenToUse = *NextPage; NextPage->Empty();
-        FPubnubMemberSort SortSettings; SortSettings.MemberSort.Add({EPubnubMemberSortType::PMeST_UserName, false});
-        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true;
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 2, TEXT(""), SortSettings, PageTokenToUse);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, NextPage, bGetMembersSuccess, UserEID]()
-    {
-        TestTrue("S6c: GetChannelMembers (Page 3) success.", *bGetMembersSuccess);
-        if (*bGetMembersSuccess)
-        {
-            TestEqual("S6c: Page 3 count.", ReceivedMembers->Num(), 1); 
-             if (ReceivedMembers->Num() == 1)
-            {
-                TestEqual("S6c: Page 3 Item [0] (Evan)", (*ReceivedMembers)[0].User.UserID, UserEID);
-            }
-        }
-    }, 0.1f));
-
 
     // --- Scenario 7: RemoveChannelMembers & Verification ---
-    // Current members: A,B,C,D,E. Remove UserA and UserD
-    const FString RemoveMembersJson_AD = FString::Printf(TEXT("[")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}},")
-        TEXT("{\"uuid\":{\"id\":\"%s\"}}") 
-        TEXT("]"), *UserAID, *UserDID);
-     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, RemoveMembersJson_AD]()
+    TArray<FString> UsersToRemove_AD = {MemberA.User, MemberD.User};
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, UsersToRemove_AD, RemoveChannelMembersCallback, bRemoveChannelMembersDone, bRemoveChannelMembersSuccess]()
     {
-        PubnubSubsystem->RemoveChannelMembers(TestChannelID, RemoveMembersJson_AD);
+        *bRemoveChannelMembersDone = false;
+        *bRemoveChannelMembersSuccess = false;
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, UsersToRemove_AD, RemoveChannelMembersCallback);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
-
-    // Verify B, C, E remain
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelMembersDone]() { return *bRemoveChannelMembersDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bRemoveChannelMembersSuccess]()
     {
-        *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
-        FPubnubMemberInclude IncludeUser; IncludeUser.IncludeUser = true;
-        PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, IncludeUser, 10);
+        TestTrue("RemoveChannelMembers (A,D) should succeed", *bRemoveChannelMembersSuccess);
     }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, UserAID, UserBID, UserCID, UserDID, UserEID]()
-    {
-        TestTrue("S7: GetMembers after partial removal success.", *bGetMembersSuccess);
-        if (!*bGetMembersSuccess) return;
-        TestEqual("S7: Expected 3 members after removal (B, C, E).", ReceivedMembers->Num(), 3);
-        bool bFoundA = false, bFoundD = false;
-        bool bFoundB = false, bFoundC = false, bFoundE = false;
-        for (const auto& Member : *ReceivedMembers)
-        {
-            if (Member.User.UserID == UserAID) bFoundA = true;
-            else if (Member.User.UserID == UserBID) bFoundB = true;
-            else if (Member.User.UserID == UserCID) bFoundC = true;
-            else if (Member.User.UserID == UserDID) bFoundD = true;
-            else if (Member.User.UserID == UserEID) bFoundE = true;
-        }
-        TestFalse("S7: UserA should be removed.", bFoundA);
-        TestTrue("S7: UserB should still be a member.", bFoundB);
-        TestTrue("S7: UserC should still be a member.", bFoundC);
-        TestFalse("S7: UserD should be removed.", bFoundD);
-        TestTrue("S7: UserE should still be a member.", bFoundE);
-    }, 0.1f));
-
-    // Cleanup: Remove remaining members (B, C, E)
-    const FString FinalRemoveJson = FString::Printf(TEXT("[{\"uuid\":{\"id\":\"%s\"}}, {\"uuid\":{\"id\":\"%s\"}}, {\"uuid\":{\"id\":\"%s\"}}]"), *UserBID, *UserCID, *UserEID);
-     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, FinalRemoveJson]()
-    {
-        PubnubSubsystem->RemoveChannelMembers(TestChannelID, FinalRemoveJson);
-    }, 0.1f));
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(1.0f));
     
-    // Final check: ensure channel is empty
+    // Verify B,C,E are members
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, GetMembersCallback, bGetMembersDone, bGetMembersSuccess, ReceivedMembers]()
     {
         *bGetMembersDone = false; *bGetMembersSuccess = false; ReceivedMembers->Empty();
         PubnubSubsystem->GetChannelMembers(TestChannelID, GetMembersCallback, FPubnubMemberInclude(), 10);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bGetMembersDone]() { return *bGetMembersDone; }, MAX_WAIT_TIME));
-    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess]() {
-        TestTrue("Cleanup_FinalGet: GetChannelMembers success", *bGetMembersSuccess);
-        TestEqual("Cleanup_FinalGet: Expected 0 members.", ReceivedMembers->Num(), 0);
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ReceivedMembers, bGetMembersSuccess, MemberA, MemberB, MemberC, MemberD, MemberE]()
+    {
+        TestTrue("S7: GetChannelMembers after Remove (A,D) success.", *bGetMembersSuccess);
+        if (!*bGetMembersSuccess) return;
+        TestEqual("S7: Expected 3 members (B,C,E).", ReceivedMembers->Num(), 3);
+        bool bFoundA = false, bFoundB = false, bFoundC = false, bFoundD = false, bFoundE = false;
+        for (const auto& Member : *ReceivedMembers) {
+            if(Member.User.UserID == MemberA.User) bFoundA = true;
+            else if(Member.User.UserID == MemberB.User) bFoundB = true;
+            else if(Member.User.UserID == MemberC.User) bFoundC = true;
+            else if(Member.User.UserID == MemberD.User) bFoundD = true;
+            else if(Member.User.UserID == MemberE.User) bFoundE = true;
+        }
+        TestFalse("S7: Member A should be removed.", bFoundA);
+        TestTrue("S7: Member B should still exist.", bFoundB);
+        TestTrue("S7: Member C should still exist.", bFoundC);
+        TestFalse("S7: Member D should be removed.", bFoundD);
+        TestTrue("S7: Member E should still exist.", bFoundE);
     }, 0.1f));
 
-    // Cleanup: Remove user metadata
-    auto RemoveUserMeta = [this](const FString& UserID)
+    // Cleanup: Remove remaining members
+    TArray<FString> FinalUsersToRemove = {MemberB.User, MemberC.User, MemberE.User};
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelID, FinalUsersToRemove, RemoveChannelMembersCallback, bRemoveChannelMembersDone, bRemoveChannelMembersSuccess]()
     {
-        ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UserID]()
+        *bRemoveChannelMembersDone = false;
+        *bRemoveChannelMembersSuccess = false;
+        PubnubSubsystem->RemoveChannelMembers(TestChannelID, FinalUsersToRemove, RemoveChannelMembersCallback);
+    }, 0.1f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bRemoveChannelMembersDone]() { return *bRemoveChannelMembersDone; }, MAX_WAIT_TIME));
+
+    // Cleanup: Remove user metadata using callbacks
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RemoveUserMetadataCallback, CleanupCounter, CleanupErrors, AllTestUsers]()
+    {
+        *CleanupCounter = 0;
+        *CleanupErrors = 0;
+        
+        // Remove metadata for all users
+        for(const auto& User : AllTestUsers)
         {
-            PubnubSubsystem->RemoveUserMetadata(UserID);
-        }, 0.05f));
-    };
-    for(const FString& UserID : AllTestUserIDs)
-    {
-        RemoveUserMeta(UserID);
-    }
-    ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(2.0f));
+            PubnubSubsystem->RemoveUserMetadata(User.UserID, RemoveUserMetadataCallback);
+        }
+    }, 0.1f));
 
-
+    // Wait for all cleanup operations to complete
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([CleanupCounter, TotalCleanupOperations]() { return *CleanupCounter >= TotalCleanupOperations; }, MAX_WAIT_TIME));
+    
     CleanUp();
     return true;
 }
-
 
 #endif // WITH_DEV_AUTOMATION_TESTS

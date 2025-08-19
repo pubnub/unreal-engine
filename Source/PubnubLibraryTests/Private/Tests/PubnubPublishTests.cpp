@@ -1,4 +1,4 @@
-// Copyright 2024 PubNub Inc. All Rights Reserved.
+// Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #include "PubnubSubsystem.h"
 #include "PubnubEnumLibrary.h"
@@ -27,6 +27,10 @@ bool FPubnubPublishMessageTest::RunTest(const FString& Parameters)
 	const FString TestUser = SDK_PREFIX + "test_user";
 	const FString TestChannel = SDK_PREFIX + "test_channel";
 	TSharedPtr<bool> TestMessageReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestPublishResultReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestSubscribeResultReceived = MakeShared<bool>(false);
+	TSharedPtr<FPubnubOperationResult> PublishResult = MakeShared<FPubnubOperationResult>();
+	TSharedPtr<FPubnubMessageData> PublishedMessageData = MakeShared<FPubnubMessageData>();
 	
 	if(!InitTest())
 	{
@@ -53,16 +57,86 @@ bool FPubnubPublishMessageTest::RunTest(const FString& Parameters)
 		TestEqual("Published message MessageType", EPubnubMessageType::PMT_Published, ReceivedMessage.MessageType);
 	});
 
-	
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+	//Create subscribe result callback
+	FOnSubscribeOperationResponseNative SubscribeCallback;
+	SubscribeCallback.BindLambda([this, TestSubscribeResultReceived](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel);
+		*TestSubscribeResultReceived = true;
+		TestFalse("Subscribe operation should not have failed", Result.Error);
+		TestEqual("Subscribe HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("Subscribe failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	//Create publish result callback
+	FOnPublishMessageResponseNative PublishCallback;
+	PublishCallback.BindLambda([this, TestMessage, TestChannel, TestUser, TestPublishResultReceived, PublishResult, PublishedMessageData]
+		(const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*TestPublishResultReceived = true;
+		*PublishResult = Result;
+		*PublishedMessageData = PublishedMessage;
+		
+		// Verify publish result
+		TestFalse("Publish operation should not have failed", Result.Error);
+		TestEqual("Publish HTTP status should be 200", Result.Status, 200);
+		
+		if (!Result.Error)
+		{
+			// Verify published message data matches what we sent
+			TestEqual("Published message data - content", TestMessage, PublishedMessage.Message);
+			TestEqual("Published message data - channel", TestChannel, PublishedMessage.Channel);
+			TestEqual("Published message data - user ID", TestUser, PublishedMessage.UserID);
+			TestEqual("Published message data - message type", EPubnubMessageType::PMT_Published, PublishedMessage.MessageType);
+			TestFalse("Published message timetoken should not be empty", PublishedMessage.Timetoken.IsEmpty());
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("Publish failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCallback]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCallback);
 	}, 0.1f));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	//Wait until subscribe result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSubscribeResultReceived]() -> bool {
+		return *TestSubscribeResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestSubscribeResultReceived]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
-	}, 0.5f));
+		if(!*TestSubscribeResultReceived)
+		{
+			AddError("Subscribe result callback was not received");
+		}
+	}, 0.1f));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage, PublishCallback]()
+	{
+		PubnubSubsystem->PublishMessage(TestChannel, TestMessage, PublishCallback);
+	}, 0.1f));
+
+	//Wait until publish result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestPublishResultReceived]() -> bool {
+		return *TestPublishResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether publish result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestPublishResultReceived]()
+	{
+		if(!*TestPublishResultReceived)
+		{
+			AddError("Publish result callback was not received");
+		}
+	}, 0.1f));
 
 	//This will wait until message is received or timeout is reached
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestMessageReceived]() -> bool {
@@ -91,6 +165,7 @@ bool FPubnubPublishMessageWithSettingsTest::RunTest(const FString& Parameters)
 	const FString TestMetaData = "{\"metadata\": \"from test\"}";
 	const FString TestCustomMessageType = "custom_type";
 	TSharedPtr<bool> TestMessageReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestSubscribeResultReceived = MakeShared<bool>(false);
 	
 	if(!InitTest())
 	{
@@ -119,10 +194,38 @@ bool FPubnubPublishMessageWithSettingsTest::RunTest(const FString& Parameters)
 		TestEqual("Published message CustomMessageType", TestCustomMessageType, ReceivedMessage.CustomMessageType);
 	});
 
-	
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+	//Create subscribe result callback
+	FOnSubscribeOperationResponseNative SubscribeCallback;
+	SubscribeCallback.BindLambda([this, TestSubscribeResultReceived](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel);
+		*TestSubscribeResultReceived = true;
+		TestFalse("Subscribe operation should not have failed", Result.Error);
+		TestEqual("Subscribe HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("Subscribe failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCallback]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCallback);
+	}, 0.1f));
+
+	//Wait until subscribe result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSubscribeResultReceived]() -> bool {
+		return *TestSubscribeResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestSubscribeResultReceived]()
+	{
+		if(!*TestSubscribeResultReceived)
+		{
+			AddError("Subscribe result callback was not received");
+		}
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage, TestMetaData, TestCustomMessageType]()
@@ -132,7 +235,7 @@ bool FPubnubPublishMessageWithSettingsTest::RunTest(const FString& Parameters)
 		PublishSettings.CustomMessageType = TestCustomMessageType;
 		PublishSettings.Ttl = 5;
 		PubnubSubsystem->PublishMessage(TestChannel, TestMessage, PublishSettings);
-	}, 0.5f));
+	}, 0.1f));
 
 	//This will wait until message is received or timeout is reached
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestMessageReceived]() -> bool {
@@ -159,6 +262,10 @@ bool FPubnubSignalTest::RunTest(const FString& Parameters)
 	const FString TestUser = SDK_PREFIX + "test_user";
 	const FString TestChannel = SDK_PREFIX + "test_channel";
 	TSharedPtr<bool> TestSignalReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestSignalResultReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestSubscribeResultReceived = MakeShared<bool>(false);
+	TSharedPtr<FPubnubOperationResult> SignalResult = MakeShared<FPubnubOperationResult>();
+	TSharedPtr<FPubnubMessageData> SignalMessageData = MakeShared<FPubnubMessageData>();
 	
 	if(!InitTest())
 	{
@@ -183,16 +290,86 @@ bool FPubnubSignalTest::RunTest(const FString& Parameters)
 		TestEqual("Received signal channel matches", TestChannel, ReceivedMessage.Channel);
 		TestEqual("Received signal MessageType matches", EPubnubMessageType::PMT_Signal, ReceivedMessage.MessageType);
 	});
-	
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+
+	//Create subscribe result callback
+	FOnSubscribeOperationResponseNative SubscribeCallback;
+	SubscribeCallback.BindLambda([this, TestSubscribeResultReceived](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel);
+		*TestSubscribeResultReceived = true;
+		TestFalse("Subscribe operation should not have failed", Result.Error);
+		TestEqual("Subscribe HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("Subscribe failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	//Create signal result callback
+	FOnSignalResponseNative SignalCallback;
+	SignalCallback.BindLambda([this, TestSignalMessage, TestChannel, TestUser, TestSignalResultReceived, SignalResult, SignalMessageData]
+		(const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
+	{
+		*TestSignalResultReceived = true;
+		*SignalResult = Result;
+		*SignalMessageData = SignalMessage;
+		
+		// Verify signal result
+		TestFalse("Signal operation should not have failed", Result.Error);
+		TestEqual("Signal HTTP status should be 200", Result.Status, 200);
+		
+		if (!Result.Error)
+		{
+			// Verify signal message data matches what we sent
+			TestEqual("Signal message data - content", TestSignalMessage, SignalMessage.Message);
+			TestEqual("Signal message data - channel", TestChannel, SignalMessage.Channel);
+			TestEqual("Signal message data - user ID", TestUser, SignalMessage.UserID);
+			TestEqual("Signal message data - message type", EPubnubMessageType::PMT_Signal, SignalMessage.MessageType);
+			TestFalse("Signal message timetoken should not be empty", SignalMessage.Timetoken.IsEmpty());
+		}
+		else
+		{
+			AddError(FString::Printf(TEXT("Signal failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+	
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCallback]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCallback);
 	}, 0.1f));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestSignalMessage]()
+	//Wait until subscribe result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSubscribeResultReceived]() -> bool {
+		return *TestSubscribeResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestSubscribeResultReceived]()
 	{
-		PubnubSubsystem->Signal(TestChannel, TestSignalMessage);
-	}, 0.5f));
+		if(!*TestSubscribeResultReceived)
+		{
+			AddError("Subscribe result callback was not received");
+		}
+	}, 0.1f));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestSignalMessage, SignalCallback]()
+	{
+		PubnubSubsystem->Signal(TestChannel, TestSignalMessage, SignalCallback);
+	}, 0.1f));
+
+	//Wait until signal result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSignalResultReceived]() -> bool {
+		return *TestSignalResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether signal result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestSignalResultReceived]()
+	{
+		if(!*TestSignalResultReceived)
+		{
+			AddError("Signal result callback was not received");
+		}
+	}, 0.1f));
 
 	//This will wait until signal is received or timeout is reached
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSignalReceived]() -> bool {
@@ -220,6 +397,7 @@ bool FPubnubSignalWithSettingsTest::RunTest(const FString& Parameters)
 	const FString TestChannel = SDK_PREFIX + "test_channel_signal_settings";
 	const FString TestCustomSignalType = "custom_signal_type_e2e";
 	TSharedPtr<bool> TestSignalReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestSubscribeResultReceived = MakeShared<bool>(false);
 	
 	if(!InitTest())
 	{
@@ -248,10 +426,38 @@ bool FPubnubSignalWithSettingsTest::RunTest(const FString& Parameters)
 			TestEqual("Received signal CustomMessageType (with settings) matches", TestCustomSignalType, ReceivedMessage.CustomMessageType);
 		}
 	});
-	
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+
+	//Create subscribe result callback
+	FOnSubscribeOperationResponseNative SubscribeCallback;
+	SubscribeCallback.BindLambda([this, TestSubscribeResultReceived](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel);
+		*TestSubscribeResultReceived = true;
+		TestFalse("Subscribe operation should not have failed", Result.Error);
+		TestEqual("Subscribe HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("Subscribe failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+	
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCallback]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCallback);
+	}, 0.1f));
+
+	//Wait until subscribe result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSubscribeResultReceived]() -> bool {
+		return *TestSubscribeResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestSubscribeResultReceived]()
+	{
+		if(!*TestSubscribeResultReceived)
+		{
+			AddError("Subscribe result callback was not received");
+		}
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestSignalMessage, TestCustomSignalType]()
@@ -259,7 +465,7 @@ bool FPubnubSignalWithSettingsTest::RunTest(const FString& Parameters)
 		FPubnubSignalSettings SignalSettings;
 		SignalSettings.CustomMessageType = TestCustomSignalType;
 		PubnubSubsystem->Signal(TestChannel, TestSignalMessage, SignalSettings);
-	}, 0.5f));
+	}, 0.1f));
 
 	//This will wait until signal is received or timeout is reached
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSignalReceived]() -> bool {
@@ -286,6 +492,8 @@ bool FPubnubUnsubscribeTest::RunTest(const FString& Parameters)
 	const FString TestUser = SDK_PREFIX + "test_user_unsubscribe";
 	const FString TestChannel = SDK_PREFIX + "test_channel_unsubscribe";
 	TSharedPtr<bool> TestMessageReceivedAfterUnsubscribe = MakeShared<bool>(false);
+	TSharedPtr<bool> TestSubscribeResultReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> TestUnsubscribeResultReceived = MakeShared<bool>(false);
 	
 	if(!InitTest())
 	{
@@ -313,23 +521,79 @@ bool FPubnubUnsubscribeTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	// Subscribe to the channel
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+	//Create subscribe result callback
+	FOnSubscribeOperationResponseNative SubscribeCallback;
+	SubscribeCallback.BindLambda([this, TestSubscribeResultReceived](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel);
-	}, 0.5f));
+		*TestSubscribeResultReceived = true;
+		TestFalse("Subscribe operation should not have failed", Result.Error);
+		TestEqual("Subscribe HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("Subscribe failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	//Create unsubscribe result callback
+	FOnSubscribeOperationResponseNative UnsubscribeCallback;
+	UnsubscribeCallback.BindLambda([this, TestUnsubscribeResultReceived](const FPubnubOperationResult& Result)
+	{
+		*TestUnsubscribeResultReceived = true;
+		TestFalse("Unsubscribe operation should not have failed", Result.Error);
+		TestEqual("Unsubscribe HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("Unsubscribe failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+
+	// Subscribe to the channel
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCallback]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCallback);
+	}, 0.1f));
+
+	//Wait until subscribe result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSubscribeResultReceived]() -> bool {
+		return *TestSubscribeResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestSubscribeResultReceived]()
+	{
+		if(!*TestSubscribeResultReceived)
+		{
+			AddError("Subscribe result callback was not received");
+		}
+	}, 0.1f));
 	
 	// Unsubscribe from the channel
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, UnsubscribeCallback]()
 	{
-		PubnubSubsystem->UnsubscribeFromChannel(TestChannel);
-	}, 1.0f));
+		PubnubSubsystem->UnsubscribeFromChannel(TestChannel, UnsubscribeCallback);
+	}, 0.1f));
+
+	//Wait until unsubscribe result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestUnsubscribeResultReceived]() -> bool {
+		return *TestUnsubscribeResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether unsubscribe result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUnsubscribeResultReceived]()
+	{
+		if(!*TestUnsubscribeResultReceived)
+		{
+			AddError("Unsubscribe result callback was not received");
+		}
+	}, 0.1f));
 	
 	// Publish a message to the channel we just unsubscribed from
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
 		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
-	}, 1.0f));
+	}, 0.1f));
 
 	// Wait for a period to see if the message is incorrectly received
 	// MAX_WAIT_TIME / 2.0f should be sufficient for a message to arrive if unsubscribe failed.
@@ -393,6 +657,7 @@ bool FPubnubPublishVariousMessageTypesTest::RunTest(const FString& Parameters)
 	TSharedPtr<int32> CurrentTestCaseIndex = MakeShared<int32>(-1); // Start at -1, will be incremented before use
 	TSharedPtr<bool> bExpectedMessageReceived = MakeShared<bool>(false);
 	TSharedPtr<FPubnubMessageData> LastReceivedMessageData = MakeShared<FPubnubMessageData>();
+	TSharedPtr<bool> TestSubscribeResultReceived = MakeShared<bool>(false);
 
 	PubnubSubsystem->OnMessageReceivedNative.AddLambda(
 		[this, TestCases, CurrentTestCaseIndex, bExpectedMessageReceived, LastReceivedMessageData, TestChannel](FPubnubMessageData ReceivedMessage)
@@ -407,10 +672,38 @@ bool FPubnubPublishVariousMessageTypesTest::RunTest(const FString& Parameters)
 				}
 			}
 		});
-	
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+
+	//Create subscribe result callback
+	FOnSubscribeOperationResponseNative SubscribeCallback;
+	SubscribeCallback.BindLambda([this, TestSubscribeResultReceived](const FPubnubOperationResult& Result)
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel);
+		*TestSubscribeResultReceived = true;
+		TestFalse("Subscribe operation should not have failed", Result.Error);
+		TestEqual("Subscribe HTTP status should be 200", Result.Status, 200);
+		
+		if (Result.Error)
+		{
+			AddError(FString::Printf(TEXT("Subscribe failed with error: %s"), *Result.ErrorMessage));
+		}
+	});
+	
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCallback]()
+	{
+		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCallback);
+	}, 0.1f));
+
+	//Wait until subscribe result is received
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([TestSubscribeResultReceived]() -> bool {
+		return *TestSubscribeResultReceived;
+	}, MAX_WAIT_TIME));
+
+	//Check whether subscribe result was received
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestSubscribeResultReceived]()
+	{
+		if(!*TestSubscribeResultReceived)
+		{
+			AddError("Subscribe result callback was not received");
+		}
 	}, 0.1f));
 
 
