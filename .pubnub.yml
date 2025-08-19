@@ -27,7 +27,7 @@ changelog:
       - type: improvement
         text: "Rework `SetMemberships` and `SetChannelMembers` to have inputs as `FPubnubMembershipInputData` and `FPubnubChannelMemberInputData` instead of raw strings."
       - type: improvement
-        text: "Remove deprecated "JSON" functions."
+        text: "Remove deprecated '_JSON' functions."
       - type: improvement
         text: "Add functionality to skip some false warnings logged from C-Core."
       - type: improvement
