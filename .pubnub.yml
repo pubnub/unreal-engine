@@ -3,6 +3,37 @@ schema: 1
 version: v0.3.3
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2025-08-19
+    version: v1.0.0
+    changes:
+      - type: feature
+        text: "Add code samples for all UE SDK functions - they can be found in `PubnubLibraryTests` module in `Samples` directory."
+      - type: feature
+        text: "Add encryption support for AES and Legacy Cryptors - compatible with other PubNub SDKs encryption."
+      - type: feature
+        text: "Introduce a unified result field `FPubnubOperationResult` in delegates across all SDK functions."
+      - type: feature
+        text: "Add a delegate that can be used to listen for Subscribe and Unsubscribe functions completion result."
+      - type: bug
+        text: "Fix bug that in some functions using UTF8 characters would break the function."
+      - type: bug
+        text: "Fix bug that using AppContext functions with `Limit` over 100 would crash the engine. Now `Limit` will be clamped to accepted values."
+      - type: bug
+        text: "Fix bug that in some cases `SetAuthToken` would not work correctly. Add correct lifetime management for the provided token."
+      - type: improvement
+        text: "Rework `ParseToken` to return permissions in a more user-friendly format."
+      - type: improvement
+        text: "Remove `CipherKey` from `FPubnubPublishSettings`."
+      - type: improvement
+        text: "Rework `SetMemberships` and `SetChannelMembers` to have inputs as `FPubnubMembershipInputData` and `FPubnubChannelMemberInputData` instead of raw strings."
+      - type: improvement
+        text: "Remove deprecated "_JSON" functions."
+      - type: improvement
+        text: "Add functionality to skip some false warnings logged from C-Core."
+      - type: improvement
+        text: "Refactor the code to be much cleaner and commented properly."
+      - type: improvement
+        text: "Add `supported-unreal-engine-versions` field to .pubnub.yml file, so it can be used in documentation. Revisit and fix all other entries in .pubnub.yml."
   - date: 2025-06-16
     version: v0.3.3
     changes:
