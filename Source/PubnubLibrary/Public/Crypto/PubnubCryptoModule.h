@@ -34,7 +34,6 @@
  * @note The module is designed to be used with PubNub's crypto module for automatic message
  *       encryption/decryption.
  */
- */
 UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubCryptoModule : public UObject, public IPubnubCryptoProviderInterface
 {
