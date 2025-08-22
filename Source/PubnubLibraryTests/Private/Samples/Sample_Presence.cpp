@@ -126,7 +126,7 @@ void ASample_Presence::OnListUsersFromChannelResponse_WithSettings(FPubnubOperat
 		//List all users with theirs states
 		for (auto const& [UserID, UserState] : Data.UsersState)
 		{
-			UE_LOG(LogTemp, Log, TEXT("UserID: %s, User State: %d"), *UserID, *UserState);
+			UE_LOG(LogTemp, Log, TEXT("UserID: %s, User State: %s"), *UserID, *UserState);
 		}
 	}
 }
