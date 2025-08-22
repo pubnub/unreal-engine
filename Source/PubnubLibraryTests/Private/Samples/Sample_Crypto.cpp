@@ -68,10 +68,9 @@ void ASample_Crypto::SetCryptoModuleSample()
 }
 
 // snippet.set_crypto_module_with_legacy
-// ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
-
 #include "Crypto/PubnubLegacyCryptor.h"
 
+// ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
 void ASample_Crypto::SetCryptoModuleWithLegacySample()
 {
 	// Get PubnubSubsystem from GameInstance
