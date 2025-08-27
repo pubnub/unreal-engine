@@ -42,9 +42,25 @@ enum class EPubnubMessageType : uint8
 	PMT_Action,
 	/* Message about Objects */
 	PMT_Objects,
-	/* Message about Files */
+	/* Message about Files - Files are not supported yet*/
 	PMT_Files,
 };
+
+UENUM(BlueprintType)
+enum class EPubnubListenerType : uint8
+{
+	PLT_Message					UMETA(DisplayName="Message"),
+	PLT_Signal					UMETA(DisplayName="Signal"),
+	PLT_MessageAction			UMETA(DisplayName="MessageAction"),
+	PLT_Objects					UMETA(DisplayName="Objects"),
+	/* Files are not supported yet */
+	PLT_Files					UMETA(DisplayName="Files"),
+	PLT_All						UMETA(DisplayName="All"),
+
+	Count
+};
+//Skip All in count (and files until not supported)
+ENUM_RANGE_BY_FIRST_AND_LAST(EPubnubListenerType, EPubnubListenerType::PLT_Message, EPubnubListenerType::PLT_Objects);
 
 UENUM(BlueprintType)
 enum class EPubnubMembershipSortType : uint8
@@ -90,4 +106,14 @@ enum class EPubnubSubscriptionStatus : uint8
 	PSS_DisconnectedUnexpectedly		UMETA(DisplayName="DisconnectedUnexpectedly"),
 	PSS_Disconnected					UMETA(DisplayName="Disconnected"),
 	PSS_SubscriptionChanged				UMETA(DisplayName="SubscriptionChanged")
+};
+
+
+UENUM(BlueprintType)
+enum class EPubnubEntityType : uint8
+{
+	PEnT_Channel				UMETA(DisplayName="Channel"),
+	PEnT_ChannelGroup			UMETA(DisplayName="ChannelGroup"),
+	PEnT_ChannelMetadata		UMETA(DisplayName="ChannelMetadata"),
+	PEnT_UserMetadata			UMETA(DisplayName="UserMetadata"),
 };

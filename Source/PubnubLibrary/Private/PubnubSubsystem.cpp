@@ -11,6 +11,7 @@
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "Threads/PubnubFunctionThread.h"
+#include "Entities/PubnubChannelEntity.h"
 
 DEFINE_LOG_CATEGORY(PubnubLog)
 
@@ -1151,6 +1152,14 @@ TScriptInterface<IPubnubCryptoProviderInterface> UPubnubSubsystem::GetCryptoModu
 	return nullptr;
 }
 
+UPubnubChannelEntity* UPubnubSubsystem::CreateChannel(FString ChannelID)
+{
+	UPubnubChannelEntity* Channel = NewObject<UPubnubChannelEntity>(this);
+	Channel->InitEntity(this);
+	Channel->EntityID = ChannelID;
+	return Channel;
+}
+
 FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
 {
 	FString Response;
@@ -1469,7 +1478,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FOnSubscribeOper
 	QuickActionThread->LockForSubscribeOperation();
 
 	//Create subscription for channel entity
-	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannel(ctx_ee, Channel, SubscribeSettings);
+	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForEntity(ctx_ee, Channel, EPubnubEntityType::PEnT_Channel, SubscribeSettings);
 
 	if(nullptr == Subscription)
 	{
@@ -1483,7 +1492,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FOnSubscribeOper
 	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
 		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(user_data);
-		FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
+		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, ThisSubsystem]()
 		{
 			if(ThisSubsystem)
@@ -1525,7 +1534,7 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString ChannelGroup, FOnSubscribeO
 	QuickActionThread->LockForSubscribeOperation();
 	
 	//Create subscription for channel group entity
-	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannelGroup(ctx_ee, ChannelGroup, SubscribeSettings);
+	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForEntity(ctx_ee, ChannelGroup, EPubnubEntityType::PEnT_ChannelGroup, SubscribeSettings);
 
 	if(nullptr == Subscription)
 	{
@@ -1539,7 +1548,7 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString ChannelGroup, FOnSubscribeO
 	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
 		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(user_data);
-		FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
+		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, ThisSubsystem]()
 		{
 			if(ThisSubsystem)
@@ -2663,27 +2672,6 @@ void UPubnubSubsystem::FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetc
 	PubnubFetchHistoryOptions.include_custom_message_type = FetchHistorySettings.IncludeCustomMessageType;
 	FetchHistorySettings.Start.IsEmpty() ? PubnubFetchHistoryOptions.start = NULL : nullptr;
 	FetchHistorySettings.End.IsEmpty() ? PubnubFetchHistoryOptions.end = NULL : nullptr;
-}
-
-FPubnubMessageData UPubnubSubsystem::UEMessageFromPubnub(pubnub_v2_message PubnubMessage)
-{
-	FPubnubMessageData MessageData;
-	MessageData.Message = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.payload);
-
-	//If message was just a string, we need to deserialize it
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(MessageData.Message, false))
-	{
-		MessageData.Message = UPubnubJsonUtilities::DeserializeString(MessageData.Message);
-	}
-	
-	MessageData.Channel = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.channel);
-	MessageData.UserID = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.publisher);
-	MessageData.Timetoken = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.tt);
-	MessageData.Metadata = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.metadata);
-	MessageData.MessageType = (EPubnubMessageType)(PubnubMessage.message_type);
-	MessageData.CustomMessageType = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.custom_message_type);
-	MessageData.MatchOrGroup = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.match_or_group);
-	return MessageData;
 }
 
 void UPubnubSubsystem::DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages)

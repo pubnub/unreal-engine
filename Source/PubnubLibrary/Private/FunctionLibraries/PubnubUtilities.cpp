@@ -3,6 +3,7 @@
 
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "Config/PubnubSettings.h"
+#include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Kismet/KismetMathLibrary.h"
 
 
@@ -118,6 +119,27 @@ FString UPubnubUtilities::GetNameFromFunctionMacro(FString FunctionName)
 	//Remove "_priv" from function name
 	FinalFunctionName.ReplaceInline(TEXT("_priv"), TEXT(""));
 	return FinalFunctionName;
+}
+
+FPubnubMessageData UPubnubUtilities::UEMessageFromPubnubMessage(pubnub_v2_message PubnubMessage)
+{
+	FPubnubMessageData MessageData;
+	MessageData.Message = PubnubCharMemBlockToString(PubnubMessage.payload);
+
+	//If message was just a string, we need to deserialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(MessageData.Message, false))
+	{
+		MessageData.Message = UPubnubJsonUtilities::DeserializeString(MessageData.Message);
+	}
+	
+	MessageData.Channel = PubnubCharMemBlockToString(PubnubMessage.channel);
+	MessageData.UserID = PubnubCharMemBlockToString(PubnubMessage.publisher);
+	MessageData.Timetoken = PubnubCharMemBlockToString(PubnubMessage.tt);
+	MessageData.Metadata = PubnubCharMemBlockToString(PubnubMessage.metadata);
+	MessageData.MessageType = (EPubnubMessageType)(PubnubMessage.message_type);
+	MessageData.CustomMessageType = PubnubCharMemBlockToString(PubnubMessage.custom_message_type);
+	MessageData.MatchOrGroup = PubnubCharMemBlockToString(PubnubMessage.match_or_group);
+	return MessageData;
 }
 
 FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude)
@@ -315,34 +337,27 @@ FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllIncl
 	return FinalString;
 }
 
-pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForChannel(pubnub_t* Context, FString Channel, FPubnubSubscribeSettings Options)
+pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForEntity(pubnub_t* Context, FString EntityID, EPubnubEntityType EntityType, FPubnubSubscribeSettings Options)
 {
 	pubnub_subscription_options_t PnOptions = pubnub_subscription_options_defopts();
 	PnOptions.receive_presence_events = Options.ReceivePresenceEvents;
 
-	FUTF8StringHolder ChannelHolder(Channel);
-
-	pubnub_channel_t* PubnubChannel = pubnub_channel_alloc(Context, ChannelHolder.Get());
+	FUTF8StringHolder EntityIDHolder(EntityID);
+	pubnub_entity_t* PubnubEntity = nullptr;
+	switch (EntityType)
+	{
+		case EPubnubEntityType::PEnT_Channel:
+			PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_alloc(Context, EntityIDHolder.Get()));
+		case EPubnubEntityType::PEnT_ChannelGroup:
+			PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_group_alloc(Context, EntityIDHolder.Get()));
+		case EPubnubEntityType::PEnT_ChannelMetadata:
+			PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_metadata_alloc(Context, EntityIDHolder.Get()));
+		case EPubnubEntityType::PEnT_UserMetadata:
+			PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_user_metadata_alloc(Context, EntityIDHolder.Get()));
+	}
+	pubnub_subscription_t* Subscription = pubnub_subscription_alloc(PubnubEntity, &PnOptions);
 	
-	pubnub_subscription_t* Subscription = pubnub_subscription_alloc((pubnub_entity_t*)PubnubChannel, &PnOptions);
-	
-	pubnub_entity_free((void**)&PubnubChannel);
-
-	return Subscription;
-}
-
-pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForChannelGroup(pubnub_t* Context, FString ChannelGroup, FPubnubSubscribeSettings Options)
-{
-	pubnub_subscription_options_t PnOptions = pubnub_subscription_options_defopts();
-	PnOptions.receive_presence_events = Options.ReceivePresenceEvents;
-
-	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
-
-	pubnub_channel_group_t* PubnubChannelGroup = pubnub_channel_group_alloc(Context, ChannelGroupHolder.Get());
-	
-	pubnub_subscription_t* Subscription = pubnub_subscription_alloc((pubnub_entity_t*)PubnubChannelGroup, &PnOptions);
-	
-	pubnub_entity_free((void**)&PubnubChannelGroup);
+	pubnub_entity_free((void**)&PubnubEntity);
 
 	return Subscription;
 }
@@ -354,48 +369,10 @@ bool UPubnubUtilities::EEAddListenerAndSubscribe(pubnub_subscription_t* Subscrip
 		UE_LOG(PubnubLog, Error, TEXT("EEAddListenerAndSubscribe Failed, PubnubSubsystem is invalid"));
 		return false;
 	}
-	
-	enum pubnub_res AddMessageListenerResult = pubnub_subscribe_add_subscription_listener(Subscription, PBSL_LISTENER_ON_MESSAGE, Callback, PubnubSubsystem);
-	if(PNR_OK != AddMessageListenerResult)
-	{
-		FString ResultString(pubnub_res_2_string(AddMessageListenerResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Add_subscription_listener (Message) failed with error: " + ResultString);
-		return false;
-	}
-	
-	enum pubnub_res AddSignalListenerResult = pubnub_subscribe_add_subscription_listener(Subscription, PBSL_LISTENER_ON_SIGNAL, Callback, PubnubSubsystem);
-	if(PNR_OK != AddSignalListenerResult)
-	{
-		FString ResultString(pubnub_res_2_string(AddSignalListenerResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Add_subscription_listener (Signal) failed with error: " + ResultString);
-		return false;
-	}
 
-	enum pubnub_res AddMessageActionListenerResult = pubnub_subscribe_add_subscription_listener(Subscription, PBSL_LISTENER_ON_MESSAGE_ACTION, Callback, PubnubSubsystem);
-	if(PNR_OK != AddMessageActionListenerResult)
-	{
-		FString ResultString(pubnub_res_2_string(AddMessageActionListenerResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Add_subscription_listener (Message_Action) failed with error: " + ResultString);
-		return false;
-	}
-	
-	enum pubnub_res AddObjectsListenerResult = pubnub_subscribe_add_subscription_listener(Subscription, PBSL_LISTENER_ON_OBJECTS, Callback, PubnubSubsystem);
-	if(PNR_OK != AddObjectsListenerResult)
-	{
-		FString ResultString(pubnub_res_2_string(AddObjectsListenerResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Add_subscription_listener (Objects) failed with error: " + ResultString);
-		return false;
-	}
+	EEAddListenersOfAllTypes(Subscription, Callback, PubnubSubsystem);
 
-	enum pubnub_res SubscribeResult = pubnub_subscribe_with_subscription(Subscription, nullptr);
-	if(PNR_OK != SubscribeResult)
-	{
-		FString ResultString(pubnub_res_2_string(SubscribeResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Subscribe_with_subscription failed with error: " + ResultString);
-		return false;
-	}
-
-	return true;
+	return EESubscribeWithSubscription(Subscription, FPubnubSubscriptionCursor());
 }
 
 bool UPubnubUtilities::EERemoveListenerAndUnsubscribe(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem)
@@ -411,46 +388,103 @@ bool UPubnubUtilities::EERemoveListenerAndUnsubscribe(pubnub_subscription_t** Su
 		PubnubSubsystem->PubnubError("Failed to unsubscribe. Passed subscription pointer is invalid");
 		return false;
 	}
-	
-	enum pubnub_res RemoveMessageListenerResult =  pubnub_subscribe_remove_subscription_listener(*SubscriptionPtr, PBSL_LISTENER_ON_MESSAGE, Callback, PubnubSubsystem);
-	if(PNR_OK != RemoveMessageListenerResult)
-	{
-		FString ResultString(pubnub_res_2_string(RemoveMessageListenerResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Remove_subscription_listener (Message) failed with error: " + ResultString);
-		return false;
-	}
 
-	enum pubnub_res RemoveSignalListenerResult =  pubnub_subscribe_remove_subscription_listener(*SubscriptionPtr, PBSL_LISTENER_ON_SIGNAL, Callback, PubnubSubsystem);
-	if(PNR_OK != RemoveSignalListenerResult)
-	{
-		FString ResultString(pubnub_res_2_string(RemoveSignalListenerResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Remove_subscription_listener (Signal) failed with error: " + ResultString);
-		return false;
-	}
+	EERemoveListenersOfAllTypes(SubscriptionPtr, Callback, PubnubSubsystem);
 
-	enum pubnub_res RemoveMessageActionListenerResult =  pubnub_subscribe_remove_subscription_listener(*SubscriptionPtr, PBSL_LISTENER_ON_MESSAGE_ACTION, Callback, PubnubSubsystem);
-	if(PNR_OK != RemoveMessageActionListenerResult)
-	{
-		FString ResultString(pubnub_res_2_string(RemoveMessageActionListenerResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Remove_subscription_listener (Message) failed with error: " + ResultString);
-		return false;
-	}
+	return EEUnsubscribeWithSubscription(SubscriptionPtr);
+}
 
-	enum pubnub_res RemoveObjectsListenerResult =  pubnub_subscribe_remove_subscription_listener(*SubscriptionPtr, PBSL_LISTENER_ON_OBJECTS, Callback, PubnubSubsystem);
-	if(PNR_OK != RemoveObjectsListenerResult)
+bool UPubnubUtilities::EESubscribeWithSubscription(pubnub_subscription_t* Subscription, FPubnubSubscriptionCursor Cursor)
+{
+	enum pubnub_res SubscribeResult;
+	if(!Cursor.Timetoken.IsEmpty() || Cursor.Region != 0)
 	{
-		FString ResultString(pubnub_res_2_string(RemoveObjectsListenerResult));
-		PubnubSubsystem->PubnubError("Failed to subscribe. Remove_subscription_listener (Objects) failed with error: " + ResultString);
-		return false;
+		FUTF8StringHolder CursorTimetokenHolder(Cursor.Timetoken);
+		pubnub_subscribe_cursor_t PubnubCursor =  pubnub_subscribe_cursor(CursorTimetokenHolder.Get());
+		PubnubCursor.region = Cursor.Region;
+		SubscribeResult = pubnub_subscribe_with_subscription(Subscription, &PubnubCursor);
+	}
+	else
+	{
+		SubscribeResult = pubnub_subscribe_with_subscription(Subscription, nullptr);
 	}
 	
-	enum pubnub_res UnsubscribeResult = pubnub_unsubscribe_with_subscription(SubscriptionPtr);
-	if(PNR_OK != UnsubscribeResult)
+	if(PNR_OK != SubscribeResult)
 	{
-		FString ResultString(pubnub_res_2_string(UnsubscribeResult));
-		PubnubSubsystem->PubnubError("Failed to unsubscribe. Unsubscribe_with_subscription failed with error: " + ResultString);
+		FString ResultString(pubnub_res_2_string(SubscribeResult));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to subscribe. Subscribe_with_subscription failed with error: %s"), *ResultString);
 		return false;
 	}
 
 	return true;
+}
+
+bool UPubnubUtilities::EEUnsubscribeWithSubscription(pubnub_subscription_t** SubscriptionPtr)
+{
+	enum pubnub_res UnsubscribeResult = pubnub_unsubscribe_with_subscription(SubscriptionPtr);
+	if(PNR_OK != UnsubscribeResult)
+	{
+		FString ResultString(pubnub_res_2_string(UnsubscribeResult));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to unsubscribe. Unsubscribe_with_subscription failed with error: "), *ResultString);
+		return false;
+	}
+	
+	return true;
+}
+
+bool UPubnubUtilities::EEAddListenerOfType(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller)
+{
+	if(ListenerType == EPubnubListenerType::PLT_All)
+	{
+		EEAddListenersOfAllTypes(Subscription, Callback, Caller);
+		return false;
+	}
+	
+	pubnub_subscribe_listener_type PubnubListenerType = static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(ListenerType));
+	enum pubnub_res AddMessageListenerResult = pubnub_subscribe_add_subscription_listener(Subscription, PubnubListenerType, Callback, Caller);
+
+	if(PNR_OK != AddMessageListenerResult)
+	{
+		FString ResultString(pubnub_res_2_string(AddMessageListenerResult));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to add listener of type %s. Error: %s "), *StaticEnum<EPubnubListenerType>()->GetNameStringByValue(static_cast<int64>(ListenerType)), *ResultString);
+		return false;
+	}
+	
+	return true;
+}
+
+void UPubnubUtilities::EEAddListenersOfAllTypes(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, UObject* Caller)
+{
+	for(EPubnubListenerType Type : TEnumRange<EPubnubListenerType>())
+	{
+		EEAddListenerOfType(Subscription, Callback, Type, Caller);
+	}
+}
+
+bool UPubnubUtilities::EERemoveListenerOfType(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller)
+{
+	if(ListenerType == EPubnubListenerType::PLT_All)
+	{
+		EERemoveListenersOfAllTypes(SubscriptionPtr, Callback, Caller);
+		return false;
+	}
+
+	pubnub_subscribe_listener_type PubnubListenerType = static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(ListenerType));
+	enum pubnub_res RemoveMessageActionListenerResult =  pubnub_subscribe_remove_subscription_listener(*SubscriptionPtr, PubnubListenerType, Callback, Caller);
+	if(PNR_OK != RemoveMessageActionListenerResult)
+	{
+		FString ResultString(pubnub_res_2_string(RemoveMessageActionListenerResult));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to remove listener of type %s. Error: %s "), *StaticEnum<EPubnubListenerType>()->GetNameStringByValue(static_cast<int64>(ListenerType)), *ResultString);
+		return false;
+	}
+
+	return true;
+}
+
+void UPubnubUtilities::EERemoveListenersOfAllTypes(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UObject* Caller)
+{
+	for(EPubnubListenerType Type : TEnumRange<EPubnubListenerType>())
+	{
+		EERemoveListenerOfType(SubscriptionPtr, Callback, Type, Caller);
+	}
 }

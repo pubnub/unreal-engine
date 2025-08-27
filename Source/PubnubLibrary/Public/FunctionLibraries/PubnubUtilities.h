@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "Async/Async.h"
 #include "PubnubStructLibrary.h"
+#include "PubnubEnumLibrary.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PubnubUtilities.generated.h"
 
@@ -30,6 +31,7 @@ struct FUTF8StringHolder
 		return Converter.Get();
 	}
 };
+
 
 /**
  * 
@@ -65,6 +67,8 @@ public:
 	//This is to remove class name and "_priv" from __FUNCTION__ macro output
 	static FString GetNameFromFunctionMacro(FString FunctionName);
 
+	static FPubnubMessageData UEMessageFromPubnubMessage(pubnub_v2_message PubnubMessage);
+
 	/* CONVERTING INCLUDES */
 	
 	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);
@@ -83,11 +87,15 @@ public:
 	
 	/* C-CORE EVENT ENGINE HELPERS */
 
-	static pubnub_subscription_t* EEGetSubscriptionForChannel(pubnub_t* Context, FString Channel, FPubnubSubscribeSettings Options);
-	static pubnub_subscription_t* EEGetSubscriptionForChannelGroup(pubnub_t* Context, FString ChannelGroup, FPubnubSubscribeSettings Options);
+	static pubnub_subscription_t* EEGetSubscriptionForEntity(pubnub_t* Context, FString EntityID, EPubnubEntityType EntityType, FPubnubSubscribeSettings Options);
 	static bool EEAddListenerAndSubscribe(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem);
 	static bool EERemoveListenerAndUnsubscribe(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem);
-
+	static bool EESubscribeWithSubscription(pubnub_subscription_t* Subscription, FPubnubSubscriptionCursor Cursor);
+	static bool EEUnsubscribeWithSubscription(pubnub_subscription_t** SubscriptionPtr);
+	static bool EEAddListenerOfType(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller);
+	static void EEAddListenersOfAllTypes(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, UObject* Caller);
+	static bool EERemoveListenerOfType(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller);
+	static void EERemoveListenersOfAllTypes(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UObject* Caller);
 
 	/* TEMPLATES TO CALL PUBNUB DELEGATES */
 

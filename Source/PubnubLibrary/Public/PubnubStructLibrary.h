@@ -758,3 +758,14 @@ struct FPubnubEncryptedData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString EncryptedData = "";
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Metadata = "";
 };
+
+USTRUCT(BlueprintType)
+struct FPubnubSubscriptionCursor
+{
+	GENERATED_BODY()
+
+	/**Time from which messages should be retrieved */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Timetoken = "";
+	/**Region of the messages */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Region = 0;
+};

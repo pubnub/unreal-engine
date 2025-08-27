@@ -20,6 +20,7 @@ class UPubnubSettings;
 class FPubnubFunctionThread;
 class UPubnubChatSystem;
 class UPubnubAesCryptor;
+class UPubnubChannelEntity;
 
 struct CCoreSubscriptionData
 {
@@ -33,8 +34,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessa
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorNative, FString ErrorMessage, EPubnubErrorType ErrorType);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, FPubnubSubscriptionStatusData, StatusData);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubResponse, FString, JsonResponse);
-DECLARE_DELEGATE_OneParam(FOnPubnubResponseNative, FString JsonResponse);
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, FPubnubOperationResult, Result, FPubnubMessageData, PublishedMessage);
 DECLARE_DELEGATE_TwoParams(FOnPublishMessageResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage);
@@ -109,6 +108,8 @@ UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
+
+	friend class UPubnubSubscription;
 	
 public:
 
@@ -1681,6 +1682,12 @@ public:
 
 #pragma endregion
 
+#pragma region ENTITIES
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
+	UPubnubChannelEntity* CreateChannel(FString ChannelID);
+
+#pragma endregion 
 	
 private:
 	
@@ -1813,7 +1820,6 @@ private:
 	void HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersFromChannelSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
 	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
 	void FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
-	static FPubnubMessageData UEMessageFromPubnub(pubnub_v2_message PubnubMessage);
 
 	void DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages);
 	
