@@ -461,6 +461,44 @@ bool UPubnubUtilities::EEUnsubscribeWithSubscription(pubnub_subscription_t** Sub
 	return true;
 }
 
+bool UPubnubUtilities::EESubscribeWithSubscriptionSet(pubnub_subscription_set_t* SubscriptionSet, FPubnubSubscriptionCursor Cursor)
+{
+	enum pubnub_res SubscribeResult;
+	if(!Cursor.Timetoken.IsEmpty() || Cursor.Region != 0)
+	{
+		FUTF8StringHolder CursorTimetokenHolder(Cursor.Timetoken);
+		pubnub_subscribe_cursor_t PubnubCursor =  pubnub_subscribe_cursor(CursorTimetokenHolder.Get());
+		PubnubCursor.region = Cursor.Region;
+		SubscribeResult = pubnub_subscribe_with_subscription_set(SubscriptionSet, &PubnubCursor);
+	}
+	else
+	{
+		SubscribeResult = pubnub_subscribe_with_subscription_set(SubscriptionSet, nullptr);
+	}
+	
+	if(PNR_OK != SubscribeResult)
+	{
+		FString ResultString(pubnub_res_2_string(SubscribeResult));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to subscribe. Subscribe_with_subscription_set failed with error: %s"), *ResultString);
+		return false;
+	}
+
+	return true;
+}
+
+bool UPubnubUtilities::EEUnsubscribeWithSubscriptionSet(pubnub_subscription_set_t** SubscriptionSetPtr)
+{
+	enum pubnub_res UnsubscribeResult = pubnub_unsubscribe_with_subscription_set(SubscriptionSetPtr);
+	if(PNR_OK != UnsubscribeResult)
+	{
+		FString ResultString(pubnub_res_2_string(UnsubscribeResult));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to unsubscribe. Unsubscribe_with_subscription failed with error: "), *ResultString);
+		return false;
+	}
+	
+	return true;
+}
+
 bool UPubnubUtilities::EEAddSubscriptionListenerOfType(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller)
 {
 	if(ListenerType == EPubnubListenerType::PLT_All)

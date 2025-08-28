@@ -101,6 +101,9 @@ void UPubnubSubsystem::DeinitPubnub()
 	ChannelGroupSubscriptions.Empty();
 	IsUserIDSet = false;
 	delete[] AuthTokenBuffer;
+
+	//Notify that Deinitialization is finished
+	OnPubnubSubsystemDeinitialized.Broadcast();
 }
 
 void UPubnubSubsystem::SetUserID(FString UserID)
@@ -1719,6 +1722,16 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv(FOnSubscribeOperationResponseNati
 	QuickActionThread->LockForSubscribeOperation();
 
 	pubnub_unsubscribe_all(ctx_ee);
+
+	//Clean up all subscriptions
+	for(auto Subscription : ChannelSubscriptions)
+	{
+		pubnub_subscription_free(&Subscription.Value.Subscription);
+	}
+	for(auto Subscription : ChannelGroupSubscriptions)
+	{
+		pubnub_subscription_free(&Subscription.Value.Subscription);
+	}
 	
 	ChannelSubscriptions.Empty();
 	ChannelGroupSubscriptions.Empty();

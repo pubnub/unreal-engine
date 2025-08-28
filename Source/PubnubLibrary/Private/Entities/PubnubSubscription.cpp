@@ -6,11 +6,49 @@
 #include "FunctionLibraries/PubnubUtilities.h"
 
 
+void UPubnubSubscriptionBase::BeginDestroy()
+{
+	CleanUpSubscription();
+	
+	Super::BeginDestroy();
+}
+
+void UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription"));
+	}
+	
+	if(!CCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, internal C-Core subscription is invalid"));
+	}
+
+	UPubnubUtilities::EESubscribeWithSubscription(CCoreSubscription, Cursor);
+}
+
+void UPubnubSubscription::Unsubscribe()
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription"));
+	}
+	
+	if(!CCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, internal C-Core subscription is invalid"));
+	}
+
+	UPubnubUtilities::EEUnsubscribeWithSubscription(&CCoreSubscription);
+}
+
 void UPubnubSubscription::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings)
 {
 	if(!Entity)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, Entity is invalid"));
+		return;
 	}
 	PubnubSubsystem = InPubnubSubsystem;
 	CCoreSubscription = UPubnubUtilities::EEGetSubscriptionForEntity(InPubnubSubsystem->ctx_ee, Entity->EntityID, Entity->EntityType, InSubscribeSettings);
@@ -100,34 +138,59 @@ void UPubnubSubscription::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, 
 	UPubnubUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackSignals, EPubnubListenerType::PLT_Signal, this);
 	UPubnubUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackObjects, EPubnubListenerType::PLT_Objects, this);
 	UPubnubUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, this);
+
+	//Bind to OnPubnubSubsystemDeinitialized so subscription is properly Cleaned up, when it's not needed
+	PubnubSubsystem->OnPubnubSubsystemDeinitialized.AddDynamic(this, &UPubnubSubscription::CleanUpSubscription);
+
+	//Now we are fully initialized
+	IsInitialized = true;
 }
 
-void UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscription::CleanUpSubscription()
 {
-	if(!CCoreSubscription)
+	if(!IsInitialized) {return;}
+
+	if(CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, subscription is invalid"));
+		pubnub_subscription_free(&CCoreSubscription);
 	}
 
-	UPubnubUtilities::EESubscribeWithSubscription(CCoreSubscription, Cursor);
-}
-
-void UPubnubSubscription::Unsubscribe()
-{
-	if(!CCoreSubscription)
+	if(PubnubSubsystem)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, subscription is invalid"));
+		PubnubSubsystem->OnPubnubSubsystemDeinitialized.RemoveDynamic(this, &UPubnubSubscription::CleanUpSubscription);
 	}
 
-	UPubnubUtilities::EEUnsubscribeWithSubscription(&CCoreSubscription);
+	IsInitialized = false;
 }
 
 void UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
 {
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription"));
+	}
+	
+	if(!CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, internal C-Core subscription set is invalid"));
+	}
+
+	UPubnubUtilities::EESubscribeWithSubscriptionSet(CCoreSubscriptionSet, Cursor);
 }
 
 void UPubnubSubscriptionSet::Unsubscribe()
 {
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription"));
+	}
+	
+	if(!CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, internal C-Core subscription set is invalid"));
+	}
+
+	UPubnubUtilities::EEUnsubscribeWithSubscriptionSet(&CCoreSubscriptionSet);
 }
 
 void UPubnubSubscriptionSet::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings)
@@ -135,6 +198,7 @@ void UPubnubSubscriptionSet::InitSubscription(UPubnubSubsystem* InPubnubSubsyste
 	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, at least one Channel or ChannelGroup is needed."));
+		return;
 	}
 	PubnubSubsystem = InPubnubSubsystem;
 	CCoreSubscriptionSet = UPubnubUtilities::EEGetSubscriptionSetForEntities(InPubnubSubsystem->ctx_ee, Channels, ChannelGroups, InSubscribeSettings);
@@ -225,4 +289,27 @@ void UPubnubSubscriptionSet::InitSubscription(UPubnubSubsystem* InPubnubSubsyste
 	UPubnubUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackSignals, EPubnubListenerType::PLT_Signal, this);
 	UPubnubUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackObjects, EPubnubListenerType::PLT_Objects, this);
 	UPubnubUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, this);
+
+	//Bind to OnPubnubSubsystemDeinitialized so subscription is properly Cleaned up, when it's not needed
+	PubnubSubsystem->OnPubnubSubsystemDeinitialized.AddDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
+
+	//Now we are fully initialized
+	IsInitialized = true;
+}
+
+void UPubnubSubscriptionSet::CleanUpSubscription()
+{
+	if(!IsInitialized) {return;}
+
+	if(CCoreSubscriptionSet)
+	{
+		pubnub_subscription_set_free(&CCoreSubscriptionSet);
+	}
+
+	if(PubnubSubsystem)
+	{
+		PubnubSubsystem->OnPubnubSubsystemDeinitialized.RemoveDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
+	}
+
+	IsInitialized = false;
 }

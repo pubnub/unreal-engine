@@ -33,6 +33,9 @@ struct CCoreSubscriptionData
 	pubnub_subscription_t* Subscription;
 };
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubSubsystemDeinitialized);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnMessageReceivedNative, const FPubnubMessageData& Message);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
@@ -100,7 +103,6 @@ DECLARE_DYNAMIC_DELEGATE_FourParams(FOnSetChannelMembersResponse, FPubnubOperati
 DECLARE_DELEGATE_FourParams(FOnSetChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnRemoveChannelMembersResponse, FPubnubOperationResult, Result, const TArray<FPubnubChannelMemberData>&, MembersData, FString, PageNext, FString, PagePrev);
 DECLARE_DELEGATE_FourParams(FOnRemoveChannelMembersResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
-
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnGetMessageActionsResponse, FPubnubOperationResult, Result, const TArray<FPubnubMessageActionData>&, MessageActions);
 DECLARE_DELEGATE_TwoParams(FOnGetMessageActionsResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnAddMessageActionResponse, FPubnubOperationResult, Result, FPubnubMessageActionData, MessageActionData);
@@ -122,7 +124,11 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	/**Global listener for all messages received on subscribed channels */
+	/**Delegate that is called after PubnubSubsystem is deinitialized*/
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	FOnPubnubSubsystemDeinitialized OnPubnubSubsystemDeinitialized;
+
+	/**Global listener for all messages received on subscribed channels*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnMessageReceived OnMessageReceived;
 
@@ -356,6 +362,7 @@ public:
 
 	/**
 	 * Unsubscribes from all subscribed channels and groups - basically stop listening for any messages.
+	 * NOTE:: This also unsubscribes all subscribed Subscription and SubscriptionSet Objects.
 	 * 
 	 * @param OnUnsubscribeFromAllResponse Optional delegate to listen for the unsubscribe result.
 	 */

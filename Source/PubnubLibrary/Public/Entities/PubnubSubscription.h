@@ -61,10 +61,16 @@ public:
 	virtual void Subscribe(FPubnubSubscriptionCursor Cursor){};
 	virtual void Unsubscribe(){};
 
+	//Do proper clean up when object is being destroyed
+	virtual void BeginDestroy() override;
+
 protected:
 	
 	UPROPERTY()
 	UPubnubSubsystem* PubnubSubsystem = nullptr;
+
+	bool IsInitialized = false;
+	virtual void CleanUpSubscription(){};
 	
 };
 
@@ -78,6 +84,7 @@ class PUBNUBLIBRARY_API UPubnubSubscription: public UPubnubSubscriptionBase
 
 public:
 	
+	
 	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
 	virtual void Subscribe(FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor()) override;
 
@@ -89,7 +96,8 @@ private:
 	pubnub_subscription_t* CCoreSubscription = nullptr;
 
 	void InitSubscription(UPubnubSubsystem* InPubnubSubsystem, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings);
-	
+	UFUNCTION()
+	virtual void CleanUpSubscription() override;
 };
 
 
@@ -114,5 +122,6 @@ private:
 	pubnub_subscription_set_t* CCoreSubscriptionSet = nullptr;
 
 	void InitSubscription(UPubnubSubsystem* InPubnubSubsystem, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings);
-	
+	UFUNCTION()
+	virtual void CleanUpSubscription() override;
 };
