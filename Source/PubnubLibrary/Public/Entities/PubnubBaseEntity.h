@@ -29,6 +29,7 @@ public:
 	EPubnubEntityType EntityType = EPubnubEntityType::PEnT_Channel;
 
 protected:
+	
 	UPROPERTY()
 	UPubnubSubsystem* PubnubSubsystem = nullptr;
 

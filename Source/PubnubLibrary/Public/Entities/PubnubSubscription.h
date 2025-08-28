@@ -98,6 +98,21 @@ class PUBNUBLIBRARY_API UPubnubSubscriptionSet: public UPubnubSubscriptionBase
 {
 	GENERATED_BODY()
 
+	friend class UPubnubSubsystem;
+
+public:
 	
+	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
+	virtual void Subscribe(FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor()) override;
+
+	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
+	virtual void Unsubscribe() override;
+	
+private:
+	
+
+	pubnub_subscription_set_t* CCoreSubscriptionSet = nullptr;
+
+	void InitSubscription(UPubnubSubsystem* InPubnubSubsystem, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings);
 	
 };

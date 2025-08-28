@@ -20,7 +20,12 @@ class UPubnubSettings;
 class FPubnubFunctionThread;
 class UPubnubChatSystem;
 class UPubnubAesCryptor;
+class UPubnubBaseEntity;
 class UPubnubChannelEntity;
+class UPubnubChannelGroupEntity;
+class UPubnubChannelMetadataEntity;
+class UPubnubUserMetadataEntity;
+class UPubnubSubscriptionSet;
 
 struct CCoreSubscriptionData
 {
@@ -110,6 +115,7 @@ class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 	friend class UPubnubSubscription;
+	friend class UPubnubSubscriptionSet;
 	
 public:
 
@@ -858,6 +864,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	void SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
 	
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
@@ -904,8 +911,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	void GetUserMetadata(FString User, FOnGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
-
-
+	
 
 	/**
 	 * Removes all metadata associated with a specified User from the PubNub App Context.
@@ -1685,7 +1691,22 @@ public:
 #pragma region ENTITIES
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
-	UPubnubChannelEntity* CreateChannel(FString ChannelID);
+	UPubnubChannelEntity* CreateChannelEntity(FString ChannelID);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
+	UPubnubChannelGroupEntity* CreateChannelGroupEntity(FString ChannelID);
+	
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
+	UPubnubChannelMetadataEntity* CreateChannelMetadataEntity(FString ChannelID);
+	
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
+	UPubnubUserMetadataEntity* CreateUserMetadataEntity(FString ChannelID);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
+	UPubnubSubscriptionSet* CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings = FPubnubSubscribeSettings());
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
+	UPubnubSubscriptionSet* CreateSubscriptionSetFromEntities(TArray<UPubnubBaseEntity*> Entities, FPubnubSubscribeSettings SubscriptionSettings = FPubnubSubscribeSettings());
 
 #pragma endregion 
 	

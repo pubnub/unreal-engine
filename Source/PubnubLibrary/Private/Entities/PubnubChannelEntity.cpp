@@ -37,3 +37,13 @@ void UPubnubChannelEntity::Signal(FString Message, FPubnubSignalSettings SignalS
 {
 	PubnubSubsystem->Signal(EntityID, Message, SignalSettings);
 }
+
+void UPubnubChannelEntity::ListUsersFromChannel(FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+{
+	PubnubSubsystem->ListUsersFromChannel(EntityID, ListUsersFromChannelResponse, ListUsersFromChannelSettings);
+}
+
+void UPubnubChannelEntity::ListUsersFromChannel(FOnListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+{
+	PubnubSubsystem->ListUsersFromChannel(EntityID, NativeCallback, ListUsersFromChannelSettings);
+}

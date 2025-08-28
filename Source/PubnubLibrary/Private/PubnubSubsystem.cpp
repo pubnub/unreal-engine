@@ -5,13 +5,18 @@
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
+#include "Threads/PubnubFunctionThread.h"
 #include "PubnubInternalMacros.h"
 #include "Crypto/PubnubAesCryptor.h"
 #include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
-#include "Threads/PubnubFunctionThread.h"
+#include "Entities/PubnubBaseEntity.h"
 #include "Entities/PubnubChannelEntity.h"
+#include "Entities/PubnubChannelGroupEntity.h"
+#include "Entities/PubnubChannelMetadataEntity.h"
+#include "Entities/PubnubUserMetadataEntity.h"
+#include "Entities/PubnubSubscription.h"
 
 DEFINE_LOG_CATEGORY(PubnubLog)
 
@@ -1152,12 +1157,74 @@ TScriptInterface<IPubnubCryptoProviderInterface> UPubnubSubsystem::GetCryptoModu
 	return nullptr;
 }
 
-UPubnubChannelEntity* UPubnubSubsystem::CreateChannel(FString ChannelID)
+UPubnubChannelEntity* UPubnubSubsystem::CreateChannelEntity(FString ChannelID)
 {
+	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelID, nullptr);
+	
 	UPubnubChannelEntity* Channel = NewObject<UPubnubChannelEntity>(this);
 	Channel->InitEntity(this);
 	Channel->EntityID = ChannelID;
 	return Channel;
+}
+
+UPubnubChannelGroupEntity* UPubnubSubsystem::CreateChannelGroupEntity(FString ChannelID)
+{
+	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelID, nullptr);
+	
+	UPubnubChannelGroupEntity* ChannelGroup = NewObject<UPubnubChannelGroupEntity>(this);
+	ChannelGroup->InitEntity(this);
+	ChannelGroup->EntityID = ChannelID;
+	return ChannelGroup;
+}
+
+UPubnubChannelMetadataEntity* UPubnubSubsystem::CreateChannelMetadataEntity(FString ChannelID)
+{
+	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelID, nullptr);
+	
+	UPubnubChannelMetadataEntity* ChannelMetadata = NewObject<UPubnubChannelMetadataEntity>(this);
+	ChannelMetadata->InitEntity(this);
+	ChannelMetadata->EntityID = ChannelID;
+	return ChannelMetadata;
+}
+
+UPubnubUserMetadataEntity* UPubnubSubsystem::CreateUserMetadataEntity(FString ChannelID)
+{
+	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelID, nullptr);
+	
+	UPubnubUserMetadataEntity* UserMetadata = NewObject<UPubnubUserMetadataEntity>(this);
+	UserMetadata->InitEntity(this);
+	UserMetadata->EntityID = ChannelID;
+	return UserMetadata;
+}
+
+UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings)
+{
+	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
+	{
+		PubnubError("[CreateSubscriptionSet]: at least one Channel or ChannelGroup is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
+	}
+	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+	SubscriptionSet->InitSubscription(this, Channels, ChannelGroups, SubscriptionSettings);
+	return SubscriptionSet;
+}
+
+UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSetFromEntities(TArray<UPubnubBaseEntity*> Entities, FPubnubSubscribeSettings SubscriptionSettings)
+{
+	if(Entities.IsEmpty())
+	{
+		PubnubError("[CreateSubscriptionSetFromEntities]: at least one Entity is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
+	}
+	TArray<FString> Channels, ChannelGroups;
+
+	//Group up entities for those that subscribe to Channel and ChannelGroup
+	for(auto Entity : Entities)
+	{
+		Entity->EntityType == EPubnubEntityType::PEnT_ChannelGroup? ChannelGroups.Add(Entity->EntityID) : Channels.Add(Entity->EntityID);
+	}
+	
+	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+	SubscriptionSet->InitSubscription(this, Channels, ChannelGroups, SubscriptionSettings);
+	return SubscriptionSet;
 }
 
 FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
