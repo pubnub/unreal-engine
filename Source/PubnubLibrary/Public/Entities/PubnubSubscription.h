@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "PubnubSubsystem.h"
-#include "PubnubEnumLibrary.h"
 #include "PubnubStructLibrary.h"
 #include "PubnubSubscription.generated.h"
 
@@ -80,7 +79,9 @@ class PUBNUBLIBRARY_API UPubnubSubscription: public UPubnubSubscriptionBase
 {
 	GENERATED_BODY()
 
+	friend class UPubnubSubsystem;
 	friend class UPubnubBaseEntity;
+	friend class UPubnubSubscriptionSet;
 
 public:
 	
@@ -91,11 +92,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
 	virtual void Unsubscribe() override;
 
+	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
+	UPubnubSubscriptionSet* AddSubscription(UPubnubSubscription* Subscription);
+
 private:
 
 	pubnub_subscription_t* CCoreSubscription = nullptr;
 
 	void InitSubscription(UPubnubSubsystem* InPubnubSubsystem, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings);
+	void InitWithCCoreSubscription(UPubnubSubsystem* InPubnubSubsystem, pubnub_subscription_t* InCCoreSubscription);
+	void InternalInit();
+
 	UFUNCTION()
 	virtual void CleanUpSubscription() override;
 };
@@ -107,21 +114,45 @@ class PUBNUBLIBRARY_API UPubnubSubscriptionSet: public UPubnubSubscriptionBase
 	GENERATED_BODY()
 
 	friend class UPubnubSubsystem;
+	friend class UPubnubSubscription;
 
 public:
 	
-	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
 	virtual void Subscribe(FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor()) override;
 
-	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
 	virtual void Unsubscribe() override;
+
+	//This will subscribe automatically if set is subscribed
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
+	void AddSubscription(UPubnubSubscription* Subscription);
+
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
+	void RemoveSubscription(UPubnubSubscription* Subscription);
+
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
+	void AddSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet);
+
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
+	void RemoveSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|SubscriptionSet")
+	TArray<UPubnubSubscription*> GetSubscriptions() { return Subscriptions;};
 	
 private:
+
+	UPROPERTY()
+	TArray<UPubnubSubscription*> Subscriptions;
 	
 
 	pubnub_subscription_set_t* CCoreSubscriptionSet = nullptr;
 
-	void InitSubscription(UPubnubSubsystem* InPubnubSubsystem, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings);
+	void InitSubscriptionSet(UPubnubSubsystem* InPubnubSubsystem, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings);
+	void InitWithSubscriptions(UPubnubSubsystem* InPubnubSubsystem, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2);
+	void InitWithCCoreSubscriptionSet(UPubnubSubsystem* InPubnubSubsystem, pubnub_subscription_set_t* InCCoreSubscriptionSet);
+	void InternalInit();
 	UFUNCTION()
 	virtual void CleanUpSubscription() override;
 };
+

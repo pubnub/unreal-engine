@@ -17,12 +17,14 @@ void UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription"));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
 	}
 	
 	if(!CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, internal C-Core subscription is invalid"));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription is invalid."));
+		return;
 	}
 
 	UPubnubUtilities::EESubscribeWithSubscription(CCoreSubscription, Cursor);
@@ -32,27 +34,79 @@ void UPubnubSubscription::Unsubscribe()
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription"));
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
 	}
 	
 	if(!CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, internal C-Core subscription is invalid"));
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: internal C-Core subscription is invalid."));
+		return;
 	}
 
 	UPubnubUtilities::EEUnsubscribeWithSubscription(&CCoreSubscription);
+}
+
+UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription* Subscription)
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return nullptr;
+	}
+
+	if(!CCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: internal C-Core subscription is invalid."));
+		return nullptr;
+	}
+
+	if(!Subscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Can't add invalid subscription."));
+		return nullptr;
+	}
+
+	if(!Subscription->CCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
+		return nullptr;
+	}
+
+	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+	SubscriptionSet->InitWithSubscriptions(PubnubSubsystem, this, Subscription);
+	
+	return SubscriptionSet;
 }
 
 void UPubnubSubscription::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings)
 {
 	if(!Entity)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, Entity is invalid"));
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, Entity is invalid."));
 		return;
 	}
 	PubnubSubsystem = InPubnubSubsystem;
 	CCoreSubscription = UPubnubUtilities::EEGetSubscriptionForEntity(InPubnubSubsystem->ctx_ee, Entity->EntityID, Entity->EntityType, InSubscribeSettings);
 
+	InternalInit();
+}
+
+void UPubnubSubscription::InitWithCCoreSubscription(UPubnubSubsystem* InPubnubSubsystem, pubnub_subscription_t* InCCoreSubscription)
+{
+	if(!InCCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, InCCoreSubscription is invalid."));
+		return;
+	}
+	PubnubSubsystem = InPubnubSubsystem;
+	CCoreSubscription = InCCoreSubscription;
+
+	InternalInit();
+}
+
+void UPubnubSubscription::InternalInit()
+{
 	// Create callbacks for each Listener type
 
 	// Messages and Presence
@@ -167,12 +221,14 @@ void UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription"));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
 	}
 	
 	if(!CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't subscribe, internal C-Core subscription set is invalid"));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription set is invalid."));
+		return;
 	}
 
 	UPubnubUtilities::EESubscribeWithSubscriptionSet(CCoreSubscriptionSet, Cursor);
@@ -182,18 +238,140 @@ void UPubnubSubscriptionSet::Unsubscribe()
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription"));
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
 	}
 	
 	if(!CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't unsubscribe, internal C-Core subscription set is invalid"));
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: internal C-Core subscription set is invalid."));
+		return;
 	}
 
 	UPubnubUtilities::EEUnsubscribeWithSubscriptionSet(&CCoreSubscriptionSet);
 }
 
-void UPubnubSubscriptionSet::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings)
+void UPubnubSubscriptionSet::AddSubscription(UPubnubSubscription* Subscription)
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
+	}
+
+	if(!CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: internal C-Core subscription set is invalid."));
+		return;
+	}
+
+	if(!Subscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Can't add invalid subscription."));
+		return;
+	}
+
+	if(!Subscription->CCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
+		return;
+	}
+
+	Subscriptions.Add(Subscription);
+
+	pubnub_subscription_set_add(CCoreSubscriptionSet, Subscription->CCoreSubscription);
+}
+
+void UPubnubSubscriptionSet::RemoveSubscription(UPubnubSubscription* Subscription)
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
+	}
+
+	if(!CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: internal C-Core subscription set is invalid."));
+		return;
+	}
+
+	if(!Subscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: Can't remove invalid subscription."));
+		return;
+	}
+
+	if(!Subscription->CCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
+		return;
+	}
+
+	Subscriptions.Remove(Subscription);
+
+	pubnub_subscription_set_remove(CCoreSubscriptionSet, &Subscription->CCoreSubscription);
+}
+
+void UPubnubSubscriptionSet::AddSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet)
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
+	}
+
+	if(!CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: internal C-Core subscription set is invalid."));
+		return;
+	}
+
+	if(!SubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: Can't add invalid subscription set."));
+		return;
+	}
+
+	if(!SubscriptionSet->CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: Provided Subscription Set's internal C-Core subscription set is invalid."));
+		return;
+	}
+
+	pubnub_subscription_set_union(CCoreSubscriptionSet, SubscriptionSet->CCoreSubscriptionSet);
+}
+
+void UPubnubSubscriptionSet::RemoveSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet)
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
+	}
+
+	if(!CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: internal C-Core subscription set is invalid."));
+		return;
+	}
+
+	if(!SubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: Can't remove invalid subscription set."));
+		return;
+	}
+
+	if(!SubscriptionSet->CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: Provided Subscription Set's internal C-Core subscription set is invalid."));
+		return;
+	}
+
+	pubnub_subscription_set_subtract(CCoreSubscriptionSet, SubscriptionSet->CCoreSubscriptionSet);
+}
+
+void UPubnubSubscriptionSet::InitSubscriptionSet(UPubnubSubsystem* InPubnubSubsystem, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings)
 {
 	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
 	{
@@ -203,7 +381,41 @@ void UPubnubSubscriptionSet::InitSubscription(UPubnubSubsystem* InPubnubSubsyste
 	PubnubSubsystem = InPubnubSubsystem;
 	CCoreSubscriptionSet = UPubnubUtilities::EEGetSubscriptionSetForEntities(InPubnubSubsystem->ctx_ee, Channels, ChannelGroups, InSubscribeSettings);
 
+	InternalInit();
+}
+
+void UPubnubSubscriptionSet::InitWithSubscriptions(UPubnubSubsystem* InPubnubSubsystem, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2)
+{
+	if(!Subscription1 || !Subscription2 || !Subscription1->CCoreSubscription || !Subscription2->CCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, One of provided subscriptions is invalid."));
+		return;
+	}
 	
+	PubnubSubsystem = InPubnubSubsystem;
+	
+	CCoreSubscriptionSet = pubnub_subscription_set_alloc_with_subscriptions(Subscription1->CCoreSubscription, Subscription2->CCoreSubscription, nullptr);
+	Subscriptions.Add(Subscription1);
+	Subscriptions.Add(Subscription2);
+	
+	InternalInit();
+}
+
+void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubSubsystem* InPubnubSubsystem, pubnub_subscription_set_t* InCCoreSubscriptionSet)
+{
+	if(!InCCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, InCCoreSubscriptionSet is invalid."));
+		return;
+	}
+	PubnubSubsystem = InPubnubSubsystem;
+	CCoreSubscriptionSet = InCCoreSubscriptionSet;
+
+	InternalInit();
+}
+
+void UPubnubSubscriptionSet::InternalInit()
+{
 	// Create callbacks for each Listener type
 
 	// Messages and Presence

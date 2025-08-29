@@ -12,6 +12,7 @@
 
 
 class UPubnubSettings;
+class UPubnubSubscription;
 
 /** This struct is an utility for more convenient converting FString into const char* while keeping char memory alive
  * Will not break UTF8 characters.

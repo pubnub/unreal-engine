@@ -1698,16 +1698,16 @@ public:
 #pragma region ENTITIES
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
-	UPubnubChannelEntity* CreateChannelEntity(FString ChannelID);
+	UPubnubChannelEntity* CreateChannelEntity(FString Channel);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
-	UPubnubChannelGroupEntity* CreateChannelGroupEntity(FString ChannelID);
+	UPubnubChannelGroupEntity* CreateChannelGroupEntity(FString ChannelGroup);
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
-	UPubnubChannelMetadataEntity* CreateChannelMetadataEntity(FString ChannelID);
+	UPubnubChannelMetadataEntity* CreateChannelMetadataEntity(FString Channel);
 	
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
-	UPubnubUserMetadataEntity* CreateUserMetadataEntity(FString ChannelID);
+	UPubnubUserMetadataEntity* CreateUserMetadataEntity(FString User);
 
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	UPubnubSubscriptionSet* CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings = FPubnubSubscribeSettings());
@@ -1715,11 +1715,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	UPubnubSubscriptionSet* CreateSubscriptionSetFromEntities(TArray<UPubnubBaseEntity*> Entities, FPubnubSubscribeSettings SubscriptionSettings = FPubnubSubscribeSettings());
 
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
+	TArray<UPubnubSubscription*> GetActiveSubscriptions();
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
+	TArray<UPubnubSubscriptionSet*> GetActiveSubscriptionSets();
+
 #pragma endregion 
 	
 private:
 	
-	//Thread for quick operations, generally everything except subscribe
+	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
 	FPubnubFunctionThread* QuickActionThread = nullptr;
 
 	//Pubnub context for the most of the pubnub operations
@@ -1730,7 +1736,8 @@ private:
 	//Auth token has to be kept alive for the lifetime of the sdk, so this is the container for it
 	char* AuthTokenBuffer = nullptr;
 	size_t AuthTokenLength = 0;
-	
+
+	//Storage for global subscriptions (not from Entities)
 	TMap<FString, CCoreSubscriptionData> ChannelSubscriptions;
 	TMap<FString, CCoreSubscriptionData> ChannelGroupSubscriptions;
 	

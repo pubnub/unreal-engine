@@ -1160,44 +1160,44 @@ TScriptInterface<IPubnubCryptoProviderInterface> UPubnubSubsystem::GetCryptoModu
 	return nullptr;
 }
 
-UPubnubChannelEntity* UPubnubSubsystem::CreateChannelEntity(FString ChannelID)
+UPubnubChannelEntity* UPubnubSubsystem::CreateChannelEntity(FString Channel)
 {
-	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelID, nullptr);
+	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
 	
-	UPubnubChannelEntity* Channel = NewObject<UPubnubChannelEntity>(this);
-	Channel->InitEntity(this);
-	Channel->EntityID = ChannelID;
-	return Channel;
+	UPubnubChannelEntity* ChannelEntity = NewObject<UPubnubChannelEntity>(this);
+	ChannelEntity->InitEntity(this);
+	ChannelEntity->EntityID = Channel;
+	return ChannelEntity;
 }
 
-UPubnubChannelGroupEntity* UPubnubSubsystem::CreateChannelGroupEntity(FString ChannelID)
+UPubnubChannelGroupEntity* UPubnubSubsystem::CreateChannelGroupEntity(FString ChannelGroup)
 {
-	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelID, nullptr);
+	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelGroup, nullptr);
 	
-	UPubnubChannelGroupEntity* ChannelGroup = NewObject<UPubnubChannelGroupEntity>(this);
-	ChannelGroup->InitEntity(this);
-	ChannelGroup->EntityID = ChannelID;
-	return ChannelGroup;
+	UPubnubChannelGroupEntity* ChannelGroupEntity = NewObject<UPubnubChannelGroupEntity>(this);
+	ChannelGroupEntity->InitEntity(this);
+	ChannelGroupEntity->EntityID = ChannelGroup;
+	return ChannelGroupEntity;
 }
 
-UPubnubChannelMetadataEntity* UPubnubSubsystem::CreateChannelMetadataEntity(FString ChannelID)
+UPubnubChannelMetadataEntity* UPubnubSubsystem::CreateChannelMetadataEntity(FString Channel)
 {
-	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelID, nullptr);
+	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
 	
-	UPubnubChannelMetadataEntity* ChannelMetadata = NewObject<UPubnubChannelMetadataEntity>(this);
-	ChannelMetadata->InitEntity(this);
-	ChannelMetadata->EntityID = ChannelID;
-	return ChannelMetadata;
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = NewObject<UPubnubChannelMetadataEntity>(this);
+	ChannelMetadataEntity->InitEntity(this);
+	ChannelMetadataEntity->EntityID = Channel;
+	return ChannelMetadataEntity;
 }
 
-UPubnubUserMetadataEntity* UPubnubSubsystem::CreateUserMetadataEntity(FString ChannelID)
+UPubnubUserMetadataEntity* UPubnubSubsystem::CreateUserMetadataEntity(FString User)
 {
-	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelID, nullptr);
+	PUBNUB_RETURN_IF_FIELD_EMPTY(User, nullptr);
 	
-	UPubnubUserMetadataEntity* UserMetadata = NewObject<UPubnubUserMetadataEntity>(this);
-	UserMetadata->InitEntity(this);
-	UserMetadata->EntityID = ChannelID;
-	return UserMetadata;
+	UPubnubUserMetadataEntity* UserMetadataEntity = NewObject<UPubnubUserMetadataEntity>(this);
+	UserMetadataEntity->InitEntity(this);
+	UserMetadataEntity->EntityID = User;
+	return UserMetadataEntity;
 }
 
 UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings)
@@ -1207,7 +1207,7 @@ UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSet(TArray<FString> 
 		PubnubError("[CreateSubscriptionSet]: at least one Channel or ChannelGroup is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
 	}
 	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
-	SubscriptionSet->InitSubscription(this, Channels, ChannelGroups, SubscriptionSettings);
+	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
 	return SubscriptionSet;
 }
 
@@ -1226,8 +1226,71 @@ UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSetFromEntities(TArr
 	}
 	
 	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
-	SubscriptionSet->InitSubscription(this, Channels, ChannelGroups, SubscriptionSettings);
+	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
 	return SubscriptionSet;
+}
+
+TArray<UPubnubSubscription*> UPubnubSubsystem::GetActiveSubscriptions()
+{
+	size_t Count;
+	pubnub_subscription** CCoreSubs =  pubnub_subscriptions(ctx_ee, &Count);
+	if (!CCoreSubs || Count == 0) {
+		return {};
+	}
+
+	//Free CCoreSubs when the function ends
+	ON_SCOPE_EXIT { free(CCoreSubs); };
+
+	TArray<UPubnubSubscription*> Subscriptions;
+
+	for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
+	{
+		UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
+		Subscription->InitWithCCoreSubscription(this, CCoreSub);
+		Subscriptions.Add(Subscription);
+	}
+
+	return Subscriptions;
+}
+
+TArray<UPubnubSubscriptionSet*> UPubnubSubsystem::GetActiveSubscriptionSets()
+{
+	size_t Count;
+	pubnub_subscription_set** CCoreSubSets =  pubnub_subscription_sets(ctx_ee, &Count);
+	if (!CCoreSubSets || Count == 0) {
+		return {};
+	}
+
+	//Free CCoreSubs when the function ends
+	ON_SCOPE_EXIT { free(CCoreSubSets); };
+
+	TArray<UPubnubSubscriptionSet*> SubscriptionSets;
+
+	for(pubnub_subscription_set_t* CCoreSubsSet : MakeArrayView(CCoreSubSets, Count))
+	{
+		UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+		SubscriptionSet->InitWithCCoreSubscriptionSet(this, CCoreSubsSet);
+		SubscriptionSets.Add(SubscriptionSet);
+		
+		size_t SubsCount;
+
+		pubnub_subscription** CCoreSubs = pubnub_subscription_set_subscriptions(CCoreSubsSet, &SubsCount);
+		if (!CCoreSubs || Count == 0) {
+			continue;
+		}
+
+		//Free CCoreSubs when the function ends
+		ON_SCOPE_EXIT { free(CCoreSubs); };
+
+		for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
+		{
+			UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
+			Subscription->InitWithCCoreSubscription(this, CCoreSub);
+			SubscriptionSet->Subscriptions.Add(Subscription);
+		}
+	}
+
+	return SubscriptionSets;
 }
 
 FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)

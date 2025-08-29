@@ -3,6 +3,7 @@
 
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "Config/PubnubSettings.h"
+#include "Entities/PubnubSubscription.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Kismet/KismetMathLibrary.h"
 
