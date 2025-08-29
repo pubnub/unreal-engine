@@ -13,38 +13,65 @@ void UPubnubSubscriptionBase::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscription::Subscribe(FOnSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
 {
-	if(!IsInitialized)
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSubscribeResponse](FPubnubOperationResult Result)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
-		return;
-	}
-	
-	if(!CCoreSubscription)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription is invalid."));
-		return;
-	}
+		OnSubscribeResponse.ExecuteIfBound(Result);
+	});
 
-	UPubnubUtilities::EESubscribeWithSubscription(CCoreSubscription, Cursor);
+	Subscribe(NativeCallback, Cursor);
 }
 
-void UPubnubSubscription::Unsubscribe()
+void UPubnubSubscription::Subscribe(FOnSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 	
 	if(!CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: internal C-Core subscription is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription set is invalid."));
+		return;
+	}
+	
+	PubnubSubsystem->SubscribeWithSubscription(this, Cursor, NativeCallback);
+}
+
+void UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
+{
+	Subscribe(nullptr, Cursor);
+}
+
+void UPubnubSubscription::Unsubscribe(FOnSubscribeOperationResponse OnUnsubscribeResponse)
+{
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnUnsubscribeResponse](FPubnubOperationResult Result)
+	{
+		OnUnsubscribeResponse.ExecuteIfBound(Result);
+	});
+
+	Unsubscribe(NativeCallback);
+}
+
+void UPubnubSubscription::Unsubscribe(FOnSubscribeOperationResponseNative NativeCallback)
+{
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		return;
+	}
+	
+	if(!CCoreSubscription)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: internal C-Core subscription set is invalid."));
 		return;
 	}
 
-	UPubnubUtilities::EEUnsubscribeWithSubscription(&CCoreSubscription);
+	PubnubSubsystem->UnsubscribeWithSubscription(this, NativeCallback);
 }
 
 UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription* Subscription)
@@ -217,7 +244,18 @@ void UPubnubSubscription::CleanUpSubscription()
 	IsInitialized = false;
 }
 
-void UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscriptionSet::Subscribe(FOnSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
+{
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSubscribeResponse](FPubnubOperationResult Result)
+	{
+		OnSubscribeResponse.ExecuteIfBound(Result);
+	});
+
+	Subscribe(NativeCallback, Cursor);
+}
+
+void UPubnubSubscriptionSet::Subscribe(FOnSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
 	if(!IsInitialized)
 	{
@@ -230,11 +268,27 @@ void UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
 		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription set is invalid."));
 		return;
 	}
-
-	UPubnubUtilities::EESubscribeWithSubscriptionSet(CCoreSubscriptionSet, Cursor);
+	
+	PubnubSubsystem->SubscribeWithSubscriptionSet(this, Cursor, NativeCallback);
 }
 
-void UPubnubSubscriptionSet::Unsubscribe()
+void UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
+{
+	Subscribe(nullptr, Cursor);
+}
+
+void UPubnubSubscriptionSet::Unsubscribe(FOnSubscribeOperationResponse OnUnsubscribeResponse)
+{
+	FOnSubscribeOperationResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnUnsubscribeResponse](FPubnubOperationResult Result)
+	{
+		OnUnsubscribeResponse.ExecuteIfBound(Result);
+	});
+
+	Unsubscribe(NativeCallback);
+}
+
+void UPubnubSubscriptionSet::Unsubscribe(FOnSubscribeOperationResponseNative NativeCallback)
 {
 	if(!IsInitialized)
 	{
@@ -248,7 +302,7 @@ void UPubnubSubscriptionSet::Unsubscribe()
 		return;
 	}
 
-	UPubnubUtilities::EEUnsubscribeWithSubscriptionSet(&CCoreSubscriptionSet);
+	PubnubSubsystem->UnsubscribeWithSubscriptionSet(this, NativeCallback);
 }
 
 void UPubnubSubscriptionSet::AddSubscription(UPubnubSubscription* Subscription)

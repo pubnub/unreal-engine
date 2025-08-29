@@ -2779,6 +2779,78 @@ void UPubnubSubsystem::GetMessageActions_priv(FString Channel, FOnGetMessageActi
 	UPubnubUtilities::CallPubnubDelegate(OnGetMessageActionsResponse, Result, MessageActions);
 }
 
+void UPubnubSubsystem::SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSubscribeResponse);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(OnSubscribeResponse);
+
+	QuickActionThread->AddFunctionToQueue( [this, Subscription, Cursor, OnSubscribeResponse]
+	{
+		if(!UPubnubUtilities::EESubscribeWithSubscription(Subscription->CCoreSubscription, Cursor))
+		{
+			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
+			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+		}
+	});
+}
+
+void UPubnubSubsystem::SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSubscribeResponse);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(OnSubscribeResponse);
+
+	QuickActionThread->AddFunctionToQueue( [this, SubscriptionSet, Cursor, OnSubscribeResponse]
+	{
+		if(!UPubnubUtilities::EESubscribeWithSubscriptionSet(SubscriptionSet->CCoreSubscriptionSet, Cursor))
+		{
+			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
+			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+		}
+	});
+}
+
+void UPubnubSubsystem::UnsubscribeWithSubscription(UPubnubSubscription* Subscription, FOnSubscribeOperationResponseNative OnUnsubscribeResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnUnsubscribeResponse);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(OnUnsubscribeResponse);
+
+	QuickActionThread->AddFunctionToQueue( [this, Subscription, OnUnsubscribeResponse]
+	{
+		if(!UPubnubUtilities::EEUnsubscribeWithSubscription(&Subscription->CCoreSubscription))
+		{
+			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnUnsubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
+			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+		}
+	});
+}
+
+void UPubnubSubsystem::UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FOnSubscribeOperationResponseNative OnUnsubscribeResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnUnsubscribeResponse);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(OnUnsubscribeResponse);
+
+	QuickActionThread->AddFunctionToQueue( [this, SubscriptionSet, OnUnsubscribeResponse]
+	{
+		if(!UPubnubUtilities::EEUnsubscribeWithSubscriptionSet(&SubscriptionSet->CCoreSubscriptionSet))
+		{
+			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnUnsubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
+			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+		}
+	});
+}
+
 void UPubnubSubsystem::PublishUESettingsToPubnubPublishOptions(FPubnubPublishSettings &PublishSettings, pubnub_publish_options& PubnubPublishOptions)
 {
 	PubnubPublishOptions.store = PublishSettings.StoreInHistory;

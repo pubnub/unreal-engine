@@ -57,8 +57,8 @@ public:
 	FOnPubnubAnyMessageType FOnPubnubAnyMessageType;
 	FOnPubnubAnyMessageTypeNative FOnPubnubAnyMessageTypeNative;
 
-	virtual void Subscribe(FPubnubSubscriptionCursor Cursor){};
-	virtual void Unsubscribe(){};
+	//virtual void Subscribe(FPubnubSubscriptionCursor Cursor){};
+	//virtual void Unsubscribe(){};
 
 	//Do proper clean up when object is being destroyed
 	virtual void BeginDestroy() override;
@@ -85,12 +85,16 @@ class PUBNUBLIBRARY_API UPubnubSubscription: public UPubnubSubscriptionBase
 
 public:
 	
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnSubscribeResponse"))
+	virtual void Subscribe(FOnSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
 	
-	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
-	virtual void Subscribe(FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor()) override;
+	void Subscribe(FOnSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
+	void Subscribe(FPubnubSubscriptionCursor Cursor);
 
-	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
-	virtual void Unsubscribe() override;
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnUnsubscribeResponse"))
+	void Unsubscribe(FOnSubscribeOperationResponse OnUnsubscribeResponse);
+
+	void Unsubscribe(FOnSubscribeOperationResponseNative NativeCallback);
 
 	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
 	UPubnubSubscriptionSet* AddSubscription(UPubnubSubscription* Subscription);
@@ -118,11 +122,16 @@ class PUBNUBLIBRARY_API UPubnubSubscriptionSet: public UPubnubSubscriptionBase
 
 public:
 	
-	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
-	virtual void Subscribe(FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor()) override;
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnSubscribeResponse"))
+	virtual void Subscribe(FOnSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
+	
+	void Subscribe(FOnSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
+	void Subscribe(FPubnubSubscriptionCursor Cursor);
 
-	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
-	virtual void Unsubscribe() override;
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnUnsubscribeResponse"))
+	void Unsubscribe(FOnSubscribeOperationResponse OnUnsubscribeResponse);
+
+	void Unsubscribe(FOnSubscribeOperationResponseNative NativeCallback);
 
 	//This will subscribe automatically if set is subscribed
 	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
@@ -155,4 +164,3 @@ private:
 	UFUNCTION()
 	virtual void CleanUpSubscription() override;
 };
-
