@@ -41,7 +41,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnPubnubAnyMessageTypeNative, const FPubnub
  * and events from PubNub channels. It manages the lifecycle of subscriptions
  * and provides both Blueprint-compatible and native C++ event handling.
  */
-UCLASS(Blueprintable, Abstract)
+UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubSubscriptionBase : public UObject
 {
 	GENERATED_BODY()

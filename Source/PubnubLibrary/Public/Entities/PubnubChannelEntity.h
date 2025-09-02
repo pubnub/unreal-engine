@@ -16,7 +16,7 @@ class UPubnubSubsystem;
  * It enables channel-specific operations such as publishing messages, sending signals,
  * and managing presence information through Blueprint-compatible functions and delegates.
  */
-UCLASS(Blueprintable, Abstract)
+UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubChannelEntity : public UPubnubBaseEntity
 {
 	GENERATED_BODY()
