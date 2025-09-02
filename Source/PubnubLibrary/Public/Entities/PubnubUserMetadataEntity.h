@@ -10,7 +10,11 @@ class UPubnubSubsystem;
 
 
 /**
- *
+ * Represents a PubNub User Metadata entity in Unreal Engine.
+ * 
+ * This class provides a complete interface for managing PubNub App Context user metadata
+ * within Unreal Engine. It enables operations for setting, retrieving, and removing metadata
+ * associated with specific users through Blueprint-compatible functions and delegates.
  */
 UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubUserMetadataEntity : public UPubnubBaseEntity

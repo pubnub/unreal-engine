@@ -10,7 +10,12 @@ class UPubnubSubsystem;
 
 
 /**
- *
+ * Represents a PubNub Channel Group entity in Unreal Engine.
+ * 
+ * This class provides a complete interface for managing PubNub channel groups within
+ * Unreal Engine. It enables operations for adding/removing channels to/from groups,
+ * listing channels in a group, and managing channel group lifecycle through 
+ * Blueprint-compatible functions and delegates.
  */
 UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubChannelGroupEntity : public UPubnubBaseEntity

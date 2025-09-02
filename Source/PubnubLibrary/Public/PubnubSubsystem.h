@@ -1698,27 +1698,115 @@ public:
 
 #pragma region ENTITIES
 
+	/**
+	 * Creates a PubNub Channel entity for the specified channel name.
+	 * 
+	 * The returned channel entity provides access to channel-specific operations
+	 * such as publishing messages, sending signals, and managing presence information.
+	 * It also allows creating subscriptions to receive real-time updates from the channel.
+	 * 
+	 * @param Channel The name of the channel to create an entity for.
+	 * @return A new channel entity configured for the specified channel.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
 	UPubnubChannelEntity* CreateChannelEntity(FString Channel);
 
+	/**
+	 * Creates a PubNub Channel Group entity for the specified channel group name.
+	 * 
+	 * The returned channel group entity provides access to channel group-specific operations
+	 * such as adding/removing channels, listing channels in the group, and managing the
+	 * group lifecycle. It also allows creating subscriptions to receive real-time updates
+	 * from all channels in the group.
+	 * 
+	 * @param ChannelGroup The name of the channel group to create an entity for.
+	 * @return A new channel group entity configured for the specified channel group.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
 	UPubnubChannelGroupEntity* CreateChannelGroupEntity(FString ChannelGroup);
 	
+	/**
+	 * Creates a PubNub Channel Metadata entity for the specified channel.
+	 * 
+	 * The returned channel metadata entity provides access to App Context operations
+	 * for managing metadata associated with the specified channel. This includes
+	 * setting, retrieving, and removing channel metadata information.
+	 * 
+	 * @note Requires the App Context add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The name of the channel to create a metadata entity for.
+	 * @return A new channel metadata entity configured for the specified channel.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
 	UPubnubChannelMetadataEntity* CreateChannelMetadataEntity(FString Channel);
 	
+	/**
+	 * Creates a PubNub User Metadata entity for the specified user.
+	 * 
+	 * The returned user metadata entity provides access to App Context operations
+	 * for managing metadata associated with the specified user. This includes
+	 * setting, retrieving, and removing user metadata information.
+	 * 
+	 * @note Requires the App Context add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param User The user identifier to create a metadata entity for.
+	 * @return A new user metadata entity configured for the specified user.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
 	UPubnubUserMetadataEntity* CreateUserMetadataEntity(FString User);
 
+	/**
+	 * Creates a subscription set for multiple channels and channel groups.
+	 * 
+	 * The returned subscription set allows you to manage subscriptions to multiple
+	 * entities as a single unit, enabling efficient subscribe/unsubscribe operations
+	 * across all specified channels and channel groups simultaneously.
+	 * 
+	 * @note At least one Channel or ChannelGroup is needed to create SubscriptionSet.
+	 * 
+	 * @param Channels Array of channel names to include in the subscription set.
+	 * @param ChannelGroups Array of channel group names to include in the subscription set.
+	 * @param SubscriptionSettings Optional settings to configure the subscription behavior.
+	 * @return A new subscription set configured for the specified channels and channel groups.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	UPubnubSubscriptionSet* CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings = FPubnubSubscribeSettings());
 
+	/**
+	 * Creates a subscription set from an array of existing PubNub entities.
+	 * 
+	 * The returned subscription set allows you to manage subscriptions to multiple
+	 * entities as a single unit. This is useful when you already have entity objects
+	 * and want to group their subscriptions together.
+	 * 
+	 * @param Entities Array of PubNub entity objects to include in the subscription set.
+	 * @param SubscriptionSettings Optional settings to configure the subscription behavior.
+	 * @return A new subscription set configured for the specified entities.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	UPubnubSubscriptionSet* CreateSubscriptionSetFromEntities(TArray<UPubnubBaseEntity*> Entities, FPubnubSubscribeSettings SubscriptionSettings = FPubnubSubscribeSettings());
 
+	/**
+	 * Gets all currently active individual subscriptions.
+	 * 
+	 * Returns an array of all subscription objects that are currently active
+	 * and receiving real-time updates from PubNub. This includes subscriptions
+	 * created directly from entities, but excludes those managed by subscription sets.
+	 * 
+	 * @return Array of all active individual subscriptions.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	TArray<UPubnubSubscription*> GetActiveSubscriptions();
 
+	/**
+	 * Gets all currently active subscription sets.
+	 * 
+	 * Returns an array of all subscription set objects that are currently active
+	 * and managing multiple subscriptions as a single unit. Each subscription set
+	 * may contain multiple individual subscriptions.
+	 * 
+	 * @return Array of all active subscription sets.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	TArray<UPubnubSubscriptionSet*> GetActiveSubscriptionSets();
 

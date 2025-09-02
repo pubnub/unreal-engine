@@ -10,9 +10,13 @@ class UPubnubSubsystem;
 
 
 /**
- *
+ * Represents a PubNub Channel entity in Unreal Engine.
+ * 
+ * This class provides a complete interface for PubNub channel operations within Unreal Engine.
+ * It enables channel-specific operations such as publishing messages, sending signals,
+ * and managing presence information through Blueprint-compatible functions and delegates.
  */
-UCLASS(Blueprintable)
+UCLASS(Blueprintable, Abstract)
 class PUBNUBLIBRARY_API UPubnubChannelEntity : public UPubnubBaseEntity
 {
 	GENERATED_BODY()

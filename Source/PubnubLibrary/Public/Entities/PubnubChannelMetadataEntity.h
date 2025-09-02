@@ -10,7 +10,11 @@ class UPubnubSubsystem;
 
 
 /**
- *
+ * Represents a PubNub Channel Metadata entity in Unreal Engine.
+ * 
+ * This class provides a complete interface for managing PubNub App Context channel metadata
+ * within Unreal Engine. It enables operations for setting, retrieving, and removing metadata
+ * associated with specific channels through Blueprint-compatible functions and delegates.
  */
 UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubChannelMetadataEntity : public UPubnubBaseEntity
