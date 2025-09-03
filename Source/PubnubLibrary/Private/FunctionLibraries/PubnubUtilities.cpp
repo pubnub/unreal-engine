@@ -365,7 +365,7 @@ pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForEntity(pubnub_t* Co
 	}
 	pubnub_subscription_t* Subscription = pubnub_subscription_alloc(PubnubEntity, &PnOptions);
 	
-	pubnub_entity_free((void**)&PubnubEntity);
+	pubnub_entity_free(reinterpret_cast<void**>(&PubnubEntity));
 
 	return Subscription;
 }
@@ -393,7 +393,7 @@ pubnub_subscription_set_t* UPubnubUtilities::EEGetSubscriptionSetForEntities(pub
 
 	for(pubnub_entity_t*& Entity : PubnubEntities)
 	{
-		pubnub_entity_free((void**)&Entity);
+		pubnub_entity_free(reinterpret_cast<void**>(&Entity));
 	}
 	
 	return SubscriptionSet;
