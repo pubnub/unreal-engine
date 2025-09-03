@@ -386,7 +386,7 @@ pubnub_subscription_set_t* UPubnubUtilities::EEGetSubscriptionSetForEntities(pub
 	for(FString ChannelGroup : ChannelGroups)
 	{
 		FUTF8StringHolder EntityIDHolder(ChannelGroup);
-		PubnubEntities.Add(reinterpret_cast<pubnub_entity_t*>(pubnub_channel_alloc(Context, EntityIDHolder.Get())));
+		PubnubEntities.Add(reinterpret_cast<pubnub_entity_t*>(pubnub_channel_group_alloc(Context, EntityIDHolder.Get())));
 	}
 
 	pubnub_subscription_set_t* SubscriptionSet = pubnub_subscription_set_alloc_with_entities(PubnubEntities.GetData(), PubnubEntities.Num(), &PnOptions);

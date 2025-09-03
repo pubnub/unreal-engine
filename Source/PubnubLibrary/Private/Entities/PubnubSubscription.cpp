@@ -28,7 +28,7 @@ void UPubnubSubscription::Subscribe(FOnSubscribeOperationResponseNative NativeCa
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 	
@@ -61,7 +61,7 @@ void UPubnubSubscription::Unsubscribe(FOnSubscribeOperationResponseNative Native
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 	
@@ -108,6 +108,11 @@ UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription
 
 void UPubnubSubscription::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings)
 {
+	if(!InPubnubSubsystem)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, PubnubSubsystem is invalid."));
+		return;
+	}
 	if(!Entity)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, Entity is invalid."));
@@ -121,6 +126,11 @@ void UPubnubSubscription::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, 
 
 void UPubnubSubscription::InitWithCCoreSubscription(UPubnubSubsystem* InPubnubSubsystem, pubnub_subscription_t* InCCoreSubscription)
 {
+	if(!InPubnubSubsystem)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, PubnubSubsystem is invalid."));
+		return;
+	}
 	if(!InCCoreSubscription)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, InCCoreSubscription is invalid."));
