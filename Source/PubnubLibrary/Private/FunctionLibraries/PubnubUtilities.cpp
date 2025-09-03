@@ -347,14 +347,21 @@ pubnub_subscription_t* UPubnubUtilities::EEGetSubscriptionForEntity(pubnub_t* Co
 	pubnub_entity_t* PubnubEntity = nullptr;
 	switch (EntityType)
 	{
-		case EPubnubEntityType::PEnT_Channel:
-			PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_alloc(Context, EntityIDHolder.Get()));
-		case EPubnubEntityType::PEnT_ChannelGroup:
-			PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_group_alloc(Context, EntityIDHolder.Get()));
-		case EPubnubEntityType::PEnT_ChannelMetadata:
-			PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_metadata_alloc(Context, EntityIDHolder.Get()));
-		case EPubnubEntityType::PEnT_UserMetadata:
-			PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_user_metadata_alloc(Context, EntityIDHolder.Get()));
+	case EPubnubEntityType::PEnT_Channel:
+		PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_alloc(Context, EntityIDHolder.Get()));
+		break;
+	case EPubnubEntityType::PEnT_ChannelGroup:
+		PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_group_alloc(Context, EntityIDHolder.Get()));
+		break;
+	case EPubnubEntityType::PEnT_ChannelMetadata:
+		PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_channel_metadata_alloc(Context, EntityIDHolder.Get()));
+		break;
+	case EPubnubEntityType::PEnT_UserMetadata:
+		PubnubEntity = reinterpret_cast<pubnub_entity_t*>(pubnub_user_metadata_alloc(Context, EntityIDHolder.Get()));
+		break;
+	default:
+		UE_LOG(PubnubLog, Error, TEXT("Unknown entity type: %d"), (int32)EntityType);
+		return nullptr;
 	}
 	pubnub_subscription_t* Subscription = pubnub_subscription_alloc(PubnubEntity, &PnOptions);
 	
