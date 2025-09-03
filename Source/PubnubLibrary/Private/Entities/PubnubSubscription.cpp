@@ -189,8 +189,8 @@ void UPubnubSubscription::InternalInit()
 		{
 			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S))
 			{
-				S->OnPubnubMessage.Broadcast(MessageData);
-				S->OnPubnubMessageNative.Broadcast(MessageData);
+				S->OnPubnubObjectEvent.Broadcast(MessageData);
+				S->OnPubnubObjectEventNative.Broadcast(MessageData);
 				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
 				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
 			}
