@@ -3,6 +3,17 @@ schema: 1
 version: v1.0.0
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2025-09-11
+    version: 1.1.0
+    changes:
+      - type: feature
+        text: "Add implementation of Entities: `Channel`, `ChannelGroup`, `ChannelMetadata`, `UserMetadata` with all related PubNub functions."
+      - type: feature
+        text: "Add implementation of `Subscription` and `SubscriptionSet` objects. Add all necessary operations to add, remove, get subscriptions."
+      - type: feature
+        text: "Add implementation of Event Listeners - user can now bind a delegate to subscription for every event type separately or all of them at once."
+      - type: bug
+        text: "Clean up properly all C-Core subscriptions after `UnsubscribeFromAll`."
   - date: 2025-08-19
     version: v1.0.0
     changes:
