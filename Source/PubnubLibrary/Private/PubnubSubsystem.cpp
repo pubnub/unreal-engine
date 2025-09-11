@@ -5,12 +5,18 @@
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
+#include "Threads/PubnubFunctionThread.h"
 #include "PubnubInternalMacros.h"
 #include "Crypto/PubnubAesCryptor.h"
 #include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
-#include "Threads/PubnubFunctionThread.h"
+#include "Entities/PubnubBaseEntity.h"
+#include "Entities/PubnubChannelEntity.h"
+#include "Entities/PubnubChannelGroupEntity.h"
+#include "Entities/PubnubChannelMetadataEntity.h"
+#include "Entities/PubnubUserMetadataEntity.h"
+#include "Entities/PubnubSubscription.h"
 
 DEFINE_LOG_CATEGORY(PubnubLog)
 
@@ -95,6 +101,9 @@ void UPubnubSubsystem::DeinitPubnub()
 	ChannelGroupSubscriptions.Empty();
 	IsUserIDSet = false;
 	delete[] AuthTokenBuffer;
+
+	//Notify that Deinitialization is finished
+	OnPubnubSubsystemDeinitialized.Broadcast();
 }
 
 void UPubnubSubsystem::SetUserID(FString UserID)
@@ -1151,6 +1160,139 @@ TScriptInterface<IPubnubCryptoProviderInterface> UPubnubSubsystem::GetCryptoModu
 	return nullptr;
 }
 
+UPubnubChannelEntity* UPubnubSubsystem::CreateChannelEntity(FString Channel)
+{
+	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
+	
+	UPubnubChannelEntity* ChannelEntity = NewObject<UPubnubChannelEntity>(this);
+	ChannelEntity->InitEntity(this);
+	ChannelEntity->EntityID = Channel;
+	return ChannelEntity;
+}
+
+UPubnubChannelGroupEntity* UPubnubSubsystem::CreateChannelGroupEntity(FString ChannelGroup)
+{
+	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelGroup, nullptr);
+	
+	UPubnubChannelGroupEntity* ChannelGroupEntity = NewObject<UPubnubChannelGroupEntity>(this);
+	ChannelGroupEntity->InitEntity(this);
+	ChannelGroupEntity->EntityID = ChannelGroup;
+	return ChannelGroupEntity;
+}
+
+UPubnubChannelMetadataEntity* UPubnubSubsystem::CreateChannelMetadataEntity(FString Channel)
+{
+	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
+	
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = NewObject<UPubnubChannelMetadataEntity>(this);
+	ChannelMetadataEntity->InitEntity(this);
+	ChannelMetadataEntity->EntityID = Channel;
+	return ChannelMetadataEntity;
+}
+
+UPubnubUserMetadataEntity* UPubnubSubsystem::CreateUserMetadataEntity(FString User)
+{
+	PUBNUB_RETURN_IF_FIELD_EMPTY(User, nullptr);
+	
+	UPubnubUserMetadataEntity* UserMetadataEntity = NewObject<UPubnubUserMetadataEntity>(this);
+	UserMetadataEntity->InitEntity(this);
+	UserMetadataEntity->EntityID = User;
+	return UserMetadataEntity;
+}
+
+UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings)
+{
+	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
+	{
+		PubnubError("[CreateSubscriptionSet]: at least one Channel or ChannelGroup is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
+	}
+	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
+	return SubscriptionSet;
+}
+
+UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSetFromEntities(TArray<UPubnubBaseEntity*> Entities, FPubnubSubscribeSettings SubscriptionSettings)
+{
+	if(Entities.IsEmpty())
+	{
+		PubnubError("[CreateSubscriptionSetFromEntities]: at least one Entity is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
+	}
+	TArray<FString> Channels, ChannelGroups;
+
+	//Group up entities for those that subscribe to Channel and ChannelGroup
+	for(auto Entity : Entities)
+	{
+		Entity->EntityType == EPubnubEntityType::PEnT_ChannelGroup? ChannelGroups.Add(Entity->EntityID) : Channels.Add(Entity->EntityID);
+	}
+	
+	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
+	return SubscriptionSet;
+}
+
+TArray<UPubnubSubscription*> UPubnubSubsystem::GetActiveSubscriptions()
+{
+	size_t Count;
+	pubnub_subscription** CCoreSubs =  pubnub_subscriptions(ctx_ee, &Count);
+	if (!CCoreSubs || Count == 0) {
+		return {};
+	}
+
+	//Free CCoreSubs when the function ends
+	ON_SCOPE_EXIT { free(CCoreSubs); };
+
+	TArray<UPubnubSubscription*> Subscriptions;
+
+	for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
+	{
+		UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
+		Subscription->InitWithCCoreSubscription(this, CCoreSub);
+		Subscriptions.Add(Subscription);
+	}
+
+	return Subscriptions;
+}
+
+TArray<UPubnubSubscriptionSet*> UPubnubSubsystem::GetActiveSubscriptionSets()
+{
+	size_t Count;
+	pubnub_subscription_set** CCoreSubSets =  pubnub_subscription_sets(ctx_ee, &Count);
+	if (!CCoreSubSets || Count == 0) {
+		return {};
+	}
+
+	//Free CCoreSubs when the function ends
+	ON_SCOPE_EXIT { free(CCoreSubSets); };
+
+	TArray<UPubnubSubscriptionSet*> SubscriptionSets;
+
+	for(pubnub_subscription_set_t* CCoreSubsSet : MakeArrayView(CCoreSubSets, Count))
+	{
+		UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+		SubscriptionSet->InitWithCCoreSubscriptionSet(this, CCoreSubsSet);
+		SubscriptionSets.Add(SubscriptionSet);
+		
+		size_t SubsCount;
+
+		pubnub_subscription** CCoreSubs = pubnub_subscription_set_subscriptions(CCoreSubsSet, &SubsCount);
+		if (!CCoreSubs || Count == 0) {
+			continue;
+		}
+
+		//Free CCoreSubs when the function ends
+		ON_SCOPE_EXIT { free(CCoreSubs); };
+
+		for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
+		{
+			UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
+			Subscription->InitWithCCoreSubscription(this, CCoreSub);
+			SubscriptionSet->Subscriptions.Add(Subscription);
+		}
+	}
+
+	return SubscriptionSets;
+}
+
 FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
 {
 	FString Response;
@@ -1469,7 +1611,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FOnSubscribeOper
 	QuickActionThread->LockForSubscribeOperation();
 
 	//Create subscription for channel entity
-	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannel(ctx_ee, Channel, SubscribeSettings);
+	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForEntity(ctx_ee, Channel, EPubnubEntityType::PEnT_Channel, SubscribeSettings);
 
 	if(nullptr == Subscription)
 	{
@@ -1483,7 +1625,7 @@ void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FOnSubscribeOper
 	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
 		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(user_data);
-		FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
+		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, ThisSubsystem]()
 		{
 			if(ThisSubsystem)
@@ -1525,7 +1667,7 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString ChannelGroup, FOnSubscribeO
 	QuickActionThread->LockForSubscribeOperation();
 	
 	//Create subscription for channel group entity
-	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForChannelGroup(ctx_ee, ChannelGroup, SubscribeSettings);
+	pubnub_subscription_t* Subscription = UPubnubUtilities::EEGetSubscriptionForEntity(ctx_ee, ChannelGroup, EPubnubEntityType::PEnT_ChannelGroup, SubscribeSettings);
 
 	if(nullptr == Subscription)
 	{
@@ -1539,7 +1681,7 @@ void UPubnubSubsystem::SubscribeToGroup_priv(FString ChannelGroup, FOnSubscribeO
 	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
 		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(user_data);
-		FPubnubMessageData MessageData = UEMessageFromPubnub(message); 
+		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, ThisSubsystem]()
 		{
 			if(ThisSubsystem)
@@ -1643,6 +1785,16 @@ void UPubnubSubsystem::UnsubscribeFromAll_priv(FOnSubscribeOperationResponseNati
 	QuickActionThread->LockForSubscribeOperation();
 
 	pubnub_unsubscribe_all(ctx_ee);
+
+	//Clean up all subscriptions
+	for(auto Subscription : ChannelSubscriptions)
+	{
+		pubnub_subscription_free(&Subscription.Value.Subscription);
+	}
+	for(auto Subscription : ChannelGroupSubscriptions)
+	{
+		pubnub_subscription_free(&Subscription.Value.Subscription);
+	}
 	
 	ChannelSubscriptions.Empty();
 	ChannelGroupSubscriptions.Empty();
@@ -2627,6 +2779,78 @@ void UPubnubSubsystem::GetMessageActions_priv(FString Channel, FOnGetMessageActi
 	UPubnubUtilities::CallPubnubDelegate(OnGetMessageActionsResponse, Result, MessageActions);
 }
 
+void UPubnubSubsystem::SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSubscribeResponse);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(OnSubscribeResponse);
+
+	QuickActionThread->AddFunctionToQueue( [this, Subscription, Cursor, OnSubscribeResponse]
+	{
+		if(!UPubnubUtilities::EESubscribeWithSubscription(Subscription->CCoreSubscription, Cursor))
+		{
+			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
+			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+		}
+	});
+}
+
+void UPubnubSubsystem::SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSubscribeResponse);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(OnSubscribeResponse);
+
+	QuickActionThread->AddFunctionToQueue( [this, SubscriptionSet, Cursor, OnSubscribeResponse]
+	{
+		if(!UPubnubUtilities::EESubscribeWithSubscriptionSet(SubscriptionSet->CCoreSubscriptionSet, Cursor))
+		{
+			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
+			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+		}
+	});
+}
+
+void UPubnubSubsystem::UnsubscribeWithSubscription(UPubnubSubscription* Subscription, FOnSubscribeOperationResponseNative OnUnsubscribeResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnUnsubscribeResponse);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(OnUnsubscribeResponse);
+
+	QuickActionThread->AddFunctionToQueue( [this, Subscription, OnUnsubscribeResponse]
+	{
+		if(!UPubnubUtilities::EEUnsubscribeWithSubscription(&Subscription->CCoreSubscription))
+		{
+			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnUnsubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
+			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+		}
+	});
+}
+
+void UPubnubSubsystem::UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FOnSubscribeOperationResponseNative OnUnsubscribeResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnUnsubscribeResponse);
+
+	//Save this delegate, so it can be called when Subscription Status is changed
+	SubscriptionResultDelegates.Add(OnUnsubscribeResponse);
+
+	QuickActionThread->AddFunctionToQueue( [this, SubscriptionSet, OnUnsubscribeResponse]
+	{
+		if(!UPubnubUtilities::EEUnsubscribeWithSubscriptionSet(&SubscriptionSet->CCoreSubscriptionSet))
+		{
+			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnUnsubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
+			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
+		}
+	});
+}
+
 void UPubnubSubsystem::PublishUESettingsToPubnubPublishOptions(FPubnubPublishSettings &PublishSettings, pubnub_publish_options& PubnubPublishOptions)
 {
 	PubnubPublishOptions.store = PublishSettings.StoreInHistory;
@@ -2663,27 +2887,6 @@ void UPubnubSubsystem::FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetc
 	PubnubFetchHistoryOptions.include_custom_message_type = FetchHistorySettings.IncludeCustomMessageType;
 	FetchHistorySettings.Start.IsEmpty() ? PubnubFetchHistoryOptions.start = NULL : nullptr;
 	FetchHistorySettings.End.IsEmpty() ? PubnubFetchHistoryOptions.end = NULL : nullptr;
-}
-
-FPubnubMessageData UPubnubSubsystem::UEMessageFromPubnub(pubnub_v2_message PubnubMessage)
-{
-	FPubnubMessageData MessageData;
-	MessageData.Message = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.payload);
-
-	//If message was just a string, we need to deserialize it
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(MessageData.Message, false))
-	{
-		MessageData.Message = UPubnubJsonUtilities::DeserializeString(MessageData.Message);
-	}
-	
-	MessageData.Channel = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.channel);
-	MessageData.UserID = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.publisher);
-	MessageData.Timetoken = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.tt);
-	MessageData.Metadata = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.metadata);
-	MessageData.MessageType = (EPubnubMessageType)(PubnubMessage.message_type);
-	MessageData.CustomMessageType = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.custom_message_type);
-	MessageData.MatchOrGroup = UPubnubUtilities::PubnubCharMemBlockToString(PubnubMessage.match_or_group);
-	return MessageData;
 }
 
 void UPubnubSubsystem::DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages)
