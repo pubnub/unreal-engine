@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc/EnumRange.h"
 #include "PubnubEnumLibrary.generated.h"
 
 UENUM(BlueprintType)
