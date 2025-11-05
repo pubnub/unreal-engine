@@ -76,6 +76,25 @@
 	} while (false)
 
 /**
+ * Verifies that provided condition is met.
+ *
+ * If the condition is not met, this macro will:
+ *   - Log an error message to the output log
+ *   - Invoke the provided delegate with a failure result and optional additional arguments
+ *   - Immediately return from the calling function
+ *
+ */
+#define PUBNUB_ENSURE_CONDITION(Condition, ErrorMessage, Delegate, ...) \
+	do { \
+		if (!(Condition)) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: %s Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), ErrorMessage)); \
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, ErrorMessage, ##__VA_ARGS__); \
+			return; \
+		} \
+	} while (false)
+
+/**
  * Verifies that a valid Pubnub user ID has been set before continuing.
  *
  * If the user ID is not set, this macro will:
