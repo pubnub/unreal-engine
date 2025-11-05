@@ -250,8 +250,10 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
-
-	Result = GetOperationResultFromJson(JsonObject);
+	FPubnubOperationResult ResultFromJson = GetOperationResultFromJson(JsonObject);
+	Result.ErrorMessage = ResultFromJson.ErrorMessage;
+	//Override status only if it was 0. Status could be set before in case of server error.
+	Result.Status = Result.Status == 0 ? ResultFromJson.Status : Result.Status;
 	Result.Error = Result.Status != 200;
 	
 	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), Data.Occupancy);

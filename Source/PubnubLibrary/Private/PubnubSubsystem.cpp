@@ -1895,8 +1895,17 @@ void UPubnubSubsystem::ListUsersFromChannel_priv(FString Channel, FOnListUsersFr
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	
-	//Execute provided delegate with results
 	FPubnubOperationResult Result;
+	
+	//If response is empty, there was server error. 
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		//Presence api doesn't provide status code in the response, so we need to get it manually
+		Result.Status = pubnub_last_http_code(ctx_pub);
+	}
+	
+	//Execute provided delegate with results
 	FPubnubListUsersFromChannelWrapper Data;
 	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(JsonResponse, Result, Data);
 	UPubnubUtilities::CallPubnubDelegate(ListUsersFromChannelResponse, Result, Data);
@@ -2867,6 +2876,8 @@ void UPubnubSubsystem::HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersF
 	PubnubHereNowOptions.disable_uuids = HereNowSettings.DisableUserID;
 	PubnubHereNowOptions.state = HereNowSettings.State;
 	HereNowSettings.ChannelGroup.IsEmpty() ? PubnubHereNowOptions.channel_group = NULL : nullptr;
+	PubnubHereNowOptions.limit = HereNowSettings.Limit;
+	PubnubHereNowOptions.offset = HereNowSettings.Offset;
 }
 
 void UPubnubSubsystem::SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings& SetStateSettings, pubnub_set_state_options& PubnubSetStateOptions)

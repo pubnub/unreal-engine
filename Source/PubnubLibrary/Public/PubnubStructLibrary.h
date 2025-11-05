@@ -83,6 +83,8 @@ struct FPubnubListUsersFromChannelSettings
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool DisableUserID = true;
 	//If true (and if DisableUserID is false), will give associated state alongside user info.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool State = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Limit = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Offset = false;
 };
 
 USTRUCT(BlueprintType)

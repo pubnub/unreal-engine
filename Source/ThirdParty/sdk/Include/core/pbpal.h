@@ -37,13 +37,15 @@ enum pbpal_resolv_n_connect_result {
 enum pbpal_tls_result {
     pbtlsEstablished,
     pbtlsStarted,
+    pbtlsStartedWaitRead,
+    pbtlsStartedWaitWrite,
     pbtlsInProgress,
     pbtlsResourceFailure,
     pbtlsFailed
 };
 
 /* Handles socket condition on given platform */
-enum pubnub_res pbpal_handle_socket_condition(int result, pubnub_t* pb, char const* file, int line);
+enum pubnub_res pbpal_handle_socket_condition(int result, pubnub_t* pb, char const* file, int line, bool *needRead, bool* needWrite);
 
 /** Handles start of a TCP (HTTP) connection. It first handles DNS
     resolving for the context @p pb.  If DNS is already resolved, it
@@ -248,6 +250,9 @@ int pbpal_close(pubnub_t *pb);
 
 /** Sets blocking I/O option on the context for the communication */
 int pbpal_set_blocking_io(pubnub_t *pb);
+
+/** Sets user-provided TCP Keep-Alive configuration for active connection. */
+void pbpal_set_tcp_keepalive(const pubnub_t *pb);
 
 /** Frees-up any resources allocated by the PAL for the given
     context. After this call, context is not safe for use by PAL any
