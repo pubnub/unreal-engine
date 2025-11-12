@@ -162,7 +162,7 @@ bool FPubnubPublishMessageWithSettingsTest::RunTest(const FString& Parameters)
 	const FString TestMessage = "\"Message from test\"";
 	const FString TestUser = SDK_PREFIX + "test_user";
 	const FString TestChannel = SDK_PREFIX + "test_channel";
-	const FString TestMetaData = "{\"metadata\": \"from test\"}";
+	const FString TestMetaData = "{\"metadata\":\"from test\"}";
 	const FString TestCustomMessageType = "custom_type";
 	TSharedPtr<bool> TestMessageReceived = MakeShared<bool>(false);
 	TSharedPtr<bool> TestSubscribeResultReceived = MakeShared<bool>(false);
@@ -635,7 +635,7 @@ bool FPubnubPublishVariousMessageTypesTest::RunTest(const FString& Parameters)
 	TestCases.Add(FMessageTestCase("Floating Point Number as JSON Number", "123.456"));
 	TestCases.Add(FMessageTestCase("Boolean true as JSON Boolean", "true"));
 	TestCases.Add(FMessageTestCase("Boolean false as JSON Boolean", "false"));
-	TestCases.Add(FMessageTestCase("JSON Array", "[\"element1\", 2, {\"nested_key\":\"nested_val\"}, false]"));
+	TestCases.Add(FMessageTestCase("JSON Array", "[\"element1\",2,{\"nested_key\":\"nested_val\"},false]"));
 	TestCases.Add(FMessageTestCase("Empty String as JSON string", "\"\""));
 	TestCases.Add(FMessageTestCase("String with escapes as JSON string", "\"Text with \\\"quotes\\\", \\\\backslashes\\\\, a /slash, and a newline\\ncharacter.\""));
 	TestCases.Add(FMessageTestCase("JSON null", "null"));

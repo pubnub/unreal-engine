@@ -19,6 +19,9 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUsersFromChannelTest, FPubnub
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUserSubscribedChannelsTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.ListUserSubscribedChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.SetGetState", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubChannelSetGetStateForMultipleTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.SetGetStateMultipleChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUsersFromChannelWithLimitTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.ListUsersFromChannelWithLimit", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUsersFromChannelWithOffsetTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.ListUsersFromChannelWithOffset", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubListUsersFromChannelWithLimitAndOffsetTest, FPubnubAutomationTestBase, "Pubnub.Integration.Presence.ListUsersFromChannelWithLimitAndOffset", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubListUsersFromChannelTest::RunTest(const FString& Parameters)
 {
@@ -985,6 +988,598 @@ bool FPubnubChannelSetGetStateForMultipleTest::RunTest(const FString& Parameters
         if(!*bUnsubscribeFromChannel2Done)
         {
             AddError("UnsubscribeFromChannel2 result callback was not received");
+        }
+    }, 0.1f));
+
+    CleanUp();
+    return true;
+}
+
+bool FPubnubListUsersFromChannelWithLimitTest::RunTest(const FString& Parameters)
+{
+    // Initial variables
+    const FString TestUserID = SDK_PREFIX + "test_user_limit";
+    const FString TestChannelName = SDK_PREFIX + "test_channel_limit";
+
+    TSharedPtr<bool> bListUsersOperationDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bListUsersOperationSuccess = MakeShared<bool>(false);
+    TSharedPtr<TArray<FString>> CurrentListedUserIDs = MakeShared<TArray<FString>>();
+    TSharedPtr<int> CurrentOccupancy = MakeShared<int>(0);
+
+    TSharedPtr<bool> bSubscribeToChannelDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannelDone = MakeShared<bool>(false);
+
+    if (!InitTest())
+    {
+        AddError("TestInitialization failed for FPubnubListUsersFromChannelWithLimitTest");
+        return false;
+    }
+
+    // General error handler
+    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+    {
+        AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubListUsersFromChannelWithLimitTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+    });
+
+    // ListUsersFromChannel callback handler
+    FOnListUsersFromChannelResponseNative ListUsersCallback;
+    ListUsersCallback.BindLambda([this, bListUsersOperationDone, bListUsersOperationSuccess, CurrentListedUserIDs, CurrentOccupancy](FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper ResponseData)
+    {
+        *bListUsersOperationDone = true;
+        CurrentListedUserIDs->Empty();
+        *CurrentOccupancy = ResponseData.Occupancy;
+        if (Result.Status == 200) 
+        {
+            *bListUsersOperationSuccess = true;
+            ResponseData.UsersState.GetKeys(*CurrentListedUserIDs);
+        }
+        else
+        {
+            *bListUsersOperationSuccess = false;
+            AddError(FString::Printf(TEXT("ListUsersFromChannel failed. Status: %d"), Result.Status));
+        }
+    });
+
+    // Create subscribe result callback
+    FOnSubscribeOperationResponseNative SubscribeToChannelCallback;
+    SubscribeToChannelCallback.BindLambda([this, bSubscribeToChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannelDone = true;
+        TestFalse("SubscribeToChannel operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    // Create unsubscribe result callback
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannelCallback;
+    UnsubscribeFromChannelCallback.BindLambda([this, bUnsubscribeFromChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannelDone = true;
+        TestFalse("UnsubscribeFromChannel operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    // Set UserID first
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
+    {
+        PubnubSubsystem->SetUserID(TestUserID);
+    }, 0.1f));
+
+    // Step 1: Subscribe to channel
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, SubscribeToChannelCallback, bSubscribeToChannelDone]()
+    {
+        *bSubscribeToChannelDone = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannelName, SubscribeToChannelCallback);
+    }, 0.1f));
+
+    // Wait until subscribe to channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelDone]() -> bool {
+        return *bSubscribeToChannelDone;
+    }, MAX_WAIT_TIME));
+
+    // Check whether subscribe to channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelDone]()
+    {
+        if(!*bSubscribeToChannelDone)
+        {
+            AddError("SubscribeToChannel result callback was not received");
+        }
+    }, 0.1f));
+
+    // Step 2: List users with Limit=1
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Limit = 1;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
+    {
+        TestTrue("ListUsersFromChannel with Limit=1 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return maximum 1 user when Limit=1", CurrentListedUserIDs->Num(), 1);
+            TestTrue(FString::Printf(TEXT("TestUserID '%s' should be in the limited list"), *TestUserID), CurrentListedUserIDs->Contains(TestUserID));
+            TestEqual("Occupancy should still be 1", *CurrentOccupancy, 1);
+        }
+    }, 0.1f));
+
+    // Step 3: List users with Limit=0 (should use default limit of 1000)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Limit = 0;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
+    {
+        TestTrue("ListUsersFromChannel with Limit=0 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 1 user when Limit=0 (uses default limit)", CurrentListedUserIDs->Num(), 1);
+            TestTrue(FString::Printf(TEXT("TestUserID '%s' should be in the list"), *TestUserID), CurrentListedUserIDs->Contains(TestUserID));
+            TestEqual("Occupancy should be 1", *CurrentOccupancy, 1);
+        }
+    }, 0.1f));
+
+    // Step 4: List users with default limit (should work normally)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        // Using default Limit (1000)
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
+    {
+        TestTrue("ListUsersFromChannel with default limit was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 1 user with default limit", CurrentListedUserIDs->Num(), 1);
+            TestTrue(FString::Printf(TEXT("TestUserID '%s' should be in the list"), *TestUserID), CurrentListedUserIDs->Contains(TestUserID));
+        }
+    }, 0.1f));
+
+    // Step 5: Unsubscribe from channel
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, UnsubscribeFromChannelCallback, bUnsubscribeFromChannelDone]()
+    {
+        *bUnsubscribeFromChannelDone = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannelName, UnsubscribeFromChannelCallback);
+    }, 0.1f));
+
+    // Wait until unsubscribe from channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannelDone]() -> bool {
+        return *bUnsubscribeFromChannelDone;
+    }, MAX_WAIT_TIME));
+
+    // Check whether unsubscribe from channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannelDone]()
+    {
+        if(!*bUnsubscribeFromChannelDone)
+        {
+            AddError("UnsubscribeFromChannel result callback was not received");
+        }
+    }, 0.1f));
+
+    CleanUp();
+    return true;
+}
+
+bool FPubnubListUsersFromChannelWithOffsetTest::RunTest(const FString& Parameters)
+{
+    // Initial variables
+    const FString TestUserID = SDK_PREFIX + "test_user_offset";
+    const FString TestChannelName = SDK_PREFIX + "test_channel_offset";
+
+    TSharedPtr<bool> bListUsersOperationDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bListUsersOperationSuccess = MakeShared<bool>(false);
+    TSharedPtr<TArray<FString>> CurrentListedUserIDs = MakeShared<TArray<FString>>();
+    TSharedPtr<int> CurrentOccupancy = MakeShared<int>(0);
+
+    TSharedPtr<bool> bSubscribeToChannelDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannelDone = MakeShared<bool>(false);
+
+    if (!InitTest())
+    {
+        AddError("TestInitialization failed for FPubnubListUsersFromChannelWithOffsetTest");
+        return false;
+    }
+
+    // General error handler
+    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+    {
+        AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubListUsersFromChannelWithOffsetTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+    });
+
+    // ListUsersFromChannel callback handler
+    FOnListUsersFromChannelResponseNative ListUsersCallback;
+    ListUsersCallback.BindLambda([this, bListUsersOperationDone, bListUsersOperationSuccess, CurrentListedUserIDs, CurrentOccupancy](FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper ResponseData)
+    {
+        *bListUsersOperationDone = true;
+        CurrentListedUserIDs->Empty();
+        *CurrentOccupancy = ResponseData.Occupancy;
+        if (Result.Status == 200) 
+        {
+            *bListUsersOperationSuccess = true;
+            ResponseData.UsersState.GetKeys(*CurrentListedUserIDs);
+        }
+        else
+        {
+            *bListUsersOperationSuccess = false;
+            AddError(FString::Printf(TEXT("ListUsersFromChannel failed. Status: %d"), Result.Status));
+        }
+    });
+
+    // Create subscribe result callback
+    FOnSubscribeOperationResponseNative SubscribeToChannelCallback;
+    SubscribeToChannelCallback.BindLambda([this, bSubscribeToChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannelDone = true;
+        TestFalse("SubscribeToChannel operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    // Create unsubscribe result callback
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannelCallback;
+    UnsubscribeFromChannelCallback.BindLambda([this, bUnsubscribeFromChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannelDone = true;
+        TestFalse("UnsubscribeFromChannel operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    // Set UserID first
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
+    {
+        PubnubSubsystem->SetUserID(TestUserID);
+    }, 0.1f));
+
+    // Step 1: Subscribe to channel
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, SubscribeToChannelCallback, bSubscribeToChannelDone]()
+    {
+        *bSubscribeToChannelDone = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannelName, SubscribeToChannelCallback);
+    }, 0.1f));
+
+    // Wait until subscribe to channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelDone]() -> bool {
+        return *bSubscribeToChannelDone;
+    }, MAX_WAIT_TIME));
+
+    // Check whether subscribe to channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelDone]()
+    {
+        if(!*bSubscribeToChannelDone)
+        {
+            AddError("SubscribeToChannel result callback was not received");
+        }
+    }, 0.1f));
+
+    // Step 2: List users with Offset=0 (should return user)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Offset = 0;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
+    {
+        TestTrue("ListUsersFromChannel with Offset=0 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 1 user when Offset=0", CurrentListedUserIDs->Num(), 1);
+            TestTrue(FString::Printf(TEXT("TestUserID '%s' should be in the list"), *TestUserID), CurrentListedUserIDs->Contains(TestUserID));
+            TestEqual("Occupancy should be 1", *CurrentOccupancy, 1);
+        }
+    }, 0.1f));
+
+    // Step 3: List users with Offset=1 (should skip the only user and return empty list)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Offset = 1;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
+    {
+        TestTrue("ListUsersFromChannel with Offset=1 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 0 users when Offset=1 (skipping the only user)", CurrentListedUserIDs->Num(), 0);
+            TestEqual("Occupancy should still be 1 (indicates total users, not affected by offset)", *CurrentOccupancy, 1);
+        }
+    }, 0.1f));
+
+    // Step 4: List users with Offset=10 (large offset, should return empty list)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Offset = 10;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, CurrentListedUserIDs, bListUsersOperationSuccess]()
+    {
+        TestTrue("ListUsersFromChannel with Offset=10 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 0 users when Offset exceeds available users", CurrentListedUserIDs->Num(), 0);
+        }
+    }, 0.1f));
+
+    // Step 5: Unsubscribe from channel
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, UnsubscribeFromChannelCallback, bUnsubscribeFromChannelDone]()
+    {
+        *bUnsubscribeFromChannelDone = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannelName, UnsubscribeFromChannelCallback);
+    }, 0.1f));
+
+    // Wait until unsubscribe from channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannelDone]() -> bool {
+        return *bUnsubscribeFromChannelDone;
+    }, MAX_WAIT_TIME));
+
+    // Check whether unsubscribe from channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannelDone]()
+    {
+        if(!*bUnsubscribeFromChannelDone)
+        {
+            AddError("UnsubscribeFromChannel result callback was not received");
+        }
+    }, 0.1f));
+
+    CleanUp();
+    return true;
+}
+
+bool FPubnubListUsersFromChannelWithLimitAndOffsetTest::RunTest(const FString& Parameters)
+{
+    // Initial variables
+    const FString TestUserID = SDK_PREFIX + "test_user_limit_offset";
+    const FString TestChannelName = SDK_PREFIX + "test_channel_limit_offset";
+
+    TSharedPtr<bool> bListUsersOperationDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bListUsersOperationSuccess = MakeShared<bool>(false);
+    TSharedPtr<TArray<FString>> CurrentListedUserIDs = MakeShared<TArray<FString>>();
+    TSharedPtr<int> CurrentOccupancy = MakeShared<int>(0);
+
+    TSharedPtr<bool> bSubscribeToChannelDone = MakeShared<bool>(false);
+    TSharedPtr<bool> bUnsubscribeFromChannelDone = MakeShared<bool>(false);
+
+    if (!InitTest())
+    {
+        AddError("TestInitialization failed for FPubnubListUsersFromChannelWithLimitAndOffsetTest");
+        return false;
+    }
+
+    // General error handler
+    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+    {
+        AddError(FString::Printf(TEXT("General Pubnub Error in FPubnubListUsersFromChannelWithLimitAndOffsetTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+    });
+
+    // ListUsersFromChannel callback handler
+    FOnListUsersFromChannelResponseNative ListUsersCallback;
+    ListUsersCallback.BindLambda([this, bListUsersOperationDone, bListUsersOperationSuccess, CurrentListedUserIDs, CurrentOccupancy](FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper ResponseData)
+    {
+        *bListUsersOperationDone = true;
+        CurrentListedUserIDs->Empty();
+        *CurrentOccupancy = ResponseData.Occupancy;
+        if (Result.Status == 200) 
+        {
+            *bListUsersOperationSuccess = true;
+            ResponseData.UsersState.GetKeys(*CurrentListedUserIDs);
+        }
+        else
+        {
+            *bListUsersOperationSuccess = false;
+            AddError(FString::Printf(TEXT("ListUsersFromChannel failed. Status: %d"), Result.Status));
+        }
+    });
+
+    // Create subscribe result callback
+    FOnSubscribeOperationResponseNative SubscribeToChannelCallback;
+    SubscribeToChannelCallback.BindLambda([this, bSubscribeToChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bSubscribeToChannelDone = true;
+        TestFalse("SubscribeToChannel operation should not have failed", Result.Error);
+        TestEqual("SubscribeToChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("SubscribeToChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    // Create unsubscribe result callback
+    FOnSubscribeOperationResponseNative UnsubscribeFromChannelCallback;
+    UnsubscribeFromChannelCallback.BindLambda([this, bUnsubscribeFromChannelDone](const FPubnubOperationResult& Result)
+    {
+        *bUnsubscribeFromChannelDone = true;
+        TestFalse("UnsubscribeFromChannel operation should not have failed", Result.Error);
+        TestEqual("UnsubscribeFromChannel HTTP status should be 200", Result.Status, 200);
+        
+        if (Result.Error)
+        {
+            AddError(FString::Printf(TEXT("UnsubscribeFromChannel failed with error: %s"), *Result.ErrorMessage));
+        }
+    });
+
+    // Set UserID first
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID]()
+    {
+        PubnubSubsystem->SetUserID(TestUserID);
+    }, 0.1f));
+
+    // Step 1: Subscribe to channel
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, SubscribeToChannelCallback, bSubscribeToChannelDone]()
+    {
+        *bSubscribeToChannelDone = false;
+        PubnubSubsystem->SubscribeToChannel(TestChannelName, SubscribeToChannelCallback);
+    }, 0.1f));
+
+    // Wait until subscribe to channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeToChannelDone]() -> bool {
+        return *bSubscribeToChannelDone;
+    }, MAX_WAIT_TIME));
+
+    // Check whether subscribe to channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bSubscribeToChannelDone]()
+    {
+        if(!*bSubscribeToChannelDone)
+        {
+            AddError("SubscribeToChannel result callback was not received");
+        }
+    }, 0.1f));
+
+    // Step 2: List users with Limit=1 and Offset=0 (pagination: first page with 1 item)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Limit = 1;
+        Settings.Offset = 0;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
+    {
+        TestTrue("ListUsersFromChannel with Limit=1, Offset=0 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 1 user with Limit=1, Offset=0", CurrentListedUserIDs->Num(), 1);
+            TestTrue(FString::Printf(TEXT("TestUserID '%s' should be in the first page"), *TestUserID), CurrentListedUserIDs->Contains(TestUserID));
+            TestEqual("Occupancy should be 1", *CurrentOccupancy, 1);
+        }
+    }, 0.1f));
+
+    // Step 3: List users with Limit=1 and Offset=1 (pagination: second page should be empty)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Limit = 1;
+        Settings.Offset = 1;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
+    {
+        TestTrue("ListUsersFromChannel with Limit=1, Offset=1 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 0 users with Limit=1, Offset=1 (second page is empty)", CurrentListedUserIDs->Num(), 0);
+            TestEqual("Occupancy should still be 1", *CurrentOccupancy, 1);
+        }
+    }, 0.1f));
+
+    // Step 4: List users with Limit=0 and Offset=0 (Limit=0 should use default limit of 1000)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Limit = 0;
+        Settings.Offset = 0;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestUserID, CurrentListedUserIDs, bListUsersOperationSuccess, CurrentOccupancy]()
+    {
+        TestTrue("ListUsersFromChannel with Limit=0, Offset=0 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 1 user when Limit=0 (uses default limit), Offset=0", CurrentListedUserIDs->Num(), 1);
+            TestTrue(FString::Printf(TEXT("TestUserID '%s' should be in the list"), *TestUserID), CurrentListedUserIDs->Contains(TestUserID));
+            TestEqual("Occupancy should be 1", *CurrentOccupancy, 1);
+        }
+    }, 0.1f));
+
+    // Step 5: List users with Limit=5 and Offset=2 (offset beyond available users)
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, ListUsersCallback, bListUsersOperationDone, bListUsersOperationSuccess]()
+    {
+        *bListUsersOperationDone = false;
+        *bListUsersOperationSuccess = false;
+        FPubnubListUsersFromChannelSettings Settings;
+        Settings.DisableUserID = false;
+        Settings.Limit = 5;
+        Settings.Offset = 2;
+        PubnubSubsystem->ListUsersFromChannel(TestChannelName, ListUsersCallback, Settings);
+    }, 0.1f)); 
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bListUsersOperationDone]() { return *bListUsersOperationDone; }, MAX_WAIT_TIME));
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, CurrentListedUserIDs, bListUsersOperationSuccess]()
+    {
+        TestTrue("ListUsersFromChannel with Limit=5, Offset=2 was successful", *bListUsersOperationSuccess);
+        if (*bListUsersOperationSuccess)
+        {
+            TestEqual("Should return 0 users when Offset exceeds available users", CurrentListedUserIDs->Num(), 0);
+        }
+    }, 0.1f));
+
+    // Step 6: Unsubscribe from channel
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannelName, UnsubscribeFromChannelCallback, bUnsubscribeFromChannelDone]()
+    {
+        *bUnsubscribeFromChannelDone = false;
+        PubnubSubsystem->UnsubscribeFromChannel(TestChannelName, UnsubscribeFromChannelCallback);
+    }, 0.1f));
+
+    // Wait until unsubscribe from channel result is received
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bUnsubscribeFromChannelDone]() -> bool {
+        return *bUnsubscribeFromChannelDone;
+    }, MAX_WAIT_TIME));
+
+    // Check whether unsubscribe from channel result was received
+    ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bUnsubscribeFromChannelDone]()
+    {
+        if(!*bUnsubscribeFromChannelDone)
+        {
+            AddError("UnsubscribeFromChannel result callback was not received");
         }
     }, 0.1f));
 

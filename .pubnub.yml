@@ -1,8 +1,13 @@
 name: unreal-engine
 schema: 1
-version: v1.0.0
+version: 1.2.0
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2025-11-12
+    version: 1.2.0
+    changes:
+      - type: feature
+        text: "The `ListUsersFromChannel` method now returns a maximum of 1,000 occupants per channel. Previously, it would return all occupants regardless of count. If you have channels with more than 1,000 occupants, you must use pagination (new `Limit` and `Offset` parameters) to retrieve the complete list. **BREAKING CHANGE**."
   - date: 2025-09-11
     version: 1.1.0
     changes:
