@@ -17,6 +17,7 @@
 #include "Entities/PubnubChannelMetadataEntity.h"
 #include "Entities/PubnubUserMetadataEntity.h"
 #include "Entities/PubnubSubscription.h"
+#include "PubnubClient.h"
 
 DEFINE_LOG_CATEGORY(PubnubLog)
 
@@ -37,6 +38,39 @@ void UPubnubSubsystem::Deinitialize()
 	//First clean up all Pubnub data
 	DeinitPubnub();
 	Super::Deinitialize();
+}
+
+UPubnubClient* UPubnubSubsystem::CreatePubnubClient(FPubnubConfig Config, FString DebugName)
+{
+	UPubnubClient* PubnubClient = NewObject<UPubnubClient>(this);
+
+	int NewID = NextClientID++;
+
+	PubnubClient->InitWithConfig(this, Config, NewID, DebugName);
+	
+	PubnubClients.Add(NewID, PubnubClient);
+
+	return PubnubClient;
+}
+
+UPubnubClient* UPubnubSubsystem::GetPubnubClient(int ClientID)
+{
+	return PubnubClients.FindRef(ClientID);
+}
+
+bool UPubnubSubsystem::DestroyPubnubClient(UPubnubClient* ClientToDestroy)
+{
+	if(!ClientToDestroy)
+	{return false;}
+	
+	if(PubnubClients.Find(ClientToDestroy->GetClientID()))
+	{
+		PubnubClients.Remove(ClientToDestroy->GetClientID());
+		ClientToDestroy->DeinitializeClient();
+		return true;
+	}
+	
+	return false;
 }
 
 void UPubnubSubsystem::InitPubnub()

@@ -26,6 +26,7 @@ class UPubnubChannelGroupEntity;
 class UPubnubChannelMetadataEntity;
 class UPubnubUserMetadataEntity;
 class UPubnubSubscriptionSet;
+class UPubnubClient;
 
 struct CCoreSubscriptionData
 {
@@ -147,6 +148,20 @@ public:
 
 	/**Listener to react for subscription status changed , equivalent that accepts lambdas*/
 	FOnSubscriptionStatusChangedNative OnSubscriptionStatusChangedNative;
+
+#pragma region PUBNUB CLIENT
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Client")
+	UPubnubClient* CreatePubnubClient(FPubnubConfig Config, FString DebugName = "");
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Client")
+	UPubnubClient* GetPubnubClient(int ClientID);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Client")
+	bool DestroyPubnubClient(UPubnubClient* ClientToDestroy);
+
+
+#pragma endregion
 
 #pragma region BLUEPRINT EXPOSED
 
@@ -1813,6 +1828,11 @@ public:
 #pragma endregion 
 	
 private:
+
+	UPROPERTY()
+	TMap<int, TObjectPtr<UPubnubClient>> PubnubClients;
+	int NextClientID = 0;
+	
 	
 	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
 	FPubnubFunctionThread* QuickActionThread = nullptr;
