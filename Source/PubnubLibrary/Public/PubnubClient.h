@@ -19,6 +19,10 @@ enum pubnub_res;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPubnubOnClientDeinitialized, int, ClientID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPubnubOnMessageReceived, FPubnubMessageData, Message);
+DECLARE_MULTICAST_DELEGATE_OneParam(FPubnubOnMessageReceivedNative, const FPubnubMessageData& Message);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FPubnubOnError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FPubnubOnErrorNative, FString ErrorMessage, EPubnubErrorType ErrorType);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FPubnubOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, FPubnubSubscriptionStatusData, StatusData);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FPubnubOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
 
@@ -40,6 +44,12 @@ class PUBNUBLIBRARY_API UPubnubClient : public UObject
 
 public:
 
+	/* PUBLIC DELEGATES */
+
+	/**Delegate that is called when PubnubClient is deinitialized*/
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	FPubnubOnClientDeinitialized OnClientDeinitialized;
+	
 	/**Listener to react for subscription status changed*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FPubnubOnSubscriptionStatusChanged OnSubscriptionStatusChanged;
@@ -47,17 +57,28 @@ public:
 	/**Listener to react for subscription status changed , equivalent that accepts lambdas*/
 	FPubnubOnSubscriptionStatusChangedNative OnSubscriptionStatusChangedNative;
 
-	/**Delegate that is called when PubnubClient is deinitialized*/
+	/**Global listener for all messages received on subscribed channels*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
-	FPubnubOnClientDeinitialized OnClientDeinitialized;
+	FPubnubOnMessageReceived OnMessageReceived;
+
+	/**Global listener for all messages received on subscribed channels, equivalent that accepts lambdas*/
+	FPubnubOnMessageReceivedNative OnMessageReceivedNative;
+
+	/**Listener to react for all Errors in Pubnub functions */
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	FPubnubOnError OnError;
 	
+	/**Listener to react for all Errors in Pubnub functions, equivalent that accepts lambdas*/
+	FPubnubOnErrorNative OnErrorNative;
+
+	
+	/* GENERAL FUNCTIONS */
 
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category="PubnubClient")
 	int GetClientID() const {return ClientID;};
 
 	UFUNCTION(BlueprintCallable, Category="PubnubClient")
 	void DestroyClient();
-
 
 	/**
 	 * Sets the user ID for the current session.
@@ -81,6 +102,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
 	void SetSecretKey();
+
+
+	/* PUBSUB API */
 
 	/**
 	 * Publishes a message to a specified channel.
@@ -161,7 +185,7 @@ private:
 #pragma region PUBNUB CONFIG
 
 	//Container for all configuration settings
-	//TODO:: DO we event need to save config??
+	//TODO:: DO we even need to save config??
 	UPROPERTY()
 	FPubnubConfig PubnubConfig;
 
@@ -192,8 +216,13 @@ private:
 	//TODO:: Move these functions to the logger
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
 	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
+
 	
 	void InitPubnub_priv(const FPubnubConfig& Config);
+	void SetUserID_priv(FString UserID);
+	FString GetUserID_priv();
+	void SetSecretKey_priv();
+	void PublishMessage_priv(FString Channel, FString Message, FPubnubOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void UnsubscribeFromAll_priv(FPubnubOnSubscribeOperationResponseNative OnUnsubscribeFromAllResponse = nullptr);
 };
 

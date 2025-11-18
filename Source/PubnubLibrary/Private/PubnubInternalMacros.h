@@ -32,6 +32,34 @@
 		} \
 	} while (false)
 
+
+/**
+ * Ensures that the PubnubClient  is properly initialized before proceeding.
+ *
+ * If the client is not initialized or the internal PubnubCallsThread is invalid,
+ * this macro will:
+ *   - Log an error message to the output log
+ *   - Invoke the provided delegate with a failure result and optional additional arguments
+ *   - Immediately return from the calling function (terminating further execution)
+ *
+ * Usage: Place this at the beginning of any public-facing API to guard against uninitialized use.
+ */
+#define PUBNUB_ENSURE_CLIENT_INITIALIZED(Delegate, ...) \
+	do { \
+		if (!IsInitialized) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("Pubnub subsystem is not initialized."), ##__VA_ARGS__); \
+			return; \
+		} \
+		if (!PubnubCallsThread) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is null. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("QuickActionThread is invalid."), ##__VA_ARGS__); \
+			return; \
+		} \
+	} while (false)
+
 /**
  * Ensures that the Pubnub subsystem is properly initialized before proceeding.
  *
@@ -46,13 +74,37 @@
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return; \
 		} \
 		if (!QuickActionThread) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: QuickActionThread is null. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return; \
+		} \
+	} while (false)
+
+/**
+ * Ensures that the PubnubClient is properly initialized before proceeding.
+ *
+ * If the subsystem is not initialized or the internal QuickActionThread is invalid,
+ * this macro will:
+ *   - Log an error message to the output log
+ *   - Immediately return from the calling function (terminating further execution)
+ *
+ * Usage: Place this at the beginning of any public-facing API to guard against uninitialized use.
+ */
+#define PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED(...) \
+	do { \
+		if (!IsInitialized) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			return __VA_ARGS__; \
+		} \
+		if (!PubnubCallsThread) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			return __VA_ARGS__; \
 		} \
 	} while (false)
 

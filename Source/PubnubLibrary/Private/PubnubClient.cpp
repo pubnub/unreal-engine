@@ -5,8 +5,10 @@
 #include "PubNub.h"
 #include "PubnubInternalMacros.h"
 #include "PubnubSubsystem.h"
+#include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Threads/PubnubFunctionThread.h"
 #include "FunctionLibraries/PubnubUtilities.h"
+#include "FunctionLibraries/PubnubInternalUtilities.h"
 
 
 struct CCoreSubscriptionCallback
@@ -21,6 +23,42 @@ static void PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* m
 	
 }
 
+//TODO:: Move this to logger
+void UPubnubClient::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType)
+{
+	//Log and broadcast error message
+	if(ErrorType == EPubnubErrorType::PET_Error)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("%s"), *ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(PubnubLog, Warning, TEXT("%s"), *ErrorMessage);
+	}
+
+	TWeakObjectPtr<UPubnubClient> WeakThis = MakeWeakObjectPtr<UPubnubClient>(this);
+
+	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
+	AsyncTask(ENamedThreads::GameThread, [WeakThis, ErrorMessage, ErrorType]()
+	{
+		if(!WeakThis.IsValid())
+		{return;}
+		
+		//Broadcast bound delegate with JsonResponse
+		WeakThis.Get()->OnError.Broadcast(ErrorMessage, ErrorType);
+		WeakThis.Get()->OnErrorNative.Broadcast(ErrorMessage, ErrorType);
+	});
+}
+
+//TODO:: Move this to logger
+void UPubnubClient::PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage)
+{
+	//Convert all error data into single string
+	FString ResponseString(pubnub_res_2_string(PubnubResponse));
+	FString FinalErrorMessage = FString::Printf(TEXT("%s Error: %s."), *ErrorMessage, *ResponseString);
+
+	PubnubError(FinalErrorMessage,EPubnubErrorType::PET_Error);
+}
 
 void UPubnubClient::DestroyClient()
 {
@@ -32,29 +70,54 @@ void UPubnubClient::DestroyClient()
 
 void UPubnubClient::SetUserID(FString UserID)
 {
+	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+
+	SetUserID_priv(UserID);
 }
 
 FString UPubnubClient::GetUserID()
 {
-	return "";
+	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED("");
+
+	return GetUserID_priv();
 }
 
 void UPubnubClient::SetSecretKey()
 {
+	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+
+	SetSecretKey_priv();
 }
 
-void UPubnubClient::PublishMessage(FString Channel, FString Message,
-	FPubnubOnPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
+void UPubnubClient::PublishMessage(FString Channel, FString Message, FPubnubOnPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
 {
+	FOnPublishMessageResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnPublishMessageResponse](FPubnubOperationResult Result, FPubnubMessageData PublishedMessage)
+	{
+		OnPublishMessageResponse.ExecuteIfBound(Result, PublishedMessage);
+	});
+
+	PublishMessage(Channel, Message, NativeCallback, PublishSettings);
 }
 
-void UPubnubClient::PublishMessage(FString Channel, FString Message,
-	FPubnubOnPublishMessageResponseNative NativeCallback, FPubnubPublishSettings PublishSettings)
+void UPubnubClient::PublishMessage(FString Channel, FString Message, FPubnubOnPublishMessageResponseNative NativeCallback, FPubnubPublishSettings PublishSettings)
 {
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, FPubnubMessageData());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, Channel, Message, NativeCallback, PublishSettings]
+	{
+		PublishMessage_priv(Channel, Message, NativeCallback, PublishSettings);
+	});
 }
 
 void UPubnubClient::PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
 {
+	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, Channel, Message, PublishSettings]
+	{
+		PublishMessage_priv(Channel, Message, nullptr, PublishSettings);
+	});
 }
 
 void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubConfig InConfig, int InClientID, FString InDebugName )
@@ -131,14 +194,6 @@ void UPubnubClient::SavePubnubConfig(const FPubnubConfig& InConfig)
 	UPubnubUtilities::SafeCopyFStringToCharBuffer(PublishKey, PublishKeySize + 1, InConfig.PublishKey, TEXT("PublishKey"));
 	UPubnubUtilities::SafeCopyFStringToCharBuffer(SubscribeKey, PublishKeySize + 1, InConfig.SubscribeKey, TEXT("SubscribeKey"));
 	UPubnubUtilities::SafeCopyFStringToCharBuffer(SecretKey, SecretKeySize + 1, InConfig.SecretKey, TEXT("SecretKey"));
-}
-
-void UPubnubClient::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType)
-{
-}
-
-void UPubnubClient::PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage)
-{
 }
 
 void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData)
@@ -244,6 +299,103 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	{
 		SetSecretKey();
 	}
+}
+
+void UPubnubClient::SetUserID_priv(FString UserID)
+{
+	PUBNUB_RETURN_IF_FIELD_EMPTY(UserID);
+
+	FUTF8StringHolder UserIDHolder(UserID);
+	pubnub_set_user_id(ctx_pub, UserIDHolder.Get());
+	pubnub_set_user_id(ctx_ee, UserIDHolder.Get());
+
+	IsUserIDSet = true;
+}
+
+FString UPubnubClient::GetUserID_priv()
+{
+	if(const char* UserIDChar = pubnub_user_id_get(ctx_pub))
+	{
+		FString UserIDString(UserIDChar);
+		return UserIDString;
+	}
+
+	return "";
+}
+
+void UPubnubClient::SetSecretKey_priv()
+{
+	if(SecretKey[0] == '\0')
+	{
+		PubnubError("Can't set Secret Key. Secret Key is empty.");
+		return;
+	}
+	
+	pubnub_set_secret_key(ctx_pub, SecretKey);
+	pubnub_set_secret_key(ctx_ee, SecretKey);
+}
+
+
+void UPubnubClient::PublishMessage_priv(FString Channel, FString Message, FPubnubOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnPublishMessageResponse, FPubnubMessageData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnPublishMessageResponse, FPubnubMessageData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Message, OnPublishMessageResponse, FPubnubMessageData());
+
+	FString FinalMessage = Message;
+
+	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
+	{
+		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
+	}
+
+	FUTF8StringHolder MessageHolder(FinalMessage);
+	FUTF8StringHolder ChannelHolder(Channel);
+	
+	//Convert all UE PublishSettings to Pubnub PublishOptions
+	
+	//Converted char needs to live in function scope, so we need to create it here
+	pubnub_publish_options PubnubOptions;
+	
+	FUTF8StringHolder MetaHolder(PublishSettings.MetaData);
+	FUTF8StringHolder CustomMessageTypeHolder(PublishSettings.CustomMessageType);
+	PubnubOptions.meta = MetaHolder.Get();
+	PubnubOptions.custom_message_type = CustomMessageTypeHolder.Get();
+	
+	UPubnubInternalUtilities::PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
+	pubnub_publish_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
+
+	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
+	
+	FPubnubMessageData PublishedMessage;
+	FPubnubOperationResult PublishResult;
+
+	//Fill data about Publish Result
+	PublishResult.Status = pubnub_last_http_code(ctx_pub);
+	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
+	PublishResult.Error = PublishResultStatus != PNR_OK;
+
+	//In case error message is empty, we just put status there, it might be more useful than nothing
+	if(PublishResult.ErrorMessage.IsEmpty())
+	{
+		PublishResult.ErrorMessage = pubnub_res_2_string(PublishResultStatus);
+	}
+	
+	if(PublishResultStatus == PNR_OK)
+	{
+		//If result is ok, fill all data about published message
+		PublishedMessage.Message = Message;
+		PublishedMessage.Channel = Channel;
+		PublishedMessage.UserID = GetUserID_priv();
+		PublishedMessage.Timetoken = pubnub_last_publish_timetoken(ctx_pub);
+		PublishedMessage.Metadata = PublishSettings.MetaData;
+		PublishedMessage.MessageType = EPubnubMessageType::PMT_Published;
+		PublishedMessage.CustomMessageType = PublishSettings.CustomMessageType;
+	}
+
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnPublishMessageResponse, PublishResult, PublishedMessage);
 }
 
 void UPubnubClient::UnsubscribeFromAll_priv(FPubnubOnSubscribeOperationResponseNative OnUnsubscribeFromAllResponse)
