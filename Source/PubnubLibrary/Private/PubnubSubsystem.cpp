@@ -161,33 +161,35 @@ void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FPubnubP
 
 void UPubnubSubsystem::Signal(FString Channel, FString Message, FOnSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings)
 {
-	FOnSignalResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnSignalResponse](const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
+	PUBNUB_ENSURE_INITIALIZED(OnSignalResponse, FPubnubMessageData());
+	
+	FPubnubOnSignalResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([OnSignalResponse](const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
 	{
 		OnSignalResponse.ExecuteIfBound(Result, SignalMessage);
 	});
 
-	Signal(Channel, Message, NativeCallback, SignalSettings);
+	DefaultClient->Signal(Channel, Message, ConvertedCallback, SignalSettings);
 }
 
 void UPubnubSubsystem::Signal(FString Channel, FString Message, FOnSignalResponseNative NativeCallback, FPubnubSignalSettings SignalSettings)
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubMessageData());
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, NativeCallback, SignalSettings]
+	FPubnubOnSignalResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
 	{
-		Signal_priv(Channel, Message, NativeCallback, SignalSettings);
+		NativeCallback.ExecuteIfBound(Result, SignalMessage);
 	});
+
+	DefaultClient->Signal(Channel, Message, ConvertedCallback, SignalSettings);
 }
 
 void UPubnubSubsystem::Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
 {
 	PUBNUB_RETURN_IF_NOT_INITIALIZED();
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, SignalSettings]
-	{
-		Signal_priv(Channel, Message, nullptr, SignalSettings);
-	});
+	DefaultClient->Signal(Channel, Message, nullptr, SignalSettings);
 }
 
 void UPubnubSubsystem::SubscribeToChannel(FString Channel, FOnSubscribeOperationResponse OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings)
@@ -1410,182 +1412,6 @@ FString UPubnubSubsystem::GetUserIDInternal()
 }
 
 /* PRIV FUNCTIONS */
-
-void UPubnubSubsystem::InitPubnub_priv(const FPubnubConfig& Config)
-{
-	if(IsInitialized)
-	{return;}
-	
-	//Make sure that keys are filled
-	if(PublishKey[0] == '\0')
-	{
-		PubnubError("Publish key is empty, can't initialize Pubnub");
-		return;
-	}
-
-	if(SubscribeKey[0] == '\0')
-	{
-		PubnubError("Subscribe key is empty, can't initialize Pubnub");
-		return;
-	}
-	
-	ctx_pub = pubnub_alloc();
-	ctx_ee = pubnub_alloc();
-
-	//Send logging callback to Pubnub sdk, so we can pass all logs to UE
-	pubnub_set_log_callback(PubnubSDKLogConverter);
-	
-	pubnub_enforce_api(ctx_pub, PNA_SYNC);
-	pubnub_enforce_api(ctx_ee, PNA_CALLBACK);
-
-	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
-	pubnub_init(ctx_ee, PublishKey, SubscribeKey);
-
-	pubnub_subscribe_status_callback_t Callback = +[](const pubnub_t *pb, const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data, void* _data)
-	{
-		UPubnubSubsystem* ThisSubsystem = static_cast<UPubnubSubsystem*>(_data);
-		if(!ThisSubsystem)
-		{return;}
-
-		ThisSubsystem->OnCCoreSubscriptionStatusReceived(status, status_data);
-	};
-	//Register subscription status listener with callback created above
-	pubnub_subscribe_add_status_listener(ctx_ee, Callback, this);
-	
-	IsInitialized = true;
-
-	if(!Config.UserID.IsEmpty())
-	{
-		this->SetUserID(Config.UserID);
-	}
-	
-	if(PubnubConfig.SetSecretKeyAutomatically)
-	{
-		SetSecretKey();
-	}
-}
-
-void UPubnubSubsystem::SetUserID_priv(FString UserID)
-{
-	if(UserID.IsEmpty())
-	{
-		PubnubError("Can't Set User ID. User ID can't be empty");
-		return;
-	}
-
-	FUTF8StringHolder UserIDHolder(UserID);
-	pubnub_set_user_id(ctx_pub, UserIDHolder.Get());
-	pubnub_set_user_id(ctx_ee, UserIDHolder.Get());
-
-	IsUserIDSet = true;
-}
-
-void UPubnubSubsystem::PublishMessage_priv(FString Channel, FString Message, FOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(OnPublishMessageResponse, FPubnubMessageData());
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnPublishMessageResponse, FPubnubMessageData());
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Message, OnPublishMessageResponse, FPubnubMessageData());
-
-	FString FinalMessage = Message;
-
-	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
-	{
-		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
-	}
-
-	FUTF8StringHolder MessageHolder(FinalMessage);
-	FUTF8StringHolder ChannelHolder(Channel);
-	
-	//Convert all UE PublishSettings to Pubnub PublishOptions
-	
-	//Converted char needs to live in function scope, so we need to create it here
-	pubnub_publish_options PubnubOptions;
-	
-	FUTF8StringHolder MetaHolder(PublishSettings.MetaData);
-	FUTF8StringHolder CustomMessageTypeHolder(PublishSettings.CustomMessageType);
-	PubnubOptions.meta = MetaHolder.Get();
-	PubnubOptions.custom_message_type = CustomMessageTypeHolder.Get();
-	
-	PublishUESettingsToPubnubPublishOptions(PublishSettings, PubnubOptions);
-	pubnub_publish_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
-
-	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
-	
-	FPubnubMessageData PublishedMessage;
-	FPubnubOperationResult PublishResult;
-
-	//Fill data about Publish Result
-	PublishResult.Status = pubnub_last_http_code(ctx_pub);
-	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
-	PublishResult.Error = PublishResultStatus != PNR_OK;
-
-	//In case error message is empty, we just put status there, it might be more useful than nothing
-	if(PublishResult.ErrorMessage.IsEmpty())
-	{
-		PublishResult.ErrorMessage = pubnub_res_2_string(PublishResultStatus);
-	}
-	
-	if(PublishResultStatus == PNR_OK)
-	{
-		//If result is ok, fill all data about published message
-		PublishedMessage.Message = Message;
-		PublishedMessage.Channel = Channel;
-		PublishedMessage.UserID = GetUserIDInternal();
-		PublishedMessage.Timetoken = pubnub_last_publish_timetoken(ctx_pub);
-		PublishedMessage.Metadata = PublishSettings.MetaData;
-		PublishedMessage.MessageType = EPubnubMessageType::PMT_Published;
-		PublishedMessage.CustomMessageType = PublishSettings.CustomMessageType;
-	}
-
-	//Execute provided delegate with results
-	UPubnubUtilities::CallPubnubDelegate(OnPublishMessageResponse, PublishResult, PublishedMessage);
-}
-
-void UPubnubSubsystem::Signal_priv(FString Channel, FString Message, FOnSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(OnSignalResponse, FPubnubMessageData());
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnSignalResponse, FPubnubMessageData());
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Message, OnSignalResponse, FPubnubMessageData());
-
-	FString FinalMessage = Message;
-	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
-	{
-		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
-	}
-	
-	FUTF8StringHolder MessageHolder(FinalMessage);
-	FUTF8StringHolder ChannelHolder(Channel);
-	
-	pubnub_signal_options PubnubOptions = pubnub_signal_defopts();
-	FUTF8StringHolder CustomMessageTypeHolder(SignalSettings.CustomMessageType);
-	PubnubOptions.custom_message_type = SignalSettings.CustomMessageType.IsEmpty() ? NULL : CustomMessageTypeHolder.Get();
-	pubnub_signal_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
-	
-	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
-
-	FPubnubMessageData SignalMessage;
-	FPubnubOperationResult PublishResult;
-
-	PublishResult.Status = pubnub_last_http_code(ctx_pub);
-	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
-	PublishResult.Error = PublishResultStatus != PNR_OK;
-
-	if(PublishResultStatus == PNR_OK)
-	{
-		SignalMessage.Message = Message;
-		SignalMessage.Channel = Channel;
-		SignalMessage.UserID = GetUserIDInternal();
-		SignalMessage.Timetoken = pubnub_last_publish_timetoken(ctx_pub);
-		SignalMessage.Metadata = ""; // Signals don't have metadata
-		SignalMessage.MessageType = EPubnubMessageType::PMT_Signal;
-		SignalMessage.CustomMessageType = SignalSettings.CustomMessageType;
-	}
-
-	//Execute provided delegate with results
-	UPubnubUtilities::CallPubnubDelegate(OnSignalResponse, PublishResult, SignalMessage);
-}
 
 void UPubnubSubsystem::SubscribeToChannel_priv(FString Channel, FOnSubscribeOperationResponseNative OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings)
 {

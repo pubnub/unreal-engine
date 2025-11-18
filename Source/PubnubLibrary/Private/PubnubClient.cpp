@@ -91,7 +91,7 @@ void UPubnubClient::SetSecretKey()
 
 void UPubnubClient::PublishMessage(FString Channel, FString Message, FPubnubOnPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
 {
-	FOnPublishMessageResponseNative NativeCallback;
+	FPubnubOnPublishMessageResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnPublishMessageResponse](FPubnubOperationResult Result, FPubnubMessageData PublishedMessage)
 	{
 		OnPublishMessageResponse.ExecuteIfBound(Result, PublishedMessage);
@@ -117,6 +117,37 @@ void UPubnubClient::PublishMessage(FString Channel, FString Message, FPubnubPubl
 	PubnubCallsThread->AddFunctionToQueue( [this, Channel, Message, PublishSettings]
 	{
 		PublishMessage_priv(Channel, Message, nullptr, PublishSettings);
+	});
+}
+
+void UPubnubClient::Signal(FString Channel, FString Message, FPubnubOnSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings)
+{
+	FPubnubOnSignalResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSignalResponse](const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
+	{
+		OnSignalResponse.ExecuteIfBound(Result, SignalMessage);
+	});
+
+	Signal(Channel, Message, NativeCallback, SignalSettings);
+}
+
+void UPubnubClient::Signal(FString Channel, FString Message, FPubnubOnSignalResponseNative NativeCallback, FPubnubSignalSettings SignalSettings)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, FPubnubMessageData());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, Channel, Message, NativeCallback, SignalSettings]
+	{
+		Signal_priv(Channel, Message, NativeCallback, SignalSettings);
+	});
+}
+
+void UPubnubClient::Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
+{
+	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, Channel, Message, SignalSettings]
+	{
+		Signal_priv(Channel, Message, nullptr, SignalSettings);
 	});
 }
 
@@ -396,6 +427,51 @@ void UPubnubClient::PublishMessage_priv(FString Channel, FString Message, FPubnu
 
 	//Execute provided delegate with results
 	UPubnubUtilities::CallPubnubDelegate(OnPublishMessageResponse, PublishResult, PublishedMessage);
+}
+
+void UPubnubClient::Signal_priv(FString Channel, FString Message, FPubnubOnSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSignalResponse, FPubnubMessageData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnSignalResponse, FPubnubMessageData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Message, OnSignalResponse, FPubnubMessageData());
+
+	FString FinalMessage = Message;
+	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
+	{
+		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
+	}
+	
+	FUTF8StringHolder MessageHolder(FinalMessage);
+	FUTF8StringHolder ChannelHolder(Channel);
+	
+	pubnub_signal_options PubnubOptions = pubnub_signal_defopts();
+	FUTF8StringHolder CustomMessageTypeHolder(SignalSettings.CustomMessageType);
+	PubnubOptions.custom_message_type = SignalSettings.CustomMessageType.IsEmpty() ? NULL : CustomMessageTypeHolder.Get();
+	pubnub_signal_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
+	
+	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
+
+	FPubnubMessageData SignalMessage;
+	FPubnubOperationResult PublishResult;
+
+	PublishResult.Status = pubnub_last_http_code(ctx_pub);
+	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
+	PublishResult.Error = PublishResultStatus != PNR_OK;
+
+	if(PublishResultStatus == PNR_OK)
+	{
+		SignalMessage.Message = Message;
+		SignalMessage.Channel = Channel;
+		SignalMessage.UserID = GetUserID_priv();
+		SignalMessage.Timetoken = pubnub_last_publish_timetoken(ctx_pub);
+		SignalMessage.Metadata = ""; // Signals don't have metadata
+		SignalMessage.MessageType = EPubnubMessageType::PMT_Signal;
+		SignalMessage.CustomMessageType = SignalSettings.CustomMessageType;
+	}
+
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnSignalResponse, PublishResult, SignalMessage);
 }
 
 void UPubnubClient::UnsubscribeFromAll_priv(FPubnubOnSubscribeOperationResponseNative OnUnsubscribeFromAllResponse)

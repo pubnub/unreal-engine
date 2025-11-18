@@ -1914,12 +1914,6 @@ private:
 	/* PRIVATE FUNCTIONS */
 	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 
-	//TO DELETE
-	void InitPubnub_priv(const FPubnubConfig& Config);
-	//TO DELETE
-	void SetUserID_priv(FString UserID);
-	void PublishMessage_priv(FString Channel, FString Message, FOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
-	void Signal_priv(FString Channel, FString Message, FOnSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 	void SubscribeToChannel_priv(FString Channel, FOnSubscribeOperationResponseNative OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void SubscribeToGroup_priv(FString ChannelGroup, FOnSubscribeOperationResponseNative OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void UnsubscribeFromChannel_priv(FString Channel, FOnSubscribeOperationResponseNative OnUnsubscribeFromChannelResponse);
@@ -1967,7 +1961,7 @@ private:
 	
 
 	/* STRUCT CONVERTERS */
-	
+	//ALL 4 TO DELETE
 	void PublishUESettingsToPubnubPublishOptions(FPubnubPublishSettings &PublishSettings, pubnub_publish_options &PubnubPublishOptions);
 	void HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersFromChannelSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
 	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
