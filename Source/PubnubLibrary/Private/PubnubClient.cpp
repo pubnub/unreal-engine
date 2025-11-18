@@ -3,6 +3,7 @@
 
 #include "PubnubClient.h"
 #include "PubNub.h"
+#include "PubnubInternalMacros.h"
 #include "PubnubSubsystem.h"
 #include "Threads/PubnubFunctionThread.h"
 #include "FunctionLibraries/PubnubUtilities.h"
@@ -76,15 +77,57 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 
 void UPubnubClient::DeinitializeClient()
 {
+	if(!IsInitialized)
+	{return;}
+
+	if(PubnubCallsThread)
+	{
+		PubnubCallsThread->Stop();
+		delete PubnubCallsThread;
+		PubnubCallsThread = nullptr;
+	}
+	
+	//Unsubscribe from all channels and groups so this user will not be visible for others anymore
+	UnsubscribeFromAll_priv();
+	
 	IsInitialized = false;
 	PubnubSubsystem = nullptr;
+
+	if(ctx_pub && ctx_ee)
+	{
+		//We set this to prevent crash from C-Core when it's trying to clean up provider made in UE
+		pubnub_set_crypto_module(ctx_pub, nullptr);
+		pubnub_set_crypto_module(ctx_ee, nullptr);
+
+		//Clean up Crypto bridge if it was created
+		if(CryptoBridge)
+		{
+			CryptoBridge->CleanUpCryptoBridge();
+		}
+
+		//Clean up C-core pubnub contexts
+		pubnub_free(ctx_pub);
+		pubnub_free(ctx_ee);
+		ctx_pub = nullptr;
+		ctx_ee = nullptr;
+	}
+	
+	IsUserIDSet = false;
+	delete[] AuthTokenBuffer;
+	AuthTokenBuffer = nullptr;
+	AuthTokenLength = 0;
+
+	SubscriptionResultDelegates.Empty();
+
+	//Notify that Deinitialization is finished
+	OnClientDeinitialized.Broadcast(ClientID);
 }
 
 void UPubnubClient::SavePubnubConfig(const FPubnubConfig& InConfig)
 {
 	PubnubConfig = InConfig;
 	
-	// Safely copy all keys using the utility function
+	//Safely copy all keys using the utility function
 	UPubnubUtilities::SafeCopyFStringToCharBuffer(PublishKey, PublishKeySize + 1, InConfig.PublishKey, TEXT("PublishKey"));
 	UPubnubUtilities::SafeCopyFStringToCharBuffer(SubscribeKey, PublishKeySize + 1, InConfig.SubscribeKey, TEXT("SubscribeKey"));
 	UPubnubUtilities::SafeCopyFStringToCharBuffer(SecretKey, SecretKeySize + 1, InConfig.SecretKey, TEXT("SecretKey"));
@@ -201,4 +244,48 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	{
 		SetSecretKey();
 	}
+}
+
+void UPubnubClient::UnsubscribeFromAll_priv(FPubnubOnSubscribeOperationResponseNative OnUnsubscribeFromAllResponse)
+{
+	if(ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty())
+	{
+		UPubnubUtilities::CallPubnubDelegate(OnUnsubscribeFromAllResponse, FPubnubOperationResult({200, false, ""}));
+		return;
+	}
+
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnUnsubscribeFromAllResponse);
+
+	//All subscription related operations are non blocking, so we lock ActionThread manually,
+	//make it wait with calling other function until we have subscription result
+	PubnubCallsThread->LockForSubscribeOperation();
+
+	pubnub_unsubscribe_all(ctx_ee);
+
+    //Clean up all channel subscriptions
+    for(auto& Pair : ChannelSubscriptions)
+    {
+        if(Pair.Value)
+        {
+            if(Pair.Value->Subscription)
+            {
+                pubnub_subscription_free(&Pair.Value->Subscription);
+            }
+            delete Pair.Value;
+        }
+    }
+    for(auto& Pair : ChannelGroupSubscriptions)
+    {
+        if(Pair.Value)
+        {
+            if(Pair.Value->Subscription)
+            {
+                pubnub_subscription_free(&Pair.Value->Subscription);
+            }
+            delete Pair.Value;
+        }
+    }
+	
+	ChannelSubscriptions.Empty();
+	ChannelGroupSubscriptions.Empty();
 }

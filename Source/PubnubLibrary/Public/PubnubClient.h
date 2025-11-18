@@ -9,15 +9,16 @@
 #include "PubnubClient.generated.h"
 
 class UPubnubSubsystem;
+class UPubnubCryptoBridge;
 class FPubnubFunctionThread;
 struct CCoreSubscriptionCallback;
-
 
 struct pubnub_;
 typedef struct pubnub_ pubnub_t;
 enum pubnub_res;
 
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPubnubOnClientDeinitialized, int, ClientID);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FPubnubOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, FPubnubSubscriptionStatusData, StatusData);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FPubnubOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
 
@@ -39,16 +40,20 @@ class PUBNUBLIBRARY_API UPubnubClient : public UObject
 
 public:
 
-	/**Listener to react for subscription status changed */
+	/**Listener to react for subscription status changed*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FPubnubOnSubscriptionStatusChanged OnSubscriptionStatusChanged;
 
 	/**Listener to react for subscription status changed , equivalent that accepts lambdas*/
 	FPubnubOnSubscriptionStatusChangedNative OnSubscriptionStatusChangedNative;
+
+	/**Delegate that is called when PubnubClient is deinitialized*/
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	FPubnubOnClientDeinitialized OnClientDeinitialized;
 	
 
-	UFUNCTION(BlueprintCallable, Category="PubnubClient")
-	int GetClientID() {return ClientID;};
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category="PubnubClient")
+	int GetClientID() const {return ClientID;};
 
 	UFUNCTION(BlueprintCallable, Category="PubnubClient")
 	void DestroyClient();
@@ -133,8 +138,25 @@ private:
 	int ClientID = -1;
 	FString DebugName = "";
 	bool IsInitialized = false;
+	bool IsUserIDSet = false;
 
-#pragma endregion 
+#pragma endregion
+
+#pragma region PUBNUB CRYPTO
+	
+	//CryptoBridge class that holds provided CryptoModule and inserts it into C-Core system - it keeps all required references alive
+	UPROPERTY()
+	TObjectPtr<UPubnubCryptoBridge> CryptoBridge;
+
+#pragma endregion
+
+#pragma region PUBNUB AUTH
+
+	//Auth token has to be kept alive for the lifetime of the sdk, so this is the container for it
+	char* AuthTokenBuffer = nullptr;
+	size_t AuthTokenLength = 0;
+
+#pragma endregion
 
 #pragma region PUBNUB CONFIG
 
@@ -154,9 +176,7 @@ private:
 
 #pragma endregion 
 
-	//TODO:: Move these functions to the logger
-	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
-	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
+#pragma region PUBNUB SUBSCRIPTION
 
 	//Storage for global subscriptions (not from Entities)
 	TMap<FString, CCoreSubscriptionCallback*> ChannelSubscriptions;
@@ -167,6 +187,13 @@ private:
 
 	void OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData);
 
+#pragma endregion
+
+	//TODO:: Move these functions to the logger
+	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
+	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
 	
 	void InitPubnub_priv(const FPubnubConfig& Config);
+	void UnsubscribeFromAll_priv(FPubnubOnSubscribeOperationResponseNative OnUnsubscribeFromAllResponse = nullptr);
 };
+
