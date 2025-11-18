@@ -24,10 +24,10 @@
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("Pubnub subsystem is not initialized."), ##__VA_ARGS__); \
 			return; \
 		} \
-		if (!QuickActionThread) \
+		if (!DefaultClient) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: QuickActionThread is null. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
-			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("QuickActionThread is invalid."), ##__VA_ARGS__); \
+			PubnubError(FString::Printf(TEXT("[%s]: DefaultClient is invalid. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("DefaultClient is invalid."), ##__VA_ARGS__); \
 			return; \
 		} \
 	} while (false)
@@ -48,14 +48,14 @@
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
-			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("Pubnub subsystem is not initialized."), ##__VA_ARGS__); \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("PubnubClient is not initialized."), ##__VA_ARGS__); \
 			return; \
 		} \
 		if (!PubnubCallsThread) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is null. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
-			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("QuickActionThread is invalid."), ##__VA_ARGS__); \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("PubnubCallsThread is invalid."), ##__VA_ARGS__); \
 			return; \
 		} \
 	} while (false)
@@ -70,17 +70,17 @@
  *
  * Usage: Place this at the beginning of any public-facing API to guard against uninitialized use.
  */
-#define PUBNUB_RETURN_IF_NOT_INITIALIZED() \
+#define PUBNUB_RETURN_IF_NOT_INITIALIZED(...) \
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
-			return; \
+			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			return __VA_ARGS__; \
 		} \
-		if (!QuickActionThread) \
+		if (!DefaultClient) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
-			return; \
+			PubnubError(FString::Printf(TEXT("[%s]: DefaultClient is invalid. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			return __VA_ARGS__; \
 		} \
 	} while (false)
 

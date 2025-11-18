@@ -87,54 +87,19 @@ void UPubnubSubsystem::InitPubnubWithConfig(FPubnubConfig Config)
 	}
 
 	SavePubnubConfig(Config);
-
-	InitPubnub_priv(Config);
-
-	//If initialized correctly, create required thread.
-	if(IsInitialized)
-	{
-		//Create new thread to queue all pubnub sync operations
-		QuickActionThread = new FPubnubFunctionThread;
-	}
+	DefaultClient = CreatePubnubClient(Config);
+	IsInitialized = true;
 }
 
 void UPubnubSubsystem::DeinitPubnub()
 {
 	if(!IsInitialized)
 	{return;}
-
-	if(QuickActionThread)
-	{
-		QuickActionThread->Stop();
-	}
-
-	//Unsubscribe from all channels and groups so this user will not be visible for others anymore
-	UnsubscribeFromAll_priv();
+	
+	DefaultClient->DeinitializeClient();
+	DefaultClient = nullptr;
 	
 	IsInitialized = false;
-
-	if(ctx_pub && ctx_ee)
-	{
-		//We set this to prevent crash from C-Core when it's trying to clean up provider made in UE
-		pubnub_set_crypto_module(ctx_pub, nullptr);
-		pubnub_set_crypto_module(ctx_ee, nullptr);
-
-		//Clean up Crypto bridge if it was created
-		if(CryptoBridge)
-		{
-			CryptoBridge->CleanUpCryptoBridge();
-		}
-
-		pubnub_free(ctx_pub);
-		pubnub_free(ctx_ee);
-		ctx_pub = nullptr;
-		ctx_ee = nullptr;
-	}
-	
-	ChannelSubscriptions.Empty();
-	ChannelGroupSubscriptions.Empty();
-	IsUserIDSet = false;
-	delete[] AuthTokenBuffer;
 
 	//Notify that Deinitialization is finished
 	OnPubnubSubsystemDeinitialized.Broadcast();
@@ -142,62 +107,56 @@ void UPubnubSubsystem::DeinitPubnub()
 
 void UPubnubSubsystem::SetUserID(FString UserID)
 {
-	if(!CheckIsPubnubInitialized())
-	{return;}
-
-	SetUserID_priv(UserID);
+	PUBNUB_RETURN_IF_NOT_INITIALIZED();
+	
+	DefaultClient->SetUserID(UserID);
 }
 
 FString UPubnubSubsystem::GetUserID()
 {
-	return GetUserIDInternal();
+	PUBNUB_RETURN_IF_NOT_INITIALIZED("");
+	
+	return DefaultClient->GetUserID();
 }
 
 void UPubnubSubsystem::SetSecretKey()
 {
-	if(!CheckIsPubnubInitialized())
-	{return;}
+	PUBNUB_RETURN_IF_NOT_INITIALIZED();
 
-	if(SecretKey[0] == '\0')
-	{
-		PubnubError("Can't set Secret Key. Secret Key is empty.");
-		return;
-	}
-
-	//This function only changes data locally, doesn't do any networking operations, so no need to call it on separate thread
-	pubnub_set_secret_key(ctx_pub, SecretKey);
-	pubnub_set_secret_key(ctx_ee, SecretKey);
+	DefaultClient->SetSecretKey();
 }
 
 void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FOnPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
 {
-	FOnPublishMessageResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnPublishMessageResponse](FPubnubOperationResult Result, FPubnubMessageData PublishedMessage)
+	PUBNUB_ENSURE_INITIALIZED(OnPublishMessageResponse, FPubnubMessageData());
+	
+	FPubnubOnPublishMessageResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([OnPublishMessageResponse](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
 	{
 		OnPublishMessageResponse.ExecuteIfBound(Result, PublishedMessage);
 	});
 
-	PublishMessage(Channel, Message, NativeCallback, PublishSettings);
+	DefaultClient->PublishMessage(Channel, Message, ConvertedCallback, PublishSettings);
 }
 
 void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FOnPublishMessageResponseNative NativeCallback, FPubnubPublishSettings PublishSettings)
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubMessageData());
-	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, NativeCallback, PublishSettings]
-	{
-		PublishMessage_priv(Channel, Message, NativeCallback, PublishSettings);
-	});
+
+	FPubnubOnPublishMessageResponseNative ConvertedCallback;
+    ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+    {
+        NativeCallback.ExecuteIfBound(Result, PublishedMessage);
+    });
+
+	DefaultClient->PublishMessage(Channel, Message, ConvertedCallback, PublishSettings);
 }
 
 void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
 {
 	PUBNUB_RETURN_IF_NOT_INITIALIZED();
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Message, PublishSettings]
-	{
-		PublishMessage_priv(Channel, Message, nullptr, PublishSettings);
-	});
+	DefaultClient->PublishMessage(Channel, Message, nullptr, PublishSettings);
 }
 
 void UPubnubSubsystem::Signal(FString Channel, FString Message, FOnSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings)

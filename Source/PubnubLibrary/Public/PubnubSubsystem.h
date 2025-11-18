@@ -1832,7 +1832,9 @@ private:
 	UPROPERTY()
 	TMap<int, TObjectPtr<UPubnubClient>> PubnubClients;
 	int NextClientID = 0;
-	
+
+	UPROPERTY()
+	UPubnubClient* DefaultClient = nullptr;
 	
 	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
 	FPubnubFunctionThread* QuickActionThread = nullptr;
@@ -1904,14 +1906,17 @@ private:
 	bool IsUserIDSet = false;
 	bool CheckIsPubnubInitialized();
 
+	//TO DELETE
 	FString GetUserIDInternal();
 
 #pragma region PRIVATE FUNCTIONS
 
 	/* PRIVATE FUNCTIONS */
 	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
-	
+
+	//TO DELETE
 	void InitPubnub_priv(const FPubnubConfig& Config);
+	//TO DELETE
 	void SetUserID_priv(FString UserID);
 	void PublishMessage_priv(FString Channel, FString Message, FOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	void Signal_priv(FString Channel, FString Message, FOnSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
