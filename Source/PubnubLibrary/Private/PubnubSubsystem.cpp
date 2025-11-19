@@ -2,22 +2,10 @@
 
 #include "PubnubSubsystem.h"
 
-#include "Dom/JsonObject.h"
-#include "Dom/JsonValue.h"
 #include "Config/PubnubSettings.h"
-#include "Threads/PubnubFunctionThread.h"
 #include "PubnubInternalMacros.h"
-#include "Crypto/PubnubAesCryptor.h"
-#include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
-#include "FunctionLibraries/PubnubInternalUtilities.h"
-#include "Entities/PubnubBaseEntity.h"
-#include "Entities/PubnubChannelEntity.h"
-#include "Entities/PubnubChannelGroupEntity.h"
-#include "Entities/PubnubChannelMetadataEntity.h"
-#include "Entities/PubnubUserMetadataEntity.h"
-#include "Entities/PubnubSubscription.h"
 #include "PubnubClient.h"
 
 DEFINE_LOG_CATEGORY(PubnubLog)
@@ -86,8 +74,7 @@ void UPubnubSubsystem::InitPubnubWithConfig(FPubnubConfig Config)
 		PubnubError("Pubnub is already initialized. Disable InitializeAutomatically in Pubnub SDK Project Settings to be able to Init Pubnub manually", EPubnubErrorType::PET_Warning);
 		return;
 	}
-
-	SavePubnubConfig(Config);
+	
 	DefaultClient = CreatePubnubClient(Config);
 	IsInitialized = true;
 }
@@ -131,7 +118,7 @@ void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FOnPubli
 {
 	PUBNUB_ENSURE_INITIALIZED(OnPublishMessageResponse, FPubnubMessageData());
 	
-	FPubnubOnPublishMessageResponseNative ConvertedCallback;
+	FOnPubnubPublishMessageResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnPublishMessageResponse](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
 	{
 		OnPublishMessageResponse.ExecuteIfBound(Result, PublishedMessage);
@@ -144,7 +131,7 @@ void UPubnubSubsystem::PublishMessage(FString Channel, FString Message, FOnPubli
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubMessageData());
 
-	FPubnubOnPublishMessageResponseNative ConvertedCallback;
+	FOnPubnubPublishMessageResponseNative ConvertedCallback;
     ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
     {
         NativeCallback.ExecuteIfBound(Result, PublishedMessage);
@@ -164,7 +151,7 @@ void UPubnubSubsystem::Signal(FString Channel, FString Message, FOnSignalRespons
 {
 	PUBNUB_ENSURE_INITIALIZED(OnSignalResponse, FPubnubMessageData());
 	
-	FPubnubOnSignalResponseNative ConvertedCallback;
+	FOnPubnubSignalResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnSignalResponse](const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
 	{
 		OnSignalResponse.ExecuteIfBound(Result, SignalMessage);
@@ -177,7 +164,7 @@ void UPubnubSubsystem::Signal(FString Channel, FString Message, FOnSignalRespons
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubMessageData());
 	
-	FPubnubOnSignalResponseNative ConvertedCallback;
+	FOnPubnubSignalResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const FPubnubMessageData& SignalMessage)
 	{
 		NativeCallback.ExecuteIfBound(Result, SignalMessage);
@@ -197,7 +184,7 @@ void UPubnubSubsystem::SubscribeToChannel(FString Channel, FOnSubscribeOperation
 {
 	PUBNUB_ENSURE_INITIALIZED(OnSubscribeToChannelResponse);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnSubscribeToChannelResponse](FPubnubOperationResult Result)
 	{
 		OnSubscribeToChannelResponse.ExecuteIfBound(Result);
@@ -210,7 +197,7 @@ void UPubnubSubsystem::SubscribeToChannel(FString Channel, FOnSubscribeOperation
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](FPubnubOperationResult Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -230,7 +217,7 @@ void UPubnubSubsystem::SubscribeToGroup(FString ChannelGroup, FOnSubscribeOperat
 {
 	PUBNUB_ENSURE_INITIALIZED(OnSubscribeToGroupResponse);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnSubscribeToGroupResponse](FPubnubOperationResult Result)
 	{
 		OnSubscribeToGroupResponse.ExecuteIfBound(Result);
@@ -243,7 +230,7 @@ void UPubnubSubsystem::SubscribeToGroup(FString ChannelGroup, FOnSubscribeOperat
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](FPubnubOperationResult Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -263,7 +250,7 @@ void UPubnubSubsystem::UnsubscribeFromChannel(FString Channel, FOnSubscribeOpera
 {
 	PUBNUB_ENSURE_INITIALIZED(OnUnsubscribeFromChannelResponse);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnUnsubscribeFromChannelResponse](FPubnubOperationResult Result)
 	{
 		OnUnsubscribeFromChannelResponse.ExecuteIfBound(Result);
@@ -276,7 +263,7 @@ void UPubnubSubsystem::UnsubscribeFromChannel(FString Channel, FOnSubscribeOpera
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](FPubnubOperationResult Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -289,7 +276,7 @@ void UPubnubSubsystem::UnsubscribeFromGroup(FString ChannelGroup, FOnSubscribeOp
 {
 	PUBNUB_ENSURE_INITIALIZED(OnUnsubscribeFromGroupResponse);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnUnsubscribeFromGroupResponse](FPubnubOperationResult Result)
 	{
 		OnUnsubscribeFromGroupResponse.ExecuteIfBound(Result);
@@ -302,7 +289,7 @@ void UPubnubSubsystem::UnsubscribeFromGroup(FString ChannelGroup, FOnSubscribeOp
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](FPubnubOperationResult Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -315,7 +302,7 @@ void UPubnubSubsystem::UnsubscribeFromAll(FOnSubscribeOperationResponse OnUnsubs
 {
 	PUBNUB_ENSURE_INITIALIZED(OnUnsubscribeFromAllResponse);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnUnsubscribeFromAllResponse](FPubnubOperationResult Result)
 	{
 		OnUnsubscribeFromAllResponse.ExecuteIfBound(Result);
@@ -328,7 +315,7 @@ void UPubnubSubsystem::UnsubscribeFromAll(FOnSubscribeOperationResponseNative Na
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnSubscribeOperationResponseNative ConvertedCallback;
+	FOnPubnubSubscribeOperationResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](FPubnubOperationResult Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -341,7 +328,7 @@ void UPubnubSubsystem::AddChannelToGroup(FString Channel, FString ChannelGroup, 
 {
 	PUBNUB_ENSURE_INITIALIZED(OnAddChannelToGroupResponse);
 	
-	FPubnubOnAddChannelToGroupResponseNative ConvertedCallback;
+	FOnPubnubAddChannelToGroupResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnAddChannelToGroupResponse](const FPubnubOperationResult& Result)
 	{
 		OnAddChannelToGroupResponse.ExecuteIfBound(Result);
@@ -354,7 +341,7 @@ void UPubnubSubsystem::AddChannelToGroup(FString Channel, FString ChannelGroup, 
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnAddChannelToGroupResponseNative ConvertedCallback;
+	FOnPubnubAddChannelToGroupResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -367,7 +354,7 @@ void UPubnubSubsystem::RemoveChannelFromGroup(FString Channel, FString ChannelGr
 {
 	PUBNUB_ENSURE_INITIALIZED(OnRemoveChannelFromGroupResponse);
 	
-	FPubnubOnRemoveChannelFromGroupResponseNative ConvertedCallback;
+	FOnPubnubRemoveChannelFromGroupResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnRemoveChannelFromGroupResponse](const FPubnubOperationResult& Result)
 	{
 		OnRemoveChannelFromGroupResponse.ExecuteIfBound(Result);
@@ -380,7 +367,7 @@ void UPubnubSubsystem::RemoveChannelFromGroup(FString Channel, FString ChannelGr
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnRemoveChannelFromGroupResponseNative ConvertedCallback;
+	FOnPubnubRemoveChannelFromGroupResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -393,7 +380,7 @@ void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChanne
 {
 	PUBNUB_ENSURE_INITIALIZED(OnListChannelsResponse, TArray<FString>{});
 	
-	FPubnubOnListChannelsFromGroupResponseNative ConvertedCallback;
+	FOnPubnubListChannelsFromGroupResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnListChannelsResponse](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		OnListChannelsResponse.ExecuteIfBound(Result, Channels);
@@ -406,7 +393,7 @@ void UPubnubSubsystem::ListChannelsFromGroup(FString ChannelGroup, FOnListChanne
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FString>{});
 	
-	FPubnubOnListChannelsFromGroupResponseNative ConvertedCallback;
+	FOnPubnubListChannelsFromGroupResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		NativeCallback.ExecuteIfBound(Result, Channels);
@@ -419,7 +406,7 @@ void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannel
 {
 	PUBNUB_ENSURE_INITIALIZED(OnRemoveChannelGroupResponse);
 	
-	FPubnubOnRemoveChannelGroupResponseNative ConvertedCallback;
+	FOnPubnubRemoveChannelGroupResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnRemoveChannelGroupResponse](const FPubnubOperationResult& Result)
 	{
 		OnRemoveChannelGroupResponse.ExecuteIfBound(Result);
@@ -432,7 +419,7 @@ void UPubnubSubsystem::RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannel
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnRemoveChannelGroupResponseNative ConvertedCallback;
+	FOnPubnubRemoveChannelGroupResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -445,7 +432,7 @@ void UPubnubSubsystem::ListUsersFromChannel(FString Channel, FOnListUsersFromCha
 {
 	PUBNUB_ENSURE_INITIALIZED(ListUsersFromChannelResponse, FPubnubListUsersFromChannelWrapper());
 	
-	FPubnubOnListUsersFromChannelResponseNative ConvertedCallback;
+	FOnPubnubListUsersFromChannelResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([ListUsersFromChannelResponse](const FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper Data)
 	{
 		ListUsersFromChannelResponse.ExecuteIfBound(Result, Data);
@@ -458,7 +445,7 @@ void UPubnubSubsystem::ListUsersFromChannel(FString Channel, FOnListUsersFromCha
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubListUsersFromChannelWrapper());
 	
-	FPubnubOnListUsersFromChannelResponseNative ConvertedCallback;
+	FOnPubnubListUsersFromChannelResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper Data)
 	{
 		NativeCallback.ExecuteIfBound(Result, Data);
@@ -471,7 +458,7 @@ void UPubnubSubsystem::ListUserSubscribedChannels(FString UserID, FOnListUsersSu
 {
 	PUBNUB_ENSURE_INITIALIZED(ListUserSubscribedChannelsResponse, TArray<FString>{});
 	
-	FPubnubOnListUsersSubscribedChannelsResponseNative ConvertedCallback;
+	FOnPubnubListUsersSubscribedChannelsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([ListUserSubscribedChannelsResponse](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		ListUserSubscribedChannelsResponse.ExecuteIfBound(Result, Channels);
@@ -484,7 +471,7 @@ void UPubnubSubsystem::ListUserSubscribedChannels(FString UserID, FOnListUsersSu
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FString>{});
 	
-	FPubnubOnListUsersSubscribedChannelsResponseNative ConvertedCallback;
+	FOnPubnubListUsersSubscribedChannelsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		NativeCallback.ExecuteIfBound(Result, Channels);
@@ -497,7 +484,7 @@ void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FOnSetStateR
 {
 	PUBNUB_ENSURE_INITIALIZED(OnSetStateResponse);
 	
-	FPubnubOnSetStateResponseNative ConvertedCallback;
+	FOnPubnubSetStateResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnSetStateResponse](const FPubnubOperationResult& Result)
 	{
 		OnSetStateResponse.ExecuteIfBound(Result);
@@ -510,7 +497,7 @@ void UPubnubSubsystem::SetState(FString Channel, FString StateJson, FOnSetStateR
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnSetStateResponseNative ConvertedCallback;
+	FOnPubnubSetStateResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -530,7 +517,7 @@ void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString U
 {
 	PUBNUB_ENSURE_INITIALIZED(OnGetStateResponse, FString());
 	
-	FPubnubOnGetStateResponseNative ConvertedCallback;
+	FOnPubnubGetStateResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnGetStateResponse](const FPubnubOperationResult& Result, FString JsonResponse)
 	{
 		OnGetStateResponse.ExecuteIfBound(Result, JsonResponse);
@@ -543,7 +530,7 @@ void UPubnubSubsystem::GetState(FString Channel, FString ChannelGroup, FString U
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FString());
 	
-	FPubnubOnGetStateResponseNative ConvertedCallback;
+	FOnPubnubGetStateResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, FString JsonResponse)
 	{
 		NativeCallback.ExecuteIfBound(Result, JsonResponse);
@@ -563,7 +550,7 @@ void UPubnubSubsystem::GrantToken(int Ttl, FString AuthorizedUser, const FPubnub
 {
 	PUBNUB_ENSURE_INITIALIZED(OnGrantTokenResponse, FString());
 
-	FPubnubOnGrantTokenResponseNative ConvertedCallback;
+	FOnPubnubGrantTokenResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnGrantTokenResponse](const FPubnubOperationResult& Result, FString Token)
 	{
 		OnGrantTokenResponse.ExecuteIfBound(Result, Token);
@@ -576,7 +563,7 @@ void UPubnubSubsystem::GrantToken(int Ttl, FString AuthorizedUser, const FPubnub
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FString());
 	
-	FPubnubOnGrantTokenResponseNative ConvertedCallback;
+	FOnPubnubGrantTokenResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, FString Token)
 	{
 		NativeCallback.ExecuteIfBound(Result, Token);
@@ -589,7 +576,7 @@ void UPubnubSubsystem::RevokeToken(FString Token, FOnRevokeTokenResponse OnRevok
 {
 	PUBNUB_ENSURE_INITIALIZED(OnRevokeTokenResponse);
 	
-	FPubnubOnRevokeTokenResponseNative ConvertedCallback;
+	FOnPubnubRevokeTokenResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnRevokeTokenResponse](const FPubnubOperationResult& Result)
 	{
 		OnRevokeTokenResponse.ExecuteIfBound(Result);
@@ -602,7 +589,7 @@ void UPubnubSubsystem::RevokeToken(FString Token, FOnRevokeTokenResponseNative N
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnRevokeTokenResponseNative ConvertedCallback;
+	FOnPubnubRevokeTokenResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -629,7 +616,7 @@ void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponse OnF
 {
 	PUBNUB_ENSURE_INITIALIZED(OnFetchHistoryResponse, TArray<FPubnubHistoryMessageData>());
 
-	FPubnubOnFetchHistoryResponseNative ConvertedCallback;
+	FOnPubnubFetchHistoryResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnFetchHistoryResponse](const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages)
 	{
 		OnFetchHistoryResponse.ExecuteIfBound(Result, Messages);
@@ -642,7 +629,7 @@ void UPubnubSubsystem::FetchHistory(FString Channel, FOnFetchHistoryResponseNati
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubHistoryMessageData>());
 	
-	FPubnubOnFetchHistoryResponseNative ConvertedCallback;
+	FOnPubnubFetchHistoryResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages)
 	{
 		NativeCallback.ExecuteIfBound(Result, Messages);
@@ -655,7 +642,7 @@ void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponse
 {
 	PUBNUB_ENSURE_INITIALIZED(OnDeleteMessagesResponse);
 
-	FPubnubOnDeleteMessagesResponseNative ConvertedCallback;
+	FOnPubnubDeleteMessagesResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnDeleteMessagesResponse](FPubnubOperationResult Result)
 	{
 		OnDeleteMessagesResponse.ExecuteIfBound(Result);
@@ -668,7 +655,7 @@ void UPubnubSubsystem::DeleteMessages(FString Channel, FOnDeleteMessagesResponse
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnDeleteMessagesResponseNative ConvertedCallback;
+	FOnPubnubDeleteMessagesResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](FPubnubOperationResult Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -688,7 +675,7 @@ void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnMess
 {
 	PUBNUB_ENSURE_INITIALIZED(OnMessageCountsResponse, 0);
 
-	FPubnubOnMessageCountsResponseNative ConvertedCallback;
+	FOnPubnubMessageCountsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnMessageCountsResponse](const FPubnubOperationResult& Result, int MessageCounts)
 	{
 		OnMessageCountsResponse.ExecuteIfBound(Result, MessageCounts);
@@ -701,7 +688,7 @@ void UPubnubSubsystem::MessageCounts(FString Channel, FString Timetoken, FOnMess
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, 0);
 	
-	FPubnubOnMessageCountsResponseNative ConvertedCallback;
+	FOnPubnubMessageCountsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, int MessageCounts)
 	{
 		NativeCallback.ExecuteIfBound(Result, MessageCounts);
@@ -714,7 +701,7 @@ void UPubnubSubsystem::GetAllUserMetadataRaw(FOnGetAllUserMetadataResponse OnGet
 {
 	PUBNUB_ENSURE_INITIALIZED(OnGetAllUserMetadataResponse, TArray<FPubnubUserData>(), FString(), FString());
 
-	FPubnubOnGetAllUserMetadataResponseNative ConvertedCallback;
+	FOnPubnubGetAllUserMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnGetAllUserMetadataResponse](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
 	{
 		OnGetAllUserMetadataResponse.ExecuteIfBound(Result, UsersData, PageNext, PagePrev);
@@ -727,7 +714,7 @@ void UPubnubSubsystem::GetAllUserMetadataRaw(FOnGetAllUserMetadataResponseNative
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubUserData>(), FString(), FString());
 	
-	FPubnubOnGetAllUserMetadataResponseNative ConvertedCallback;
+	FOnPubnubGetAllUserMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
 	{
 		NativeCallback.ExecuteIfBound(Result, UsersData, PageNext, PagePrev);
@@ -750,7 +737,7 @@ void UPubnubSubsystem::SetUserMetadataRaw(FString User, FString UserMetadataObj,
 {
 	PUBNUB_ENSURE_INITIALIZED(OnSetUserMetadataResponse, FPubnubUserData());
 
-	FPubnubOnSetUserMetadataResponseNative ConvertedCallback;
+	FOnPubnubSetUserMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnSetUserMetadataResponse](const FPubnubOperationResult& Result, FPubnubUserData UserData)
 	{
 		OnSetUserMetadataResponse.ExecuteIfBound(Result, UserData);
@@ -763,7 +750,7 @@ void UPubnubSubsystem::SetUserMetadataRaw(FString User, FString UserMetadataObj,
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubUserData());
 	
-	FPubnubOnSetUserMetadataResponseNative ConvertedCallback;
+	FOnPubnubSetUserMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, FPubnubUserData UserData)
 	{
 		NativeCallback.ExecuteIfBound(Result, UserData);
@@ -786,7 +773,7 @@ void UPubnubSubsystem::GetUserMetadataRaw(FString User, FOnGetUserMetadataRespon
 {
 	PUBNUB_ENSURE_INITIALIZED(OnGetUserMetadataResponse, FPubnubUserData());
 
-	FPubnubOnGetUserMetadataResponseNative ConvertedCallback;
+	FOnPubnubGetUserMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnGetUserMetadataResponse](const FPubnubOperationResult& Result, FPubnubUserData UserData)
 	{
 		OnGetUserMetadataResponse.ExecuteIfBound(Result, UserData);
@@ -799,7 +786,7 @@ void UPubnubSubsystem::GetUserMetadataRaw(FString User, FOnGetUserMetadataRespon
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubUserData());
 	
-	FPubnubOnGetUserMetadataResponseNative ConvertedCallback;
+	FOnPubnubGetUserMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, FPubnubUserData UserData)
 	{
 		NativeCallback.ExecuteIfBound(Result, UserData);
@@ -822,7 +809,7 @@ void UPubnubSubsystem::RemoveUserMetadata(FString User, FOnRemoveUserMetadataRes
 {
 	PUBNUB_ENSURE_INITIALIZED(OnRemoveUserMetadataResponse);
 
-	FPubnubOnRemoveUserMetadataResponseNative ConvertedCallback;
+	FOnPubnubRemoveUserMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnRemoveUserMetadataResponse](const FPubnubOperationResult& Result)
 	{
 		OnRemoveUserMetadataResponse.ExecuteIfBound(Result);
@@ -835,7 +822,7 @@ void UPubnubSubsystem::RemoveUserMetadata(FString User, FOnRemoveUserMetadataRes
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnRemoveUserMetadataResponseNative ConvertedCallback;
+	FOnPubnubRemoveUserMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -848,7 +835,7 @@ void UPubnubSubsystem::GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse
 {
 	PUBNUB_ENSURE_INITIALIZED(OnGetAllChannelMetadataResponse, TArray<FPubnubChannelData>(), FString(), FString());
 
-	FPubnubOnGetAllChannelMetadataResponseNative ConvertedCallback;
+	FOnPubnubGetAllChannelMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnGetAllChannelMetadataResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
 	{
 		OnGetAllChannelMetadataResponse.ExecuteIfBound(Result, ChannelsData, PageNext, PagePrev);
@@ -861,7 +848,7 @@ void UPubnubSubsystem::GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubChannelData>(), FString(), FString());
 	
-	FPubnubOnGetAllChannelMetadataResponseNative ConvertedCallback;
+	FOnPubnubGetAllChannelMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
 	{
 		NativeCallback.ExecuteIfBound(Result, ChannelsData, PageNext, PagePrev);
@@ -884,7 +871,7 @@ void UPubnubSubsystem::SetChannelMetadataRaw(FString Channel, FString ChannelMet
 {
 	PUBNUB_ENSURE_INITIALIZED(OnSetChannelMetadataResponse, FPubnubChannelData());
 
-	FPubnubOnSetChannelMetadataResponseNative ConvertedCallback;
+	FOnPubnubSetChannelMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnSetChannelMetadataResponse](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
 	{
 		OnSetChannelMetadataResponse.ExecuteIfBound(Result, ChannelData);
@@ -897,7 +884,7 @@ void UPubnubSubsystem::SetChannelMetadataRaw(FString Channel, FString ChannelMet
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubChannelData());
 	
-	FPubnubOnSetChannelMetadataResponseNative ConvertedCallback;
+	FOnPubnubSetChannelMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
 	{
 		NativeCallback.ExecuteIfBound(Result, ChannelData);
@@ -920,7 +907,7 @@ void UPubnubSubsystem::GetChannelMetadataRaw(FString Channel, FOnGetChannelMetad
 {
 	PUBNUB_ENSURE_INITIALIZED(OnGetChannelMetadataResponse, FPubnubChannelData());
 
-	FPubnubOnGetChannelMetadataResponseNative ConvertedCallback;
+	FOnPubnubGetChannelMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnGetChannelMetadataResponse](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
 	{
 		OnGetChannelMetadataResponse.ExecuteIfBound(Result, ChannelData);
@@ -933,7 +920,7 @@ void UPubnubSubsystem::GetChannelMetadataRaw(FString Channel, FOnGetChannelMetad
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubChannelData());
 
-	FPubnubOnGetChannelMetadataResponseNative ConvertedCallback;
+	FOnPubnubGetChannelMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
 	{
 		NativeCallback.ExecuteIfBound(Result, ChannelData);
@@ -956,7 +943,7 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString Channel, FOnRemoveChannelMe
 {
 	PUBNUB_ENSURE_INITIALIZED(OnRemoveChannelMetadataResponse);
 
-	FPubnubOnRemoveChannelMetadataResponseNative ConvertedCallback;
+	FOnPubnubRemoveChannelMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnRemoveChannelMetadataResponse](const FPubnubOperationResult& Result)
 	{
 		OnRemoveChannelMetadataResponse.ExecuteIfBound(Result);
@@ -969,7 +956,7 @@ void UPubnubSubsystem::RemoveChannelMetadata(FString Channel, FOnRemoveChannelMe
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	FPubnubOnRemoveChannelMetadataResponseNative ConvertedCallback;
+	FOnPubnubRemoveChannelMetadataResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result)
 	{
 		NativeCallback.ExecuteIfBound(Result);
@@ -982,7 +969,7 @@ void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse
 {
 	PUBNUB_ENSURE_INITIALIZED(OnGetMembershipsResponse, TArray<FPubnubMembershipData>(), FString(), FString());
 
-	FPubnubOnGetMembershipsResponseNative ConvertedCallback;
+	FOnPubnubGetMembershipsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnGetMembershipsResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		OnGetMembershipsResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
@@ -995,7 +982,7 @@ void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubMembershipData>(), FString(), FString());
 	
-	FPubnubOnGetMembershipsResponseNative ConvertedCallback;
+	FOnPubnubGetMembershipsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		NativeCallback.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
@@ -1018,7 +1005,7 @@ void UPubnubSubsystem::SetMembershipsRaw(FString User, FString SetObj, FOnSetMem
 {
 	PUBNUB_ENSURE_INITIALIZED(OnSetMembershipResponse, TArray<FPubnubMembershipData>(), FString(), FString());
 
-	FPubnubOnSetMembershipsResponseNative ConvertedCallback;
+	FOnPubnubSetMembershipsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnSetMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		OnSetMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
@@ -1031,7 +1018,7 @@ void UPubnubSubsystem::SetMembershipsRaw(FString User, FString SetObj, FOnSetMem
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubMembershipData>(), FString(), FString());
 	
-	FPubnubOnSetMembershipsResponseNative ConvertedCallback;
+	FOnPubnubSetMembershipsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		NativeCallback.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
@@ -1054,7 +1041,7 @@ void UPubnubSubsystem::RemoveMembershipsRaw(FString User, FString RemoveObj, FOn
 {
 	PUBNUB_ENSURE_INITIALIZED(OnRemoveMembershipResponse, TArray<FPubnubMembershipData>(), FString(), FString());
 
-	FPubnubOnRemoveMembershipsResponseNative ConvertedCallback;
+	FOnPubnubRemoveMembershipsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnRemoveMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		OnRemoveMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
@@ -1067,7 +1054,7 @@ void UPubnubSubsystem::RemoveMembershipsRaw(FString User, FString RemoveObj, FOn
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubMembershipData>(), FString(), FString());
 	
-	FPubnubOnRemoveMembershipsResponseNative ConvertedCallback;
+	FOnPubnubRemoveMembershipsResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
 	{
 		NativeCallback.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
@@ -1090,7 +1077,7 @@ void UPubnubSubsystem::GetChannelMembersRaw(FString Channel, FOnGetChannelMember
 {
 	PUBNUB_ENSURE_INITIALIZED(OnGetMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
 
-	FPubnubOnGetChannelMembersResponseNative ConvertedCallback;
+	FOnPubnubGetChannelMembersResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnGetMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
 	{
 		OnGetMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
@@ -1103,7 +1090,7 @@ void UPubnubSubsystem::GetChannelMembersRaw(FString Channel, FOnGetChannelMember
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubChannelMemberData>(), FString(), FString());
 
-	FPubnubOnGetChannelMembersResponseNative ConvertedCallback;
+	FOnPubnubGetChannelMembersResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
 	{
 		NativeCallback.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
@@ -1126,7 +1113,7 @@ void UPubnubSubsystem::SetChannelMembersRaw(FString Channel, FString SetObj, FOn
 {
 	PUBNUB_ENSURE_INITIALIZED(OnSetMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
 
-	FPubnubOnSetChannelMembersResponseNative ConvertedCallback;
+	FOnPubnubSetChannelMembersResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnSetMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
 	{
 		OnSetMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
@@ -1139,7 +1126,7 @@ void UPubnubSubsystem::SetChannelMembersRaw(FString Channel, FString SetObj, FOn
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubChannelMemberData>(), FString(), FString());
 
-	FPubnubOnSetChannelMembersResponseNative ConvertedCallback;
+	FOnPubnubSetChannelMembersResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
 	{
 		NativeCallback.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
@@ -1162,7 +1149,7 @@ void UPubnubSubsystem::RemoveChannelMembersRaw(FString Channel, FString RemoveOb
 {
 	PUBNUB_ENSURE_INITIALIZED(OnRemoveMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
 
-	FPubnubOnRemoveChannelMembersResponseNative ConvertedCallback;
+	FOnPubnubRemoveChannelMembersResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([OnRemoveMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
 	{
 		OnRemoveMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
@@ -1175,7 +1162,7 @@ void UPubnubSubsystem::RemoveChannelMembersRaw(FString Channel, FString RemoveOb
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubChannelMemberData>(), FString(), FString());
 
-	FPubnubOnRemoveChannelMembersResponseNative ConvertedCallback;
+	FOnPubnubRemoveChannelMembersResponseNative ConvertedCallback;
 	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
 	{
 		NativeCallback.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
@@ -1196,285 +1183,164 @@ void UPubnubSubsystem::RemoveChannelMembers(FString Channel, TArray<FString> Use
 
 void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponse OnAddMessageActionResponse)
 {
-	FOnAddMessageActionResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnAddMessageActionResponse](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
+	PUBNUB_ENSURE_INITIALIZED(OnAddMessageActionResponse, FPubnubMessageActionData());
+
+	FOnPubnubAddMessageActionResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([OnAddMessageActionResponse](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
 	{
 		OnAddMessageActionResponse.ExecuteIfBound(Result, MessageActionData);
 	});
-	AddMessageAction(Channel, MessageTimetoken, ActionType, Value, NativeCallback);
+
+	DefaultClient->AddMessageAction(Channel, MessageTimetoken, ActionType, Value, ConvertedCallback);
 }
 
 void UPubnubSubsystem::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponseNative NativeCallback)
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, FPubnubMessageActionData());
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, MessageTimetoken, ActionType, Value, NativeCallback]
+	FOnPubnubAddMessageActionResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, FPubnubMessageActionData MessageActionData)
 	{
-		AddMessageAction_priv(Channel, MessageTimetoken, ActionType, Value, NativeCallback);
+		NativeCallback.ExecuteIfBound(Result, MessageActionData);
 	});
+	
+	DefaultClient->AddMessageAction(Channel, MessageTimetoken, ActionType, Value, ConvertedCallback);
 }
 
 void UPubnubSubsystem::GetMessageActions(FString Channel, FOnGetMessageActionsResponse OnGetMessageActionsResponse, FString Start, FString End, int Limit)
 {
-	FOnGetMessageActionsResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetMessageActionsResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
+	PUBNUB_ENSURE_INITIALIZED(OnGetMessageActionsResponse, TArray<FPubnubMessageActionData>());
+
+	FOnPubnubGetMessageActionsResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([OnGetMessageActionsResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
 	{
 		OnGetMessageActionsResponse.ExecuteIfBound(Result, MessageActions);
 	});
-	GetMessageActions(Channel, NativeCallback, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit));
+
+	DefaultClient->GetMessageActions(Channel, ConvertedCallback, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit));
 }
 
 void UPubnubSubsystem::GetMessageActions(FString Channel, FOnGetMessageActionsResponseNative NativeCallback, FString Start, FString End, int Limit)
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback, TArray<FPubnubMessageActionData>());
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, Start, End, Limit, NativeCallback]
+	FOnPubnubGetMessageActionsResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result, const TArray<FPubnubMessageActionData>& MessageActions)
 	{
-		GetMessageActions_priv(Channel, NativeCallback, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit));
+		NativeCallback.ExecuteIfBound(Result, MessageActions);
 	});
+	
+	DefaultClient->GetMessageActions(Channel, ConvertedCallback, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit));
 }
 
 void UPubnubSubsystem::RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponse OnRemoveMessageActionResponse)
 {
-	FOnRemoveMessageActionResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnRemoveMessageActionResponse](const FPubnubOperationResult& Result)
+	PUBNUB_ENSURE_INITIALIZED(OnRemoveMessageActionResponse);
+
+	FOnPubnubRemoveMessageActionResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([OnRemoveMessageActionResponse](const FPubnubOperationResult& Result)
 	{
 		OnRemoveMessageActionResponse.ExecuteIfBound(Result);
 	});
-	RemoveMessageAction(Channel, MessageTimetoken, ActionTimetoken, NativeCallback);
+
+	DefaultClient->RemoveMessageAction(Channel, MessageTimetoken, ActionTimetoken, ConvertedCallback);
 }
 
 void UPubnubSubsystem::RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative NativeCallback)
 {
 	PUBNUB_ENSURE_INITIALIZED(NativeCallback);
 	
-	QuickActionThread->AddFunctionToQueue( [this, Channel, MessageTimetoken, ActionTimetoken, NativeCallback]
+	FOnPubnubRemoveMessageActionResponseNative ConvertedCallback;
+	ConvertedCallback.BindLambda([NativeCallback](const FPubnubOperationResult& Result)
 	{
-		RemoveMessageAction_priv(Channel, MessageTimetoken, ActionTimetoken, NativeCallback);
+		NativeCallback.ExecuteIfBound(Result);
 	});
+	
+	DefaultClient->RemoveMessageAction(Channel, MessageTimetoken, ActionTimetoken, ConvertedCallback);
 }
 
 void UPubnubSubsystem::ReconnectSubscriptions()
 {
-	pubnub_reconnect(ctx_ee, nullptr);
+	PUBNUB_RETURN_IF_NOT_INITIALIZED();
+	
+	DefaultClient->ReconnectSubscriptions();
 }
 
 void UPubnubSubsystem::DisconnectSubscriptions()
 {
-	pubnub_disconnect(ctx_ee);
+	PUBNUB_RETURN_IF_NOT_INITIALIZED();
+	
+	DefaultClient->DisconnectSubscriptions();
 }
 
 void UPubnubSubsystem::SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule)
 {
-	// Clean up previous crypto bridge if it was already set.
-	if(CryptoBridge)
-	{
-		CryptoBridge->CleanUpCryptoBridge();
-	}
-
-	// If empty object is given, just clean up the module
-	UObject* CryptorObject = CryptoModule.GetObject();
-	if(!CryptorObject)
-	{
-		pubnub_set_crypto_module(ctx_pub, nullptr);
-		pubnub_set_crypto_module(ctx_ee, nullptr);
-		CryptoBridge = nullptr;
-	}
-	else
-	{
-		CryptoBridge = NewObject<UPubnubCryptoBridge>(this);
-		CryptoBridge->InitCryptoBridge(CryptoModule);
-
-		pubnub_set_crypto_module(ctx_pub, CryptoBridge->GetProvider());
-		pubnub_set_crypto_module(ctx_ee, CryptoBridge->GetProvider());
-	}
+	PUBNUB_RETURN_IF_NOT_INITIALIZED();
+	
+	DefaultClient->SetCryptoModule(CryptoModule);
 }
 
 TScriptInterface<IPubnubCryptoProviderInterface> UPubnubSubsystem::GetCryptoModule()
 {
-	if(CryptoBridge)
-	{
-		return CryptoBridge->GetUECryptoModule();
-	}
-
-	return nullptr;
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(nullptr);
+	
+	return DefaultClient->GetCryptoModule();
 }
 
 UPubnubChannelEntity* UPubnubSubsystem::CreateChannelEntity(FString Channel)
 {
-	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(nullptr);
 	
-	UPubnubChannelEntity* ChannelEntity = NewObject<UPubnubChannelEntity>(this);
-	ChannelEntity->InitEntity(this);
-	ChannelEntity->EntityID = Channel;
-	return ChannelEntity;
+	return DefaultClient->CreateChannelEntity(Channel);
 }
 
 UPubnubChannelGroupEntity* UPubnubSubsystem::CreateChannelGroupEntity(FString ChannelGroup)
 {
-	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelGroup, nullptr);
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(nullptr);
 	
-	UPubnubChannelGroupEntity* ChannelGroupEntity = NewObject<UPubnubChannelGroupEntity>(this);
-	ChannelGroupEntity->InitEntity(this);
-	ChannelGroupEntity->EntityID = ChannelGroup;
-	return ChannelGroupEntity;
+	return DefaultClient->CreateChannelGroupEntity(ChannelGroup);
 }
 
 UPubnubChannelMetadataEntity* UPubnubSubsystem::CreateChannelMetadataEntity(FString Channel)
 {
-	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(nullptr);
 	
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = NewObject<UPubnubChannelMetadataEntity>(this);
-	ChannelMetadataEntity->InitEntity(this);
-	ChannelMetadataEntity->EntityID = Channel;
-	return ChannelMetadataEntity;
+	return DefaultClient->CreateChannelMetadataEntity(Channel);
 }
 
 UPubnubUserMetadataEntity* UPubnubSubsystem::CreateUserMetadataEntity(FString User)
 {
-	PUBNUB_RETURN_IF_FIELD_EMPTY(User, nullptr);
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(nullptr);
 	
-	UPubnubUserMetadataEntity* UserMetadataEntity = NewObject<UPubnubUserMetadataEntity>(this);
-	UserMetadataEntity->InitEntity(this);
-	UserMetadataEntity->EntityID = User;
-	return UserMetadataEntity;
+	return DefaultClient->CreateUserMetadataEntity(User);
 }
 
 UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings)
 {
-	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
-	{
-		PubnubError("[CreateSubscriptionSet]: at least one Channel or ChannelGroup is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
-	}
-	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
-	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
-	return SubscriptionSet;
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(nullptr);
+	
+	return DefaultClient->CreateSubscriptionSet(Channels, ChannelGroups, SubscriptionSettings);
 }
 
 UPubnubSubscriptionSet* UPubnubSubsystem::CreateSubscriptionSetFromEntities(TArray<UPubnubBaseEntity*> Entities, FPubnubSubscribeSettings SubscriptionSettings)
 {
-	if(Entities.IsEmpty())
-	{
-		PubnubError("[CreateSubscriptionSetFromEntities]: at least one Entity is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
-	}
-	TArray<FString> Channels, ChannelGroups;
-
-	//Group up entities for those that subscribe to Channel and ChannelGroup
-	for(auto Entity : Entities)
-	{
-		Entity->EntityType == EPubnubEntityType::PEnT_ChannelGroup? ChannelGroups.Add(Entity->EntityID) : Channels.Add(Entity->EntityID);
-	}
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(nullptr);
 	
-	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
-	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
-	return SubscriptionSet;
+	return DefaultClient->CreateSubscriptionSetFromEntities(Entities, SubscriptionSettings);
 }
 
 TArray<UPubnubSubscription*> UPubnubSubsystem::GetActiveSubscriptions()
 {
-	size_t Count;
-	pubnub_subscription** CCoreSubs =  pubnub_subscriptions(ctx_ee, &Count);
-	if (!CCoreSubs || Count == 0) {
-		return {};
-	}
-
-	//Free CCoreSubs when the function ends
-	ON_SCOPE_EXIT { free(CCoreSubs); };
-
-	TArray<UPubnubSubscription*> Subscriptions;
-
-	for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
-	{
-		UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
-		Subscription->InitWithCCoreSubscription(this, CCoreSub);
-		Subscriptions.Add(Subscription);
-	}
-
-	return Subscriptions;
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(TArray<UPubnubSubscription*>());
+	
+	return DefaultClient->GetActiveSubscriptions();
 }
 
 TArray<UPubnubSubscriptionSet*> UPubnubSubsystem::GetActiveSubscriptionSets()
 {
-	size_t Count;
-	pubnub_subscription_set** CCoreSubSets =  pubnub_subscription_sets(ctx_ee, &Count);
-	if (!CCoreSubSets || Count == 0) {
-		return {};
-	}
-
-	//Free CCoreSubs when the function ends
-	ON_SCOPE_EXIT { free(CCoreSubSets); };
-
-	TArray<UPubnubSubscriptionSet*> SubscriptionSets;
-
-	for(pubnub_subscription_set_t* CCoreSubsSet : MakeArrayView(CCoreSubSets, Count))
-	{
-		UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
-		SubscriptionSet->InitWithCCoreSubscriptionSet(this, CCoreSubsSet);
-		SubscriptionSets.Add(SubscriptionSet);
-		
-		size_t SubsCount;
-
-		pubnub_subscription** CCoreSubs = pubnub_subscription_set_subscriptions(CCoreSubsSet, &SubsCount);
-		if (!CCoreSubs || Count == 0) {
-			continue;
-		}
-
-		//Free CCoreSubs when the function ends
-		ON_SCOPE_EXIT { free(CCoreSubs); };
-
-		for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
-		{
-			UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
-			Subscription->InitWithCCoreSubscription(this, CCoreSub);
-			SubscriptionSet->Subscriptions.Add(Subscription);
-		}
-	}
-
-	return SubscriptionSets;
-}
-
-FString UPubnubSubsystem::GetLastResponse(pubnub_t* context)
-{
-	FString Response;
+	PUBNUB_RETURN_IF_NOT_INITIALIZED(TArray<UPubnubSubscriptionSet*>());
 	
-	if(!context)
-	{return Response;}
-	
-	pubnub_res PubnubResponse = pubnub_await(context);
-	if (PNR_OK == PubnubResponse) {
-
-		//Convert it keeping UTF8 characters valid
-		const char* CharResponse = pubnub_get(context);
-		FUTF8ToTCHAR Converter(CharResponse);
-		Response = FString(Converter.Length(), Converter.Get());
-	}
-	else
-	{
-		PubnubResponseError(PubnubResponse, "Failed to get last response.");
-	}
-	return Response;
-}
-
-FString UPubnubSubsystem::GetLastChannelResponse(pubnub_t* context)
-{
-	FString Response;
-	
-	if(!context)
-	{return Response;}
-	
-	pubnub_res PubnubResponse = pubnub_await(context);
-	if (PNR_OK == PubnubResponse) {
-		
-		//Convert it keeping UTF8 characters valid
-		const char* CharResponse = pubnub_get_channel(context);
-		FUTF8ToTCHAR Converter(CharResponse);
-		Response = FString(Converter.Length(), Converter.Get());
-	}
-	else
-	{
-		PubnubResponseError(PubnubResponse, "Failed to get last channel response.");
-	}
-	return Response;
+	return DefaultClient->GetActiveSubscriptionSets();
 }
 
 void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType)
@@ -1498,313 +1364,8 @@ void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorT
 	});
 }
 
-void UPubnubSubsystem::PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage)
-{
-	//Convert all error data into single string
-	FString ResponseString(pubnub_res_2_string(PubnubResponse));
-	FString FinalErrorMessage = FString::Printf(TEXT("%s Error: %s."), *ErrorMessage, *ResponseString);
-
-	//Log and broadcast error
-	UE_LOG(PubnubLog, Error, TEXT("%s"), *FinalErrorMessage);
-
-	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
-	AsyncTask(ENamedThreads::GameThread, [this, FinalErrorMessage]()
-	{
-		//Broadcast bound delegate with JsonResponse
-		OnPubnubError.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
-		OnPubnubErrorNative.Broadcast(FinalErrorMessage, EPubnubErrorType::PET_Error);
-	});
-}
-
 void UPubnubSubsystem::LoadPluginSettings()
 {
 	//Save all settings
 	PubnubPluginSettings = GetMutableDefault<UPubnubSettings>();
-}
-
-void UPubnubSubsystem::SavePubnubConfig(const FPubnubConfig& Config)
-{
-	PubnubConfig = Config;
-	
-	// Safely copy all keys using the utility function
-	UPubnubUtilities::SafeCopyFStringToCharBuffer(PublishKey, PublishKeySize + 1, Config.PublishKey, TEXT("PublishKey"));
-	UPubnubUtilities::SafeCopyFStringToCharBuffer(SubscribeKey, PublishKeySize + 1, Config.SubscribeKey, TEXT("SubscribeKey"));
-	UPubnubUtilities::SafeCopyFStringToCharBuffer(SecretKey, SecretKeySize + 1, Config.SecretKey, TEXT("SecretKey"));
-}
-
-//This functions is a wrapper to IsInitialized bool, so it can print error if user is trying to do anything before initializing Pubnub correctly
-bool UPubnubSubsystem::CheckIsPubnubInitialized()
-{
-	if(!IsInitialized)
-	{
-		PubnubError("Pubnub is not initialized correctly. Aborting operation. Make sure to call InitPubnub or "
-			"set InitializeAutomatically to true in Pubnub SDK settings. Also make sure that publish and subscribe keys are correct.");
-	}
-	
-	return IsInitialized;
-}
-
-/* PRIV FUNCTIONS */
-
-
-void UPubnubSubsystem::AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponseNative AddMessageActionResponse)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(AddMessageActionResponse, FPubnubMessageActionData());
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, AddMessageActionResponse, FPubnubMessageActionData());
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(MessageTimetoken, AddMessageActionResponse, FPubnubMessageActionData());
-	
-	//Add quotes to these fields as they are required by C-Core
-	FString FinalActionType = UPubnubUtilities::AddQuotesToString(ActionType);
-	FString FinalValue = UPubnubUtilities::AddQuotesToString(Value);
-
-	FUTF8StringHolder ChannelHolder(Channel);
-	FUTF8StringHolder MessageTimetokenHolder(MessageTimetoken);
-	FUTF8StringHolder FinalActionTypeHolder(FinalActionType);
-	FUTF8StringHolder FinalValueHolder(FinalValue);
-	
-	pubnub_add_message_action_str(ctx_pub, ChannelHolder.Get(), MessageTimetokenHolder.Get(), FinalActionTypeHolder.Get(),  FinalValueHolder.Get());
-	
-	FString JsonResponse = GetLastResponse(ctx_pub);
-	//If last response is empty, it means that there was an error, so return server response instead
-	if(JsonResponse.IsEmpty())
-	{
-		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
-	}
-	
-	//Parse Json response into data
-	FPubnubOperationResult Result;
-	FPubnubMessageActionData MessageActionData;
-	UPubnubJsonUtilities::AddMessageActionJsonToData(JsonResponse, Result, MessageActionData);
-	
-	//Execute provided delegate with results
-	UPubnubUtilities::CallPubnubDelegate(AddMessageActionResponse, Result, MessageActionData);
-}
-
-void UPubnubSubsystem::RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative OnRemoveMessageActionResponse)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(OnRemoveMessageActionResponse);
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnRemoveMessageActionResponse);
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(MessageTimetoken, OnRemoveMessageActionResponse);
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(ActionTimetoken, OnRemoveMessageActionResponse);
-	
-	//Add quotes to these fields as they are required by C-Core
-	FString FinalMessageTimetoken = UPubnubUtilities::AddQuotesToString(MessageTimetoken);
-	FString FinalActionTimetoken = UPubnubUtilities::AddQuotesToString(ActionTimetoken);
-
-	FTCHARToUTF8 MessageConverter(*FinalMessageTimetoken);
-	FTCHARToUTF8 ActionConverter(*FinalActionTimetoken);
-
-	TArray<ANSICHAR> MessageTimetokenArray;
-	MessageTimetokenArray.Append(MessageConverter.Get(), MessageConverter.Length() + 1);
-
-	TArray<ANSICHAR> ActionTimetokenArray;
-	ActionTimetokenArray.Append(ActionConverter.Get(), ActionConverter.Length() + 1);
-	
-	pubnub_char_mem_block message_timetoken_chamebl;
-	message_timetoken_chamebl.ptr = MessageTimetokenArray.GetData();
-	message_timetoken_chamebl.size = FinalMessageTimetoken.Len();
-	
-	pubnub_char_mem_block action_timetoken_chamebl;
-	action_timetoken_chamebl.ptr = ActionTimetokenArray.GetData();
-	action_timetoken_chamebl.size = FinalActionTimetoken.Len();
-
-	FUTF8StringHolder ChannelHolder(Channel);
-	
-	pubnub_remove_message_action(ctx_pub, ChannelHolder.Get(), message_timetoken_chamebl, action_timetoken_chamebl);
-
-	FString JsonResponse = GetLastResponse(ctx_pub);
-	//If last response is empty, it means that there was an error, so return server response instead
-	if(JsonResponse.IsEmpty())
-	{
-		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
-	}
-
-	//Execute provided delegate with results
-	UPubnubUtilities::CallPubnubDelegate(OnRemoveMessageActionResponse, UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse));
-}
-
-void UPubnubSubsystem::GetMessageActions_priv(FString Channel, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse, FString Start, FString End, int Limit)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(OnGetMessageActionsResponse, TArray<FPubnubMessageActionData>());
-	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnGetMessageActionsResponse, TArray<FPubnubMessageActionData>());
-	
-	FUTF8StringHolder ChannelHolder(Channel);
-	FUTF8StringHolder StartHolder(Start);
-	FUTF8StringHolder EndHolder(End);
-	pubnub_get_message_actions(ctx_pub, ChannelHolder.Get(), StartHolder.Get(), EndHolder.Get(), Limit);
-	
-	FString JsonResponse = GetLastResponse(ctx_pub);
-	//If last response is empty, it means that there was an error, so return server response instead
-	if(JsonResponse.IsEmpty())
-	{
-		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
-	}
-
-	//Parse Json response into data
-	FPubnubOperationResult Result;
-	TArray<FPubnubMessageActionData> MessageActions;
-	UPubnubJsonUtilities::GetMessageActionsJsonToData(JsonResponse, Result, MessageActions);
-										
-	//Execute provided delegate with results
-	UPubnubUtilities::CallPubnubDelegate(OnGetMessageActionsResponse, Result, MessageActions);
-}
-
-void UPubnubSubsystem::SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(OnSubscribeResponse);
-
-	//Save this delegate, so it can be called when Subscription Status is changed
-	SubscriptionResultDelegates.Add(OnSubscribeResponse);
-
-	QuickActionThread->AddFunctionToQueue( [this, Subscription, Cursor, OnSubscribeResponse]
-	{
-		if(!UPubnubInternalUtilities::EESubscribeWithSubscription(Subscription->CCoreSubscription, Cursor))
-		{
-			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
-			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
-			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
-		}
-	});
-}
-
-void UPubnubSubsystem::SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(OnSubscribeResponse);
-
-	//Save this delegate, so it can be called when Subscription Status is changed
-	SubscriptionResultDelegates.Add(OnSubscribeResponse);
-
-	QuickActionThread->AddFunctionToQueue( [this, SubscriptionSet, Cursor, OnSubscribeResponse]
-	{
-		if(!UPubnubInternalUtilities::EESubscribeWithSubscriptionSet(SubscriptionSet->CCoreSubscriptionSet, Cursor))
-		{
-			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
-			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
-			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
-		}
-	});
-}
-
-void UPubnubSubsystem::UnsubscribeWithSubscription(UPubnubSubscription* Subscription, FOnSubscribeOperationResponseNative OnUnsubscribeResponse)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(OnUnsubscribeResponse);
-
-	//Save this delegate, so it can be called when Subscription Status is changed
-	SubscriptionResultDelegates.Add(OnUnsubscribeResponse);
-
-	QuickActionThread->AddFunctionToQueue( [this, Subscription, OnUnsubscribeResponse]
-	{
-		if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscription(&Subscription->CCoreSubscription))
-		{
-			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
-			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnUnsubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
-			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
-		}
-	});
-}
-
-void UPubnubSubsystem::UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FOnSubscribeOperationResponseNative OnUnsubscribeResponse)
-{
-	PUBNUB_ENSURE_USER_ID_IS_SET(OnUnsubscribeResponse);
-
-	//Save this delegate, so it can be called when Subscription Status is changed
-	SubscriptionResultDelegates.Add(OnUnsubscribeResponse);
-
-	QuickActionThread->AddFunctionToQueue( [this, SubscriptionSet, OnUnsubscribeResponse]
-	{
-		if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscriptionSet(&SubscriptionSet->CCoreSubscriptionSet))
-		{
-			PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription..");
-			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnUnsubscribeResponse, "[Subscribe]: Failed to subscribe with Subscription.");
-			QuickActionThread->UnlockAfterSubscriptionOperationFinished();
-		}
-	});
-}
-
-//Logs from C-Core that are false warnings as they are sent during normal C-Core operations flow
-TArray<FString> UPubnubSubsystem::FalseCCoreLogPhrases =
-	{
-		"errno=0('No error')",
-		"errno=9('Bad file descriptor')",
-		"errno=2('No such file or directory')",
-		"errno=35('Resource temporarily unavailable')"
-	};
-
-bool UPubnubSubsystem::ShouldCCoreLogBeSkipped(FString Message)
-{
-	for(FString& LogSkipPhrases : FalseCCoreLogPhrases)
-	{
-		if(Message.Contains(LogSkipPhrases))
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-void UPubnubSubsystem::PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message)
-{
-	//This is temporal solution to skip false warnings from C-Core.
-	//It should be fixed on C-Core level, but until it's done we filter them out here
-	if(ShouldCCoreLogBeSkipped(FString(message)))
-	{
-		return;
-	}
-	
-	switch (log_level)
-	{
-	case pubnub_log_level::PUBNUB_LOG_LEVEL_WARNING:
-		UE_LOG(PubnubLog, Warning, TEXT("%s"), UTF8_TO_TCHAR(message));
-		break;
-	case pubnub_log_level::PUBNUB_LOG_LEVEL_ERROR:
-		UE_LOG(PubnubLog, Error, TEXT("%s"), UTF8_TO_TCHAR(message));
-		break;
-	default:
-		UE_LOG(PubnubLog, Log, TEXT("%s"), UTF8_TO_TCHAR(message));
-		break;
-	};
-};
-
-void UPubnubSubsystem::OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data)
-{
-	if(!SubscriptionResultDelegates.IsEmpty())
-	{
-		FPubnubOperationResult Result;
-		Result.Error = status == PNSS_SUBSCRIPTION_STATUS_CONNECTION_ERROR || status == PNSS_SUBSCRIPTION_STATUS_DISCONNECTED_UNEXPECTEDLY;
-		Result.Status = Result.Error ? 503 : 200;
-		Result.ErrorMessage = pubnub_res_2_string(status_data.reason);
-		SubscriptionResultDelegates[0].ExecuteIfBound(Result);
-
-		SubscriptionResultDelegates.RemoveAt(0);
-	}
-
-	QuickActionThread->UnlockAfterSubscriptionOperationFinished();
-	
-	//Don't waste resources to translate data if there is no delegate bound to it
-	if(!OnSubscriptionStatusChanged.IsBound() && !OnSubscriptionStatusChangedNative.IsBound())
-	{return;}
-
-	FPubnubSubscriptionStatusData SubscriptionStatusData;
-	SubscriptionStatusData.Reason = pubnub_res_2_string(status_data.reason);
-
-	//If status is disconnected we don't need to give subscribed channels
-	if(status != PNSS_SUBSCRIPTION_STATUS_DISCONNECTED)
-	{
-		//Fill channels and channel groups data, from C-Core
-		if (NULL != status_data.channels)
-		{
-			FUTF8ToTCHAR Converter(status_data.channels);
-			FString Channels(Converter.Length(), Converter.Get());
-			Channels.ParseIntoArray(SubscriptionStatusData.Channels, TEXT(","));
-		}
-		if (NULL != status_data.channel_groups)
-		{
-			FUTF8ToTCHAR Converter(status_data.channel_groups);
-			FString ChannelGroups(Converter.Length(), Converter.Get());
-			ChannelGroups.ParseIntoArray(SubscriptionStatusData.ChannelGroups, TEXT(","));
-		}
-	}
-	
-	OnSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
-	OnSubscriptionStatusChangedNative.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
 }

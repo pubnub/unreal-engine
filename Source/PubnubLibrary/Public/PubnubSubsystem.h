@@ -35,15 +35,6 @@ struct CCoreSubscriptionData
 };
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubSubsystemDeinitialized);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMessageReceivedNative, const FPubnubMessageData& Message);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorNative, FString ErrorMessage, EPubnubErrorType ErrorType);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, FPubnubSubscriptionStatusData, StatusData);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
-
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, FPubnubOperationResult, Result, FPubnubMessageData, PublishedMessage);
 DECLARE_DELEGATE_TwoParams(FOnPublishMessageResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnSignalResponse, FPubnubOperationResult, Result, FPubnubMessageData, SignalMessage);
@@ -115,6 +106,16 @@ DECLARE_DELEGATE_OneParam(FOnRemoveMessageActionResponseNative, const FPubnubOpe
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
 {
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubSubsystemDeinitialized);
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnMessageReceivedNative, const FPubnubMessageData& Message);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorNative, FString ErrorMessage, EPubnubErrorType ErrorType);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, FPubnubSubscriptionStatusData, StatusData);
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
+
+	
 	GENERATED_BODY()
 
 	friend class UPubnubSubscription;
@@ -1843,93 +1844,24 @@ private:
 	pubnub_t *ctx_pub = nullptr;
 	//Pubnub context for the event engine - subscribe operations
 	pubnub_t *ctx_ee = nullptr;
-
-	//Storage for global subscriptions (not from Entities)
-	TMap<FString, CCoreSubscriptionData> ChannelSubscriptions;
-	TMap<FString, CCoreSubscriptionData> ChannelGroupSubscriptions;
-	
-	//Returns FString from the pubnub_get response
-	FString GetLastResponse(pubnub_t* context);
-	
-	//Returns FString from the pubnub_get_channel response
-	FString GetLastChannelResponse(pubnub_t* context);
-
-#pragma region ERROR FUNCTIONS
-
-public:
-	/* ERROR FUNCTIONS */
-	//Every Error function prints error to the Log and Broadcasts OnPubnubError delegate
 	
 	//Default error for most use cases. Internal usage only.
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
-private:
-	//Error when the response was not OK
-	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
 
-#pragma endregion
 
-#pragma region PUBNUB CONFIG
+#pragma region PUBNUB PLUGIN SETTINGS
 	
 	/* PUBNUB CONFIG */
 
 	//Plugin settings from ProjectSettings
 	TObjectPtr<UPubnubSettings> PubnubPluginSettings = nullptr;
-
-	//Container for all configuration settings
-	FPubnubConfig PubnubConfig;
-	
-	//Containers for keys stored from settings
-	static const int PublishKeySize = 42;
-	static const int SecretKeySize = 54;
-	char PublishKey[PublishKeySize + 1] = {};
-	char SubscribeKey[PublishKeySize + 1] = {};
-	char SecretKey[SecretKeySize + 1] = {};
 	
 	void LoadPluginSettings();
-	void SavePubnubConfig(const FPubnubConfig &Config);
 
 #pragma endregion
-
-	/* CRYPTO */
-
-	//CryptoBridge class that holds provided CryptoModule and inserts it into C-Core system - it keeps all required references alive
-	UPROPERTY()
-	TObjectPtr<UPubnubCryptoBridge> CryptoBridge;
-
+	
 	/* INITIALIZATION CHECKS */
 	
 	bool IsInitialized = false;
-	bool IsUserIDSet = false;
-	bool CheckIsPubnubInitialized();
-
-
-#pragma region PRIVATE FUNCTIONS
-
-	/* PRIVATE FUNCTIONS */
-	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 	
-	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponseNative AddMessageActionResponse);
-	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative OnRemoveMessageActionResponse);
-	void GetMessageActions_priv(FString Channel, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse, FString Start, FString End, int Limit);
-
-
-	void SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse);
-	void SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse);
-	void UnsubscribeWithSubscription(UPubnubSubscription* Subscription, FOnSubscribeOperationResponseNative OnUnsubscribeResponse);
-	void UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FOnSubscribeOperationResponseNative OnUnsubscribeResponse);
-#pragma endregion
-	
-
-	
-	//C-Core logging
-	static TArray<FString> FalseCCoreLogPhrases;
-	static bool ShouldCCoreLogBeSkipped(FString Message);
-	
-	//Function that is sent to Pubnub sdk (c-core) to pass sdk logs to Unreal
-	static void PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message);
-
-	//Array storing delegates for all queued subscription operations
-	TArray<FOnSubscribeOperationResponseNative> SubscriptionResultDelegates;
-
-	void OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data);
 };

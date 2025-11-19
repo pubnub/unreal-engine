@@ -118,7 +118,7 @@ void ASample_ChannelMetadataEntity::ChannelMetadataEntitySetMetadataSample()
 
 	// Set up callback to handle metadata set result
 	// ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
-	FOnSetChannelMetadataResponse OnSetMetadataResult;
+	FOnPubnubSetChannelMetadataResponse OnSetMetadataResult;
 	OnSetMetadataResult.BindDynamic(this, &ASample_ChannelMetadataEntity::OnSetChannelMetadataResult_Sample);
 
 	// Set tournament lobby information and rules
@@ -188,7 +188,7 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataWithResultSample()
 	
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
-	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_ChannelMetadataEntity::OnSetChannelMetadataResponse);
 
 	// Create channel metadata object
@@ -232,7 +232,7 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataWithLambdaSample()
 	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
 
 	// Bind lambda to response delegate
-	FOnSetChannelMetadataResponseNative OnSetChannelMetadataResponse;
+	FOnPubnubSetChannelMetadataResponseNative OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
 	{
 		if(Result.Error)
@@ -274,7 +274,7 @@ void ASample_ChannelMetadataEntity::GetChannelMetadataSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
-	FOnGetChannelMetadataResponse OnGetChannelMetadataResponse;
+	FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse;
 	OnGetChannelMetadataResponse.BindDynamic(this, &ASample_ChannelMetadataEntity::OnGetChannelMetadataResponse_Simple);
 
 	// Get channel metadata using the channel metadata entity
@@ -311,7 +311,7 @@ void ASample_ChannelMetadataEntity::GetChannelMetadataWithLambdaSample()
 	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
 
 	// Bind lambda to response delegate
-	FOnGetChannelMetadataResponseNative OnGetChannelMetadataResponse;
+	FOnPubnubGetChannelMetadataResponseNative OnGetChannelMetadataResponse;
 	OnGetChannelMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
 	{
 		if(Result.Error)
@@ -366,7 +366,7 @@ void ASample_ChannelMetadataEntity::RemoveChannelMetadataWithResultSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
-	FOnRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse;
+	FOnPubnubRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse;
 	OnRemoveChannelMetadataResponse.BindDynamic(this, &ASample_ChannelMetadataEntity::OnRemoveChannelMetadataResponse);
 
 	// Remove channel metadata using the channel metadata entity
@@ -403,7 +403,7 @@ void ASample_ChannelMetadataEntity::RemoveChannelMetadataWithResultLambdaSample(
 	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
 
 	// Bind lambda to response delegate
-	FOnRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse;
+	FOnPubnubRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse;
 	OnRemoveChannelMetadataResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)

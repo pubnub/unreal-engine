@@ -6,8 +6,6 @@
 #include "Entities/PubnubBaseEntity.h"
 #include "PubnubChannelGroupEntity.generated.h"
 
-class UPubnubSubsystem;
-
 
 /**
  * Represents a PubNub Channel Group entity in Unreal Engine.
@@ -35,7 +33,7 @@ public:
 	 * @param OnAddChannelToGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnAddChannelToGroupResponse"))
-	void AddChannelToGroup(FString Channel, FOnAddChannelToGroupResponse OnAddChannelToGroupResponse);
+	void AddChannelToGroup(FString Channel, FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse);
 
 	/**
 	 * Adds a channel to this channel group.
@@ -46,7 +44,7 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void AddChannelToGroup(FString Channel, FOnAddChannelToGroupResponseNative NativeCallback = nullptr);
+	void AddChannelToGroup(FString Channel, FOnPubnubAddChannelToGroupResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Removes a channel from this channel group.
@@ -57,7 +55,7 @@ public:
 	 * @param OnRemoveChannelFromGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelFromGroupResponse"))
-	void RemoveChannelFromGroup(FString Channel, FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
+	void RemoveChannelFromGroup(FString Channel, FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
 
 	/**
 	 * Removes a channel from this channel group.
@@ -68,7 +66,7 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveChannelFromGroup(FString Channel, FOnRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
+	void RemoveChannelFromGroup(FString Channel, FOnPubnubRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
 
 	/**
 	 * Lists the channels that belong to this channel group.
@@ -78,7 +76,7 @@ public:
 	 * @param OnListChannelsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
-	void ListChannelsFromGroup(FOnListChannelsFromGroupResponse OnListChannelsResponse);
+	void ListChannelsFromGroup(FOnPubnubListChannelsFromGroupResponse OnListChannelsResponse);
 
 	/**
 	 * Lists the channels that belong to this channel group.
@@ -87,7 +85,7 @@ public:
 	 * 
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 */
-	void ListChannelsFromGroup(FOnListChannelsFromGroupResponseNative NativeCallback);
+	void ListChannelsFromGroup(FOnPubnubListChannelsFromGroupResponseNative NativeCallback);
 
 	/**
 	 * Removes this channel group.
@@ -97,7 +95,7 @@ public:
 	 * @param OnRemoveChannelGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelGroupResponse"))
-	void RemoveChannelGroup(FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
+	void RemoveChannelGroup(FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
 
 	/**
 	 * Removes this channel group.
@@ -107,6 +105,6 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveChannelGroup(FOnRemoveChannelGroupResponseNative NativeCallback = nullptr);
+	void RemoveChannelGroup(FOnPubnubRemoveChannelGroupResponseNative NativeCallback = nullptr);
 	
 };

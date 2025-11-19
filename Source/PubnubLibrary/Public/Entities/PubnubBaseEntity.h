@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PubnubSubsystem.h"
+#include "PubnubStructLibrary.h"
+#include "PubnubEnumLibrary.h"
+#include "PubnubClient.h"
 #include "PubnubBaseEntity.generated.h"
 
 
@@ -21,8 +23,8 @@ UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubBaseEntity : public UObject
 {
 	GENERATED_BODY()
-
-	friend class UPubnubSubsystem;
+	
+	friend class UPubnubClient;
 
 	
 public:
@@ -51,8 +53,8 @@ public:
 protected:
 	
 	UPROPERTY()
-	UPubnubSubsystem* PubnubSubsystem = nullptr;
+	TObjectPtr<UPubnubClient> PubnubClient = nullptr;
 
-	void InitEntity(UPubnubSubsystem* InPubnubSubsystem);
+	void InitEntity(UPubnubClient* InPubnubClient);
 	
 };

@@ -141,7 +141,7 @@ void ASample_ChannelGroupEntity::AddChannelToGroupWithResultSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
-	FOnAddChannelToGroupResponse OnAddChannelToGroupResponse;
+	FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse;
 	OnAddChannelToGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnAddChannelToGroupResponse);
 
 	// Add channel to the channel group using the channel group entity
@@ -179,7 +179,7 @@ void ASample_ChannelGroupEntity::AddChannelToGroupWithResultLambdaSample()
 	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind lambda to response delegate
-	FOnAddChannelToGroupResponseNative OnAddChannelToGroupResponse;
+	FOnPubnubAddChannelToGroupResponseNative OnAddChannelToGroupResponse;
 	OnAddChannelToGroupResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -215,7 +215,7 @@ void ASample_ChannelGroupEntity::ListChannelsFromGroupSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
-	FOnListChannelsFromGroupResponse OnListChannelsFromGroupResponse;
+	FOnPubnubListChannelsFromGroupResponse OnListChannelsFromGroupResponse;
 	OnListChannelsFromGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnListChannelsFromGroupResponse);
 
 	// List channels from the channel group using the channel group entity
@@ -256,7 +256,7 @@ void ASample_ChannelGroupEntity::ListChannelsFromGroupWithLambdaSample()
 	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind lambda to response delegate
-	FOnListChannelsFromGroupResponseNative OnListChannelsFromGroupResponse;
+	FOnPubnubListChannelsFromGroupResponseNative OnListChannelsFromGroupResponse;
 	OnListChannelsFromGroupResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		if(Result.Error)
@@ -316,7 +316,7 @@ void ASample_ChannelGroupEntity::RemoveChannelFromGroupWithResultSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
-	FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse;
+	FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse;
 	OnRemoveChannelFromGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnRemoveChannelFromGroupResponse);
 
 	// Remove channel from the channel group using the channel group entity
@@ -354,7 +354,7 @@ void ASample_ChannelGroupEntity::RemoveChannelFromGroupWithResultLambdaSample()
 	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind lambda to response delegate
-	FOnRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse;
+	FOnPubnubRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse;
 	OnRemoveChannelFromGroupResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -410,7 +410,7 @@ void ASample_ChannelGroupEntity::RemoveChannelGroupWithResultSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
-	FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse;
+	FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse;
 	OnRemoveChannelGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnRemoveChannelGroupResponse);
 
 	// Remove the entire channel group using the channel group entity
@@ -447,7 +447,7 @@ void ASample_ChannelGroupEntity::RemoveChannelGroupWithResultLambdaSample()
 	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind lambda to response delegate
-	FOnRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse;
+	FOnPubnubRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse;
 	OnRemoveChannelGroupResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)

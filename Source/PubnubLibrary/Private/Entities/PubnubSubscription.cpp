@@ -14,9 +14,9 @@ void UPubnubSubscriptionBase::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void UPubnubSubscription::Subscribe(FOnSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscription::Subscribe(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
 {
-	FOnSubscribeOperationResponseNative NativeCallback;
+	FOnPubnubSubscribeOperationResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnSubscribeResponse](FPubnubOperationResult Result)
 	{
 		OnSubscribeResponse.ExecuteIfBound(Result);
@@ -25,11 +25,11 @@ void UPubnubSubscription::Subscribe(FOnSubscribeOperationResponse OnSubscribeRes
 	Subscribe(NativeCallback, Cursor);
 }
 
-void UPubnubSubscription::Subscribe(FOnSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscription::Subscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This Subscription is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 	
@@ -39,7 +39,7 @@ void UPubnubSubscription::Subscribe(FOnSubscribeOperationResponseNative NativeCa
 		return;
 	}
 	
-	PubnubSubsystem->SubscribeWithSubscription(this, Cursor, NativeCallback);
+	PubnubClient->SubscribeWithSubscription(this, Cursor, NativeCallback);
 }
 
 void UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
@@ -47,9 +47,9 @@ void UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
 	Subscribe(nullptr, Cursor);
 }
 
-void UPubnubSubscription::Unsubscribe(FOnSubscribeOperationResponse OnUnsubscribeResponse)
+void UPubnubSubscription::Unsubscribe(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse)
 {
-	FOnSubscribeOperationResponseNative NativeCallback;
+	FOnPubnubSubscribeOperationResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnUnsubscribeResponse](FPubnubOperationResult Result)
 	{
 		OnUnsubscribeResponse.ExecuteIfBound(Result);
@@ -58,11 +58,11 @@ void UPubnubSubscription::Unsubscribe(FOnSubscribeOperationResponse OnUnsubscrib
 	Unsubscribe(NativeCallback);
 }
 
-void UPubnubSubscription::Unsubscribe(FOnSubscribeOperationResponseNative NativeCallback)
+void UPubnubSubscription::Unsubscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This Subscription is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 	
@@ -72,14 +72,14 @@ void UPubnubSubscription::Unsubscribe(FOnSubscribeOperationResponseNative Native
 		return;
 	}
 
-	PubnubSubsystem->UnsubscribeWithSubscription(this, NativeCallback);
+	PubnubClient->UnsubscribeWithSubscription(this, NativeCallback);
 }
 
 UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription* Subscription)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: This Subscription is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: This Subscription is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return nullptr;
 	}
 
@@ -102,16 +102,16 @@ UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription
 	}
 
 	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
-	SubscriptionSet->InitWithSubscriptions(PubnubSubsystem, this, Subscription);
+	SubscriptionSet->InitWithSubscriptions(PubnubClient, this, Subscription);
 	
 	return SubscriptionSet;
 }
 
-void UPubnubSubscription::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings)
+void UPubnubSubscription::InitSubscription(UPubnubClient* InPubnubClient, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings)
 {
-	if(!InPubnubSubsystem)
+	if(!InPubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, PubnubSubsystem is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, PubnubClient is invalid."));
 		return;
 	}
 	if(!Entity)
@@ -119,17 +119,17 @@ void UPubnubSubscription::InitSubscription(UPubnubSubsystem* InPubnubSubsystem, 
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, Entity is invalid."));
 		return;
 	}
-	PubnubSubsystem = InPubnubSubsystem;
-	CCoreSubscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(InPubnubSubsystem->ctx_ee, Entity->EntityID, Entity->EntityType, InSubscribeSettings);
+	PubnubClient = InPubnubClient;
+	CCoreSubscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(InPubnubClient->ctx_ee, Entity->EntityID, Entity->EntityType, InSubscribeSettings);
 
 	InternalInit();
 }
 
-void UPubnubSubscription::InitWithCCoreSubscription(UPubnubSubsystem* InPubnubSubsystem, pubnub_subscription_t* InCCoreSubscription)
+void UPubnubSubscription::InitWithCCoreSubscription(UPubnubClient* InPubnubClient, pubnub_subscription_t* InCCoreSubscription)
 {
-	if(!InPubnubSubsystem)
+	if(!InPubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, PubnubSubsystem is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, PubnubClient is invalid."));
 		return;
 	}
 	if(!InCCoreSubscription)
@@ -137,7 +137,7 @@ void UPubnubSubscription::InitWithCCoreSubscription(UPubnubSubsystem* InPubnubSu
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, InCCoreSubscription is invalid."));
 		return;
 	}
-	PubnubSubsystem = InPubnubSubsystem;
+	PubnubClient = InPubnubClient;
 	CCoreSubscription = InCCoreSubscription;
 
 	InternalInit();
@@ -231,8 +231,8 @@ void UPubnubSubscription::InternalInit()
 	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackObjects, EPubnubListenerType::PLT_Objects, this);
 	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, this);
 
-	//Bind to OnPubnubSubsystemDeinitialized so subscription is properly Cleaned up, when it's not needed
-	PubnubSubsystem->OnPubnubSubsystemDeinitialized.AddDynamic(this, &UPubnubSubscription::CleanUpSubscription);
+	//Bind to OnPubnubClientDeinitialized so subscription is properly Cleaned up, when it's not needed
+	PubnubClient->OnPubnubClientDeinitialized.AddDynamic(this, &UPubnubSubscription::CleanUpSubscription);
 
 	//Now we are fully initialized
 	IsInitialized = true;
@@ -247,17 +247,17 @@ void UPubnubSubscription::CleanUpSubscription()
 		pubnub_subscription_free(&CCoreSubscription);
 	}
 
-	if(PubnubSubsystem)
+	if(PubnubClient)
 	{
-		PubnubSubsystem->OnPubnubSubsystemDeinitialized.RemoveDynamic(this, &UPubnubSubscription::CleanUpSubscription);
+		PubnubClient->OnPubnubClientDeinitialized.RemoveDynamic(this, &UPubnubSubscription::CleanUpSubscription);
 	}
 
 	IsInitialized = false;
 }
 
-void UPubnubSubscriptionSet::Subscribe(FOnSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscriptionSet::Subscribe(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
 {
-	FOnSubscribeOperationResponseNative NativeCallback;
+	FOnPubnubSubscribeOperationResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnSubscribeResponse](FPubnubOperationResult Result)
 	{
 		OnSubscribeResponse.ExecuteIfBound(Result);
@@ -266,11 +266,11 @@ void UPubnubSubscriptionSet::Subscribe(FOnSubscribeOperationResponse OnSubscribe
 	Subscribe(NativeCallback, Cursor);
 }
 
-void UPubnubSubscriptionSet::Subscribe(FOnSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscriptionSet::Subscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 	
@@ -280,7 +280,7 @@ void UPubnubSubscriptionSet::Subscribe(FOnSubscribeOperationResponseNative Nativ
 		return;
 	}
 	
-	PubnubSubsystem->SubscribeWithSubscriptionSet(this, Cursor, NativeCallback);
+	PubnubClient->SubscribeWithSubscriptionSet(this, Cursor, NativeCallback);
 }
 
 void UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
@@ -288,9 +288,9 @@ void UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
 	Subscribe(nullptr, Cursor);
 }
 
-void UPubnubSubscriptionSet::Unsubscribe(FOnSubscribeOperationResponse OnUnsubscribeResponse)
+void UPubnubSubscriptionSet::Unsubscribe(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse)
 {
-	FOnSubscribeOperationResponseNative NativeCallback;
+	FOnPubnubSubscribeOperationResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnUnsubscribeResponse](FPubnubOperationResult Result)
 	{
 		OnUnsubscribeResponse.ExecuteIfBound(Result);
@@ -299,11 +299,11 @@ void UPubnubSubscriptionSet::Unsubscribe(FOnSubscribeOperationResponse OnUnsubsc
 	Unsubscribe(NativeCallback);
 }
 
-void UPubnubSubscriptionSet::Unsubscribe(FOnSubscribeOperationResponseNative NativeCallback)
+void UPubnubSubscriptionSet::Unsubscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 	
@@ -313,14 +313,14 @@ void UPubnubSubscriptionSet::Unsubscribe(FOnSubscribeOperationResponseNative Nat
 		return;
 	}
 
-	PubnubSubsystem->UnsubscribeWithSubscriptionSet(this, NativeCallback);
+	PubnubClient->UnsubscribeWithSubscriptionSet(this, NativeCallback);
 }
 
 void UPubnubSubscriptionSet::AddSubscription(UPubnubSubscription* Subscription)
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 
@@ -351,7 +351,7 @@ void UPubnubSubscriptionSet::RemoveSubscription(UPubnubSubscription* Subscriptio
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 
@@ -382,7 +382,7 @@ void UPubnubSubscriptionSet::AddSubscriptionSet(UPubnubSubscriptionSet* Subscrip
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 
@@ -411,7 +411,7 @@ void UPubnubSubscriptionSet::RemoveSubscriptionSet(UPubnubSubscriptionSet* Subsc
 {
 	if(!IsInitialized)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: This SubscriptionSet is invalid. Probably PubnubSubsystem was deinitialized. Initialize it again and create new subscription."));
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 
@@ -436,20 +436,20 @@ void UPubnubSubscriptionSet::RemoveSubscriptionSet(UPubnubSubscriptionSet* Subsc
 	pubnub_subscription_set_subtract(CCoreSubscriptionSet, SubscriptionSet->CCoreSubscriptionSet);
 }
 
-void UPubnubSubscriptionSet::InitSubscriptionSet(UPubnubSubsystem* InPubnubSubsystem, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings)
+void UPubnubSubscriptionSet::InitSubscriptionSet(UPubnubClient* InPubnubClient, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings)
 {
 	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, at least one Channel or ChannelGroup is needed."));
 		return;
 	}
-	PubnubSubsystem = InPubnubSubsystem;
-	CCoreSubscriptionSet = UPubnubInternalUtilities::EEGetSubscriptionSetForEntities(InPubnubSubsystem->ctx_ee, Channels, ChannelGroups, InSubscribeSettings);
+	PubnubClient = InPubnubClient;
+	CCoreSubscriptionSet = UPubnubInternalUtilities::EEGetSubscriptionSetForEntities(InPubnubClient->ctx_ee, Channels, ChannelGroups, InSubscribeSettings);
 
 	InternalInit();
 }
 
-void UPubnubSubscriptionSet::InitWithSubscriptions(UPubnubSubsystem* InPubnubSubsystem, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2)
+void UPubnubSubscriptionSet::InitWithSubscriptions(UPubnubClient* InPubnubClient, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2)
 {
 	if(!Subscription1 || !Subscription2 || !Subscription1->CCoreSubscription || !Subscription2->CCoreSubscription)
 	{
@@ -457,7 +457,7 @@ void UPubnubSubscriptionSet::InitWithSubscriptions(UPubnubSubsystem* InPubnubSub
 		return;
 	}
 	
-	PubnubSubsystem = InPubnubSubsystem;
+	PubnubClient = InPubnubClient;
 	
 	CCoreSubscriptionSet = pubnub_subscription_set_alloc_with_subscriptions(Subscription1->CCoreSubscription, Subscription2->CCoreSubscription, nullptr);
 	Subscriptions.Add(Subscription1);
@@ -466,14 +466,14 @@ void UPubnubSubscriptionSet::InitWithSubscriptions(UPubnubSubsystem* InPubnubSub
 	InternalInit();
 }
 
-void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubSubsystem* InPubnubSubsystem, pubnub_subscription_set_t* InCCoreSubscriptionSet)
+void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubClient* InPubnubClient, pubnub_subscription_set_t* InCCoreSubscriptionSet)
 {
 	if(!InCCoreSubscriptionSet)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, InCCoreSubscriptionSet is invalid."));
 		return;
 	}
-	PubnubSubsystem = InPubnubSubsystem;
+	PubnubClient = InPubnubClient;
 	CCoreSubscriptionSet = InCCoreSubscriptionSet;
 
 	InternalInit();
@@ -567,8 +567,8 @@ void UPubnubSubscriptionSet::InternalInit()
 	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackObjects, EPubnubListenerType::PLT_Objects, this);
 	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, this);
 
-	//Bind to OnPubnubSubsystemDeinitialized so subscription is properly Cleaned up, when it's not needed
-	PubnubSubsystem->OnPubnubSubsystemDeinitialized.AddDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
+	//Bind to OnPubnubClientDeinitialized so subscription is properly Cleaned up, when it's not needed
+	PubnubClient->OnPubnubClientDeinitialized.AddDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
 
 	//Now we are fully initialized
 	IsInitialized = true;
@@ -583,9 +583,9 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 		pubnub_subscription_set_free(&CCoreSubscriptionSet);
 	}
 
-	if(PubnubSubsystem)
+	if(PubnubClient)
 	{
-		PubnubSubsystem->OnPubnubSubsystemDeinitialized.RemoveDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
+		PubnubClient->OnPubnubClientDeinitialized.RemoveDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
 	}
 
 	IsInitialized = false;

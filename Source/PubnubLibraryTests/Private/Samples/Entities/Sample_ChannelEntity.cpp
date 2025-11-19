@@ -141,7 +141,7 @@ void ASample_ChannelEntity::PublishWithResultSample()
 
 	// Bind PublishedMessageResponse to be fired with PublishMessage result
 	// ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
-	FOnPublishMessageResponse OnPublishMessageResponse;
+	FOnPubnubPublishMessageResponse OnPublishMessageResponse;
 	OnPublishMessageResponse.BindDynamic(this, &ASample_ChannelEntity::PublishedMessageResponse);
 	
 	// Publish simple text message using the channel entity
@@ -179,7 +179,7 @@ void ASample_ChannelEntity::PublishWithResultLambdaSample()
 	UPubnubChannelEntity* ChannelEntity = PubnubSubsystem->CreateChannelEntity(ChannelName);
 
 	// Bind lambda function to PublishMessageResponse delegate
-	FOnPublishMessageResponseNative OnPublishMessageResponse;
+	FOnPubnubPublishMessageResponseNative OnPublishMessageResponse;
 	OnPublishMessageResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubMessageData& Message)
 	{
 		if(Result.Error)
@@ -263,7 +263,7 @@ void ASample_ChannelEntity::SignalWithResultSample()
 
 	// Bind SignalMessageResponse to be fired with Signal result
 	// ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
-	FOnSignalResponse OnSignalResponse;
+	FOnPubnubSignalResponse OnSignalResponse;
 	OnSignalResponse.BindDynamic(this, &ASample_ChannelEntity::SignalMessageResponse);
 	
 	// Send signal message using the channel entity
@@ -301,7 +301,7 @@ void ASample_ChannelEntity::SignalWithResultLambdaSample()
 	UPubnubChannelEntity* ChannelEntity = PubnubSubsystem->CreateChannelEntity(ChannelName);
 
 	// Bind lambda function to SignalResponse delegate
-	FOnSignalResponseNative OnSignalResponse;
+	FOnPubnubSignalResponseNative OnSignalResponse;
 	OnSignalResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubMessageData& Message)
 	{
 		if(Result.Error)
@@ -337,7 +337,7 @@ void ASample_ChannelEntity::ListUsersFromChannelSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
-	FOnListUsersFromChannelResponse OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponse OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_ChannelEntity::OnListUsersFromChannelResponse_Simple);
 
 	// List users from the channel using the channel entity
@@ -375,7 +375,7 @@ void ASample_ChannelEntity::ListUsersFromChannelWithSettingsSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
-	FOnListUsersFromChannelResponse OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponse OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_ChannelEntity::OnListUsersFromChannelResponse_WithSettings);
 
 	// Create additional settings
@@ -422,7 +422,7 @@ void ASample_ChannelEntity::ListUsersFromChannelWithLambdaSample()
 	UPubnubChannelEntity* ChannelEntity = PubnubSubsystem->CreateChannelEntity(ChannelName);
 
 	// Bind lambda to response delegate
-	FOnListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubListUsersFromChannelWrapper& Data)
 	{
 		if(Result.Error)
@@ -583,7 +583,7 @@ void ASample_ChannelEntity::ChannelEntityPublishMessageSample()
 
 	// Set up callback to handle publish result
 	// ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
-	FOnPublishMessageResponse OnPublishResult;
+	FOnPubnubPublishMessageResponse OnPublishResult;
 	OnPublishResult.BindDynamic(this, &ASample_ChannelEntity::OnPublishResult_ChannelEntitySample);
 
 	// Publish a tactical message to the team using the channel entity

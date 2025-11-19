@@ -118,7 +118,7 @@ void ASample_UserMetadataEntity::UserMetadataEntitySetMetadataSample()
 
 	// Set up callback to handle metadata set result
 	// ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
-	FOnSetUserMetadataResponse OnSetPlayerInfoResult;
+	FOnPubnubSetUserMetadataResponse OnSetPlayerInfoResult;
 	OnSetPlayerInfoResult.BindDynamic(this, &ASample_UserMetadataEntity::OnSetUserMetadataResult_Sample);
 
 	// Set champion player profile and statistics
@@ -186,7 +186,7 @@ void ASample_UserMetadataEntity::SetUserMetadataWithResultSample()
 	
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
-	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
+	FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse;
 	OnSetUserMetadataResponse.BindDynamic(this, &ASample_UserMetadataEntity::OnSetUserMetadataResponse);
 
 	// Create user metadata object
@@ -229,7 +229,7 @@ void ASample_UserMetadataEntity::SetUserMetadataWithLambdaSample()
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
 
 	// Bind lambda to response delegate
-	FOnSetUserMetadataResponseNative OnSetUserMetadataResponse;
+	FOnPubnubSetUserMetadataResponseNative OnSetUserMetadataResponse;
 	OnSetUserMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
 	{
 		if(Result.Error)
@@ -270,7 +270,7 @@ void ASample_UserMetadataEntity::GetUserMetadataSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
-	FOnGetUserMetadataResponse OnGetUserMetadataResponse;
+	FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse;
 	OnGetUserMetadataResponse.BindDynamic(this, &ASample_UserMetadataEntity::OnGetUserMetadataResponse_Simple);
 
 	// Get user metadata using the user metadata entity
@@ -306,7 +306,7 @@ void ASample_UserMetadataEntity::GetUserMetadataWithLambdaSample()
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
 
 	// Bind lambda to response delegate
-	FOnGetUserMetadataResponseNative OnGetUserMetadataResponse;
+	FOnPubnubGetUserMetadataResponseNative OnGetUserMetadataResponse;
 	OnGetUserMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
 	{
 		if(Result.Error)
@@ -360,7 +360,7 @@ void ASample_UserMetadataEntity::RemoveUserMetadataWithResultSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
-	FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse;
+	FOnPubnubRemoveUserMetadataResponse OnRemoveUserMetadataResponse;
 	OnRemoveUserMetadataResponse.BindDynamic(this, &ASample_UserMetadataEntity::OnRemoveUserMetadataResponse);
 
 	// Remove user metadata using the user metadata entity
@@ -397,7 +397,7 @@ void ASample_UserMetadataEntity::RemoveUserMetadataWithResultLambdaSample()
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserToRemove);
 
 	// Bind lambda to response delegate
-	FOnRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse;
+	FOnPubnubRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse;
 	OnRemoveUserMetadataResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)

@@ -1,6 +1,7 @@
 // Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #include "Entities/PubnubUserMetadataEntity.h"
+#include "PubnubSubsystem.h"
 
 
 UPubnubUserMetadataEntity::UPubnubUserMetadataEntity()
@@ -8,63 +9,63 @@ UPubnubUserMetadataEntity::UPubnubUserMetadataEntity()
 	EntityType = EPubnubEntityType::PEnT_UserMetadata;
 }
 
-void UPubnubUserMetadataEntity::SetUserMetadata(FPubnubUserData UserMetadata, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
+void UPubnubUserMetadataEntity::SetUserMetadata(FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot set user metadata - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot set user metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->SetUserMetadata(EntityID, UserMetadata, OnSetUserMetadataResponse, Include);
+	PubnubClient->SetUserMetadata(EntityID, UserMetadata, OnSetUserMetadataResponse, Include);
 }
 
-void UPubnubUserMetadataEntity::SetUserMetadata(FPubnubUserData UserMetadata, FOnSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+void UPubnubUserMetadataEntity::SetUserMetadata(FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot set user metadata - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot set user metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->SetUserMetadata(EntityID, UserMetadata, NativeCallback, Include);
+	PubnubClient->SetUserMetadata(EntityID, UserMetadata, NativeCallback, Include);
 }
 
-void UPubnubUserMetadataEntity::GetUserMetadata(FOnGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include)
+void UPubnubUserMetadataEntity::GetUserMetadata(FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot get user metadata - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot get user metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->GetUserMetadata(EntityID, OnGetUserMetadataResponse, Include);
+	PubnubClient->GetUserMetadata(EntityID, OnGetUserMetadataResponse, Include);
 }
 
-void UPubnubUserMetadataEntity::GetUserMetadata(FOnGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+void UPubnubUserMetadataEntity::GetUserMetadata(FOnPubnubGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot get user metadata - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot get user metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->GetUserMetadata(EntityID, NativeCallback, Include);
+	PubnubClient->GetUserMetadata(EntityID, NativeCallback, Include);
 }
 
-void UPubnubUserMetadataEntity::RemoveUserMetadata(FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse)
+void UPubnubUserMetadataEntity::RemoveUserMetadata(FOnPubnubRemoveUserMetadataResponse OnRemoveUserMetadataResponse)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot remove user metadata - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot remove user metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->RemoveUserMetadata(EntityID, OnRemoveUserMetadataResponse);
+	PubnubClient->RemoveUserMetadata(EntityID, OnRemoveUserMetadataResponse);
 }
 
-void UPubnubUserMetadataEntity::RemoveUserMetadata(FOnRemoveUserMetadataResponseNative NativeCallback)
+void UPubnubUserMetadataEntity::RemoveUserMetadata(FOnPubnubRemoveUserMetadataResponseNative NativeCallback)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot remove user metadata - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot remove user metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->RemoveUserMetadata(EntityID, NativeCallback);
+	PubnubClient->RemoveUserMetadata(EntityID, NativeCallback);
 }
 
