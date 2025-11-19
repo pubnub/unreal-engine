@@ -71,11 +71,44 @@ void UPubnubSubsystem::InitPubnubWithConfig(FPubnubConfig Config)
 {
 	if(IsInitialized)
 	{
-		PubnubError("Pubnub is already initialized. Disable InitializeAutomatically in Pubnub SDK Project Settings to be able to Init Pubnub manually", EPubnubErrorType::PET_Warning);
+		UE_LOG(PubnubLog, Warning, TEXT("Pubnub is already initialized. Disable InitializeAutomatically in Pubnub SDK Project Settings to be able to Init Pubnub manually"));
 		return;
 	}
 	
 	DefaultClient = CreatePubnubClient(Config);
+
+	//Bind delegates to the default client, so subsystem can also call them
+	TWeakObjectPtr<UPubnubSubsystem> WeakThis = MakeWeakObjectPtr(this);
+	DefaultClient->OnPubnubMessageReceivedNative.AddLambda([WeakThis](FPubnubMessageData MessageData)
+	{
+		if(WeakThis.IsValid())
+		{
+			WeakThis.Get()->OnMessageReceived.Broadcast(MessageData);
+			WeakThis.Get()->OnMessageReceivedNative.Broadcast(MessageData);
+		}
+
+	});
+
+	DefaultClient->OnPubnubErrorNative.AddLambda([WeakThis](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		if(WeakThis.IsValid())
+		{
+			WeakThis.Get()->OnPubnubError.Broadcast(ErrorMessage, ErrorType);
+			WeakThis.Get()->OnPubnubErrorNative.Broadcast(ErrorMessage, ErrorType);
+		}
+
+	});
+
+	DefaultClient->OnPubnubSubscriptionStatusChangedNative.AddLambda([WeakThis](EPubnubSubscriptionStatus Status, FPubnubSubscriptionStatusData StatusData)
+	{
+		if(WeakThis.IsValid())
+		{
+			WeakThis.Get()->OnSubscriptionStatusChanged.Broadcast(Status, StatusData);
+			WeakThis.Get()->OnSubscriptionStatusChangedNative.Broadcast(Status, StatusData);
+		}
+
+	});
+	
 	IsInitialized = true;
 }
 
@@ -1355,12 +1388,17 @@ void UPubnubSubsystem::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorT
 		UE_LOG(PubnubLog, Warning, TEXT("%s"), *ErrorMessage);
 	}
 
+	TWeakObjectPtr<UPubnubSubsystem> WeakThis = MakeWeakObjectPtr(this);
+
 	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
-	AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage, ErrorType]()
+	AsyncTask(ENamedThreads::GameThread, [WeakThis, ErrorMessage, ErrorType]()
 	{
-		//Broadcast bound delegate with JsonResponse
-		OnPubnubError.Broadcast(ErrorMessage, ErrorType);
-		OnPubnubErrorNative.Broadcast(ErrorMessage, ErrorType);
+		if(WeakThis.IsValid())
+		{
+			//Broadcast bound delegate with JsonResponse
+			WeakThis.Get()->OnPubnubError.Broadcast(ErrorMessage, ErrorType);
+			WeakThis.Get()->OnPubnubErrorNative.Broadcast(ErrorMessage, ErrorType);
+		}
 	});
 }
 

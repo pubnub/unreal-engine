@@ -1524,12 +1524,10 @@ void UPubnubClient::DeinitializeClient()
 	if(PubnubCallsThread)
 	{
 		PubnubCallsThread->Stop();
-		delete PubnubCallsThread;
-		PubnubCallsThread = nullptr;
 	}
 	
 	//Unsubscribe from all channels and groups so this user will not be visible for others anymore
-	UnsubscribeFromAll_priv();
+	UnsubscribeAllForDeinit();
 	
 	IsInitialized = false;
 	PubnubSubsystem = nullptr;
@@ -1557,6 +1555,8 @@ void UPubnubClient::DeinitializeClient()
 	delete[] AuthTokenBuffer;
 	AuthTokenBuffer = nullptr;
 	AuthTokenLength = 0;
+	delete PubnubCallsThread;
+	PubnubCallsThread = nullptr;
 
 	SubscriptionResultDelegates.Empty();
 
@@ -1612,8 +1612,11 @@ void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void
 		SubscriptionResultDelegates.RemoveAt(0);
 	}
 
-	//Unlock the thread to proceed with queue
-	PubnubCallsThread->UnlockAfterSubscriptionOperationFinished();
+	//Unlock the thread to proceed with queue - thread might be invalid if this is after deinitialization
+	if(PubnubCallsThread)
+	{
+		PubnubCallsThread->UnlockAfterSubscriptionOperationFinished();
+	}
 	
 	//Don't waste resources to translate data if there is no delegate bound to it
 	if(!OnPubnubSubscriptionStatusChanged.IsBound() && !OnPubnubSubscriptionStatusChangedNative.IsBound())
@@ -2078,33 +2081,8 @@ void UPubnubClient::UnsubscribeFromAll_priv(FOnPubnubSubscribeOperationResponseN
 	PubnubCallsThread->LockForSubscribeOperation();
 
 	pubnub_unsubscribe_all(ctx_ee);
-
-    //Clean up all channel subscriptions
-    for(auto& Pair : ChannelSubscriptions)
-    {
-        if(Pair.Value)
-        {
-            if(Pair.Value->Subscription)
-            {
-                pubnub_subscription_free(&Pair.Value->Subscription);
-            }
-            delete Pair.Value;
-        }
-    }
-    for(auto& Pair : ChannelGroupSubscriptions)
-    {
-        if(Pair.Value)
-        {
-            if(Pair.Value->Subscription)
-            {
-                pubnub_subscription_free(&Pair.Value->Subscription);
-            }
-            delete Pair.Value;
-        }
-    }
 	
-	ChannelSubscriptions.Empty();
-	ChannelGroupSubscriptions.Empty();
+	CleanUpAllSubscriptions();
 }
 
 
@@ -3200,4 +3178,42 @@ void UPubnubClient::UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* Subsc
 			WeakThis.Get()->PubnubCallsThread->UnlockAfterSubscriptionOperationFinished();
 		}
 	});
+}
+
+void UPubnubClient::CleanUpAllSubscriptions()
+{
+	for(auto& Pair : ChannelSubscriptions)
+	{
+		if(Pair.Value)
+		{
+			if(Pair.Value->Subscription)
+			{
+				pubnub_subscription_free(&Pair.Value->Subscription);
+			}
+			delete Pair.Value;
+		}
+	}
+	for(auto& Pair : ChannelGroupSubscriptions)
+	{
+		if(Pair.Value)
+		{
+			if(Pair.Value->Subscription)
+			{
+				pubnub_subscription_free(&Pair.Value->Subscription);
+			}
+			delete Pair.Value;
+		}
+	}
+
+	ChannelSubscriptions.Empty();
+	ChannelGroupSubscriptions.Empty();
+}
+
+void UPubnubClient::UnsubscribeAllForDeinit()
+{
+	if(ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty())
+	{return;}
+	
+	pubnub_unsubscribe_all(ctx_ee);
+	CleanUpAllSubscriptions();
 }

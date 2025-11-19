@@ -40,6 +40,12 @@ uint32 FPubnubFunctionThread::Run()
 				{
 					WaitForSubscriptionOperationEnd();
 				}
+
+				//Stop executing functions if thread was set to Shutdown
+				if(bShutdown)
+				{
+					break;
+				}
 			}
 			
 			//Clear queue
@@ -92,6 +98,11 @@ void FPubnubFunctionThread::WaitForSubscriptionOperationEnd()
 	int LoopCount = 0;
 	while(IsLockedForSubscription)
 	{
+		if(bShutdown)
+		{
+			break;
+		}
+		
 		FPlatformProcess::Sleep(WaitForSubscriptionDelay);
 		LoopCount++;
 		if(LoopCount > WaitForSubscriptionDelayMaxCount)

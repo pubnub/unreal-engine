@@ -1967,5 +1967,9 @@ private:
 	void SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);
 	void UnsubscribeWithSubscription(UPubnubSubscription* Subscription, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse);
 	void UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse);
+	
+	void CleanUpAllSubscriptions();
+	void UnsubscribeAllForDeinit();
 };
+
 

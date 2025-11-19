@@ -1837,30 +1837,14 @@ private:
 	UPROPERTY()
 	UPubnubClient* DefaultClient = nullptr;
 	
-	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
-	FPubnubFunctionThread* QuickActionThread = nullptr;
-
-	//Pubnub context for the most of the pubnub operations
-	pubnub_t *ctx_pub = nullptr;
-	//Pubnub context for the event engine - subscribe operations
-	pubnub_t *ctx_ee = nullptr;
-	
 	//Default error for most use cases. Internal usage only.
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
-
-
-#pragma region PUBNUB PLUGIN SETTINGS
 	
-	/* PUBNUB CONFIG */
-
 	//Plugin settings from ProjectSettings
 	TObjectPtr<UPubnubSettings> PubnubPluginSettings = nullptr;
 	
 	void LoadPluginSettings();
-
-#pragma endregion
 	
-	/* INITIALIZATION CHECKS */
 	
 	bool IsInitialized = false;
 	
