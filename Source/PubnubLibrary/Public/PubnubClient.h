@@ -230,8 +230,121 @@ public:
 	 */
 	void Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings);
 
+	/**
+	 * Subscribes to a specified channel - start listening for messages on that channel.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param Channel The ID of the channel to subscribe to.
+	 * @param OnSubscribeToChannelResponse Optional delegate to listen for the subscribe result.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnSubscribeToChannelResponse"))
+	void SubscribeToChannel(FString Channel, FPubnubOnSubscribeOperationResponse OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
+	/**
+	 * Subscribes to a specified channel - start listening for messages on that channel.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param Channel The ID of the channel to subscribe to.
+	 * @param NativeCallback Optional delegate to listen for the subscribe result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if subscribe result is not needed.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 */
+	void SubscribeToChannel(FString Channel, FPubnubOnSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
+	/**
+	 * Subscribes to a specified channel - start listening for messages on that channel. Overload without delegate to get subscribe result.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param Channel The ID of the channel to subscribe to.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 */
+	void SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings);
+
+	/**
+	 * Subscribes to a specified group - start listening for messages on that group.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param ChannelGroup The name of the channel to subscribe to.
+	 * @param OnSubscribeToGroupResponse Optional delegate to listen for the subscribe result.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnSubscribeToGroupResponse"))
+	void SubscribeToGroup(FString ChannelGroup, FPubnubOnSubscribeOperationResponse OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	
+	/**
+	 * Subscribes to a specified group - start listening for messages on that group.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param ChannelGroup The name of the channel to subscribe to.
+	 * @param NativeCallback Optional delegate to listen for the subscribe result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if subscribe result is not needed.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 */
+	void SubscribeToGroup(FString ChannelGroup, FPubnubOnSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+
+	/**
+	 * Subscribes to a specified group - start listening for messages on that group.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param ChannelGroup The name of the channel to subscribe to.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 */
+	void SubscribeToGroup(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings);
+
+	
+	/**
+	 * Unsubscribes from a specified channel - stop listening for messages on that channel.
+	 * 
+	 * @param Channel The ID of the channel to unsubscribe from.
+     * @param OnUnsubscribeFromChannelResponse Optional delegate to listen for the unsubscribe result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromChannelResponse"))
+	void UnsubscribeFromChannel(FString Channel, FPubnubOnSubscribeOperationResponse OnUnsubscribeFromChannelResponse);
+
+	/**
+	 * Unsubscribes from a specified channel - stop listening for messages on that channel.
+	 * 
+	 * @param Channel The ID of the channel to unsubscribe from.
+	 * @param NativeCallback Optional delegate to listen for the unsubscribe result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if unsubscribe result is not needed.
+	 */
+	void UnsubscribeFromChannel(FString Channel, FPubnubOnSubscribeOperationResponseNative NativeCallback = nullptr);
+
+	/**
+	 * Unsubscribes from a specified group - stop listening for messages on that group.
+	 * 
+	 * @param ChannelGroup The name of the group to unsubscribe from.
+	 * @param OnUnsubscribeFromGroupResponse Optional delegate to listen for the unsubscribe result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromGroupResponse"))
+	void UnsubscribeFromGroup(FString ChannelGroup, FPubnubOnSubscribeOperationResponse OnUnsubscribeFromGroupResponse);
+
+	/**
+	 * Unsubscribes from a specified group - stop listening for messages on that group.
+	 * 
+	 * @param ChannelGroup The name of the group to unsubscribe from.
+ 	 * @param NativeCallback Optional delegate to listen for the unsubscribe result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if unsubscribe result is not needed.
+	 */
+	void UnsubscribeFromGroup(FString ChannelGroup, FPubnubOnSubscribeOperationResponseNative NativeCallback = nullptr);
+
+	/**
+	 * Unsubscribes from all subscribed channels and groups - basically stop listening for any messages.
+	 * NOTE:: This also unsubscribes all subscribed Subscription and SubscriptionSet Objects.
+	 * 
+	 * @param OnUnsubscribeFromAllResponse Optional delegate to listen for the unsubscribe result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromAllResponse"))
+	void UnsubscribeFromAll(FPubnubOnSubscribeOperationResponse OnUnsubscribeFromAllResponse);
+
+	/**
+	 * Unsubscribes from all subscribed channels and groups - basically stop listening for any messages.
+	 * 
+	 * @param NativeCallback Optional delegate to listen for the unsubscribe result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if unsubscribe result is not needed.
+	 */
+	void UnsubscribeFromAll(FPubnubOnSubscribeOperationResponseNative NativeCallback = nullptr);
 
 	
 
