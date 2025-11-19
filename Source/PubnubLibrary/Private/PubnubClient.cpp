@@ -599,6 +599,409 @@ void UPubnubClient::MessageCounts(FString Channel, FString Timetoken, FPubnubOnM
 	});
 }
 
+void UPubnubClient::GetAllUserMetadataRaw(FPubnubOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	FPubnubOnGetAllUserMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetAllUserMetadataResponse](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+	{
+		OnGetAllUserMetadataResponse.ExecuteIfBound(Result, UsersData, PageNext, PagePrev);
+	});
+	GetAllUserMetadataRaw(NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev, Count);
+}
+
+void UPubnubClient::GetAllUserMetadataRaw(FPubnubOnGetAllUserMetadataResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubUserData>(), FString(), FString());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	{
+		GetAllUserMetadata_priv(NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
+	});
+}
+
+void UPubnubClient::GetAllUserMetadata(FPubnubOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
+{
+	GetAllUserMetadataRaw(OnGetAllUserMetadataResponse, UPubnubUtilities::GetAllIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::GetAllSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::GetAllUserMetadata(FPubnubOnGetAllUserMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
+{
+	GetAllUserMetadataRaw(NativeCallback, UPubnubUtilities::GetAllIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::GetAllSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::SetUserMetadataRaw(FString User, FString UserMetadataObj, FPubnubOnSetUserMetadataResponse OnSetUserMetadataResponse, FString Include)
+{
+	FPubnubOnSetUserMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSetUserMetadataResponse](const FPubnubOperationResult& Result, FPubnubUserData UserData)
+	{
+		OnSetUserMetadataResponse.ExecuteIfBound(Result, UserData);
+	});
+	SetUserMetadataRaw(User, UserMetadataObj, NativeCallback, Include);
+}
+
+void UPubnubClient::SetUserMetadataRaw(FString User, FString UserMetadataObj, FPubnubOnSetUserMetadataResponseNative NativeCallback, FString Include)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, FPubnubUserData());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, User, UserMetadataObj, NativeCallback, Include]
+	{
+		SetUserMetadata_priv(User, UserMetadataObj, NativeCallback, Include);
+	});
+}
+
+void UPubnubClient::SetUserMetadata(FString User, FPubnubUserData UserMetadata, FPubnubOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
+{
+	SetUserMetadataRaw(User, UPubnubJsonUtilities::GetJsonFromUserData(UserMetadata), OnSetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubClient::SetUserMetadata(FString User, FPubnubUserData UserMetadata, FPubnubOnSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+{
+	SetUserMetadataRaw(User, UPubnubJsonUtilities::GetJsonFromUserData(UserMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubClient::GetUserMetadataRaw(FString User, FPubnubOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
+{
+	FPubnubOnGetUserMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetUserMetadataResponse](const FPubnubOperationResult& Result, FPubnubUserData UserData)
+	{
+		OnGetUserMetadataResponse.ExecuteIfBound(Result, UserData);
+	});
+	GetUserMetadataRaw(User, NativeCallback, Include);
+}
+
+void UPubnubClient::GetUserMetadataRaw(FString User, FPubnubOnGetUserMetadataResponseNative NativeCallback, FString Include)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, FPubnubUserData());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, User, NativeCallback, Include]
+	{
+		GetUserMetadata_priv(User, NativeCallback, Include);
+	});
+}
+
+void UPubnubClient::GetUserMetadata(FString User, FPubnubOnGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include)
+{
+	GetUserMetadataRaw(User, OnGetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubClient::GetUserMetadata(FString User, FPubnubOnGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+{
+	GetUserMetadataRaw(User, NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubClient::RemoveUserMetadata(FString User, FPubnubOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse)
+{
+	FPubnubOnRemoveUserMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRemoveUserMetadataResponse](const FPubnubOperationResult& Result)
+	{
+		OnRemoveUserMetadataResponse.ExecuteIfBound(Result);
+	});
+	RemoveUserMetadata(User, NativeCallback);
+}
+
+void UPubnubClient::RemoveUserMetadata(FString User, FPubnubOnRemoveUserMetadataResponseNative NativeCallback)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback);
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, User, NativeCallback]
+	{
+		RemoveUserMetadata_priv(User, NativeCallback);
+	});
+}
+
+void UPubnubClient::GetAllChannelMetadataRaw(FPubnubOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	FPubnubOnGetAllChannelMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetAllChannelMetadataResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+	{
+		OnGetAllChannelMetadataResponse.ExecuteIfBound(Result, ChannelsData, PageNext, PagePrev);
+	});
+	GetAllChannelMetadataRaw(NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev, Count);
+}
+
+void UPubnubClient::GetAllChannelMetadataRaw(FPubnubOnGetAllChannelMetadataResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubChannelData>(), FString(), FString());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	{
+		GetAllChannelMetadata_priv(NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
+	});
+}
+
+void UPubnubClient::GetAllChannelMetadata(FPubnubOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
+{
+	GetAllChannelMetadataRaw(OnGetAllChannelMetadataResponse, UPubnubUtilities::GetAllIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::GetAllSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::GetAllChannelMetadata(FPubnubOnGetAllChannelMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
+{
+	GetAllChannelMetadataRaw(NativeCallback, UPubnubUtilities::GetAllIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::GetAllSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FPubnubOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FString Include)
+{
+	FPubnubOnSetChannelMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSetChannelMetadataResponse](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
+	{
+		OnSetChannelMetadataResponse.ExecuteIfBound(Result, ChannelData);
+	});
+	SetChannelMetadataRaw(Channel, ChannelMetadataObj, NativeCallback, Include);
+}
+
+void UPubnubClient::SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FPubnubOnSetChannelMetadataResponseNative NativeCallback, FString Include)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, FPubnubChannelData());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, Channel, ChannelMetadataObj, NativeCallback, Include]
+	{
+		SetChannelMetadata_priv(Channel, ChannelMetadataObj, NativeCallback, Include);
+	});
+}
+
+void UPubnubClient::SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FPubnubOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
+{
+	SetChannelMetadataRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(ChannelMetadata), OnSetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubClient::SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FPubnubOnSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+{
+	SetChannelMetadataRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(ChannelMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubClient::GetChannelMetadataRaw(FString Channel, FPubnubOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include)
+{
+    FPubnubOnGetChannelMetadataResponseNative NativeCallback;
+    NativeCallback.BindLambda([OnGetChannelMetadataResponse](const FPubnubOperationResult& Result, FPubnubChannelData ChannelData)
+    {
+        OnGetChannelMetadataResponse.ExecuteIfBound(Result, ChannelData);
+    });
+    GetChannelMetadataRaw(Channel, NativeCallback, Include);
+}
+
+void UPubnubClient::GetChannelMetadataRaw(FString Channel, FPubnubOnGetChannelMetadataResponseNative NativeCallback, FString Include)
+{
+    PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, FPubnubChannelData());
+
+    PubnubCallsThread->AddFunctionToQueue([this, Channel, NativeCallback, Include]
+    {
+        GetChannelMetadata_priv(Channel, NativeCallback, Include);
+    });
+}
+
+void UPubnubClient::GetChannelMetadata(FString Channel, FPubnubOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
+{
+	GetChannelMetadataRaw(Channel, OnGetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubClient::GetChannelMetadata(FString Channel, FPubnubOnGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+{
+	GetChannelMetadataRaw(Channel, NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+}
+
+void UPubnubClient::RemoveChannelMetadata(FString Channel, FPubnubOnRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse)
+{
+	FPubnubOnRemoveChannelMetadataResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRemoveChannelMetadataResponse](const FPubnubOperationResult& Result)
+	{
+		OnRemoveChannelMetadataResponse.ExecuteIfBound(Result);
+	});
+	RemoveChannelMetadata(Channel, NativeCallback);
+}
+
+void UPubnubClient::RemoveChannelMetadata(FString Channel, FPubnubOnRemoveChannelMetadataResponseNative NativeCallback)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback);
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, Channel, NativeCallback]
+	{
+		RemoveChannelMetadata_priv(Channel, NativeCallback);
+	});
+}
+
+void UPubnubClient::GetMembershipsRaw(FString User, FPubnubOnGetMembershipsResponse OnGetMembershipsResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	FPubnubOnGetMembershipsResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnGetMembershipsResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+	{
+		OnGetMembershipsResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
+	});
+
+	GetMembershipsRaw(User, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
+}
+
+void UPubnubClient::GetMembershipsRaw(FString User, FPubnubOnGetMembershipsResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubMembershipData>(), FString(), FString());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, User, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	{
+		GetMemberships_priv(User, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
+	});
+}
+
+void UPubnubClient::GetMemberships(FString User, FPubnubOnGetMembershipsResponse OnGetMembershipsResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+{
+	GetMembershipsRaw(User, OnGetMembershipsResponse, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::GetMemberships(FString User, FPubnubOnGetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+{
+	GetMembershipsRaw(User, NativeCallback, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::SetMembershipsRaw(FString User, FString SetObj, FPubnubOnSetMembershipsResponse OnSetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	FPubnubOnGetMembershipsResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnSetMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+	{
+		OnSetMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
+	});
+
+	SetMembershipsRaw(User, SetObj, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
+}
+
+void UPubnubClient::SetMembershipsRaw(FString User, FString SetObj, FPubnubOnSetMembershipsResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubMembershipData>(), FString(), FString());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, User, SetObj, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	{
+		SetMemberships_priv(User, SetObj, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
+	});
+}
+
+void UPubnubClient::SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FPubnubOnSetMembershipsResponse OnSetMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+{
+	SetMembershipsRaw(User, UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(Channels), OnSetMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FPubnubOnSetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+{
+	SetMembershipsRaw(User, UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(Channels), NativeCallback, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::RemoveMembershipsRaw(FString User, FString RemoveObj, FPubnubOnRemoveMembershipsResponse OnRemoveMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	FPubnubOnGetMembershipsResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnRemoveMembershipResponse](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+	{
+		OnRemoveMembershipResponse.ExecuteIfBound(Result, MembershipsData, PageNext, PagePrev);
+	});
+
+	RemoveMembershipsRaw(User, RemoveObj, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
+}
+
+void UPubnubClient::RemoveMembershipsRaw(FString User, FString RemoveObj, FPubnubOnRemoveMembershipsResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubMembershipData>(), FString(), FString());
+	
+	PubnubCallsThread->AddFunctionToQueue( [this, User, RemoveObj, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev,  Count]
+	{
+		RemoveMemberships_priv(User, RemoveObj, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev,  Count);
+	});
+}
+
+void UPubnubClient::RemoveMemberships(FString User, TArray<FString> Channels, FPubnubOnRemoveMembershipsResponse OnRemoveMembershipResponse, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+{
+	RemoveMembershipsRaw(User, UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(Channels), OnRemoveMembershipResponse, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::RemoveMemberships(FString User, TArray<FString> Channels, FPubnubOnRemoveMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FString PageNext, FString PagePrev)
+{
+	RemoveMembershipsRaw(User, UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(Channels), NativeCallback, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), PageNext, PagePrev,  (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::GetChannelMembersRaw(FString Channel, FPubnubOnGetChannelMembersResponse OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+    FPubnubOnGetChannelMembersResponseNative NativeCallback;
+    NativeCallback.BindLambda([OnGetMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+    {
+        OnGetMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
+    });
+    GetChannelMembersRaw(Channel, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev, Count);
+}
+
+void UPubnubClient::GetChannelMembersRaw(FString Channel, FPubnubOnGetChannelMembersResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+    PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubChannelMemberData>(), FString(), FString());
+
+    PubnubCallsThread->AddFunctionToQueue([this, Channel, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count]
+    {
+        GetChannelMembers_priv(Channel, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev, Count);
+    });
+}
+
+void UPubnubClient::GetChannelMembers(FString Channel, FPubnubOnGetChannelMembersResponse OnGetMembersResponse, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+{
+    GetChannelMembersRaw(Channel, OnGetMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::GetChannelMembers(FString Channel, FPubnubOnGetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+{
+    GetChannelMembersRaw(Channel, NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::SetChannelMembersRaw(FString Channel, FString SetObj, FPubnubOnSetChannelMembersResponse OnSetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+    FPubnubOnSetChannelMembersResponseNative NativeCallback;
+    NativeCallback.BindLambda([OnSetMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+    {
+        OnSetMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
+    });
+    SetChannelMembersRaw(Channel, SetObj, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev, Count);
+}
+
+void UPubnubClient::SetChannelMembersRaw(FString Channel, FString SetObj, FPubnubOnSetChannelMembersResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+    PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubChannelMemberData>(), FString(), FString());
+
+    PubnubCallsThread->AddFunctionToQueue([this, Channel, SetObj, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count]
+    {
+        SetChannelMembers_priv(Channel, SetObj, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev, Count);
+    });
+}
+
+void UPubnubClient::SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FPubnubOnSetChannelMembersResponse OnSetMembersResponse, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+{
+    SetChannelMembersRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(Users), OnSetMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FPubnubOnSetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+{
+    SetChannelMembersRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(Users), NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FPubnubOnRemoveChannelMembersResponse OnRemoveMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+    FPubnubOnRemoveChannelMembersResponseNative NativeCallback;
+    NativeCallback.BindLambda([OnRemoveMembersResponse](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+    {
+        OnRemoveMembersResponse.ExecuteIfBound(Result, MembersData, PageNext, PagePrev);
+    });
+    RemoveChannelMembersRaw(Channel, RemoveObj, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count);
+}
+
+void UPubnubClient::RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FPubnubOnRemoveChannelMembersResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+    PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubChannelMemberData>(), FString(), FString());
+
+    PubnubCallsThread->AddFunctionToQueue([this, Channel, RemoveObj, NativeCallback, Include, Limit, Filter, Sort, PageNext, PagePrev, Count]
+    {
+        RemoveChannelMembers_priv(Channel, RemoveObj, NativeCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, PageNext, PagePrev, Count);
+    });
+}
+
+void UPubnubClient::RemoveChannelMembers(FString Channel, TArray<FString> Users, FPubnubOnRemoveChannelMembersResponse OnRemoveMembersResponse, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+{
+    RemoveChannelMembersRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(Users), OnRemoveMembersResponse, UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+}
+
+void UPubnubClient::RemoveChannelMembers(FString Channel, TArray<FString> Users, FPubnubOnRemoveChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FString PageNext, FString PagePrev)
+{
+    RemoveChannelMembersRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(Users), NativeCallback, UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), PageNext, PagePrev, (EPubnubTribool)Include.IncludeTotalCount);
+}
+
 void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubConfig InConfig, int InClientID, FString InDebugName )
 {
 	PubnubSubsystem = InPubnubSubsystem;
@@ -1589,4 +1992,521 @@ void UPubnubClient::MessageCounts_priv(FString Channel, FString Timetoken, FPubn
 	
 	//Execute provided delegate with results
 	UPubnubUtilities::CallPubnubDelegate(OnMessageCountsResponse, UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), MessageCountsNumber);
+}
+
+void UPubnubClient::GetAllUserMetadata_priv(FPubnubOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnGetAllUserMetadataResponse, TArray<FPubnubUserData>(), FString(), FString());
+
+	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+	
+	pubnub_getall_uuidmetadata_ex(ctx_pub, PubnubOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	TArray<FPubnubUserData> UsersData;
+	FString ResultPageNext;
+	FString ResultPagePrev;
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(JsonResponse, Result, UsersData, ResultPageNext, ResultPagePrev);
+	
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnGetAllUserMetadataResponse, Result, UsersData, ResultPageNext, ResultPagePrev);
+}
+
+void UPubnubClient::SetUserMetadata_priv(FString User, FString UserMetadataObj, FPubnubOnSetUserMetadataResponseNative OnSetUserMetadataResponse, FString Include)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSetUserMetadataResponse, FPubnubUserData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(User, OnSetUserMetadataResponse, FPubnubUserData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(UserMetadataObj, OnSetUserMetadataResponse, FPubnubUserData());
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(UserMetadataObj, false))
+	{
+		PubnubError("[SetUserMetadata]: UserMetadataObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetUserMetadataResponse, "[SetUserMetadata]: UserMetadataObj has to be a correct Json Object. Operation aborted.", FPubnubUserData());
+		return;
+	}
+	
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder UserMetadataObjHolder(UserMetadataObj);
+	FUTF8StringHolder IncludeHolder(Include);
+	
+	pubnub_set_uuidmetadata(ctx_pub, UserHolder.Get(), IncludeHolder.Get(), UserMetadataObjHolder.Get());
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	FPubnubUserData UserData;
+	UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, Result, UserData);
+								
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnSetUserMetadataResponse, Result, UserData);
+}
+
+void UPubnubClient::GetUserMetadata_priv(FString User, FPubnubOnGetUserMetadataResponseNative OnGetUserMetadataResponse, FString Include)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnGetUserMetadataResponse, FPubnubUserData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(User, OnGetUserMetadataResponse, FPubnubUserData());
+
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder IncludeHolder(Include);
+	pubnub_get_uuidmetadata(ctx_pub, IncludeHolder.Get(), UserHolder.Get());
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	FPubnubUserData UserData;
+	UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, Result, UserData);
+								
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnGetUserMetadataResponse, Result, UserData);
+}
+
+void UPubnubClient::RemoveUserMetadata_priv(FString User, FPubnubOnRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnRemoveUserMetadataResponse);
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(User, OnRemoveUserMetadataResponse);
+
+	FUTF8StringHolder UserHolder(User);
+	
+	pubnub_remove_uuidmetadata(ctx_pub, UserHolder.Get());
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnRemoveUserMetadataResponse, UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse));
+}
+
+void UPubnubClient::GetAllChannelMetadata_priv(FPubnubOnGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnGetAllChannelMetadataResponse, TArray<FPubnubChannelData>(), FString(), FString());
+	
+	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+	
+	pubnub_getall_channelmetadata_ex(ctx_pub, PubnubOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	TArray<FPubnubChannelData> ChannelsData;
+	FString ResultPageNext;
+	FString ResultPagePrev;
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(JsonResponse, Result, ChannelsData, ResultPageNext, ResultPagePrev);
+	
+	//Execute provided delegate with results
+    UPubnubUtilities::CallPubnubDelegate(OnGetAllChannelMetadataResponse, Result, ChannelsData, ResultPageNext, ResultPagePrev);
+}
+
+void UPubnubClient::SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FPubnubOnSetChannelMetadataResponseNative OnSetChannelMetadataResponse, FString Include)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSetChannelMetadataResponse, FPubnubChannelData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnSetChannelMetadataResponse, FPubnubChannelData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(ChannelMetadataObj, OnSetChannelMetadataResponse, FPubnubChannelData());
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(ChannelMetadataObj, false))
+	{
+		PubnubError("[SetChannelMetadata]: ChannelMetadataObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetChannelMetadataResponse, "[SetChannelMetadata]: ChannelMetadataObj has to be a correct Json Object. Operation aborted.", FPubnubChannelData());
+		return;
+	}
+	
+	FUTF8StringHolder ChannelMetadataObjHolder(ChannelMetadataObj);
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder IncludeHolder(Include);
+	
+	pubnub_set_channelmetadata(ctx_pub, ChannelHolder.Get(), IncludeHolder.Get(), ChannelMetadataObjHolder.Get());
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	FPubnubChannelData ChannelData;
+	UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, Result, ChannelData);
+								
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnSetChannelMetadataResponse, Result, ChannelData);
+}
+
+void UPubnubClient::GetChannelMetadata_priv(FString Channel, FPubnubOnGetChannelMetadataResponseNative OnGetChannelMetadataResponse, FString Include)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnGetChannelMetadataResponse, FPubnubChannelData());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnGetChannelMetadataResponse, FPubnubChannelData());
+
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder IncludeHolder(Include);
+	
+	pubnub_get_channelmetadata(ctx_pub, IncludeHolder.Get(), ChannelHolder.Get());
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	FPubnubChannelData ChannelData;
+	UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, Result, ChannelData);
+								
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnGetChannelMetadataResponse, Result, ChannelData);
+}
+
+void UPubnubClient::RemoveChannelMetadata_priv(FString Channel, FPubnubOnRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnRemoveChannelMetadataResponse);
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnRemoveChannelMetadataResponse);
+
+	FUTF8StringHolder ChannelHolder(Channel);
+
+	pubnub_remove_channelmetadata(ctx_pub, ChannelHolder.Get());
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnRemoveChannelMetadataResponse, UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse));
+}
+
+void UPubnubClient::GetMemberships_priv(FString User, FPubnubOnGetMembershipsResponseNative OnGetMembershipsResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnGetMembershipsResponse, TArray<FPubnubMembershipData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(User, OnGetMembershipsResponse, TArray<FPubnubMembershipData>(), FString(), FString());
+	
+	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.uuid = User.IsEmpty() ? NULL : UserHolder.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+	
+	pubnub_get_memberships_ex(ctx_pub, PubnubOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	TArray<FPubnubMembershipData> MembershipsData;
+	FString ResultPageNext;
+	FString ResultPagePrev;
+	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, Result, MembershipsData, ResultPageNext, ResultPagePrev);
+	
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnGetMembershipsResponse, Result, MembershipsData, ResultPageNext, ResultPagePrev);
+}
+
+void UPubnubClient::SetMemberships_priv(FString User, FString SetObj, FPubnubOnSetMembershipsResponseNative OnSetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSetMembershipResponse, TArray<FPubnubMembershipData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(User, OnSetMembershipResponse, TArray<FPubnubMembershipData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(SetObj, OnSetMembershipResponse, TArray<FPubnubMembershipData>(), FString(), FString());
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
+	{
+		PubnubError("[SetMemberships]: SetObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetMembershipResponse, "[SetMemberships]: SetObj has to be a correct Json Object. Operation aborted.", TArray<FPubnubMembershipData>(), FString(), FString());
+		return;
+	}
+
+	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.uuid = User.IsEmpty() ? NULL : UserHolder.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+
+	FUTF8StringHolder SetObjHolder(SetObj);
+	pubnub_set_memberships_ex(ctx_pub, SetObjHolder.Get(), PubnubOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	TArray<FPubnubMembershipData> MembershipsData;
+	FString ResultPageNext;
+	FString ResultPagePrev;
+	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, Result, MembershipsData, ResultPageNext, ResultPagePrev);
+	
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnSetMembershipResponse, Result, MembershipsData, ResultPageNext, ResultPagePrev);
+}
+
+void UPubnubClient::RemoveMemberships_priv(FString User, FString RemoveObj, FPubnubOnRemoveMembershipsResponseNative OnRemoveMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnRemoveMembershipResponse, TArray<FPubnubMembershipData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(User, OnRemoveMembershipResponse, TArray<FPubnubMembershipData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(RemoveObj, OnRemoveMembershipResponse, TArray<FPubnubMembershipData>(), FString(), FString());
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
+	{
+		PubnubError("[RemoveMemberships]: RemoveObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnRemoveMembershipResponse, "[RemoveMemberships]: RemoveObj has to be a correct Json Object. Operation aborted.", TArray<FPubnubMembershipData>(), FString(), FString());
+		return;
+	}
+
+	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
+	FUTF8StringHolder UserHolder(User);
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.uuid = User.IsEmpty() ? NULL : UserHolder.Get();
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+
+	FUTF8StringHolder RemoveObjHolder(RemoveObj);
+	pubnub_remove_memberships_ex(ctx_pub, RemoveObjHolder.Get(), PubnubOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	TArray<FPubnubMembershipData> MembershipsData;
+	FString ResultPageNext;
+	FString ResultPagePrev;
+	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, Result, MembershipsData, ResultPageNext, ResultPagePrev);
+
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnRemoveMembershipResponse, Result, MembershipsData, ResultPageNext, ResultPagePrev);
+}
+
+void UPubnubClient::GetChannelMembers_priv(FString Channel, FPubnubOnGetChannelMembersResponseNative OnGetMembersResponse, FString Include, int Limit,
+	FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnGetMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnGetMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
+	
+	pubnub_members_opts PubnubOptions = pubnub_members_opts();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+
+	FUTF8StringHolder ChannelHolder(Channel);
+	pubnub_get_members_ex(ctx_pub, ChannelHolder.Get(), PubnubOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	TArray<FPubnubChannelMemberData> MembersData;
+	FString ResultPageNext;
+	FString ResultPagePrev;
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, Result, MembersData, ResultPageNext, ResultPagePrev);
+	
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnGetMembersResponse, Result, MembersData, ResultPageNext, ResultPagePrev);
+}
+
+void UPubnubClient::SetChannelMembers_priv(FString Channel, FString SetObj, FPubnubOnSetChannelMembersResponseNative OnSetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnSetMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnSetMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(SetObj, OnSetMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false))
+	{
+		PubnubError("[SetChannelMembers]: SetObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnSetMembersResponse, "[SetChannelMembers]: SetObj has to be a correct Json Object. Operation aborted.", TArray<FPubnubChannelMemberData>(), FString(), FString());
+		return;
+	}
+
+	pubnub_members_opts PubnubOptions = pubnub_members_opts();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder SetObjHolder(SetObj);
+	pubnub_set_members_ex(ctx_pub, ChannelHolder.Get(), SetObjHolder.Get(), PubnubOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	TArray<FPubnubChannelMemberData> MembersData;
+	FString ResultPageNext;
+	FString ResultPagePrev;
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, Result, MembersData, ResultPageNext, ResultPagePrev);
+
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnSetMembersResponse, Result, MembersData, ResultPageNext, ResultPagePrev);
+}
+
+void UPubnubClient::RemoveChannelMembers_priv(FString Channel, FString RemoveObj, FPubnubOnRemoveChannelMembersResponseNative OnRemoveMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
+{
+	PUBNUB_ENSURE_USER_ID_IS_SET(OnRemoveMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(Channel, OnRemoveMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
+	PUBNUB_ENSURE_FIELD_NOT_EMPTY(RemoveObj, OnRemoveMembersResponse, TArray<FPubnubChannelMemberData>(), FString(), FString());
+
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false))
+	{
+		PubnubError("[RemoveChannelMembers]: RemoveObj has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(OnRemoveMembersResponse, "[RemoveChannelMembers]: RemoveObj has to be a correct Json Object. Operation aborted.", TArray<FPubnubChannelMemberData>(), FString(), FString());
+		return;
+	}
+
+	pubnub_members_opts PubnubOptions = pubnub_members_opts();
+	FUTF8StringHolder IncludeHolder(Include);
+	FUTF8StringHolder FilterHolder(Filter);
+	FUTF8StringHolder SortHolder(Sort);
+	FUTF8StringHolder PageNextHolder(PageNext);
+	FUTF8StringHolder PagePrevHolder(PagePrev);
+	PubnubOptions.include = Include.IsEmpty() ? NULL : IncludeHolder.Get();
+	PubnubOptions.filter = Filter.IsEmpty() ? NULL :  FilterHolder.Get();
+	PubnubOptions.sort = Sort.IsEmpty() ? NULL :  SortHolder.Get();
+	PubnubOptions.page.next = PageNext.IsEmpty() ? NULL :  PageNextHolder.Get();
+	PubnubOptions.page.prev = PagePrev.IsEmpty() ? NULL :  PagePrevHolder.Get();
+	PubnubOptions.limit = Limit;
+	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
+
+	FUTF8StringHolder ChannelHolder(Channel);
+	FUTF8StringHolder RemoveObjHolder(RemoveObj);
+	pubnub_remove_members_ex(ctx_pub, ChannelHolder.Get(), RemoveObjHolder.Get(), PubnubOptions);
+
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	//If last response is empty, it means that there was an error, so return server response instead
+	if(JsonResponse.IsEmpty())
+	{
+		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	}
+	
+	//Parse Json response into data
+	FPubnubOperationResult Result;
+	TArray<FPubnubChannelMemberData> MembersData;
+	FString ResultPageNext;
+	FString ResultPagePrev;
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, Result, MembersData, ResultPageNext, ResultPagePrev);
+
+	//Execute provided delegate with results
+	UPubnubUtilities::CallPubnubDelegate(OnRemoveMembersResponse, Result, MembersData, ResultPageNext, ResultPagePrev);
 }
