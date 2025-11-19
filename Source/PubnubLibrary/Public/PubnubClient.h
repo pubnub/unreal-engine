@@ -165,6 +165,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
 	void SetSecretKey();
 
+	
 
 	/* PUBSUB API */
 
@@ -198,6 +199,7 @@ public:
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
 	void PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings);
+
 	
 	/**
 	 * Sends a signal to a specified channel.
@@ -230,6 +232,7 @@ public:
 	 */
 	void Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings);
 
+	
 	/**
 	 * Subscribes to a specified channel - start listening for messages on that channel.
 	 * Use OnMessageReceived Callback to get those messages.
@@ -261,6 +264,7 @@ public:
 	 */
 	void SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings);
 
+	
 	/**
 	 * Subscribes to a specified group - start listening for messages on that group.
 	 * Use OnMessageReceived Callback to get those messages.
@@ -311,6 +315,7 @@ public:
 	 */
 	void UnsubscribeFromChannel(FString Channel, FPubnubOnSubscribeOperationResponseNative NativeCallback = nullptr);
 
+	
 	/**
 	 * Unsubscribes from a specified group - stop listening for messages on that group.
 	 * 
@@ -329,6 +334,7 @@ public:
 	 */
 	void UnsubscribeFromGroup(FString ChannelGroup, FPubnubOnSubscribeOperationResponseNative NativeCallback = nullptr);
 
+	
 	/**
 	 * Unsubscribes from all subscribed channels and groups - basically stop listening for any messages.
 	 * NOTE:: This also unsubscribes all subscribed Subscription and SubscriptionSet Objects.
@@ -345,6 +351,399 @@ public:
 	 *						 Can be skipped if unsubscribe result is not needed.
 	 */
 	void UnsubscribeFromAll(FPubnubOnSubscribeOperationResponseNative NativeCallback = nullptr);
+
+
+	
+	/* CHANNEL GROUPS API */
+	
+	/**
+	 * Adds a channel to a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to add to the channel group.
+	 * @param ChannelGroup The name of the channel group to add the channel to.
+	 * @param OnAddChannelToGroupResponse (Optional) Delegate to listen for the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnAddChannelToGroupResponse"))
+	void AddChannelToGroup(FString Channel, FString ChannelGroup, FPubnubOnAddChannelToGroupResponse OnAddChannelToGroupResponse);
+
+	/**
+	 * Adds a channel to a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to add to the channel group.
+	 * @param ChannelGroup The name of the channel group to add the channel to.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if operation result is not needed.
+	 */
+	void AddChannelToGroup(FString Channel, FString ChannelGroup, FPubnubOnAddChannelToGroupResponseNative NativeCallback = nullptr);
+
+	
+	/**
+	 * Removes a channel from a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to remove from the channel group.
+	 * @param ChannelGroup The name of the channel group to remove the channel from.
+	 * @param OnRemoveChannelFromGroupResponse (Optional) Delegate to listen for the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelFromGroupResponse"))
+	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FPubnubOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
+
+	/**
+	 * Removes a channel from a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to remove from the channel group.
+	 * @param ChannelGroup The name of the channel group to remove the channel from.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if operation result is not needed.
+	 */
+	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FPubnubOnRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
+
+	
+	/**
+	 * Lists the channels that belong to a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ChannelGroup The name of the channel group to list channels from.
+	 * @param OnListChannelsResponse The callback function used to handle the result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	void ListChannelsFromGroup(FString ChannelGroup, FPubnubOnListChannelsFromGroupResponse OnListChannelsResponse);
+
+	/**
+	 * Lists the channels that belong to a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ChannelGroup The name of the channel group to list channels from.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 */
+	void ListChannelsFromGroup(FString ChannelGroup, FPubnubOnListChannelsFromGroupResponseNative NativeCallback);
+
+	
+	/**
+	 * Removes a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ChannelGroup The name of the channel group to remove.
+	 * @param OnRemoveChannelGroupResponse (Optional) Delegate to listen for the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelGroupResponse"))
+	void RemoveChannelGroup(FString ChannelGroup, FPubnubOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
+
+	/**
+	 * Removes a specified channel group.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ChannelGroup The name of the channel group to remove.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 *						 Can be skipped if operation result is not needed.
+	 */
+	void RemoveChannelGroup(FString ChannelGroup, FPubnubOnRemoveChannelGroupResponseNative NativeCallback = nullptr);
+
+	
+	/**
+	 * Lists the users currently present on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to list users from.
+	 * @param ListUsersFromChannelResponse The callback function used to handle the result.
+	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void ListUsersFromChannel(FString Channel, FPubnubOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+
+	/**
+	 * Lists the users currently present on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to list users from.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details. 
+	 */
+	void ListUsersFromChannel(FString Channel, FPubnubOnListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+
+	
+	/**
+	 * Lists the channels that a specified user is currently subscribed to.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 	
+	 * @param UserID The user ID to list subscribed channels for.
+	 * @param ListUserSubscribedChannelsResponse The callback function used to handle the result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void ListUserSubscribedChannels(FString UserID, FPubnubOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
+	
+	/**
+	 * Lists the channels that a specified user is currently subscribed to.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 	
+	 * @param UserID The user ID to list subscribed channels for.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 */
+	void ListUserSubscribedChannels(FString UserID, FPubnubOnListUsersSubscribedChannelsResponseNative NativeCallback);
+
+	
+	/**
+	 * Sets the presence state for the current user on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to set the state on.
+	 * @param StateJson The JSON string representing the state to set.
+	 * @param OnSetStateResponse (Optional) Delegate to listen for the operation result.
+	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta = (AutoCreateRefTerm = "OnSetStateResponse"))
+	void SetState(FString Channel, FString StateJson, FPubnubOnSetStateResponse OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+
+	/**
+	 * Sets the presence state for the current user on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to set the state on.
+	 * @param StateJson The JSON string representing the state to set.
+	 * @param NativeCallback Optional delegate to listen for the set state result. Delegate in native form that can accept lambdas.
+	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
+	 */
+	void SetState(FString Channel, FString StateJson, FPubnubOnSetStateResponseNative NativeCallback = nullptr, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+
+	/**
+	 * Sets the presence state for the current user on a specified channel. Overload without delegate to get result.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to set the state on.
+	 * @param StateJson The JSON string representing the state to set.
+	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
+	 */
+	void SetState(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings);
+
+	
+	/**
+	 * Gets the presence state for a specified user on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to get the state from.
+	 * @param ChannelGroup The name of the channel group to get the state from.
+	 * @param UserID The user ID to get the state for.
+	 * @param OnGetStateResponse The callback function used to handle the result in JSON format.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void GetState(FString Channel, FString ChannelGroup, FString UserID, FPubnubOnGetStateResponse OnGetStateResponse);
+
+	/**
+	 * Gets the presence state for a specified user on a specified channel.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to get the state from.
+	 * @param ChannelGroup The name of the channel group to get the state from.
+	 * @param UserID The user ID to get the state for.
+	 * @param NativeCallback The callback function used to handle the result in JSON format. Delegate in native form that can accept lambdas.
+	 */
+	void GetState(FString Channel, FString ChannelGroup, FString UserID, FPubnubOnGetStateResponseNative NativeCallback);
+
+	
+	/**
+	 * This method notifies channels and channel groups about a client's presence.
+	 * You can send heartbeats to channels you are not subscribed to.
+	 * 
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to send the heartbeat to.
+	 * @param ChannelGroup The name of the channel group to send the heartbeat to.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	void Heartbeat(FString Channel, FString ChannelGroup);
+
+
+
+	/* ACCESS MANAGER API */
+
+		
+	/**
+	 * Requests an access token from the PubNub server with the specified permissions.
+	 * Requires SecretKey to be set.
+	 * 
+	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Ttl Time-To-Live (TTL) in minutes for the granted token.
+	 * @param AuthorizedUser The User that is authorized by this grant.
+	 * @param Permissions A struct containing all permissions that will be granted with this token.
+	 * @param OnGrantTokenResponse The callback function used to handle the result.
+	 * @param Meta (Optional) metadata that will be embedded into the token.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FPubnubOnGrantTokenResponse OnGrantTokenResponse, FString Meta = "");
+
+	/**
+	 * Requests an access token from the PubNub server with the specified permissions.
+	 * Requires SecretKey to be set.
+	 * 
+	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Ttl Time-To-Live (TTL) in minutes for the granted token.
+	 * @param AuthorizedUser The User that is authorized by this grant.
+	 * @param Permissions A struct containing all permissions that will be granted with this token.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param Meta (Optional) metadata that will be embedded into the token.
+	 */
+	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FPubnubOnGrantTokenResponseNative NativeCallback, FString Meta = "");
+
+	
+	/**
+	 * Revokes a previously granted access token.
+	 * 
+	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Token The access token to revoke.
+	 * @param OnRevokeTokenResponse (Optional) Delegate to listen for the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta = (AutoCreateRefTerm = "OnRevokeTokenResponse"))
+	void RevokeToken(FString Token, FPubnubOnRevokeTokenResponse OnRevokeTokenResponse);
+
+	/**
+	 * Revokes a previously granted access token.
+	 * 
+	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Token The access token to revoke.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 */
+	void RevokeToken(FString Token, FPubnubOnRevokeTokenResponseNative NativeCallback = nullptr);
+
+	
+	/**
+	 * Parses an access token and retrieves information about its permissions.
+	 * 
+	 * @param Token The access token to parse.
+	 * @return Parsed token
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	FString ParseToken(FString Token);
+
+	
+	/**
+	 * This method is used by the client devices to update the authentication token granted by the server.
+	 * 
+	 * @param Token Existing token with embedded permissions.
+	 * 
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	void SetAuthToken(FString Token);
+
+
+
+	/* MESSAGE PERSISTENCE API */
+		
+	/**
+	 * Fetches historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to fetch messages from.
+	 * @param OnFetchHistoryResponse The callback function used to handle the result.
+	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	void FetchHistory(FString Channel, FPubnubOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+
+	/**
+	 * Fetches historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to fetch messages from.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
+	 */
+	void FetchHistory(FString Channel, FPubnubOnFetchHistoryResponseNative NativeCallback, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+
+	
+	/**
+	 * Deletes historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * @Note Requires Enable Delete-From-History in Message Persistence tab for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to delete messages from.
+	 * @param OnDeleteMessagesResponse The callback function used to handle the result.
+	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
+	 *								 See FPubnubDeleteMessagesSettings for more details.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta = (AutoCreateRefTerm = "OnDeleteMessagesResponse"))
+	void DeleteMessages(FString Channel, FPubnubOnDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
+
+	/**
+	 * Deletes historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * @Note Requires Enable Delete-From-History in Message Persistence tab for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to delete messages from.
+	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
+	 * 						 Can be skipped if operation result is not needed.
+	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
+	 *						 See FPubnubDeleteMessagesSettings for more details.
+	 */
+	void DeleteMessages(FString Channel, FPubnubOnDeleteMessagesResponseNative NativeCallback = nullptr, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
+
+	/**
+	 * Deletes historical messages from a specified channel using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * @Note Requires Enable Delete-From-History in Message Persistence tab for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to delete messages from.
+	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
+	 *						 See FPubnubDeleteMessagesSettings for more details.
+	 */
+	void DeleteMessages(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
+
+	
+	/**
+	 * Returns the number of messages published on one or more channels since a given time.
+	 * The count returned is the number of messages in history with a Timetoken value greater
+	 * than or equal to than the passed value in the Timetoken parameter.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to count messages for.
+	 * @param Timetoken The timetoken to start counting messages from. (Exclusive, messages with the same timetoken, won't be counted).
+	 * @param OnMessageCountsResponse The callback function used to handle the result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	void MessageCounts(FString Channel, FString Timetoken, FPubnubOnMessageCountsResponse OnMessageCountsResponse);
+
+	/**
+	 * Returns the number of messages published on one or more channels since a given time.
+	 * The count returned is the number of messages in history with a Timetoken value greater
+	 * than or equal to than the passed value in the Timetoken parameter.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to count messages for.
+	 * @param Timetoken The timetoken to start counting messages from. (Exclusive, messages with the same timetoken, won't be counted).
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 */
+	void MessageCounts(FString Channel, FString Timetoken, FPubnubOnMessageCountsResponseNative NativeCallback);
 
 	
 
@@ -377,6 +776,8 @@ private:
 	//CryptoBridge class that holds provided CryptoModule and inserts it into C-Core system - it keeps all required references alive
 	UPROPERTY()
 	TObjectPtr<UPubnubCryptoBridge> CryptoBridge;
+
+	void DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages);
 
 #pragma endregion
 
@@ -418,6 +819,12 @@ private:
 	void OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData);
 
 #pragma endregion
+	
+	//Returns FString from the pubnub_get response
+	FString GetLastResponse(pubnub_t* context);
+	
+	//Returns FString from the pubnub_get_channel response
+	FString GetLastChannelResponse(pubnub_t* context);
 
 	//TODO:: Move these functions to the logger
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
@@ -447,6 +854,7 @@ private:
 	void GrantToken_priv(FString PermissionObject, FPubnubOnGrantTokenResponseNative OnGrantTokenResponse);
 	void RevokeToken_priv(FString Token, FPubnubOnRevokeTokenResponseNative OnRevokeTokenResponse);
 	FString ParseToken_priv(FString Token);
+	void SetAuthToken_priv(FString Token);
 	void FetchHistory_priv(FString Channel, FPubnubOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	void DeleteMessages_priv(FString Channel, FPubnubOnDeleteMessagesResponseNative OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 	void MessageCounts_priv(FString Channel, FString Timetoken, FPubnubOnMessageCountsResponseNative OnMessageCountsResponse);

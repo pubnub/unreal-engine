@@ -1844,10 +1844,6 @@ private:
 	//Pubnub context for the event engine - subscribe operations
 	pubnub_t *ctx_ee = nullptr;
 
-	//Auth token has to be kept alive for the lifetime of the sdk, so this is the container for it
-	char* AuthTokenBuffer = nullptr;
-	size_t AuthTokenLength = 0;
-
 	//Storage for global subscriptions (not from Entities)
 	TMap<FString, CCoreSubscriptionData> ChannelSubscriptions;
 	TMap<FString, CCoreSubscriptionData> ChannelGroupSubscriptions;
@@ -1914,21 +1910,7 @@ private:
 	/* PRIVATE FUNCTIONS */
 	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 	
-	void AddChannelToGroup_priv(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponseNative OnAddChannelToGroupResponse);
-	void RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse);
-	void ListChannelsFromGroup_priv(FString ChannelGroup, FOnListChannelsFromGroupResponseNative OnListChannelsResponse);
-	void RemoveChannelGroup_priv(FString ChannelGroup, FOnRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse);
-	void ListUsersFromChannel_priv(FString Channel, FOnListUsersFromChannelResponseNative ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
-	void ListUserSubscribedChannels_priv(FString UserID, FOnListUsersSubscribedChannelsResponseNative ListUserSubscribedChannelsResponse);
-	void SetState_priv(FString Channel, FString StateJson, FOnSetStateResponseNative OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
-	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponseNative OnGetStateResponse);
-	void Heartbeat_priv(FString Channel, FString ChannelGroup);
-	void GrantToken_priv(FString PermissionObject, FOnGrantTokenResponseNative OnGrantTokenResponse);
-	void RevokeToken_priv(FString Token, FOnRevokeTokenResponseNative OnRevokeTokenResponse);
-	FString ParseToken_priv(FString Token);
-	void FetchHistory_priv(FString Channel, FOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
-	void DeleteMessages_priv(FString Channel, FOnDeleteMessagesResponseNative OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
-	void MessageCounts_priv(FString Channel, FString Timetoken, FOnMessageCountsResponseNative OnMessageCountsResponse);
+	
 	void GetAllUserMetadata_priv(FOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
 	void SetUserMetadata_priv(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative OnSetUserMetadataResponse, FString Include);
 	void GetUserMetadata_priv(FString User, FOnGetUserMetadataResponseNative OnGetUserMetadataResponse, FString Include);
@@ -1955,21 +1937,7 @@ private:
 #pragma endregion
 	
 
-	/* STRUCT CONVERTERS */
-	//ALL 4 TO DELETE
-	void PublishUESettingsToPubnubPublishOptions(FPubnubPublishSettings &PublishSettings, pubnub_publish_options &PubnubPublishOptions);
-	void HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersFromChannelSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
-	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
-	void FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
-
-	void DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages);
 	
-	/* GRANT TOKEN HELPERS */
-
-	TSharedPtr<FJsonObject> AddChannelPermissionsToJson(TArray<FString> Channels, TArray<FPubnubChannelPermissions> ChannelPermissions);
-	TSharedPtr<FJsonObject> AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions);
-	TSharedPtr<FJsonObject> AddUserPermissionsToJson(TArray<FString> Users, TArray<FPubnubUserPermissions> UserPermissions);
-
 	//C-Core logging
 	static TArray<FString> FalseCCoreLogPhrases;
 	static bool ShouldCCoreLogBeSkipped(FString Message);
