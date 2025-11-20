@@ -28,12 +28,6 @@ class UPubnubUserMetadataEntity;
 class UPubnubSubscriptionSet;
 class UPubnubClient;
 
-struct CCoreSubscriptionData
-{
-	pubnub_subscribe_message_callback_t Callback;
-	pubnub_subscription_t* Subscription;
-};
-
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, FPubnubOperationResult, Result, FPubnubMessageData, PublishedMessage);
 DECLARE_DELEGATE_TwoParams(FOnPublishMessageResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage);
