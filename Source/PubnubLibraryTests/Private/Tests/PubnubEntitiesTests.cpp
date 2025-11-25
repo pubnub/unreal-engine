@@ -150,7 +150,7 @@ bool FPubnubChannelEntityPublishSubscribeTest::RunTest(const FString& Parameters
 	// Publish message using the channel entity
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelEntity, TestMessage, PublishCallback]()
 	{
-		ChannelEntity->PublishMessage(TestMessage, PublishCallback);
+		ChannelEntity->PublishMessageAsync(TestMessage, PublishCallback);
 	}, 0.5f));
 
 	// Wait until publish result is received
@@ -284,7 +284,7 @@ bool FPubnubChannelGroupEntityTest::RunTest(const FString& Parameters)
 	// Add a channel to the channel group
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelGroupEntity, TestChannel1, AddChannelCallback]()
 	{
-		ChannelGroupEntity->AddChannelToGroup(TestChannel1, AddChannelCallback);
+		ChannelGroupEntity->AddChannelToGroupAsync(TestChannel1, AddChannelCallback);
 	}, 0.1f));
 
 	// Wait for channel to be added
@@ -358,7 +358,7 @@ bool FPubnubChannelGroupEntityTest::RunTest(const FString& Parameters)
 		UPubnubChannelEntity* TempChannelEntity = PubnubSubsystem->CreateChannelEntity(TestChannel1);
 		if (TempChannelEntity)
 		{
-			TempChannelEntity->PublishMessage(TestMessage, PublishCallback);
+			TempChannelEntity->PublishMessageAsync(TestMessage, PublishCallback);
 		}
 		else
 		{
@@ -685,7 +685,7 @@ bool FPubnubSubscriptionListenersTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelEntity, TestMessageContent, PublishMessageCallback]()
 	{
-		ChannelEntity->PublishMessage(TestMessageContent, PublishMessageCallback);
+		ChannelEntity->PublishMessageAsync(TestMessageContent, PublishMessageCallback);
 	}, 0.5f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([MessagePublishCompleted]() {
@@ -712,7 +712,7 @@ bool FPubnubSubscriptionListenersTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelEntity, TestSignalContent, SendSignalCallback]()
 	{
-		ChannelEntity->Signal(TestSignalContent, SendSignalCallback);
+		ChannelEntity->SignalAsync(TestSignalContent, SendSignalCallback);
 	}, 0.5f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SignalSendCompleted]() {
@@ -815,7 +815,7 @@ bool FPubnubSubscriptionListenersTest::RunTest(const FString& Parameters)
 			UniqueChannelMetadata.ChannelName = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken(); // Unique name ensures event triggers
 			UniqueChannelMetadata.Description = "Listener test metadata";
 			
-			ChannelMetadataEntity->SetChannelMetadata(UniqueChannelMetadata, SetChannelMetadataCallback);
+			ChannelMetadataEntity->SetChannelMetadataAsync(UniqueChannelMetadata, SetChannelMetadataCallback);
 		}
 	}, 0.5f));
 

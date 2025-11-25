@@ -101,6 +101,15 @@ DECLARE_DELEGATE_TwoParams(FOnPubnubAddMessageActionResponseNative, const FPubnu
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubRemoveMessageActionResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnPubnubRemoveMessageActionResponseNative, const FPubnubOperationResult& Result);
 
+
+USTRUCT()
+struct FPubnubUserDataResponse
+{
+	GENERATED_BODY()
+	
+};
+
+
 /**
  * 
  */
@@ -179,6 +188,17 @@ public:
 	/* PUBSUB API */
 
 	/**
+	 * Publishes a message to a specified channel synchronously.
+	 * 
+	 * @param Channel The ID of the channel to publish the message to.
+	 * @param Message The message to publish. This message can be any data type that can be serialized into JSON.
+	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
+	 * @return FPubnubPublishMessageResult containing the operation result and published message data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish")
+	FPubnubPublishMessageResult PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+
+	/**
 	 * Publishes a message to a specified channel.
 	 * 
 	 * @param Channel The ID of the channel to publish the message to.
@@ -187,7 +207,7 @@ public:
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish", meta = (AutoCreateRefTerm = "OnPublishMessageResponse"))
-	void PublishMessage(FString Channel, FString Message, FOnPubnubPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	void PublishMessageAsync(FString Channel, FString Message, FOnPubnubPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
 	/**
 	 * Publishes a message to a specified channel.
@@ -198,7 +218,7 @@ public:
 	 *						 Can be skipped if publish result is not needed.
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
-	void PublishMessage(FString Channel, FString Message, FOnPubnubPublishMessageResponseNative NativeCallback = nullptr, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	void PublishMessageAsync(FString Channel, FString Message, FOnPubnubPublishMessageResponseNative NativeCallback = nullptr, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
 	/**
 	 * Publishes a message to a specified channel. Overload without delegate to get publish result.
@@ -207,8 +227,19 @@ public:
 	 * @param Message The message to publish. This message can be any data type that can be serialized into JSON.
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
-	void PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings);
+	void PublishMessageAsync(FString Channel, FString Message, FPubnubPublishSettings PublishSettings);
 
+
+	/**
+	 * Sends a signal to a specified channel synchronously.
+	 * 
+	 * @param Channel The ID of the channel to send the signal to.
+	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
+	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
+	 * @return FPubnubSignalResult containing the operation result and signal message data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish")
+	FPubnubSignalResult Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 
 	/**
 	 * Sends a signal to a specified channel.
@@ -219,7 +250,7 @@ public:
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish", meta = (AutoCreateRefTerm = "OnSignalResponse"))
-	void Signal(FString Channel, FString Message, FOnPubnubSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+	void SignalAsync(FString Channel, FString Message, FOnPubnubSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 
 	/**
 	 * Sends a signal to a specified channel.
@@ -230,7 +261,7 @@ public:
 	 *						 Can be skipped if signal result is not needed.
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
-	void Signal(FString Channel, FString Message, FOnPubnubSignalResponseNative NativeCallback = nullptr, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+	void SignalAsync(FString Channel, FString Message, FOnPubnubSignalResponseNative NativeCallback = nullptr, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 	
 	/**
 	 * Sends a signal to a specified channel. Overload without delegate to get signal result.
@@ -239,9 +270,20 @@ public:
 	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
-	void Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings);
+	void SignalAsync(FString Channel, FString Message, FPubnubSignalSettings SignalSettings);
 
 	
+	/**
+	 * Subscribes to a specified channel synchronously - start listening for messages on that channel.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param Channel The ID of the channel to subscribe to.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	FPubnubOperationResult SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+
 	/**
 	 * Subscribes to a specified channel - start listening for messages on that channel.
 	 * Use OnMessageReceived Callback to get those messages.
@@ -251,7 +293,7 @@ public:
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnSubscribeToChannelResponse"))
-	void SubscribeToChannel(FString Channel, FOnPubnubSubscribeOperationResponse OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	void SubscribeToChannelAsync(FString Channel, FOnPubnubSubscribeOperationResponse OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
 	/**
 	 * Subscribes to a specified channel - start listening for messages on that channel.
@@ -262,7 +304,7 @@ public:
 	 *						 Can be skipped if subscribe result is not needed.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
-	void SubscribeToChannel(FString Channel, FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	void SubscribeToChannelAsync(FString Channel, FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
 	/**
 	 * Subscribes to a specified channel - start listening for messages on that channel. Overload without delegate to get subscribe result.
@@ -271,9 +313,20 @@ public:
 	 * @param Channel The ID of the channel to subscribe to.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
-	void SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings);
+	void SubscribeToChannelAsync(FString Channel, FPubnubSubscribeSettings SubscribeSettings);
 
 	
+	/**
+	 * Subscribes to a specified group synchronously - start listening for messages on that group.
+	 * Use OnMessageReceived Callback to get those messages.
+	 * 
+	 * @param ChannelGroup The name of the channel to subscribe to.
+	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	FPubnubOperationResult SubscribeToGroup(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+
 	/**
 	 * Subscribes to a specified group - start listening for messages on that group.
 	 * Use OnMessageReceived Callback to get those messages.
@@ -283,7 +336,7 @@ public:
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnSubscribeToGroupResponse"))
-	void SubscribeToGroup(FString ChannelGroup, FOnPubnubSubscribeOperationResponse OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	void SubscribeToGroupAsync(FString ChannelGroup, FOnPubnubSubscribeOperationResponse OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	
 	/**
 	 * Subscribes to a specified group - start listening for messages on that group.
@@ -294,7 +347,7 @@ public:
 	 *						 Can be skipped if subscribe result is not needed.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
-	void SubscribeToGroup(FString ChannelGroup, FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	void SubscribeToGroupAsync(FString ChannelGroup, FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
 	/**
 	 * Subscribes to a specified group - start listening for messages on that group.
@@ -303,9 +356,18 @@ public:
 	 * @param ChannelGroup The name of the channel to subscribe to.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
-	void SubscribeToGroup(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings);
+	void SubscribeToGroupAsync(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings);
 
 	
+	/**
+	 * Unsubscribes from a specified channel synchronously - stop listening for messages on that channel.
+	 * 
+	 * @param Channel The ID of the channel to unsubscribe from.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	FPubnubOperationResult UnsubscribeFromChannel(FString Channel);
+
 	/**
 	 * Unsubscribes from a specified channel - stop listening for messages on that channel.
 	 * 
@@ -313,7 +375,7 @@ public:
      * @param OnUnsubscribeFromChannelResponse Optional delegate to listen for the unsubscribe result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromChannelResponse"))
-	void UnsubscribeFromChannel(FString Channel, FOnPubnubSubscribeOperationResponse OnUnsubscribeFromChannelResponse);
+	void UnsubscribeFromChannelAsync(FString Channel, FOnPubnubSubscribeOperationResponse OnUnsubscribeFromChannelResponse);
 
 	/**
 	 * Unsubscribes from a specified channel - stop listening for messages on that channel.
@@ -322,9 +384,18 @@ public:
 	 * @param NativeCallback Optional delegate to listen for the unsubscribe result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if unsubscribe result is not needed.
 	 */
-	void UnsubscribeFromChannel(FString Channel, FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr);
+	void UnsubscribeFromChannelAsync(FString Channel, FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr);
 
 	
+	/**
+	 * Unsubscribes from a specified group synchronously - stop listening for messages on that group.
+	 * 
+	 * @param ChannelGroup The name of the group to unsubscribe from.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	FPubnubOperationResult UnsubscribeFromGroup(FString ChannelGroup);
+
 	/**
 	 * Unsubscribes from a specified group - stop listening for messages on that group.
 	 * 
@@ -332,7 +403,7 @@ public:
 	 * @param OnUnsubscribeFromGroupResponse Optional delegate to listen for the unsubscribe result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromGroupResponse"))
-	void UnsubscribeFromGroup(FString ChannelGroup, FOnPubnubSubscribeOperationResponse OnUnsubscribeFromGroupResponse);
+	void UnsubscribeFromGroupAsync(FString ChannelGroup, FOnPubnubSubscribeOperationResponse OnUnsubscribeFromGroupResponse);
 
 	/**
 	 * Unsubscribes from a specified group - stop listening for messages on that group.
@@ -341,9 +412,18 @@ public:
  	 * @param NativeCallback Optional delegate to listen for the unsubscribe result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if unsubscribe result is not needed.
 	 */
-	void UnsubscribeFromGroup(FString ChannelGroup, FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr);
+	void UnsubscribeFromGroupAsync(FString ChannelGroup, FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr);
 
 	
+	/**
+	 * Unsubscribes from all subscribed channels and groups synchronously - basically stop listening for any messages.
+	 * NOTE:: This also unsubscribes all subscribed Subscription and SubscriptionSet Objects.
+	 * 
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	FPubnubOperationResult UnsubscribeFromAll();
+
 	/**
 	 * Unsubscribes from all subscribed channels and groups - basically stop listening for any messages.
 	 * NOTE:: This also unsubscribes all subscribed Subscription and SubscriptionSet Objects.
@@ -351,7 +431,7 @@ public:
 	 * @param OnUnsubscribeFromAllResponse Optional delegate to listen for the unsubscribe result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromAllResponse"))
-	void UnsubscribeFromAll(FOnPubnubSubscribeOperationResponse OnUnsubscribeFromAllResponse);
+	void UnsubscribeFromAllAsync(FOnPubnubSubscribeOperationResponse OnUnsubscribeFromAllResponse);
 
 	/**
 	 * Unsubscribes from all subscribed channels and groups - basically stop listening for any messages.
@@ -359,12 +439,24 @@ public:
 	 * @param NativeCallback Optional delegate to listen for the unsubscribe result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if unsubscribe result is not needed.
 	 */
-	void UnsubscribeFromAll(FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr);
+	void UnsubscribeFromAllAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr);
 
 
 	
 	/* CHANNEL GROUPS API */
 	
+	/**
+	 * Adds a channel to a specified channel group synchronously.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to add to the channel group.
+	 * @param ChannelGroup The name of the channel group to add the channel to.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	FPubnubOperationResult AddChannelToGroup(FString Channel, FString ChannelGroup);
+
 	/**
 	 * Adds a channel to a specified channel group.
 	 * 
@@ -375,7 +467,7 @@ public:
 	 * @param OnAddChannelToGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnAddChannelToGroupResponse"))
-	void AddChannelToGroup(FString Channel, FString ChannelGroup, FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse);
+	void AddChannelToGroupAsync(FString Channel, FString ChannelGroup, FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse);
 
 	/**
 	 * Adds a channel to a specified channel group.
@@ -387,9 +479,21 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void AddChannelToGroup(FString Channel, FString ChannelGroup, FOnPubnubAddChannelToGroupResponseNative NativeCallback = nullptr);
+	void AddChannelToGroupAsync(FString Channel, FString ChannelGroup, FOnPubnubAddChannelToGroupResponseNative NativeCallback = nullptr);
 
 	
+	/**
+	 * Removes a channel from a specified channel group synchronously.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to remove from the channel group.
+	 * @param ChannelGroup The name of the channel group to remove the channel from.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	FPubnubOperationResult RemoveChannelFromGroup(FString Channel, FString ChannelGroup);
+
 	/**
 	 * Removes a channel from a specified channel group.
 	 * 
@@ -400,7 +504,7 @@ public:
 	 * @param OnRemoveChannelFromGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelFromGroupResponse"))
-	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
+	void RemoveChannelFromGroupAsync(FString Channel, FString ChannelGroup, FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
 
 	/**
 	 * Removes a channel from a specified channel group.
@@ -412,9 +516,20 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnPubnubRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
+	void RemoveChannelFromGroupAsync(FString Channel, FString ChannelGroup, FOnPubnubRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
 
 	
+	/**
+	 * Lists the channels that belong to a specified channel group synchronously.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ChannelGroup The name of the channel group to list channels from.
+	 * @return FPubnubListChannelsFromGroupResult containing the operation result and list of channels.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	FPubnubListChannelsFromGroupResult ListChannelsFromGroup(FString ChannelGroup);
+
 	/**
 	 * Lists the channels that belong to a specified channel group.
 	 * 
@@ -424,7 +539,7 @@ public:
 	 * @param OnListChannelsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
-	void ListChannelsFromGroup(FString ChannelGroup, FOnPubnubListChannelsFromGroupResponse OnListChannelsResponse);
+	void ListChannelsFromGroupAsync(FString ChannelGroup, FOnPubnubListChannelsFromGroupResponse OnListChannelsResponse);
 
 	/**
 	 * Lists the channels that belong to a specified channel group.
@@ -434,9 +549,20 @@ public:
 	 * @param ChannelGroup The name of the channel group to list channels from.
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 */
-	void ListChannelsFromGroup(FString ChannelGroup, FOnPubnubListChannelsFromGroupResponseNative NativeCallback);
+	void ListChannelsFromGroupAsync(FString ChannelGroup, FOnPubnubListChannelsFromGroupResponseNative NativeCallback);
 
 	
+	/**
+	 * Removes a specified channel group synchronously.
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ChannelGroup The name of the channel group to remove.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	FPubnubOperationResult RemoveChannelGroup(FString ChannelGroup);
+
 	/**
 	 * Removes a specified channel group.
 	 * 
@@ -446,7 +572,7 @@ public:
 	 * @param OnRemoveChannelGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelGroupResponse"))
-	void RemoveChannelGroup(FString ChannelGroup, FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
+	void RemoveChannelGroupAsync(FString ChannelGroup, FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
 
 	/**
 	 * Removes a specified channel group.
@@ -457,9 +583,21 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveChannelGroup(FString ChannelGroup, FOnPubnubRemoveChannelGroupResponseNative NativeCallback = nullptr);
+	void RemoveChannelGroupAsync(FString ChannelGroup, FOnPubnubRemoveChannelGroupResponseNative NativeCallback = nullptr);
 
 	
+	/**
+	 * Lists the users currently present on a specified channel synchronously.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to list users from.
+	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
+	 * @return FPubnubListUsersFromChannelResult containing the operation result and user data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	FPubnubListUsersFromChannelResult ListUsersFromChannel(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+
 	/**
 	 * Lists the users currently present on a specified channel.
 	 *
@@ -470,7 +608,7 @@ public:
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void ListUsersFromChannel(FString Channel, FOnPubnubListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+	void ListUsersFromChannelAsync(FString Channel, FOnPubnubListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	/**
 	 * Lists the users currently present on a specified channel.
@@ -481,9 +619,20 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details. 
 	 */
-	void ListUsersFromChannel(FString Channel, FOnPubnubListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+	void ListUsersFromChannelAsync(FString Channel, FOnPubnubListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	
+	/**
+	 * Lists the channels that a specified user is currently subscribed to synchronously.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 	
+	 * @param UserID The user ID to list subscribed channels for.
+	 * @return FPubnubListUsersSubscribedChannelsResult containing the operation result and list of channels.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	FPubnubListUsersSubscribedChannelsResult ListUserSubscribedChannels(FString UserID);
+
 	/**
 	 * Lists the channels that a specified user is currently subscribed to.
 	 *
@@ -493,7 +642,7 @@ public:
 	 * @param ListUserSubscribedChannelsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void ListUserSubscribedChannels(FString UserID, FOnPubnubListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
+	void ListUserSubscribedChannelsAsync(FString UserID, FOnPubnubListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
 	
 	/**
 	 * Lists the channels that a specified user is currently subscribed to.
@@ -503,9 +652,22 @@ public:
 	 * @param UserID The user ID to list subscribed channels for.
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 */
-	void ListUserSubscribedChannels(FString UserID, FOnPubnubListUsersSubscribedChannelsResponseNative NativeCallback);
+	void ListUserSubscribedChannelsAsync(FString UserID, FOnPubnubListUsersSubscribedChannelsResponseNative NativeCallback);
 
 	
+	/**
+	 * Sets the presence state for the current user on a specified channel synchronously.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to set the state on.
+	 * @param StateJson The JSON string representing the state to set.
+	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	FPubnubOperationResult SetState(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+
 	/**
 	 * Sets the presence state for the current user on a specified channel.
 	 *
@@ -517,7 +679,7 @@ public:
 	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta = (AutoCreateRefTerm = "OnSetStateResponse"))
-	void SetState(FString Channel, FString StateJson, FOnPubnubSetStateResponse OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+	void SetStateAsync(FString Channel, FString StateJson, FOnPubnubSetStateResponse OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 
 	/**
 	 * Sets the presence state for the current user on a specified channel.
@@ -529,7 +691,7 @@ public:
 	 * @param NativeCallback Optional delegate to listen for the set state result. Delegate in native form that can accept lambdas.
 	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
 	 */
-	void SetState(FString Channel, FString StateJson, FOnPubnubSetStateResponseNative NativeCallback = nullptr, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+	void SetStateAsync(FString Channel, FString StateJson, FOnPubnubSetStateResponseNative NativeCallback = nullptr, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 
 	/**
 	 * Sets the presence state for the current user on a specified channel. Overload without delegate to get result.
@@ -540,9 +702,22 @@ public:
 	 * @param StateJson The JSON string representing the state to set.
 	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
 	 */
-	void SetState(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings);
+	void SetStateAsync(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings);
 
 	
+	/**
+	 * Gets the presence state for a specified user on a specified channel synchronously.
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to get the state from.
+	 * @param ChannelGroup The name of the channel group to get the state from.
+	 * @param UserID The user ID to get the state for.
+	 * @return FPubnubGetStateResult containing the operation result and state data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	FPubnubGetStateResult GetState(FString Channel, FString ChannelGroup, FString UserID);
+
 	/**
 	 * Gets the presence state for a specified user on a specified channel.
 	 *
@@ -554,7 +729,7 @@ public:
 	 * @param OnGetStateResponse The callback function used to handle the result in JSON format.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponse OnGetStateResponse);
+	void GetStateAsync(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponse OnGetStateResponse);
 
 	/**
 	 * Gets the presence state for a specified user on a specified channel.
@@ -566,9 +741,22 @@ public:
 	 * @param UserID The user ID to get the state for.
 	 * @param NativeCallback The callback function used to handle the result in JSON format. Delegate in native form that can accept lambdas.
 	 */
-	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponseNative NativeCallback);
+	void GetStateAsync(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponseNative NativeCallback);
 
 	
+	/**
+	 * This method synchronously notifies channels and channel groups about a client's presence.
+	 * You can send heartbeats to channels you are not subscribed to.
+	 * 
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to send the heartbeat to.
+	 * @param ChannelGroup The name of the channel group to send the heartbeat to.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	FPubnubOperationResult Heartbeat(FString Channel, FString ChannelGroup);
+
 	/**
 	 * This method notifies channels and channel groups about a client's presence.
 	 * You can send heartbeats to channels you are not subscribed to.
@@ -579,13 +767,28 @@ public:
 	 * @param ChannelGroup The name of the channel group to send the heartbeat to.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void Heartbeat(FString Channel, FString ChannelGroup);
+	void HeartbeatAsync(FString Channel, FString ChannelGroup);
 
 
 
 	/* ACCESS MANAGER API */
 
 		
+	/**
+	 * Requests an access token from the PubNub server synchronously with the specified permissions.
+	 * Requires SecretKey to be set.
+	 * 
+	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Ttl Time-To-Live (TTL) in minutes for the granted token.
+	 * @param AuthorizedUser The User that is authorized by this grant.
+	 * @param Permissions A struct containing all permissions that will be granted with this token.
+	 * @param Meta (Optional) metadata that will be embedded into the token.
+	 * @return FPubnubGrantTokenResult containing the operation result and granted token.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	FPubnubGrantTokenResult GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta = "");
+
 	/**
 	 * Requests an access token from the PubNub server with the specified permissions.
 	 * Requires SecretKey to be set.
@@ -599,7 +802,7 @@ public:
 	 * @param Meta (Optional) metadata that will be embedded into the token.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
-	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnPubnubGrantTokenResponse OnGrantTokenResponse, FString Meta = "");
+	void GrantTokenAsync(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnPubnubGrantTokenResponse OnGrantTokenResponse, FString Meta = "");
 
 	/**
 	 * Requests an access token from the PubNub server with the specified permissions.
@@ -613,9 +816,20 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param Meta (Optional) metadata that will be embedded into the token.
 	 */
-	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnPubnubGrantTokenResponseNative NativeCallback, FString Meta = "");
+	void GrantTokenAsync(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnPubnubGrantTokenResponseNative NativeCallback, FString Meta = "");
 
 	
+	/**
+	 * Revokes a previously granted access token synchronously.
+	 * 
+	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Token The access token to revoke.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	FPubnubOperationResult RevokeToken(FString Token);
+
 	/**
 	 * Revokes a previously granted access token.
 	 * 
@@ -625,7 +839,7 @@ public:
 	 * @param OnRevokeTokenResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta = (AutoCreateRefTerm = "OnRevokeTokenResponse"))
-	void RevokeToken(FString Token, FOnPubnubRevokeTokenResponse OnRevokeTokenResponse);
+	void RevokeTokenAsync(FString Token, FOnPubnubRevokeTokenResponse OnRevokeTokenResponse);
 
 	/**
 	 * Revokes a previously granted access token.
@@ -636,7 +850,7 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 */
-	void RevokeToken(FString Token, FOnPubnubRevokeTokenResponseNative NativeCallback = nullptr);
+	void RevokeTokenAsync(FString Token, FOnPubnubRevokeTokenResponseNative NativeCallback = nullptr);
 
 	
 	/**
@@ -663,6 +877,18 @@ public:
 	/* MESSAGE PERSISTENCE API */
 		
 	/**
+	 * Fetches historical messages from a specified channel synchronously using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to fetch messages from.
+	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
+	 * @return FPubnubFetchHistoryResult containing the operation result and historical messages.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	FPubnubFetchHistoryResult FetchHistory(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+
+	/**
 	 * Fetches historical messages from a specified channel using Message Persistence.
 	 * 
 	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
@@ -672,7 +898,7 @@ public:
 	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
-	void FetchHistory(FString Channel, FOnPubnubFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void FetchHistoryAsync(FString Channel, FOnPubnubFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 
 	/**
 	 * Fetches historical messages from a specified channel using Message Persistence.
@@ -683,9 +909,23 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
 	 */
-	void FetchHistory(FString Channel, FOnPubnubFetchHistoryResponseNative NativeCallback, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	void FetchHistoryAsync(FString Channel, FOnPubnubFetchHistoryResponseNative NativeCallback, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 
 	
+	/**
+	 * Deletes historical messages from a specified channel synchronously using Message Persistence.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * @Note Requires Enable Delete-From-History in Message Persistence tab for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to delete messages from.
+	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
+	 *								 See FPubnubDeleteMessagesSettings for more details.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	FPubnubOperationResult DeleteMessages(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
+
 	/**
 	 * Deletes historical messages from a specified channel using Message Persistence.
 	 * 
@@ -698,7 +938,7 @@ public:
 	 *								 See FPubnubDeleteMessagesSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta = (AutoCreateRefTerm = "OnDeleteMessagesResponse"))
-	void DeleteMessages(FString Channel, FOnPubnubDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
+	void DeleteMessagesAsync(FString Channel, FOnPubnubDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
 
 	/**
 	 * Deletes historical messages from a specified channel using Message Persistence.
@@ -712,7 +952,7 @@ public:
 	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
 	 *						 See FPubnubDeleteMessagesSettings for more details.
 	 */
-	void DeleteMessages(FString Channel, FOnPubnubDeleteMessagesResponseNative NativeCallback = nullptr, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
+	void DeleteMessagesAsync(FString Channel, FOnPubnubDeleteMessagesResponseNative NativeCallback = nullptr, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
 
 	/**
 	 * Deletes historical messages from a specified channel using Message Persistence.
@@ -724,9 +964,23 @@ public:
 	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
 	 *						 See FPubnubDeleteMessagesSettings for more details.
 	 */
-	void DeleteMessages(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
+	void DeleteMessagesAsync(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 
 	
+	/**
+	 * Returns the number of messages published on one or more channels synchronously since a given time.
+	 * The count returned is the number of messages in history with a Timetoken value greater
+	 * than or equal to than the passed value in the Timetoken parameter.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The ID of the channel to count messages for.
+	 * @param Timetoken The timetoken to start counting messages from. (Exclusive, messages with the same timetoken, won't be counted).
+	 * @return FPubnubMessageCountsResult containing the operation result and message count.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	FPubnubMessageCountsResult MessageCounts(FString Channel, FString Timetoken);
+
 	/**
 	 * Returns the number of messages published on one or more channels since a given time.
 	 * The count returned is the number of messages in history with a Timetoken value greater
@@ -739,7 +993,7 @@ public:
 	 * @param OnMessageCountsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
-	void MessageCounts(FString Channel, FString Timetoken, FOnPubnubMessageCountsResponse OnMessageCountsResponse);
+	void MessageCountsAsync(FString Channel, FString Timetoken, FOnPubnubMessageCountsResponse OnMessageCountsResponse);
 
 	/**
 	 * Returns the number of messages published on one or more channels since a given time.
@@ -752,11 +1006,29 @@ public:
 	 * @param Timetoken The timetoken to start counting messages from. (Exclusive, messages with the same timetoken, won't be counted).
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 */
-	void MessageCounts(FString Channel, FString Timetoken, FOnPubnubMessageCountsResponseNative NativeCallback);
+	void MessageCountsAsync(FString Channel, FString Timetoken, FOnPubnubMessageCountsResponseNative NativeCallback);
 
 
 	/* APP CONTEXT API */
 	
+	/**
+	 * Returns a paginated list of User Metadata objects synchronously, optionally including the custom data object for each.
+	 * (Generally the same as GetAllUserMetadata just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.  For example: "id" or "name:desc" or "id:desc,status".
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 * @return FPubnubGetAllUserMetadataResult containing the operation result and user metadata list.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	FPubnubGetAllUserMetadataResult GetAllUserMetadataRaw(FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
 	 * (Generally the same as GetAllUserMetadata just using raw strings as Include and Sort inputs)
@@ -773,7 +1045,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetAllUserMetadataRaw(FOnPubnubGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetAllUserMetadataRawAsync(FOnPubnubGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
@@ -790,7 +1062,23 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	void GetAllUserMetadataRaw(FOnPubnubGetAllUserMetadataResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetAllUserMetadataRawAsync(FOnPubnubGetAllUserMetadataResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Returns a paginated list of User Metadata objects synchronously, optionally including the custom data object for each.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @return FPubnubGetAllUserMetadataResult containing the operation result and user metadata list.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	FPubnubGetAllUserMetadataResult GetAllUserMetadata(FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
@@ -806,7 +1094,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
-	void GetAllUserMetadata(FOnPubnubGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+	void GetAllUserMetadataAsync(FOnPubnubGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Returns a paginated list of User Metadata objects, optionally including the custom data object for each.
@@ -821,8 +1109,22 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void GetAllUserMetadata(FOnPubnubGetAllUserMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+	void GetAllUserMetadataAsync(FOnPubnubGetAllUserMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 	
+
+	/**
+	 * Sets metadata for a specified User synchronously in the PubNub App Context.
+	 * (Generally the same as SetUserMetadata just using raw string as UserMetadata and Include inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to set metadata.
+	 * @param UserMetadataObj A JSON string representing the metadata to set.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @return FPubnubUserMetadataResult containing the operation result and updated user metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubUserMetadataResult SetUserMetadataRaw(FString User, FString UserMetadataObj, FString Include = "");
 
 	/**
 	 * Sets metadata for a specified User in the PubNub App Context.
@@ -836,7 +1138,7 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
-	void SetUserMetadataRaw(FString User, FString UserMetadataObj, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FString Include = "");
+	void SetUserMetadataRawAsync(FString User, FString UserMetadataObj, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FString Include = "");
 
 	/**
 	 * Sets metadata for a specified User in the PubNub App Context.
@@ -850,8 +1152,21 @@ public:
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	void SetUserMetadataRaw(FString User, FString UserMetadataObj, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FString Include = "");
+	void SetUserMetadataRawAsync(FString User, FString UserMetadataObj, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FString Include = "");
 	
+	/**
+	 * Sets metadata for a specified User synchronously in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to set metadata.
+	 * @param UserMetadata User Metadata object to set.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return FPubnubUserMetadataResult containing the operation result and updated user metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubUserMetadataResult SetUserMetadata(FString User, FPubnubUserData UserMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
 	/**
 	 * Sets metadata for a specified User in the PubNub App Context.
 	 * 
@@ -863,7 +1178,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
-	void SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetUserMetadataAsync(FString User, FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for a specified User in the PubNub App Context.
@@ -876,9 +1191,21 @@ public:
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetUserMetadataAsync(FString User, FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	
+	/**
+	 * Retrieves metadata for a specified User synchronously from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to retrieve metadata.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @return FPubnubUserMetadataResult containing the operation result and user metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubUserMetadataResult GetUserMetadataRaw(FString User, FString Include = "");
+
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
 	 * 
@@ -889,7 +1216,7 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void GetUserMetadataRaw(FString User, FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse, FString Include = "");
+	void GetUserMetadataRawAsync(FString User, FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse, FString Include = "");
 
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
@@ -900,8 +1227,21 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	void GetUserMetadataRaw(FString User, FOnPubnubGetUserMetadataResponseNative NativeCallback, FString Include = "");
+	void GetUserMetadataRawAsync(FString User, FOnPubnubGetUserMetadataResponseNative NativeCallback, FString Include = "");
 
+	/**
+	 * Retrieves metadata for a specified User synchronously from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to retrieve metadata.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return FPubnubUserMetadataResult containing the operation result and user metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubUserMetadataResult GetUserMetadata(FString User, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
 	 * 
@@ -912,7 +1252,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void GetUserMetadata(FString User, FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void GetUserMetadataAsync(FString User, FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
@@ -923,9 +1263,19 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void GetUserMetadata(FString User, FOnPubnubGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
-	
+	void GetUserMetadataAsync(FString User, FOnPubnubGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
+
+	/**
+	 * Removes all metadata associated with a specified User synchronously from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param User The user ID for whom to remove metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubOperationResult RemoveUserMetadata(FString User);
+	
 	/**
 	 * Removes all metadata associated with a specified User from the PubNub App Context.
 	 * 
@@ -935,7 +1285,7 @@ public:
 	 * @param OnRemoveUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveUserMetadataResponse"))
-	void RemoveUserMetadata(FString User, FOnPubnubRemoveUserMetadataResponse OnRemoveUserMetadataResponse);
+	void RemoveUserMetadataAsync(FString User, FOnPubnubRemoveUserMetadataResponse OnRemoveUserMetadataResponse);
 
 	/**
 	 * Removes all metadata associated with a specified User from the PubNub App Context.
@@ -946,9 +1296,27 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveUserMetadata(FString User, FOnPubnubRemoveUserMetadataResponseNative NativeCallback = nullptr);
+	void RemoveUserMetadataAsync(FString User, FOnPubnubRemoveUserMetadataResponseNative NativeCallback = nullptr);
 
 	
+	/**
+	 * Returns a paginated list of Channel Metadata objects synchronously, optionally including the custom data object for each.
+	 * (Generally the same as GetAllChannelMetadata just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.  For example: "id" or "name:desc" or "id:desc,status".
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 * @return FPubnubGetAllChannelMetadataResult containing the operation result and channel metadata list.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	FPubnubGetAllChannelMetadataResult GetAllChannelMetadataRaw(FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
 	 * (Generally the same as GetAllChannelMetadata just using raw strings as Include and Sort inputs)
@@ -965,7 +1333,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetAllChannelMetadataRaw(FOnPubnubGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetAllChannelMetadataRawAsync(FOnPubnubGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
@@ -982,7 +1350,23 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	void GetAllChannelMetadataRaw(FOnPubnubGetAllChannelMetadataResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetAllChannelMetadataRawAsync(FOnPubnubGetAllChannelMetadataResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+
+	/**
+	 * Returns a paginated list of Channel Metadata objects synchronously, optionally including the custom data object for each.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @return FPubnubGetAllChannelMetadataResult containing the operation result and channel metadata list.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	FPubnubGetAllChannelMetadataResult GetAllChannelMetadata(FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
@@ -998,7 +1382,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
-	void GetAllChannelMetadata(FOnPubnubGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+	void GetAllChannelMetadataAsync(FOnPubnubGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Returns a paginated list of Channel Metadata objects, optionally including the custom data object for each.
@@ -1013,9 +1397,23 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void GetAllChannelMetadata(FOnPubnubGetAllChannelMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
+	void GetAllChannelMetadataAsync(FOnPubnubGetAllChannelMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 
+
+	/**
+	 * Sets metadata for a specified Channel synchronously in the PubNub App Context.
+	 * (Generally the same as SetChannelMetadata just using raw string as ChannelMetadata and Include inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to set metadata.
+	 * @param ChannelMetadataObj A JSON string representing the metadata to set.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @return FPubnubChannelMetadataResult containing the operation result and updated channel metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubChannelMetadataResult SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FString Include = "");
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
@@ -1029,7 +1427,7 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
-	void SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FString Include = "");
+	void SetChannelMetadataRawAsync(FString Channel, FString ChannelMetadataObj, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FString Include = "");
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
@@ -1043,7 +1441,20 @@ public:
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	void SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FOnPubnubSetChannelMetadataResponseNative NativeCallback = nullptr, FString Include = "");
+	void SetChannelMetadataRawAsync(FString Channel, FString ChannelMetadataObj, FOnPubnubSetChannelMetadataResponseNative NativeCallback = nullptr, FString Include = "");
+
+	/**
+	 * Sets metadata for a specified Channel synchronously in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to set metadata.
+	 * @param ChannelMetadata Channel Metadata object to set.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return FPubnubChannelMetadataResult containing the operation result and updated channel metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubChannelMetadataResult SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
@@ -1056,7 +1467,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
-	void SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetChannelMetadataAsync(FString Channel, FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
@@ -1069,9 +1480,21 @@ public:
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetChannelMetadataAsync(FString Channel, FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	
+	/**
+	 * Retrieves metadata for a specified Channel synchronously from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to retrieve metadata.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @return FPubnubChannelMetadataResult containing the operation result and channel metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubChannelMetadataResult GetChannelMetadataRaw(FString Channel, FString Include = "");
+
 	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
 	 * 
@@ -1082,7 +1505,7 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void GetChannelMetadataRaw(FString Channel, FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include = "");
+	void GetChannelMetadataRawAsync(FString Channel, FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include = "");
 
 	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
@@ -1093,7 +1516,19 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	void GetChannelMetadataRaw(FString Channel, FOnPubnubGetChannelMetadataResponseNative NativeCallback, FString Include = "");
+	void GetChannelMetadataRawAsync(FString Channel, FOnPubnubGetChannelMetadataResponseNative NativeCallback, FString Include = "");
+
+	/**
+	 * Retrieves metadata for a specified Channel synchronously from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to retrieve metadata.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return FPubnubChannelMetadataResult containing the operation result and channel metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubChannelMetadataResult GetChannelMetadata(FString Channel, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
@@ -1105,7 +1540,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void GetChannelMetadata(FString Channel, FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void GetChannelMetadataAsync(FString Channel, FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
@@ -1116,9 +1551,20 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void GetChannelMetadata(FString Channel, FOnPubnubGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void GetChannelMetadataAsync(FString Channel, FOnPubnubGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	
+	/**
+	 * Removes all metadata synchronously associated with a specified Channel from the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channel The channel ID for which to remove metadata.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubOperationResult RemoveChannelMetadata(FString Channel);
+
 	/**
 	 * Removes all metadata associated with a specified Channel from the PubNub App Context.
 	 * 
@@ -1128,7 +1574,7 @@ public:
 	 * @param OnRemoveChannelMetadataResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveChannelMetadataResponse"))
-	void RemoveChannelMetadata(FString Channel, FOnPubnubRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse);
+	void RemoveChannelMetadataAsync(FString Channel, FOnPubnubRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse);
 
 	/**
 	 * Removes all metadata associated with a specified Channel from the PubNub App Context.
@@ -1139,8 +1585,27 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveChannelMetadata(FString Channel, FOnPubnubRemoveChannelMetadataResponseNative NativeCallback = nullptr);
+	void RemoveChannelMetadataAsync(FString Channel, FOnPubnubRemoveChannelMetadataResponseNative NativeCallback = nullptr);
 
+
+	/**
+	 * Retrieves a list of memberships for a specified User synchronously in the PubNub App Context.
+	 * (Generally the same as GetMemberships just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param User The user ID for whom to retrieve memberships.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "channel.id" or "channel.name:desc" or "channel.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	FPubnubMembershipsResult GetMembershipsRaw(FString User, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 	
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -1160,7 +1625,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetMembershipsRaw(FString User, FOnPubnubGetMembershipsResponse OnGetMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetMembershipsRawAsync(FString User, FOnPubnubGetMembershipsResponse OnGetMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -1179,8 +1644,24 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	void GetMembershipsRaw(FString User, FOnPubnubGetMembershipsResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetMembershipsRawAsync(FString User, FOnPubnubGetMembershipsResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
+	/**
+	 * Retrieves a list of memberships for a specified User synchronously in the PubNub App Context.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param User The user ID for whom to retrieve memberships.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	FPubnubMembershipsResult GetMemberships(FString User, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
 	 * 
@@ -1196,7 +1677,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
-	void GetMemberships(FString User, FOnPubnubGetMembershipsResponse OnGetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void GetMembershipsAsync(FString User, FOnPubnubGetMembershipsResponse OnGetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Retrieves a list of memberships for a specified User in the PubNub App Context.
@@ -1212,8 +1693,30 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void GetMemberships(FString User, FOnPubnubGetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void GetMembershipsAsync(FString User, FOnPubnubGetMembershipsResponseNative NativeCallback, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
+	/**
+	 * Sets or updates a User's Memberships to one or more Channels synchronously.
+	 * A Membership is the relationship between a User and a Channel, and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the user-centric counterpart to the `SetChannelMembers` function. Both functions modify the same underlying data.
+	 * (Generally the same as SetMemberships just using raw strings as SetObj, Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param User The user ID for whom to set memberships.
+	 * @param SetObj A JSON string representing the memberships to set.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "channel.id" or "channel.name:desc" or "channel.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 * @return FPubnubMembershipsResult containing the operation result and updated membership data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	FPubnubMembershipsResult SetMembershipsRaw(FString User, FString SetObj, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 	
 	/**
 	 * Sets or updates a User's Memberships to one or more Channels.
@@ -1236,7 +1739,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnSetMembershipsResponse"))
-	void SetMembershipsRaw(FString User, FString SetObj, FOnPubnubSetMembershipsResponse OnSetMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void SetMembershipsRawAsync(FString User, FString SetObj, FOnPubnubSetMembershipsResponse OnSetMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Sets or updates a User's Memberships to one or more Channels.
@@ -1258,8 +1761,28 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	void SetMembershipsRaw(FString User, FString SetObj, FOnPubnubSetMembershipsResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void SetMembershipsRawAsync(FString User, FString SetObj, FOnPubnubSetMembershipsResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
+	/**
+	 * Sets or updates a User's Memberships to one or more Channels synchronously.
+	 * A Membership is the relationship between a User and a Channel, and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the user-centric counterpart to the `SetChannelMembers` function. Both functions modify the same underlying data.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param User The user ID for whom to set memberships.
+	 * @param Channels Channels with their associated MembershipData to set.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @return FPubnubMembershipsResult containing the operation result and updated membership data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	FPubnubMembershipsResult SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	
 	/**
 	 * Sets or updates a User's Memberships to one or more Channels.
 	 * A Membership is the relationship between a User and a Channel, and can contain its own metadata (e.g., `Custom` and `Status`).
@@ -1278,7 +1801,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetMembershipsResponse"))
-	void SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FOnPubnubSetMembershipsResponse OnSetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void SetMembershipsAsync(FString User, TArray<FPubnubMembershipInputData> Channels, FOnPubnubSetMembershipsResponse OnSetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
 	 * Sets or updates a User's Memberships to one or more Channels.
@@ -1297,8 +1820,28 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FOnPubnubSetMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void SetMembershipsAsync(FString User, TArray<FPubnubMembershipInputData> Channels, FOnPubnubSetMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
+	/**
+	 * Removes memberships for a specified User from the PubNub App Context synchronously.
+	 * (Generally the same as RemoveMemberships just using raw strings as RemoveObj, Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param User The user ID for whom to remove memberships.
+	 * @param RemoveObj A JSON string representing the memberships to remove.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "channel.id" or "channel.name:desc" or "channel.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 * @return FPubnubMembershipsResult containing the operation result and remaining membership data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	FPubnubMembershipsResult RemoveMembershipsRaw(FString User, FString RemoveObj, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 	
 	/**
 	 * Removes memberships for a specified User from the PubNub App Context.
@@ -1319,7 +1862,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnRemoveMembershipsResponse"))
-	void RemoveMembershipsRaw(FString User, FString RemoveObj, FOnPubnubRemoveMembershipsResponse OnRemoveMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void RemoveMembershipsRawAsync(FString User, FString RemoveObj, FOnPubnubRemoveMembershipsResponse OnRemoveMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Removes memberships for a specified User from the PubNub App Context.
@@ -1339,8 +1882,26 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	void RemoveMembershipsRaw(FString User, FString RemoveObj, FOnPubnubRemoveMembershipsResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void RemoveMembershipsRawAsync(FString User, FString RemoveObj, FOnPubnubRemoveMembershipsResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
+	/**
+	 * Removes memberships for a specified User from the PubNub App Context synchronously.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param User The user ID for whom to remove memberships.
+	 * @param Channels Array of Memberships (Channels) to remove.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @return FPubnubMembershipsResult containing the operation result and remaining membership data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	FPubnubMembershipsResult RemoveMemberships(FString User, TArray<FString> Channels, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	
 	/**
 	 * Removes memberships for a specified User from the PubNub App Context.
 	 * 
@@ -1357,7 +1918,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveMembershipsResponse"))
-	void RemoveMemberships(FString User, TArray<FString> Channels, FOnPubnubRemoveMembershipsResponse OnRemoveMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void RemoveMembershipsAsync(FString User, TArray<FString> Channels, FOnPubnubRemoveMembershipsResponse OnRemoveMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
 	 * Removes memberships for a specified User from the PubNub App Context.
@@ -1374,8 +1935,28 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void RemoveMemberships(FString User, TArray<FString> Channels, FOnPubnubRemoveMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
+	void RemoveMembershipsAsync(FString User, TArray<FString> Channels, FOnPubnubRemoveMembershipsResponseNative NativeCallback = nullptr, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
+	/**
+	 * Retrieves a list of members for a specified Channel in the PubNub App Context synchronously.
+	 *
+	 * (Generally the same as GetChannelMembers just using raw strings as Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The Channel ID for which to retrieve member.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 * 			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 * @return FPubnubChannelMembersResult containing the operation result and retrieved channel members.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	FPubnubChannelMembersResult GetChannelMembersRaw(FString Channel, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 	
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
@@ -1396,7 +1977,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
-	void GetChannelMembersRaw(FString Channel, FOnPubnubGetChannelMembersResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetChannelMembersRawAsync(FString Channel, FOnPubnubGetChannelMembersResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 	
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
@@ -1416,8 +1997,25 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	void GetChannelMembersRaw(FString Channel, FOnPubnubGetChannelMembersResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void GetChannelMembersRawAsync(FString Channel, FOnPubnubGetChannelMembersResponseNative NativeCallback, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
+	/**
+	 * Retrieves a list of members for a specified Channel in the PubNub App Context synchronously.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The Channel ID for which to retrieve member.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @return FPubnubChannelMembersResult containing the operation result and retrieved channel members.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	FPubnubChannelMembersResult GetChannelMembers(FString Channel, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
 	 * 
@@ -1433,7 +2031,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
-	void GetChannelMembers(FString Channel, FOnPubnubGetChannelMembersResponse OnGetMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void GetChannelMembersAsync(FString Channel, FOnPubnubGetChannelMembersResponse OnGetMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
 	 * Retrieves a list of members for a specified Channel in the PubNub App Context.
@@ -1449,8 +2047,30 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void GetChannelMembers(FString Channel, FOnPubnubGetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void GetChannelMembersAsync(FString Channel, FOnPubnubGetChannelMembersResponseNative NativeCallback, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
+	/**
+	 * Sets or updates the members for a specified Channel synchronously.
+	 * A member (Membership) represents a User's relationship to the Channel and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the channel-centric counterpart to the `SetMemberships` function. Both functions modify the same underlying data.
+	 * (Generally the same as SetChannelMembers just using raw strings as SetObj, Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to set members for.
+	 * @param SetObj A JSON string representing the users to set as members.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 * @return FPubnubChannelMembersResult containing the operation result and updated channel members.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	FPubnubChannelMembersResult SetChannelMembersRaw(FString Channel, FString SetObj, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 	
 	/**
 	 * Sets or updates the members for a specified Channel.
@@ -1473,7 +2093,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
-	void SetChannelMembersRaw(FString Channel, FString SetObj, FOnPubnubSetChannelMembersResponse OnSetChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void SetChannelMembersRawAsync(FString Channel, FString SetObj, FOnPubnubSetChannelMembersResponse OnSetChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Sets or updates the members for a specified Channel.
@@ -1495,8 +2115,28 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	void SetChannelMembersRaw(FString Channel, FString SetObj, FOnPubnubSetChannelMembersResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void SetChannelMembersRawAsync(FString Channel, FString SetObj, FOnPubnubSetChannelMembersResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
+	/**
+	 * Sets or updates the members for a specified Channel synchronously.
+	 * A member (Membership) represents a User's relationship to the Channel and can contain its own metadata (e.g., `Custom` and `Status`).
+	 * This is the channel-centric counterpart to the `SetMemberships` function. Both functions modify the same underlying data.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to add members to.
+	 * @param Users Users with their associated MembershipData to set.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @return FPubnubChannelMembersResult containing the operation result and updated channel members.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	FPubnubChannelMembersResult SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	
 	/**
 	 * Sets or updates the members for a specified Channel.
 	 * A member (Membership) represents a User's relationship to the Channel and can contain its own metadata (e.g., `Custom` and `Status`).
@@ -1515,7 +2155,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
-	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FOnPubnubSetChannelMembersResponse OnSetChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void SetChannelMembersAsync(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FOnPubnubSetChannelMembersResponse OnSetChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
 	 * Sets or updates the members for a specified Channel.
@@ -1534,8 +2174,28 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FOnPubnubSetChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void SetChannelMembersAsync(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FOnPubnubSetChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
+	/**
+	 * Removes users from a specified channel in the PubNub App Context synchronously.
+	 * (Generally the same as RemoveChannelMembers just using raw strings as RemoveObj, Include and Sort inputs)
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to remove members from.
+	 * @param RemoveObj A JSON string representing the users to remove.
+	 * @param Include (Optional) A comma-separated list of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Comma-separated Key-value pair of a property to sort by, and a sort direction. For example: "user.id" or "user.name:desc" or "user.id:desc,status".
+	 *			   If direction is not specified, ascending will be used.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
+	 * @return FPubnubChannelMembersResult containing the operation result and remaining channel members.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	FPubnubChannelMembersResult RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 	
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.
@@ -1556,7 +2216,7 @@ public:
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
-	void RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FOnPubnubRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void RemoveChannelMembersRawAsync(FString Channel, FString RemoveObj, FOnPubnubRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.
@@ -1576,8 +2236,26 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	void RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FOnPubnubRemoveChannelMembersResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
+	void RemoveChannelMembersRawAsync(FString Channel, FString RemoveObj, FOnPubnubRemoveChannelMembersResponseNative NativeCallback = nullptr, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
+	/**
+	 * Removes users from a specified channel in the PubNub App Context synchronously.
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 *
+	 * @param Channel The channel name to add members to.
+	 * @param Users Array of ChannelMembers (Users) to remove.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @param Limit (Optional) The maximum number of results to return (default: 100).
+	 * @param Filter (Optional) Expression used to filter the results. Check online documentation to see exact filter formulas;
+	 * @param Sort (Optional) Key-value pair of a property to sort by, and a sort direction.
+	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
+	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
+	 * @return FPubnubChannelMembersResult containing the operation result and remaining channel members.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	FPubnubChannelMembersResult RemoveChannelMembers(FString Channel, TArray<FString> Users, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.
 	 * 
@@ -1594,7 +2272,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
-	void RemoveChannelMembers(FString Channel, TArray<FString> Users, FOnPubnubRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void RemoveChannelMembersAsync(FString Channel, TArray<FString> Users, FOnPubnubRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
 	 * Removes users from a specified channel in the PubNub App Context.
@@ -1611,11 +2289,23 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	void RemoveChannelMembers(FString Channel, TArray<FString> Users, FOnPubnubRemoveChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
+	void RemoveChannelMembersAsync(FString Channel, TArray<FString> Users, FOnPubnubRemoveChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 
 
 
 	/* MESSAGE ACTIONS API */
+	
+	/**
+	 * Adds a message action to a specific message in a channel synchronously.
+	 * 
+	 * @param Channel The ID of the channel.
+	 * @param MessageTimetoken The timetoken of the message to add the action to.
+	 * @param ActionType The type of action to add.
+	 * @param Value The value associated with the action.
+	 * @return FPubnubAddMessageActionResult containing the operation result and added MessageAction timetoken.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
+	FPubnubAddMessageActionResult AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value);
 	
 	/**
 	 * Adds a message action to a specific message in a channel.
@@ -1627,7 +2317,7 @@ public:
 	 * @param OnAddMessageActionResponse (Optional) The callback function used to handle the result and added MessageAction timetoken.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta = (AutoCreateRefTerm = "OnAddMessageActionResponse"))
-	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubAddMessageActionResponse OnAddMessageActionResponse);
+	void AddMessageActionAsync(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubAddMessageActionResponse OnAddMessageActionResponse);
 
 	/**
 	 * Adds a message action to a specific message in a channel.
@@ -1639,8 +2329,19 @@ public:
 	 * @param NativeCallback (Optional) The callback function used to handle the result and added MessageAction timetoken.
 	 *						 Delegate in native form that can accept lambdas.
 	 */
-	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubAddMessageActionResponseNative NativeCallback = nullptr);
+	void AddMessageActionAsync(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubAddMessageActionResponseNative NativeCallback = nullptr);
 
+	/**
+	 * Retrieves message actions for a specified channel within a given time range synchronously.
+	 * 
+	 * @param Channel The ID of the channel.
+	 * @param Start The starting timetoken for the range. Has to be greater (newer) than the End timetoken. 
+	 * @param End The ending timetoken for the range.
+	 * @param Limit The maximum number of actions to retrieve.
+	 * @return FPubnubGetMessageActionsResult containing the operation result and retrieved message actions.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
+	FPubnubGetMessageActionsResult GetMessageActions(FString Channel, FString Start = "", FString End = "", int Limit = 0);
 	
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
@@ -1652,7 +2353,7 @@ public:
 	 * @param Limit The maximum number of actions to retrieve.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
-	void GetMessageActions(FString Channel, FOnPubnubGetMessageActionsResponse OnGetMessageActionsResponse, FString Start = "", FString End = "", int Limit = 0);
+	void GetMessageActionsAsync(FString Channel, FOnPubnubGetMessageActionsResponse OnGetMessageActionsResponse, FString Start = "", FString End = "", int Limit = 0);
 
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
@@ -1663,8 +2364,18 @@ public:
 	 * @param End The ending timetoken for the range.
 	 * @param Limit The maximum number of actions to retrieve.
 	 */
-	void GetMessageActions(FString Channel, FOnPubnubGetMessageActionsResponseNative NativeCallback, FString Start = "", FString End = "", int Limit = 0);
+	void GetMessageActionsAsync(FString Channel, FOnPubnubGetMessageActionsResponseNative NativeCallback, FString Start = "", FString End = "", int Limit = 0);
 
+	/**
+	 * Removes a specific message action from a message in a channel synchronously.
+	 * 
+	 * @param Channel The ID of the channel.
+	 * @param MessageTimetoken The timetoken of the message.
+	 * @param ActionTimetoken The timetoken of the action to remove.
+	 * @return FPubnubOperationResult containing the operation result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
+	FPubnubOperationResult RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
 	
 	/**
 	 * Removes a specific message action from a message in a channel.
@@ -1675,7 +2386,7 @@ public:
 	 * @param OnRemoveMessageActionResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta = (AutoCreateRefTerm = "OnRemoveMessageActionResponse"))
-	void RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnPubnubRemoveMessageActionResponse OnRemoveMessageActionResponse);
+	void RemoveMessageActionAsync(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnPubnubRemoveMessageActionResponse OnRemoveMessageActionResponse);
 	
 	/**
 	 * Removes a specific message action from a message in a channel.
@@ -1685,7 +2396,7 @@ public:
 	 * @param ActionTimetoken The timetoken of the action to remove.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 */
-	void RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnPubnubRemoveMessageActionResponseNative NativeCallback = nullptr);
+	void RemoveMessageActionAsync(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnPubnubRemoveMessageActionResponseNative NativeCallback = nullptr);
 
 		/**
 	 * Tries to reconnect all active subscriptions. Could be used in case of receiving PSS_DisconnectedUnexpectedly or PSS_ConnectionError
@@ -1922,46 +2633,46 @@ private:
 	void SetUserID_priv(FString UserID);
 	FString GetUserID_priv();
 	void SetSecretKey_priv();
-	void PublishMessage_priv(FString Channel, FString Message, FOnPubnubPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
-	void Signal_priv(FString Channel, FString Message, FOnPubnubSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+	FPubnubPublishMessageResult PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	FPubnubSignalResult Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 	void SubscribeToChannel_priv(FString Channel, FOnPubnubSubscribeOperationResponseNative OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void SubscribeToGroup_priv(FString ChannelGroup, FOnPubnubSubscribeOperationResponseNative OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 	void UnsubscribeFromChannel_priv(FString Channel, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeFromChannelResponse);
 	void UnsubscribeFromGroup_priv(FString ChannelGroup, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeFromGroupResponse);
 	void UnsubscribeFromAll_priv(FOnPubnubSubscribeOperationResponseNative OnUnsubscribeFromAllResponse = nullptr);
-	void AddChannelToGroup_priv(FString Channel, FString ChannelGroup, FOnPubnubAddChannelToGroupResponseNative OnAddChannelToGroupResponse);
-	void RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup, FOnPubnubRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse);
-	void ListChannelsFromGroup_priv(FString ChannelGroup, FOnPubnubListChannelsFromGroupResponseNative OnListChannelsResponse);
-	void RemoveChannelGroup_priv(FString ChannelGroup, FOnPubnubRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse);
-	void ListUsersFromChannel_priv(FString Channel, FOnPubnubListUsersFromChannelResponseNative ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
-	void ListUserSubscribedChannels_priv(FString UserID, FOnPubnubListUsersSubscribedChannelsResponseNative ListUserSubscribedChannelsResponse);
-	void SetState_priv(FString Channel, FString StateJson, FOnPubnubSetStateResponseNative OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
-	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponseNative OnGetStateResponse);
-	void Heartbeat_priv(FString Channel, FString ChannelGroup);
-	void GrantToken_priv(FString PermissionObject, FOnPubnubGrantTokenResponseNative OnGrantTokenResponse);
-	void RevokeToken_priv(FString Token, FOnPubnubRevokeTokenResponseNative OnRevokeTokenResponse);
+	FPubnubOperationResult AddChannelToGroup_priv(FString Channel, FString ChannelGroup);
+	FPubnubOperationResult RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup);
+	FPubnubListChannelsFromGroupResult ListChannelsFromGroup_priv(FString ChannelGroup);
+	FPubnubOperationResult RemoveChannelGroup_priv(FString ChannelGroup);
+	FPubnubListUsersFromChannelResult ListUsersFromChannel_priv(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+	FPubnubListUsersSubscribedChannelsResult ListUserSubscribedChannels_priv(FString UserID);
+	FPubnubOperationResult SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
+	FPubnubGetStateResult GetState_priv(FString Channel, FString ChannelGroup, FString UserID);
+	FPubnubOperationResult Heartbeat_priv(FString Channel, FString ChannelGroup);
+	FPubnubGrantTokenResult GrantToken_priv(FString PermissionObject);
+	FPubnubOperationResult RevokeToken_priv(FString Token);
 	FString ParseToken_priv(FString Token);
 	void SetAuthToken_priv(FString Token);
-	void FetchHistory_priv(FString Channel, FOnPubnubFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
-	void DeleteMessages_priv(FString Channel, FOnPubnubDeleteMessagesResponseNative OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
-	void MessageCounts_priv(FString Channel, FString Timetoken, FOnPubnubMessageCountsResponseNative OnMessageCountsResponse);
-	void GetAllUserMetadata_priv(FOnPubnubGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetUserMetadata_priv(FString User, FString UserMetadataObj, FOnPubnubSetUserMetadataResponseNative OnSetUserMetadataResponse, FString Include);
-	void GetUserMetadata_priv(FString User, FOnPubnubGetUserMetadataResponseNative OnGetUserMetadataResponse, FString Include);
-	void RemoveUserMetadata_priv(FString User, FOnPubnubRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse);
-	void GetAllChannelMetadata_priv(FOnPubnubGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FOnPubnubSetChannelMetadataResponseNative OnSetChannelMetadataResponse, FString Include);
-	void GetChannelMetadata_priv(FString Channel, FOnPubnubGetChannelMetadataResponseNative OnGetChannelMetadataResponse, FString Include);
-	void RemoveChannelMetadata_priv(FString Channel, FOnPubnubRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse);
-	void GetMemberships_priv(FString User, FOnPubnubGetMembershipsResponseNative OnGetMembershipsResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetMemberships_priv(FString User, FString SetObj, FOnPubnubSetMembershipsResponseNative OnSetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void RemoveMemberships_priv(FString User, FString RemoveObj, FOnPubnubRemoveMembershipsResponseNative OnRemoveMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void GetChannelMembers_priv(FString Channel, FOnPubnubGetChannelMembersResponseNative OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetChannelMembers_priv(FString Channel, FString SetObj, FOnPubnubSetChannelMembersResponseNative OnSetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void RemoveChannelMembers_priv(FString Channel, FString RemoveObj, FOnPubnubRemoveChannelMembersResponseNative OnRemoveMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnPubnubAddMessageActionResponseNative AddMessageActionResponse);
-	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnPubnubRemoveMessageActionResponseNative OnRemoveMessageActionResponse);
-	void GetMessageActions_priv(FString Channel, FOnPubnubGetMessageActionsResponseNative OnGetMessageActionsResponse, FString Start, FString End, int Limit);
+	FPubnubFetchHistoryResult FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
+	FPubnubOperationResult DeleteMessages_priv(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
+	FPubnubMessageCountsResult MessageCounts_priv(FString Channel, FString Timetoken);
+	FPubnubGetAllUserMetadataResult GetAllUserMetadata_priv(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FPubnubUserMetadataResult SetUserMetadata_priv(FString User, FString UserMetadataObj, FString Include);
+	FPubnubUserMetadataResult GetUserMetadata_priv(FString User, FString Include);
+	FPubnubOperationResult RemoveUserMetadata_priv(FString User);
+	FPubnubGetAllChannelMetadataResult GetAllChannelMetadata_priv(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FPubnubChannelMetadataResult SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FString Include);
+	FPubnubChannelMetadataResult GetChannelMetadata_priv(FString Channel, FString Include);
+	FPubnubOperationResult RemoveChannelMetadata_priv(FString Channel);
+	FPubnubMembershipsResult GetMemberships_priv(FString User, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FPubnubMembershipsResult SetMemberships_priv(FString User, FString SetObj, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FPubnubMembershipsResult RemoveMemberships_priv(FString User, FString RemoveObj, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FPubnubChannelMembersResult GetChannelMembers_priv(FString Channel, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FPubnubChannelMembersResult SetChannelMembers_priv(FString Channel, FString SetObj, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FPubnubChannelMembersResult RemoveChannelMembers_priv(FString Channel, FString RemoveObj, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
+	FPubnubAddMessageActionResult AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value);
+	FPubnubOperationResult RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
+	FPubnubGetMessageActionsResult GetMessageActions_priv(FString Channel, FString Start, FString End, int Limit);
 
 	void SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);
 	void SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);

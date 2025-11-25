@@ -128,7 +128,7 @@ void ASample_UserMetadataEntity::UserMetadataEntitySetMetadataSample()
 	ChampionPlayerProfile.Email = "alex.lightning@esports.com";
 	ChampionPlayerProfile.Custom = "{\"rank\":\"Champion\",\"wins\":127,\"losses\":23,\"favorite_weapon\":\"Plasma Rifle\",\"achievements\":[\"First Blood\",\"Triple Kill Master\"]}";
 
-	PlayerMetadataEntity->SetUserMetadata(ChampionPlayerProfile, OnSetPlayerInfoResult);
+	PlayerMetadataEntity->SetUserMetadataAsync(ChampionPlayerProfile, OnSetPlayerInfoResult);
 }
 
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
@@ -166,7 +166,7 @@ void ASample_UserMetadataEntity::SetUserMetadataSample()
 	UserMetadata.Custom = "{\"level\": 5, \"rank\": \"gold\"}";
 	
 	// Set user metadata using the user metadata entity
-	UserMetadataEntity->SetUserMetadata(UserMetadata);
+	UserMetadataEntity->SetUserMetadataAsync(UserMetadata);
 }
 
 // snippet.set_user_metadata_with_result_entity
@@ -197,7 +197,7 @@ void ASample_UserMetadataEntity::SetUserMetadataWithResultSample()
 
 	// Set user metadata with all available data included in response using the user metadata entity
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	UserMetadataEntity->SetUserMetadata(UserMetadata, OnSetUserMetadataResponse, Include);
+	UserMetadataEntity->SetUserMetadataAsync(UserMetadata, OnSetUserMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
@@ -250,7 +250,7 @@ void ASample_UserMetadataEntity::SetUserMetadataWithLambdaSample()
 
 	// Set user metadata with all available data included in response using the user metadata entity
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	UserMetadataEntity->SetUserMetadata(UserMetadata, OnSetUserMetadataResponse, Include);
+	UserMetadataEntity->SetUserMetadataAsync(UserMetadata, OnSetUserMetadataResponse, Include);
 }
 
 // snippet.get_user_metadata_entity
@@ -274,7 +274,7 @@ void ASample_UserMetadataEntity::GetUserMetadataSample()
 	OnGetUserMetadataResponse.BindDynamic(this, &ASample_UserMetadataEntity::OnGetUserMetadataResponse_Simple);
 
 	// Get user metadata using the user metadata entity
-	UserMetadataEntity->GetUserMetadata(OnGetUserMetadataResponse);
+	UserMetadataEntity->GetUserMetadataAsync(OnGetUserMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
@@ -320,7 +320,7 @@ void ASample_UserMetadataEntity::GetUserMetadataWithLambdaSample()
 	});
 	
 	// Get user metadata using the user metadata entity
-	UserMetadataEntity->GetUserMetadata(OnGetUserMetadataResponse);
+	UserMetadataEntity->GetUserMetadataAsync(OnGetUserMetadataResponse);
 }
 
 // snippet.remove_user_metadata_entity
@@ -339,7 +339,7 @@ void ASample_UserMetadataEntity::RemoveUserMetadataSample()
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
 	
 	// Remove user metadata using the user metadata entity
-	UserMetadataEntity->RemoveUserMetadata();
+	UserMetadataEntity->RemoveUserMetadataAsync();
 }
 
 // snippet.remove_user_metadata_with_result_entity
@@ -364,7 +364,7 @@ void ASample_UserMetadataEntity::RemoveUserMetadataWithResultSample()
 	OnRemoveUserMetadataResponse.BindDynamic(this, &ASample_UserMetadataEntity::OnRemoveUserMetadataResponse);
 
 	// Remove user metadata using the user metadata entity
-	UserMetadataEntity->RemoveUserMetadata(OnRemoveUserMetadataResponse);
+	UserMetadataEntity->RemoveUserMetadataAsync(OnRemoveUserMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
@@ -411,7 +411,7 @@ void ASample_UserMetadataEntity::RemoveUserMetadataWithResultLambdaSample()
 	});
 	
 	// Remove user metadata using the user metadata entity
-	UserMetadataEntity->RemoveUserMetadata(OnRemoveUserMetadataResponse);
+	UserMetadataEntity->RemoveUserMetadataAsync(OnRemoveUserMetadataResponse);
 }
 
 // snippet.end

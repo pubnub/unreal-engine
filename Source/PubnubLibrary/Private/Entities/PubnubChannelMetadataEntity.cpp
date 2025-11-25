@@ -9,63 +9,63 @@ UPubnubChannelMetadataEntity::UPubnubChannelMetadataEntity()
 	EntityType = EPubnubEntityType::PEnT_ChannelMetadata;
 }
 
-void UPubnubChannelMetadataEntity::SetChannelMetadata(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
+void UPubnubChannelMetadataEntity::SetChannelMetadataAsync(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot set channel metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->SetChannelMetadata(EntityID, ChannelMetadata, OnSetChannelMetadataResponse, Include);
+	PubnubClient->SetChannelMetadataAsync(EntityID, ChannelMetadata, OnSetChannelMetadataResponse, Include);
 }
 
-void UPubnubChannelMetadataEntity::SetChannelMetadata(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+void UPubnubChannelMetadataEntity::SetChannelMetadataAsync(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot set channel metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->SetChannelMetadata(EntityID, ChannelMetadata, NativeCallback, Include);
+	PubnubClient->SetChannelMetadataAsync(EntityID, ChannelMetadata, NativeCallback, Include);
 }
 
-void UPubnubChannelMetadataEntity::GetChannelMetadata(FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
+void UPubnubChannelMetadataEntity::GetChannelMetadataAsync(FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot get channel metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->GetChannelMetadata(EntityID, OnGetChannelMetadataResponse, Include);
+	PubnubClient->GetChannelMetadataAsync(EntityID, OnGetChannelMetadataResponse, Include);
 }
 
-void UPubnubChannelMetadataEntity::GetChannelMetadata(FOnPubnubGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+void UPubnubChannelMetadataEntity::GetChannelMetadataAsync(FOnPubnubGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot get channel metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->GetChannelMetadata(EntityID, NativeCallback, Include);
+	PubnubClient->GetChannelMetadataAsync(EntityID, NativeCallback, Include);
 }
 
-void UPubnubChannelMetadataEntity::RemoveChannelMetadata(FOnPubnubRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse)
+void UPubnubChannelMetadataEntity::RemoveChannelMetadataAsync(FOnPubnubRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->RemoveChannelMetadata(EntityID, OnRemoveChannelMetadataResponse);
+	PubnubClient->RemoveChannelMetadataAsync(EntityID, OnRemoveChannelMetadataResponse);
 }
 
-void UPubnubChannelMetadataEntity::RemoveChannelMetadata(FOnPubnubRemoveChannelMetadataResponseNative NativeCallback)
+void UPubnubChannelMetadataEntity::RemoveChannelMetadataAsync(FOnPubnubRemoveChannelMetadataResponseNative NativeCallback)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel metadata - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->RemoveChannelMetadata(EntityID, NativeCallback);
+	PubnubClient->RemoveChannelMetadataAsync(EntityID, NativeCallback);
 }
 

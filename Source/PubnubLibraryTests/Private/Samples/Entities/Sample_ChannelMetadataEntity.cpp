@@ -128,7 +128,7 @@ void ASample_ChannelMetadataEntity::ChannelMetadataEntitySetMetadataSample()
 	TournamentLobbyInfo.Description = "Final tournament matches - best of 5 rounds";
 	TournamentLobbyInfo.Custom = "{\"max_players\":10,\"tournament_tier\":\"championship\",\"prize_pool\":\"50000\"}";
 
-	LobbyMetadataEntity->SetChannelMetadata(TournamentLobbyInfo, OnSetMetadataResult);
+	LobbyMetadataEntity->SetChannelMetadataAsync(TournamentLobbyInfo, OnSetMetadataResult);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
@@ -167,7 +167,7 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataSample()
 	ChannelMetadata.Custom = "{\"topic\": \"welcomes\"}";
 	
 	// Set channel metadata using the channel metadata entity
-	ChannelMetadataEntity->SetChannelMetadata(ChannelMetadata);
+	ChannelMetadataEntity->SetChannelMetadataAsync(ChannelMetadata);
 }
 
 // snippet.set_channel_metadata_with_result_entity
@@ -199,7 +199,7 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataWithResultSample()
 
 	// Set channel metadata with all available data included in response using the channel metadata entity
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	ChannelMetadataEntity->SetChannelMetadata(ChannelMetadata, OnSetChannelMetadataResponse, Include);
+	ChannelMetadataEntity->SetChannelMetadataAsync(ChannelMetadata, OnSetChannelMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
@@ -253,7 +253,7 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataWithLambdaSample()
 
 	// Set channel metadata with all available data included in response using the channel metadata entity
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	ChannelMetadataEntity->SetChannelMetadata(ChannelMetadata, OnSetChannelMetadataResponse, Include);
+	ChannelMetadataEntity->SetChannelMetadataAsync(ChannelMetadata, OnSetChannelMetadataResponse, Include);
 }
 
 // snippet.get_channel_metadata_entity
@@ -278,7 +278,7 @@ void ASample_ChannelMetadataEntity::GetChannelMetadataSample()
 	OnGetChannelMetadataResponse.BindDynamic(this, &ASample_ChannelMetadataEntity::OnGetChannelMetadataResponse_Simple);
 
 	// Get channel metadata using the channel metadata entity
-	ChannelMetadataEntity->GetChannelMetadata(OnGetChannelMetadataResponse);
+	ChannelMetadataEntity->GetChannelMetadataAsync(OnGetChannelMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
@@ -325,7 +325,7 @@ void ASample_ChannelMetadataEntity::GetChannelMetadataWithLambdaSample()
 	});
 	
 	// Get channel metadata using the channel metadata entity
-	ChannelMetadataEntity->GetChannelMetadata(OnGetChannelMetadataResponse);
+	ChannelMetadataEntity->GetChannelMetadataAsync(OnGetChannelMetadataResponse);
 }
 
 // snippet.remove_channel_metadata_entity
@@ -345,7 +345,7 @@ void ASample_ChannelMetadataEntity::RemoveChannelMetadataSample()
 	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
 	
 	// Remove channel metadata using the channel metadata entity
-	ChannelMetadataEntity->RemoveChannelMetadata();
+	ChannelMetadataEntity->RemoveChannelMetadataAsync();
 }
 
 // snippet.remove_channel_metadata_with_result_entity
@@ -370,7 +370,7 @@ void ASample_ChannelMetadataEntity::RemoveChannelMetadataWithResultSample()
 	OnRemoveChannelMetadataResponse.BindDynamic(this, &ASample_ChannelMetadataEntity::OnRemoveChannelMetadataResponse);
 
 	// Remove channel metadata using the channel metadata entity
-	ChannelMetadataEntity->RemoveChannelMetadata(OnRemoveChannelMetadataResponse);
+	ChannelMetadataEntity->RemoveChannelMetadataAsync(OnRemoveChannelMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
@@ -417,7 +417,7 @@ void ASample_ChannelMetadataEntity::RemoveChannelMetadataWithResultLambdaSample(
 	});
 	
 	// Remove channel metadata using the channel metadata entity
-	ChannelMetadataEntity->RemoveChannelMetadata(OnRemoveChannelMetadataResponse);
+	ChannelMetadataEntity->RemoveChannelMetadataAsync(OnRemoveChannelMetadataResponse);
 }
 
 // snippet.end

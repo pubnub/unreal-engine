@@ -32,10 +32,12 @@ public:
 	void PublishSimpleSample();
 
 	// snippet.publish_with_settings
+	// blueprint.publish_with_settings._o945md2
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void PublishWithSettingsSample();
 
 	// snippet.publish_with_result
+	// blueprint.publish_with_result.{id}
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void PublishWithResultSample();
 	

@@ -120,7 +120,7 @@ void ASample_ChannelGroupEntity::AddChannelToGroupSample()
 
 	// Add channel to the channel group using the channel group entity
 	FString Channel = TEXT("global_chat");
-	ChannelGroupEntity->AddChannelToGroup(Channel);
+	ChannelGroupEntity->AddChannelToGroupAsync(Channel);
 }
 
 // snippet.add_channel_to_group_with_result_entity
@@ -146,7 +146,7 @@ void ASample_ChannelGroupEntity::AddChannelToGroupWithResultSample()
 
 	// Add channel to the channel group using the channel group entity
 	FString Channel = TEXT("trade_chat");
-	ChannelGroupEntity->AddChannelToGroup(Channel, OnAddChannelToGroupResponse);
+	ChannelGroupEntity->AddChannelToGroupAsync(Channel, OnAddChannelToGroupResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -194,7 +194,7 @@ void ASample_ChannelGroupEntity::AddChannelToGroupWithResultLambdaSample()
 	
 	// Add channel to the channel group using the channel group entity
 	FString Channel = TEXT("guild_chat");
-	ChannelGroupEntity->AddChannelToGroup(Channel, OnAddChannelToGroupResponse);
+	ChannelGroupEntity->AddChannelToGroupAsync(Channel, OnAddChannelToGroupResponse);
 }
 
 // snippet.list_channels_from_group_entity
@@ -219,7 +219,7 @@ void ASample_ChannelGroupEntity::ListChannelsFromGroupSample()
 	OnListChannelsFromGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnListChannelsFromGroupResponse);
 
 	// List channels from the channel group using the channel group entity
-	ChannelGroupEntity->ListChannelsFromGroup(OnListChannelsFromGroupResponse);
+	ChannelGroupEntity->ListChannelsFromGroupAsync(OnListChannelsFromGroupResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -274,7 +274,7 @@ void ASample_ChannelGroupEntity::ListChannelsFromGroupWithLambdaSample()
 	});
 	
 	// List channels from the channel group using the channel group entity
-	ChannelGroupEntity->ListChannelsFromGroup(OnListChannelsFromGroupResponse);
+	ChannelGroupEntity->ListChannelsFromGroupAsync(OnListChannelsFromGroupResponse);
 }
 
 // snippet.remove_channel_from_group_entity
@@ -295,7 +295,7 @@ void ASample_ChannelGroupEntity::RemoveChannelFromGroupSample()
 
 	// Remove channel from the channel group using the channel group entity
 	FString Channel = TEXT("global_chat");
-	ChannelGroupEntity->RemoveChannelFromGroup(Channel);
+	ChannelGroupEntity->RemoveChannelFromGroupAsync(Channel);
 }
 
 // snippet.remove_channel_from_group_with_result_entity
@@ -321,7 +321,7 @@ void ASample_ChannelGroupEntity::RemoveChannelFromGroupWithResultSample()
 
 	// Remove channel from the channel group using the channel group entity
 	FString Channel = TEXT("trade_chat");
-	ChannelGroupEntity->RemoveChannelFromGroup(Channel, OnRemoveChannelFromGroupResponse);
+	ChannelGroupEntity->RemoveChannelFromGroupAsync(Channel, OnRemoveChannelFromGroupResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -369,7 +369,7 @@ void ASample_ChannelGroupEntity::RemoveChannelFromGroupWithResultLambdaSample()
 	
 	// Remove channel from the channel group using the channel group entity
 	FString Channel = TEXT("guild_chat");
-	ChannelGroupEntity->RemoveChannelFromGroup(Channel, OnRemoveChannelFromGroupResponse);
+	ChannelGroupEntity->RemoveChannelFromGroupAsync(Channel, OnRemoveChannelFromGroupResponse);
 }
 
 // snippet.remove_channel_group_entity
@@ -389,7 +389,7 @@ void ASample_ChannelGroupEntity::RemoveChannelGroupSample()
 	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Remove the entire channel group using the channel group entity
-	ChannelGroupEntity->RemoveChannelGroup();
+	ChannelGroupEntity->RemoveChannelGroupAsync();
 }
 
 // snippet.remove_channel_group_with_result_entity
@@ -414,7 +414,7 @@ void ASample_ChannelGroupEntity::RemoveChannelGroupWithResultSample()
 	OnRemoveChannelGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnRemoveChannelGroupResponse);
 
 	// Remove the entire channel group using the channel group entity
-	ChannelGroupEntity->RemoveChannelGroup(OnRemoveChannelGroupResponse);
+	ChannelGroupEntity->RemoveChannelGroupAsync(OnRemoveChannelGroupResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -461,7 +461,7 @@ void ASample_ChannelGroupEntity::RemoveChannelGroupWithResultLambdaSample()
 	});
 	
 	// Remove the entire channel group using the channel group entity
-	ChannelGroupEntity->RemoveChannelGroup(OnRemoveChannelGroupResponse);
+	ChannelGroupEntity->RemoveChannelGroupAsync(OnRemoveChannelGroupResponse);
 }
 
 // snippet.end

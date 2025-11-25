@@ -127,6 +127,23 @@
 	} while (false)
 
 /**
+ * Verifies that a valid Pubnub user ID has been set before continuing.
+ *
+ * If the user ID is not set, this macro will:
+ *   - Log an error message to the output log
+ *   - Invoke the provided delegate with a failure result and optional additional arguments
+ *   - Immediately return from the calling function
+ */
+#define PUBNUB_RETURN_IF_USER_ID_NOT_SET(...) \
+	do { \
+		if (!IsUserIDSet) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			return __VA_ARGS__; \
+		} \
+	} while (false)
+
+/**
  * Verifies that provided condition is met.
  *
  * If the condition is not met, this macro will:
@@ -151,14 +168,171 @@
  *   - Log an error message to the output log
  *   - Immediately return from the calling function
  */
-#define PUBNUB_RETURN_IF_USER_ID_NOT_SET(...) \
+#define PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(Condition, Message, ReturnWrapper) \
+	do { \
+		if (!Condition) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: %s Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), Message)); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = Message; \
+			ReturnWrapper.Result = Result; \
+			return ReturnWrapper; \
+		} \
+	} while (false)
+
+/**
+ * Verifies that a valid Pubnub user ID has been set before continuing.
+ *
+ * If the user ID is not set, this macro will:
+ *   - Log an error message to the output log
+ *   - Immediately return from the calling function
+ */
+#define PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Condition, Message) \
+	do { \
+		if (!Condition) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: %s Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), Message)); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = Message; \
+			return Result; \
+		} \
+	} while (false)
+
+
+/**
+ * Verifies that a valid Pubnub user ID has been set before continuing.
+ *
+ * If the user ID is not set, this macro will:
+ *   - Log an error message to the output log
+ *   - Immediately return from the calling function
+ */
+#define PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(ReturnWrapper) \
+	do { \
+		FPubnubOperationResult Result; \
+		if (!IsInitialized) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			Result.Error = true; \
+			Result.ErrorMessage = TEXT("PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."); \
+			ReturnWrapper.Result = Result; \
+			return ReturnWrapper; \
+		} \
+		if (!PubnubCallsThread) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			Result.Error = true; \
+			Result.ErrorMessage = TEXT("PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."); \
+			ReturnWrapper.Result = Result; \
+			return ReturnWrapper; \
+		} \
+	} while (false)
+
+/**
+ * Verifies that a valid Pubnub user ID has been set before continuing.
+ *
+ * If the user ID is not set, this macro will:
+ *   - Log an error message to the output log
+ *   - Immediately return from the calling function
+ */
+#define PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED() \
+	do { \
+		FPubnubOperationResult Result; \
+		if (!IsInitialized) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			Result.Error = true; \
+			Result.ErrorMessage = TEXT("PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."); \
+			return Result; \
+		} \
+		if (!PubnubCallsThread) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			Result.Error = true; \
+			Result.ErrorMessage = TEXT("PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."); \
+			return Result; \
+		} \
+	} while (false)
+
+
+/**
+ * Verifies that a valid Pubnub user ID has been set before continuing.
+ *
+ * If the user ID is not set, this macro will:
+ *   - Log an error message to the output log
+ *   - Immediately return from the calling function
+ */
+#define PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(ReturnWrapper) \
 	do { \
 		if (!IsUserIDSet) \
 		{ \
 			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
-			return __VA_ARGS__; \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = TEXT("Pubnub user ID is not set. Operation aborted."); \
+			ReturnWrapper.Result = Result; \
+			return ReturnWrapper; \
 	} \
-} while (false)
+	} while (false)
+
+/**
+ * Verifies that a valid Pubnub user ID has been set before continuing.
+ *
+ * If the user ID is not set, this macro will:
+ *   - Log an error message to the output log
+ *   - Immediately return from the calling function
+ */
+#define PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET() \
+	do { \
+		if (!IsUserIDSet) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = TEXT("Pubnub user ID is not set. Operation aborted."); \
+			return Result; \
+		} \
+	} while (false)
+
+/**
+ * Verifies that a valid Pubnub user ID has been set before continuing.
+ *
+ * If the user ID is not set, this macro will:
+ *   - Log an error message to the output log
+ *   - Immediately return from the calling function
+ */
+#define PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Field, ReturnWrapper) \
+	do { \
+		if (!IsUserIDSet) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = FString::Printf(TEXT("Missing required input: '%s' (field is empty). Operation aborted."), TEXT(#Field)); \
+			ReturnWrapper.Result = Result; \
+			return ReturnWrapper; \
+		} \
+	} while (false)
+
+/**
+ * Verifies that a valid Pubnub user ID has been set before continuing.
+ *
+ * If the user ID is not set, this macro will:
+ *   - Log an error message to the output log
+ *   - Immediately return from the calling function
+ */
+#define PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Field) \
+	do { \
+		if (!IsUserIDSet) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = FString::Printf(TEXT("Missing required input: '%s' (field is empty). Operation aborted."), TEXT(#Field)); \
+			return Result; \
+		} \
+	} while (false)
 
 /**
  * Validates that the provided field (e.g., channel name, message, metadata) is not empty.

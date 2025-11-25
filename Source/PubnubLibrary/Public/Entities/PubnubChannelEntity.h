@@ -31,7 +31,7 @@ public:
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel", meta = (AutoCreateRefTerm = "OnPublishMessageResponse"))
-	void PublishMessage(FString Message, FOnPubnubPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	void PublishMessageAsync(FString Message, FOnPubnubPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
 	/**
 	 * Publishes a message to this channel.
@@ -41,7 +41,7 @@ public:
 	 *						 Can be skipped if publish result is not needed.
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
-	void PublishMessage(FString Message, FOnPubnubPublishMessageResponseNative NativeCallback = nullptr, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+	void PublishMessageAsync(FString Message, FOnPubnubPublishMessageResponseNative NativeCallback = nullptr, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
 	/**
 	 * Publishes a message to this channel. Overload without delegate to get publish result.
@@ -49,7 +49,7 @@ public:
 	 * @param Message The message to publish. This message can be any data type that can be serialized into JSON.
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
-	void PublishMessage(FString Message, FPubnubPublishSettings PublishSettings);
+	void PublishMessageAsync(FString Message, FPubnubPublishSettings PublishSettings);
 
 	/**
 	 * Sends a signal to a this channel.
@@ -59,7 +59,7 @@ public:
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel", meta = (AutoCreateRefTerm = "OnSignalResponse"))
-	void Signal(FString Message, FOnPubnubSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+	void SignalAsync(FString Message, FOnPubnubSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 
 	/**
 	 * Sends a signal to this channel.
@@ -69,7 +69,7 @@ public:
 	 *						 Can be skipped if signal result is not needed.
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
-	void Signal(FString Message, FOnPubnubSignalResponseNative NativeCallback = nullptr, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+	void SignalAsync(FString Message, FOnPubnubSignalResponseNative NativeCallback = nullptr, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 	
 	/**
 	 * Sends a signal to this channel. Overload without delegate to get signal result.
@@ -77,7 +77,7 @@ public:
 	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
-	void Signal(FString Message, FPubnubSignalSettings SignalSettings);
+	void SignalAsync(FString Message, FPubnubSignalSettings SignalSettings);
 
 	/**
 	 * Lists the users currently present on this channel.
@@ -88,7 +88,7 @@ public:
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void ListUsersFromChannel(FOnPubnubListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+	void ListUsersFromChannelAsync(FOnPubnubListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	/**
 	 * Lists the users currently present on this channel.
@@ -98,6 +98,6 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details. 
 	 */
-	void ListUsersFromChannel(FOnPubnubListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
+	void ListUsersFromChannelAsync(FOnPubnubListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 	
 };

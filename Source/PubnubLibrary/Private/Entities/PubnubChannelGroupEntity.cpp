@@ -9,83 +9,83 @@ UPubnubChannelGroupEntity::UPubnubChannelGroupEntity()
 	EntityType = EPubnubEntityType::PEnT_ChannelGroup;
 }
 
-void UPubnubChannelGroupEntity::AddChannelToGroup(FString Channel, FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse)
+void UPubnubChannelGroupEntity::AddChannelToGroupAsync(FString Channel, FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot add channel to group - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->AddChannelToGroup(Channel, EntityID, OnAddChannelToGroupResponse);
+	PubnubClient->AddChannelToGroupAsync(Channel, EntityID, OnAddChannelToGroupResponse);
 }
 
-void UPubnubChannelGroupEntity::AddChannelToGroup(FString Channel, FOnPubnubAddChannelToGroupResponseNative NativeCallback)
+void UPubnubChannelGroupEntity::AddChannelToGroupAsync(FString Channel, FOnPubnubAddChannelToGroupResponseNative NativeCallback)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot add channel to group - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->AddChannelToGroup(Channel, EntityID, NativeCallback);
+	PubnubClient->AddChannelToGroupAsync(Channel, EntityID, NativeCallback);
 }
 
-void UPubnubChannelGroupEntity::RemoveChannelFromGroup(FString Channel, FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse)
+void UPubnubChannelGroupEntity::RemoveChannelFromGroupAsync(FString Channel, FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel from group - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->RemoveChannelFromGroup(Channel, EntityID, OnRemoveChannelFromGroupResponse);
+	PubnubClient->RemoveChannelFromGroupAsync(Channel, EntityID, OnRemoveChannelFromGroupResponse);
 }
 
-void UPubnubChannelGroupEntity::RemoveChannelFromGroup(FString Channel, FOnPubnubRemoveChannelFromGroupResponseNative NativeCallback)
+void UPubnubChannelGroupEntity::RemoveChannelFromGroupAsync(FString Channel, FOnPubnubRemoveChannelFromGroupResponseNative NativeCallback)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel from group - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->RemoveChannelFromGroup(Channel, EntityID, NativeCallback);
+	PubnubClient->RemoveChannelFromGroupAsync(Channel, EntityID, NativeCallback);
 }
 
-void UPubnubChannelGroupEntity::ListChannelsFromGroup(FOnPubnubListChannelsFromGroupResponse OnListChannelsResponse)
+void UPubnubChannelGroupEntity::ListChannelsFromGroupAsync(FOnPubnubListChannelsFromGroupResponse OnListChannelsResponse)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot list channels from group - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->ListChannelsFromGroup(EntityID, OnListChannelsResponse);
+	PubnubClient->ListChannelsFromGroupAsync(EntityID, OnListChannelsResponse);
 }
 
-void UPubnubChannelGroupEntity::ListChannelsFromGroup(FOnPubnubListChannelsFromGroupResponseNative NativeCallback)
+void UPubnubChannelGroupEntity::ListChannelsFromGroupAsync(FOnPubnubListChannelsFromGroupResponseNative NativeCallback)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot list channels from group - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->ListChannelsFromGroup(EntityID, NativeCallback);
+	PubnubClient->ListChannelsFromGroupAsync(EntityID, NativeCallback);
 }
 
-void UPubnubChannelGroupEntity::RemoveChannelGroup(FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse)
+void UPubnubChannelGroupEntity::RemoveChannelGroupAsync(FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel group - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->RemoveChannelGroup(EntityID, OnRemoveChannelGroupResponse);
+	PubnubClient->RemoveChannelGroupAsync(EntityID, OnRemoveChannelGroupResponse);
 }
 
-void UPubnubChannelGroupEntity::RemoveChannelGroup(FOnPubnubRemoveChannelGroupResponseNative NativeCallback)
+void UPubnubChannelGroupEntity::RemoveChannelGroupAsync(FOnPubnubRemoveChannelGroupResponseNative NativeCallback)
 {
 	if (!PubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel group - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubClient->RemoveChannelGroup(EntityID, NativeCallback);
+	PubnubClient->RemoveChannelGroupAsync(EntityID, NativeCallback);
 }
 

@@ -92,7 +92,7 @@ void ASample_ChannelEntity::PublishSimpleSample()
 
 	// Publish simple text message using the channel entity
 	FString SimpleMessage = TEXT("Ready to start the mission!");
-	ChannelEntity->PublishMessage(SimpleMessage);
+	ChannelEntity->PublishMessageAsync(SimpleMessage);
 }
 
 // snippet.publish_with_settings_entity
@@ -120,7 +120,7 @@ void ASample_ChannelEntity::PublishWithSettingsSample()
 	PublishSettings.CustomMessageType = "game-event";
 
 	// Publish message with settings using the channel entity
-	ChannelEntity->PublishMessage(JsonMessage, PublishSettings);
+	ChannelEntity->PublishMessageAsync(JsonMessage, PublishSettings);
 }
 
 // snippet.publish_with_result_entity
@@ -146,7 +146,7 @@ void ASample_ChannelEntity::PublishWithResultSample()
 	
 	// Publish simple text message using the channel entity
 	FString SimpleMessage = TEXT("Ready to start the mission!");
-	ChannelEntity->PublishMessage(SimpleMessage, OnPublishMessageResponse);
+	ChannelEntity->PublishMessageAsync(SimpleMessage, OnPublishMessageResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
@@ -194,7 +194,7 @@ void ASample_ChannelEntity::PublishWithResultLambdaSample()
 	
 	// Publish simple text message using the channel entity
 	FString SimpleMessage = TEXT("Ready to start the mission!");
-	ChannelEntity->PublishMessage(SimpleMessage, OnPublishMessageResponse);
+	ChannelEntity->PublishMessageAsync(SimpleMessage, OnPublishMessageResponse);
 }
 
 // snippet.simple_signal_entity
@@ -215,7 +215,7 @@ void ASample_ChannelEntity::SimpleSignalSample()
 
 	// Send signal message using the channel entity
 	FString SimpleMessage = TEXT("Ready to start the mission!");
-	ChannelEntity->Signal(SimpleMessage);
+	ChannelEntity->SignalAsync(SimpleMessage);
 }
 
 // snippet.signal_with_settings_entity
@@ -242,7 +242,7 @@ void ASample_ChannelEntity::SignalWithSettingsSample()
 	SignalSettings.CustomMessageType = "typing-indicator";
 
 	// Send signal with settings using the channel entity
-	ChannelEntity->Signal(Message, SignalSettings);
+	ChannelEntity->SignalAsync(Message, SignalSettings);
 }
 
 // snippet.signal_with_result_entity
@@ -268,7 +268,7 @@ void ASample_ChannelEntity::SignalWithResultSample()
 	
 	// Send signal message using the channel entity
 	FString SimpleMessage = TEXT("Player is aiming");
-	ChannelEntity->Signal(SimpleMessage, OnSignalResponse);
+	ChannelEntity->SignalAsync(SimpleMessage, OnSignalResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
@@ -316,7 +316,7 @@ void ASample_ChannelEntity::SignalWithResultLambdaSample()
 	
 	// Send signal message using the channel entity
 	FString SimpleMessage = TEXT("Player is aiming");
-	ChannelEntity->Signal(SimpleMessage, OnSignalResponse);
+	ChannelEntity->SignalAsync(SimpleMessage, OnSignalResponse);
 }
 
 // snippet.list_users_from_channel_entity
@@ -341,7 +341,7 @@ void ASample_ChannelEntity::ListUsersFromChannelSample()
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_ChannelEntity::OnListUsersFromChannelResponse_Simple);
 
 	// List users from the channel using the channel entity
-	ChannelEntity->ListUsersFromChannel(OnListUsersFromChannelResponse);
+	ChannelEntity->ListUsersFromChannelAsync(OnListUsersFromChannelResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
@@ -384,7 +384,7 @@ void ASample_ChannelEntity::ListUsersFromChannelWithSettingsSample()
 	Settings.DisableUserID = false;
 
 	// List users from the channel with settings using the channel entity
-	ChannelEntity->ListUsersFromChannel(OnListUsersFromChannelResponse, Settings);
+	ChannelEntity->ListUsersFromChannelAsync(OnListUsersFromChannelResponse, Settings);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
@@ -436,7 +436,7 @@ void ASample_ChannelEntity::ListUsersFromChannelWithLambdaSample()
 	});
 	
 	// List users from the channel using the channel entity
-	ChannelEntity->ListUsersFromChannel(OnListUsersFromChannelResponse);
+	ChannelEntity->ListUsersFromChannelAsync(OnListUsersFromChannelResponse);
 }
 
 // snippet.subscribe_with_channel_entity
@@ -588,7 +588,7 @@ void ASample_ChannelEntity::ChannelEntityPublishMessageSample()
 
 	// Publish a tactical message to the team using the channel entity
 	FString TacticalMessage = TEXT("Enemy spotted at coordinates B-7, requesting backup!");
-	ChatChannelEntity->PublishMessage(TacticalMessage, OnPublishResult);
+	ChatChannelEntity->PublishMessageAsync(TacticalMessage, OnPublishResult);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class

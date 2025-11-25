@@ -771,3 +771,206 @@ struct FPubnubSubscriptionCursor
 	/**Region of the messages */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Region = 0;
 };
+
+USTRUCT(BlueprintType)
+struct FPubnubUserMetadataResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The user metadata (returned by Get/Set operations) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubUserData UserData;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubPublishMessageResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The published message data including timetoken and channel information */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubMessageData PublishedMessage;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubSignalResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The signal message data including timetoken and channel information */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubMessageData SignalMessage;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubListChannelsFromGroupResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of channel names that belong to the channel group */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubListUsersFromChannelResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Occupancy and user state information for the channel */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubListUsersFromChannelWrapper Data;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubListUsersSubscribedChannelsResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of channel names that the user is currently subscribed to */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetStateResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The state data as JSON string */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString StateResponse;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGrantTokenResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The generated access token string */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Token;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubFetchHistoryResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of historical messages retrieved from the channel */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubHistoryMessageData> Messages;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubMessageCountsResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The number of messages in the specified time range */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int MessageCounts;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetAllUserMetadataResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of user metadata objects retrieved */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserData> UsersData;
+	/** Pagination token for retrieving the next page of results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PageNext;
+	/** Pagination token for retrieving the previous page of results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PagePrev;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetAllChannelMetadataResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of channel metadata objects retrieved */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelData> ChannelsData;
+	/** Pagination token for retrieving the next page of results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PageNext;
+	/** Pagination token for retrieving the previous page of results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PagePrev;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelMetadataResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The channel metadata (returned by Get/Set operations) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubChannelData ChannelData;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubMembershipsResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of membership data (returned by Get/Set/Remove operations) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubMembershipData> MembershipsData;
+	/** Pagination token for retrieving the next page of results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PageNext;
+	/** Pagination token for retrieving the previous page of results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PagePrev;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelMembersResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of member data (returned by Get/Set/Remove operations) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelMemberData> MembersData;
+	/** Pagination token for retrieving the next page of results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PageNext;
+	/** Pagination token for retrieving the previous page of results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PagePrev;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetMessageActionsResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of message actions retrieved */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubMessageActionData> MessageActions;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubAddMessageActionResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The added message action data including timetokens */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubMessageActionData MessageActionData;
+};
