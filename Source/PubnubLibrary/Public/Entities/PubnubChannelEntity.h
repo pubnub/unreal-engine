@@ -24,6 +24,16 @@ public:
 	UPubnubChannelEntity();
 	
 	/**
+	 * Publishes a message to this channel (blocking).
+	 * 
+	 * @param Message The message to publish. This message can be any data type that can be serialized into JSON.
+	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
+	 * @return Result structure containing operation status and published message data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel")
+	FPubnubPublishMessageResult PublishMessage(FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
+
+	/**
 	 * Publishes a message to this channel.
 	 * 
 	 * @param Message The message to publish. This message can be any data type that can be serialized into JSON.
@@ -52,6 +62,16 @@ public:
 	void PublishMessageAsync(FString Message, FPubnubPublishSettings PublishSettings);
 
 	/**
+	 * Sends a signal to this channel (blocking).
+	 * 
+	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
+	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
+	 * @return Result structure containing operation status and signal message data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel")
+	FPubnubSignalResult Signal(FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
+
+	/**
 	 * Sends a signal to a this channel.
 	 * 
 	 * @param Message The message to send as the signal. This message can be any data type that can be serialized into JSON.
@@ -78,6 +98,17 @@ public:
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
 	void SignalAsync(FString Message, FPubnubSignalSettings SignalSettings);
+
+	/**
+	 * Lists the users currently present on this channel (blocking).
+	 *
+	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
+	 * @return Result structure containing operation status and list of users.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	FPubnubListUsersFromChannelResult ListUsersFromChannel(FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	/**
 	 * Lists the users currently present on this channel.

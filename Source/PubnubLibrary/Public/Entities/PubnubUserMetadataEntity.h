@@ -25,6 +25,18 @@ public:
 
 		
 	/**
+	 * Sets metadata for this User in the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param UserMetadata User Metadata object to set.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return Result structure containing operation status and updated user metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubUserMetadataResult SetUserMetadata(FPubnubUserData UserMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
 	 * Sets metadata for this User in the PubNub App Context.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -49,6 +61,17 @@ public:
 	void SetUserMetadataAsync(FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
+	 * Retrieves metadata for this User from the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return Result structure containing operation status and user metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubUserMetadataResult GetUserMetadata(FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
 	 * Retrieves metadata for this User from the PubNub App Context.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -69,6 +92,16 @@ public:
 	 */
 	void GetUserMetadataAsync(FOnPubnubGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 	
+
+	/**
+	 * Removes all metadata associated with this User from the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @return Result structure containing operation status.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubOperationResult RemoveUserMetadata();
 
 	/**
 	 * Removes all metadata associated with this User from the PubNub App Context.

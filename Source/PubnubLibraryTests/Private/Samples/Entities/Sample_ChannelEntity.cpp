@@ -463,7 +463,7 @@ void ASample_ChannelEntity::SubscribeWithChannelEntitySample()
 	ChannelSubscription->OnPubnubMessage.AddDynamic(this, &ASample_ChannelEntity::OnMessageReceived_ChannelEntitySample);
 
 	// Subscribe to start receiving messages
-	ChannelSubscription->Subscribe();
+	ChannelSubscription->SubscribeAsync();
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
@@ -520,7 +520,7 @@ void ASample_ChannelEntity::ChannelEntityAllListenersSample()
 	Subscription->FOnPubnubAnyMessageType.AddDynamic(this, &ASample_ChannelEntity::OnAnyEvent_AllListenersSample);
 
 	// Subscribe to start receiving all event types
-	Subscription->Subscribe();
+	Subscription->SubscribeAsync();
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class

@@ -93,7 +93,7 @@ void ASample_ChannelGroupEntity::SubscribeWithChannelGroupEntitySample()
 	GroupSubscription->OnPubnubMessage.AddDynamic(this, &ASample_ChannelGroupEntity::OnMessageReceived_ChannelGroupEntitySample);
 
 	// Subscribe to start receiving messages from all channels in the group
-	GroupSubscription->Subscribe();
+	GroupSubscription->SubscribeAsync();
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class

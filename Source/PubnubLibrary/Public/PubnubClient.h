@@ -2611,8 +2611,10 @@ private:
 	TMap<FString, CCoreSubscriptionCallback*> ChannelSubscriptions;
 	TMap<FString, CCoreSubscriptionCallback*> ChannelGroupSubscriptions;
 
-	//Array storing delegates for all queued subscription operations
-	TArray<FOnPubnubSubscribeOperationResponseNative> SubscriptionResultDelegates;
+	//Map storing delegates for all queued subscription operations (ID -> Delegate)
+	TMap<int32, FOnPubnubSubscribeOperationResponseNative> SubscriptionResultDelegates;
+	//Counter for generating unique IDs for subscription delegates
+	int32 NextSubscriptionDelegateId = 0;
 
 	void OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData);
 
@@ -2635,11 +2637,11 @@ private:
 	void SetSecretKey_priv();
 	FPubnubPublishMessageResult PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	FPubnubSignalResult Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
-	void SubscribeToChannel_priv(FString Channel, FOnPubnubSubscribeOperationResponseNative OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
-	void SubscribeToGroup_priv(FString ChannelGroup, FOnPubnubSubscribeOperationResponseNative OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
-	void UnsubscribeFromChannel_priv(FString Channel, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeFromChannelResponse);
-	void UnsubscribeFromGroup_priv(FString ChannelGroup, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeFromGroupResponse);
-	void UnsubscribeFromAll_priv(FOnPubnubSubscribeOperationResponseNative OnUnsubscribeFromAllResponse = nullptr);
+	FPubnubOperationResult SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	FPubnubOperationResult SubscribeToGroup_priv(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
+	FPubnubOperationResult UnsubscribeFromChannel_priv(FString Channel);
+	FPubnubOperationResult UnsubscribeFromGroup_priv(FString ChannelGroup);
+	FPubnubOperationResult UnsubscribeFromAll_priv();
 	FPubnubOperationResult AddChannelToGroup_priv(FString Channel, FString ChannelGroup);
 	FPubnubOperationResult RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup);
 	FPubnubListChannelsFromGroupResult ListChannelsFromGroup_priv(FString ChannelGroup);
@@ -2674,10 +2676,14 @@ private:
 	FPubnubOperationResult RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
 	FPubnubGetMessageActionsResult GetMessageActions_priv(FString Channel, FString Start, FString End, int Limit);
 
-	void SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);
-	void SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);
-	void UnsubscribeWithSubscription(UPubnubSubscription* Subscription, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse);
-	void UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse);
+	void SubscribeWithSubscriptionAsync(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);
+	FPubnubOperationResult SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor);
+	void SubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);
+	FPubnubOperationResult SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor);
+	void UnsubscribeWithSubscriptionAsync(UPubnubSubscription* Subscription, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse);
+	FPubnubOperationResult UnsubscribeWithSubscription(UPubnubSubscription* Subscription);
+	void UnsubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* SubscriptionSet, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse);
+	FPubnubOperationResult UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet);
 	
 	void CleanUpAllSubscriptions();
 	void UnsubscribeAllForDeinit();

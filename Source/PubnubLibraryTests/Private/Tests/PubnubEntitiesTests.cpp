@@ -104,7 +104,7 @@ bool FPubnubChannelEntityPublishSubscribeTest::RunTest(const FString& Parameters
 	// Subscribe using the subscription
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Subscription, SubscribeCallback]()
 	{
-		Subscription->Subscribe(SubscribeCallback);
+		Subscription->SubscribeAsync(SubscribeCallback);
 	}, 0.1f));
 
 	// Wait until subscribe result is received
@@ -309,7 +309,7 @@ bool FPubnubChannelGroupEntityTest::RunTest(const FString& Parameters)
 	// Subscribe using the subscription
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Subscription, SubscribeCallback]()
 	{
-		Subscription->Subscribe(SubscribeCallback);
+		Subscription->SubscribeAsync(SubscribeCallback);
 	}, 0.1f));
 
 	// Wait until subscribe result is received
@@ -650,7 +650,7 @@ bool FPubnubSubscriptionListenersTest::RunTest(const FString& Parameters)
 	// Activate the subscription to start receiving all event types
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Subscription, SubscribeCallback]()
 	{
-		Subscription->Subscribe(SubscribeCallback);
+		Subscription->SubscribeAsync(SubscribeCallback);
 	}, 0.1f));
 
 	// Wait for subscription to be fully active before sending events

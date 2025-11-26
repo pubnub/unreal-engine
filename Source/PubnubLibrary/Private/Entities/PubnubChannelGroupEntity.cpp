@@ -9,6 +9,21 @@ UPubnubChannelGroupEntity::UPubnubChannelGroupEntity()
 	EntityType = EPubnubEntityType::PEnT_ChannelGroup;
 }
 
+FPubnubOperationResult UPubnubChannelGroupEntity::AddChannelToGroup(FString Channel)
+{
+	if (!PubnubClient)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot add channel to group - PubnubClient is null. Entity not properly initialized."));
+		return FPubnubOperationResult();
+	}
+	if (EntityID.IsEmpty())
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot add channel to group - EntityID is empty."));
+		return FPubnubOperationResult();
+	}
+	return PubnubClient->AddChannelToGroup(Channel, EntityID);
+}
+
 void UPubnubChannelGroupEntity::AddChannelToGroupAsync(FString Channel, FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse)
 {
 	if (!PubnubClient)
@@ -27,6 +42,21 @@ void UPubnubChannelGroupEntity::AddChannelToGroupAsync(FString Channel, FOnPubnu
 		return;
 	}
 	PubnubClient->AddChannelToGroupAsync(Channel, EntityID, NativeCallback);
+}
+
+FPubnubOperationResult UPubnubChannelGroupEntity::RemoveChannelFromGroup(FString Channel)
+{
+	if (!PubnubClient)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel from group - PubnubClient is null. Entity not properly initialized."));
+		return FPubnubOperationResult();
+	}
+	if (EntityID.IsEmpty())
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel from group - EntityID is empty."));
+		return FPubnubOperationResult();
+	}
+	return PubnubClient->RemoveChannelFromGroup(Channel, EntityID);
 }
 
 void UPubnubChannelGroupEntity::RemoveChannelFromGroupAsync(FString Channel, FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse)
@@ -49,6 +79,21 @@ void UPubnubChannelGroupEntity::RemoveChannelFromGroupAsync(FString Channel, FOn
 	PubnubClient->RemoveChannelFromGroupAsync(Channel, EntityID, NativeCallback);
 }
 
+FPubnubListChannelsFromGroupResult UPubnubChannelGroupEntity::ListChannelsFromGroup()
+{
+	if (!PubnubClient)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot list channels from group - PubnubClient is null. Entity not properly initialized."));
+		return FPubnubListChannelsFromGroupResult();
+	}
+	if (EntityID.IsEmpty())
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot list channels from group - EntityID is empty."));
+		return FPubnubListChannelsFromGroupResult();
+	}
+	return PubnubClient->ListChannelsFromGroup(EntityID);
+}
+
 void UPubnubChannelGroupEntity::ListChannelsFromGroupAsync(FOnPubnubListChannelsFromGroupResponse OnListChannelsResponse)
 {
 	if (!PubnubClient)
@@ -67,6 +112,21 @@ void UPubnubChannelGroupEntity::ListChannelsFromGroupAsync(FOnPubnubListChannels
 		return;
 	}
 	PubnubClient->ListChannelsFromGroupAsync(EntityID, NativeCallback);
+}
+
+FPubnubOperationResult UPubnubChannelGroupEntity::RemoveChannelGroup()
+{
+	if (!PubnubClient)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel group - PubnubClient is null. Entity not properly initialized."));
+		return FPubnubOperationResult();
+	}
+	if (EntityID.IsEmpty())
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot remove channel group - EntityID is empty."));
+		return FPubnubOperationResult();
+	}
+	return PubnubClient->RemoveChannelGroup(EntityID);
 }
 
 void UPubnubChannelGroupEntity::RemoveChannelGroupAsync(FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse)

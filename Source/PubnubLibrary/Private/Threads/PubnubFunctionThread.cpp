@@ -34,12 +34,6 @@ uint32 FPubnubFunctionThread::Run()
 			for(int i = 0; i <  PubnubAsyncFunctionsQueue.Num(); i++)
 			{
 				PubnubAsyncFunctionsQueue[i]();
-				
-				//If last called operation is subscribe operation, we need to wait until it's finished as it's not blocking
-				if(IsLockedForSubscription)
-				{
-					WaitForSubscriptionOperationEnd();
-				}
 
 				//Stop executing functions if thread was set to Shutdown
 				if(bShutdown)
@@ -81,35 +75,4 @@ void FPubnubFunctionThread::AddFunctionToQueue(TFunction<void()> InFunction)
 	Mutex.Lock();
 	PubnubAsyncFunctionsBuffer.Add(InFunction);
 	Mutex.Unlock();
-}
-
-void FPubnubFunctionThread::LockForSubscribeOperation()
-{
-	IsLockedForSubscription = true;
-}
-
-void FPubnubFunctionThread::UnlockAfterSubscriptionOperationFinished()
-{
-	IsLockedForSubscription = false;
-}
-
-void FPubnubFunctionThread::WaitForSubscriptionOperationEnd()
-{
-	int LoopCount = 0;
-	while(IsLockedForSubscription)
-	{
-		if(bShutdown)
-		{
-			break;
-		}
-		
-		FPlatformProcess::Sleep(WaitForSubscriptionDelay);
-		LoopCount++;
-		if(LoopCount > WaitForSubscriptionDelayMaxCount)
-		{
-			UE_LOG(PubnubLog, Error, TEXT("WaitForSubscriptionOperationEnd exausted all tries. Skipping waiting for subscription result."))
-			break;
-		}
-
-	}
 }

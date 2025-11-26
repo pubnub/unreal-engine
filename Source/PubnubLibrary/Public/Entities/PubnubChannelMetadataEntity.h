@@ -25,6 +25,18 @@ public:
 
 
 	/**
+	 * Sets metadata for this Channel in the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param ChannelMetadata Channel Metadata object to set.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return Result structure containing operation status and updated channel metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubChannelMetadataResult SetChannelMetadata(FPubnubChannelData ChannelMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -49,6 +61,17 @@ public:
 	void SetChannelMetadataAsync(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 	
 	/**
+	 * Retrieves metadata for this Channel from the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return Result structure containing operation status and channel metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubChannelMetadataResult GetChannelMetadata(FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
 	 * Retrieves metadata for a specified Channel from the PubNub App Context.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -69,6 +92,16 @@ public:
 	 */
 	void GetChannelMetadataAsync(FOnPubnubGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 	
+	/**
+	 * Removes all metadata associated with this Channel from the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @return Result structure containing operation status.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubOperationResult RemoveChannelMetadata();
+
 	/**
 	 * Removes all metadata associated with a specified Channel from the PubNub App Context.
 	 * 

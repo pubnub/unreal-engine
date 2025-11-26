@@ -131,6 +131,17 @@ class PUBNUBLIBRARY_API UPubnubSubscription: public UPubnubSubscriptionBase
 	friend class UPubnubSubscriptionSet;
 
 public:
+
+	/**
+	 * Subscribes synchronously to the entity associated with this subscription.
+	 * 
+	 * Initiates real-time message delivery from the subscribed entity.
+	 * Events will be delivered through the inherited event delegates.
+	 * 
+	 * @param Cursor Optional cursor to resume subscription from a specific point in time.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription")
+	FPubnubOperationResult Subscribe(FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
 	
 	/**
 	 * Subscribes to the entity associated with this subscription.
@@ -141,8 +152,8 @@ public:
 	 * @param OnSubscribeResponse Callback function to handle the subscription result.
 	 * @param Cursor Optional cursor to resume subscription from a specific point in time.
 	 */
-	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnSubscribeResponse"))
-	virtual void Subscribe(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
+	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription", meta = (AutoCreateRefTerm = "OnSubscribeResponse"))
+	virtual void SubscribeAsync(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
 	
 	/**
 	 * Subscribes to the entity associated with this subscription (native version).
@@ -150,15 +161,24 @@ public:
 	 * @param NativeCallback Optional native callback that can accept lambda functions.
 	 * @param Cursor Optional cursor to resume subscription from a specific point in time.
 	 */
-	void Subscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
+	void SubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
 	
 	/**
 	 * Subscribes to the entity associated with this subscription without a callback.
 	 * 
 	 * @param Cursor Optional cursor to resume subscription from a specific point in time.
 	 */
-	void Subscribe(FPubnubSubscriptionCursor Cursor);
-
+	void SubscribeAsync(FPubnubSubscriptionCursor Cursor);
+	
+	/**
+	 * Unsubscribes synchronously from the entity associated with this subscription.
+	 * 
+	 * Stops real-time message delivery from the subscribed entity.
+	 * The subscription object remains valid and can be reused for future subscriptions.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription", meta = (AutoCreateRefTerm = "OnUnsubscribeResponse"))
+	FPubnubOperationResult Unsubscribe();
+	
 	/**
 	 * Unsubscribes from the entity associated with this subscription.
 	 * 
@@ -167,15 +187,15 @@ public:
 	 * 
 	 * @param OnUnsubscribeResponse Callback function to handle the unsubscription result.
 	 */
-	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnUnsubscribeResponse"))
-	void Unsubscribe(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse);
+	UFUNCTION(BlueprintCallable, Category="Pubnub|Subscription", meta = (AutoCreateRefTerm = "OnUnsubscribeResponse"))
+	void UnsubscribeAsync(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse);
 
 	/**
 	 * Unsubscribes from the entity associated with this subscription (native version).
 	 * 
 	 * @param NativeCallback Optional native callback that can accept lambda functions.
 	 */
-	void Unsubscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback);
+	void UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback);
 
 	/**
 	 * Combines this subscription with another subscription to create a subscription set.
@@ -219,6 +239,17 @@ class PUBNUBLIBRARY_API UPubnubSubscriptionSet: public UPubnubSubscriptionBase
 	friend class UPubnubSubscription;
 
 public:
+
+	/**
+	 * Subscribes synchronously to all entities in this subscription set.
+	 * 
+	 * Initiates real-time message delivery from all subscriptions in this set.
+	 * Events will be delivered through the inherited event delegates.
+	 * 
+	 * @param Cursor Optional cursor to resume subscription from a specific point in time.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet")
+	FPubnubOperationResult Subscribe(FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
 	
 	/**
 	 * Subscribes to all entities in this subscription set.
@@ -230,7 +261,7 @@ public:
 	 * @param Cursor Optional cursor to resume subscription from a specific point in time.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnSubscribeResponse"))
-	virtual void Subscribe(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
+	virtual void SubscribeAsync(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
 	
 	/**
 	 * Subscribes to all entities in this subscription set (native version).
@@ -238,15 +269,25 @@ public:
 	 * @param NativeCallback Optional native callback that can accept lambda functions.
 	 * @param Cursor Optional cursor to resume subscription from a specific point in time.
 	 */
-	void Subscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
+	void SubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr, FPubnubSubscriptionCursor Cursor = FPubnubSubscriptionCursor());
 	
 	/**
 	 * Subscribes to all entities in this subscription set without a callback.
 	 * 
 	 * @param Cursor Optional cursor to resume subscription from a specific point in time.
 	 */
-	void Subscribe(FPubnubSubscriptionCursor Cursor);
+	void SubscribeAsync(FPubnubSubscriptionCursor Cursor);
 
+	/**
+	 * Unsubscribes from all entities in this subscription set.
+	 * 
+	 * Stops real-time message delivery from all subscriptions in this set.
+	 * The subscription set remains valid and can be reused for future subscriptions.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnUnsubscribeResponse"))
+	FPubnubOperationResult Unsubscribe();
+	
+	
 	/**
 	 * Unsubscribes from all entities in this subscription set.
 	 * 
@@ -256,14 +297,14 @@ public:
 	 * @param OnUnsubscribeResponse Callback function to handle the unsubscription result.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Pubnub|SubscriptionSet", meta = (AutoCreateRefTerm = "OnUnsubscribeResponse"))
-	void Unsubscribe(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse);
+	void UnsubscribeAsync(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse);
 
 	/**
 	 * Unsubscribes from all entities in this subscription set (native version).
 	 * 
 	 * @param NativeCallback Optional native callback that can accept lambda functions.
 	 */
-	void Unsubscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback);
+	void UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback);
 
 	/**
 	 * Adds a subscription to this subscription set.

@@ -91,7 +91,7 @@ void ASample_ChannelMetadataEntity::SubscribeWithChannelMetadataEntitySample()
 	MetadataSubscription->OnPubnubObjectEvent.AddDynamic(this, &ASample_ChannelMetadataEntity::OnObjectEvent_ChannelMetadataEntitySample);
 
 	// Subscribe to start receiving metadata change events
-	MetadataSubscription->Subscribe();
+	MetadataSubscription->SubscribeAsync();
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class

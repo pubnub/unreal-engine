@@ -14,7 +14,12 @@ void UPubnubSubscriptionBase::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void UPubnubSubscription::Subscribe(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
+FPubnubOperationResult UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
+{
+	return PubnubClient->SubscribeWithSubscription(this, Cursor);
+}
+
+void UPubnubSubscription::SubscribeAsync(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
 {
 	FOnPubnubSubscribeOperationResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnSubscribeResponse](FPubnubOperationResult Result)
@@ -22,10 +27,10 @@ void UPubnubSubscription::Subscribe(FOnPubnubSubscribeOperationResponse OnSubscr
 		OnSubscribeResponse.ExecuteIfBound(Result);
 	});
 
-	Subscribe(NativeCallback, Cursor);
+	SubscribeAsync(NativeCallback, Cursor);
 }
 
-void UPubnubSubscription::Subscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscription::SubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
 	if(!IsInitialized)
 	{
@@ -39,15 +44,20 @@ void UPubnubSubscription::Subscribe(FOnPubnubSubscribeOperationResponseNative Na
 		return;
 	}
 	
-	PubnubClient->SubscribeWithSubscription(this, Cursor, NativeCallback);
+	PubnubClient->SubscribeWithSubscriptionAsync(this, Cursor, NativeCallback);
 }
 
-void UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscription::SubscribeAsync(FPubnubSubscriptionCursor Cursor)
 {
-	Subscribe(nullptr, Cursor);
+	SubscribeAsync(nullptr, Cursor);
 }
 
-void UPubnubSubscription::Unsubscribe(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse)
+FPubnubOperationResult UPubnubSubscription::Unsubscribe()
+{
+	return FPubnubOperationResult();
+}
+
+void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse)
 {
 	FOnPubnubSubscribeOperationResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnUnsubscribeResponse](FPubnubOperationResult Result)
@@ -55,10 +65,10 @@ void UPubnubSubscription::Unsubscribe(FOnPubnubSubscribeOperationResponse OnUnsu
 		OnUnsubscribeResponse.ExecuteIfBound(Result);
 	});
 
-	Unsubscribe(NativeCallback);
+	UnsubscribeAsync(NativeCallback);
 }
 
-void UPubnubSubscription::Unsubscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback)
+void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback)
 {
 	if(!IsInitialized)
 	{
@@ -72,7 +82,7 @@ void UPubnubSubscription::Unsubscribe(FOnPubnubSubscribeOperationResponseNative 
 		return;
 	}
 
-	PubnubClient->UnsubscribeWithSubscription(this, NativeCallback);
+	PubnubClient->UnsubscribeWithSubscriptionAsync(this, NativeCallback);
 }
 
 UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription* Subscription)
@@ -255,7 +265,12 @@ void UPubnubSubscription::CleanUpSubscription()
 	IsInitialized = false;
 }
 
-void UPubnubSubscriptionSet::Subscribe(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
+FPubnubOperationResult UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
+{
+	return FPubnubOperationResult();
+}
+
+void UPubnubSubscriptionSet::SubscribeAsync(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
 {
 	FOnPubnubSubscribeOperationResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnSubscribeResponse](FPubnubOperationResult Result)
@@ -263,10 +278,10 @@ void UPubnubSubscriptionSet::Subscribe(FOnPubnubSubscribeOperationResponse OnSub
 		OnSubscribeResponse.ExecuteIfBound(Result);
 	});
 
-	Subscribe(NativeCallback, Cursor);
+	SubscribeAsync(NativeCallback, Cursor);
 }
 
-void UPubnubSubscriptionSet::Subscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscriptionSet::SubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
 	if(!IsInitialized)
 	{
@@ -280,15 +295,20 @@ void UPubnubSubscriptionSet::Subscribe(FOnPubnubSubscribeOperationResponseNative
 		return;
 	}
 	
-	PubnubClient->SubscribeWithSubscriptionSet(this, Cursor, NativeCallback);
+	PubnubClient->SubscribeWithSubscriptionSetAsync(this, Cursor, NativeCallback);
 }
 
-void UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
+void UPubnubSubscriptionSet::SubscribeAsync(FPubnubSubscriptionCursor Cursor)
 {
-	Subscribe(nullptr, Cursor);
+	SubscribeAsync(nullptr, Cursor);
 }
 
-void UPubnubSubscriptionSet::Unsubscribe(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse)
+FPubnubOperationResult UPubnubSubscriptionSet::Unsubscribe()
+{
+	return FPubnubOperationResult();
+}
+
+void UPubnubSubscriptionSet::UnsubscribeAsync(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse)
 {
 	FOnPubnubSubscribeOperationResponseNative NativeCallback;
 	NativeCallback.BindLambda([OnUnsubscribeResponse](FPubnubOperationResult Result)
@@ -296,10 +316,10 @@ void UPubnubSubscriptionSet::Unsubscribe(FOnPubnubSubscribeOperationResponse OnU
 		OnUnsubscribeResponse.ExecuteIfBound(Result);
 	});
 
-	Unsubscribe(NativeCallback);
+	UnsubscribeAsync(NativeCallback);
 }
 
-void UPubnubSubscriptionSet::Unsubscribe(FOnPubnubSubscribeOperationResponseNative NativeCallback)
+void UPubnubSubscriptionSet::UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback)
 {
 	if(!IsInitialized)
 	{
@@ -313,7 +333,7 @@ void UPubnubSubscriptionSet::Unsubscribe(FOnPubnubSubscribeOperationResponseNati
 		return;
 	}
 
-	PubnubClient->UnsubscribeWithSubscriptionSet(this, NativeCallback);
+	PubnubClient->UnsubscribeWithSubscriptionSetAsync(this, NativeCallback);
 }
 
 void UPubnubSubscriptionSet::AddSubscription(UPubnubSubscription* Subscription)

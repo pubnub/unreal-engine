@@ -80,7 +80,7 @@ void ASample_SubscriptionSet::CreateSubscriptionSetFromNamesSample()
 	TeamCommSubscriptionSet->OnPubnubMessage.AddDynamic(this, &ASample_SubscriptionSet::OnMessage_SubscriptionSetFromNamesSample);
 
 	// Subscribe to start monitoring all team channels and groups simultaneously
-	TeamCommSubscriptionSet->Subscribe();
+	TeamCommSubscriptionSet->SubscribeAsync();
 }
 
 // ACTION REQUIRED: Replace ASample_SubscriptionSet with name of your Actor class
@@ -128,7 +128,7 @@ void ASample_SubscriptionSet::CreateSubscriptionSetFromEntitiesSample()
 	GameMonitoringSet->OnPubnubObjectEvent.AddDynamic(this, &ASample_SubscriptionSet::OnMessage_SubscriptionSetFromEntitiesSample);
 
 	// Subscribe to start comprehensive game monitoring
-	GameMonitoringSet->Subscribe();
+	GameMonitoringSet->SubscribeAsync();
 }
 
 // ACTION REQUIRED: Replace ASample_SubscriptionSet with name of your Actor class
@@ -216,7 +216,7 @@ void ASample_SubscriptionSet::SubscriptionSetMergeOperationsSample()
 	UE_LOG(LogTemp, Log, TEXT("Removed special events from monitoring (event ended)"));
 
 	// Subscribe to the final combined set
-	CoreGameSet->Subscribe();
+	CoreGameSet->SubscribeAsync();
 	UE_LOG(LogTemp, Log, TEXT("Now monitoring core game channels + VIP channels"));
 }
 

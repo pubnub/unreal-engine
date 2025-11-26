@@ -91,7 +91,7 @@ void ASample_UserMetadataEntity::SubscribeWithUserMetadataEntitySample()
 	UserMetadataSubscription->OnPubnubObjectEvent.AddDynamic(this, &ASample_UserMetadataEntity::OnObjectEvent_UserMetadataEntitySample);
 
 	// Subscribe to start receiving user metadata change events
-	UserMetadataSubscription->Subscribe();
+	UserMetadataSubscription->SubscribeAsync();
 }
 
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
