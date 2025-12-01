@@ -162,11 +162,18 @@
 	} while (false)
 
 /**
- * Verifies that a valid Pubnub user ID has been set before continuing.
+ * Verifies that the provided condition is met before continuing.
  *
- * If the user ID is not set, this macro will:
- *   - Log an error message to the output log
- *   - Immediately return from the calling function
+ * If the condition fails, this macro will:
+ *   - Log an error message with the provided custom message
+ *   - Set the error flag in the provided wrapper struct
+ *   - Return the wrapper struct with error information
+ *
+ * Usage: Use in _priv functions that return wrapper structs for custom validation logic.
+ *
+ * @param Condition The condition to check (must evaluate to bool)
+ * @param Message The error message to display if condition fails
+ * @param ReturnWrapper The wrapper struct type to return on failure
  */
 #define PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(Condition, Message, ReturnWrapper) \
 	do { \
@@ -182,11 +189,16 @@
 	} while (false)
 
 /**
- * Verifies that a valid Pubnub user ID has been set before continuing.
+ * Verifies that the provided condition is met before continuing.
  *
- * If the user ID is not set, this macro will:
- *   - Log an error message to the output log
- *   - Immediately return from the calling function
+ * If the condition fails, this macro will:
+ *   - Log an error message with the provided custom message
+ *   - Return an FPubnubOperationResult with error information
+ *
+ * Usage: Use in _priv functions that return FPubnubOperationResult for custom validation logic.
+ *
+ * @param Condition The condition to check (must evaluate to bool)
+ * @param Message The error message to display if condition fails
  */
 #define PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Condition, Message) \
 	do { \
@@ -202,11 +214,17 @@
 
 
 /**
- * Verifies that a valid Pubnub user ID has been set before continuing.
+ * Ensures that the PubnubClient is properly initialized before proceeding.
  *
- * If the user ID is not set, this macro will:
+ * If the client is not initialized or the internal PubnubCallsThread is invalid,
+ * this macro will:
  *   - Log an error message to the output log
- *   - Immediately return from the calling function
+ *   - Set the error flag in the provided wrapper struct
+ *   - Return the wrapper struct with error information
+ *
+ * Usage: Use in _priv functions that return wrapper structs (e.g., FPubnubPublishMessageResult).
+ *
+ * @param ReturnWrapper The wrapper struct type to return on failure
  */
 #define PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(ReturnWrapper) \
 	do { \
@@ -230,11 +248,14 @@
 	} while (false)
 
 /**
- * Verifies that a valid Pubnub user ID has been set before continuing.
+ * Ensures that the PubnubClient is properly initialized before proceeding.
  *
- * If the user ID is not set, this macro will:
+ * If the client is not initialized or the internal PubnubCallsThread is invalid,
+ * this macro will:
  *   - Log an error message to the output log
- *   - Immediately return from the calling function
+ *   - Return an FPubnubOperationResult with error information
+ *
+ * Usage: Use in _priv functions that return FPubnubOperationResult directly.
  */
 #define PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED() \
 	do { \
@@ -261,7 +282,12 @@
  *
  * If the user ID is not set, this macro will:
  *   - Log an error message to the output log
- *   - Immediately return from the calling function
+ *   - Set the error flag in the provided wrapper struct
+ *   - Return the wrapper struct with error information
+ *
+ * Usage: Use in _priv functions that return wrapper structs and require a user ID.
+ *
+ * @param ReturnWrapper The wrapper struct type to return on failure
  */
 #define PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(ReturnWrapper) \
 	do { \
@@ -281,7 +307,9 @@
  *
  * If the user ID is not set, this macro will:
  *   - Log an error message to the output log
- *   - Immediately return from the calling function
+ *   - Return an FPubnubOperationResult with error information
+ *
+ * Usage: Use in _priv functions that return FPubnubOperationResult and require a user ID.
  */
 #define PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET() \
 	do { \
@@ -296,15 +324,21 @@
 	} while (false)
 
 /**
- * Verifies that a valid Pubnub user ID has been set before continuing.
+ * Validates that the provided field (e.g., channel name, message, metadata) is not empty.
  *
- * If the user ID is not set, this macro will:
- *   - Log an error message to the output log
- *   - Immediately return from the calling function
+ * If the field is empty, this macro will:
+ *   - Log a warning message indicating the missing field
+ *   - Set the error flag in the provided wrapper struct
+ *   - Return the wrapper struct with error information including the field name
+ *
+ * Usage: Use in _priv functions that return wrapper structs to validate required string inputs.
+ *
+ * @param Field The field to validate (must implement IsEmpty())
+ * @param ReturnWrapper The wrapper struct type to return on failure
  */
 #define PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Field, ReturnWrapper) \
 	do { \
-		if (!IsUserIDSet) \
+		if (Field.IsEmpty()) \
 		{ \
 			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
 			FPubnubOperationResult Result; \
@@ -316,20 +350,72 @@
 	} while (false)
 
 /**
- * Verifies that a valid Pubnub user ID has been set before continuing.
+ * Validates that the provided field (e.g., channel name, message, metadata) is not empty.
  *
- * If the user ID is not set, this macro will:
- *   - Log an error message to the output log
- *   - Immediately return from the calling function
+ * If the field is empty, this macro will:
+ *   - Log a warning message indicating the missing field
+ *   - Return an FPubnubOperationResult with error information including the field name
+ *
+ * Usage: Use in _priv functions that return FPubnubOperationResult to validate required string inputs.
+ *
+ * @param Field The field to validate (must implement IsEmpty())
  */
 #define PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Field) \
 	do { \
-		if (!IsUserIDSet) \
+		if (Field.IsEmpty()) \
 		{ \
 			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = FString::Printf(TEXT("Missing required input: '%s' (field is empty). Operation aborted."), TEXT(#Field)); \
+			return Result; \
+		} \
+	} while (false)
+
+/**
+ * Attempts to acquire the PubnubOperationMutex lock to prevent concurrent operations.
+ *
+ * If the lock is already held (another operation is in progress), this macro will:
+ *   - Log a warning message about concurrent usage
+ *   - Set the error flag in the provided wrapper struct
+ *   - Return the wrapper struct with error information
+ *
+ * Usage: Use at the beginning of _priv functions that return wrapper structs to ensure
+ *        operations are not called concurrently (mixing Sync and Async is not supported).
+ *
+ * @param ReturnWrapper The wrapper struct type to return on failure
+ */
+#define PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(ReturnWrapper) \
+	do { \
+		if (!PubnubOperationMutex.TryLock()) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), EPubnubErrorType::PET_Warning); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = FString::Printf(TEXT("Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently.")); \
+			ReturnWrapper.Result = Result; \
+			return ReturnWrapper; \
+		} \
+	} while (false)
+
+/**
+ * Attempts to acquire the PubnubOperationMutex lock to prevent concurrent operations.
+ *
+ * If the lock is already held (another operation is in progress), this macro will:
+ *   - Log a warning message about concurrent usage
+ *   - Return an FPubnubOperationResult with error information
+ *
+ * Usage: Use at the beginning of _priv functions that return FPubnubOperationResult to ensure
+ *        operations are not called concurrently (mixing Sync and Async is not supported).
+ */
+#define PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED() \
+	do { \
+		if (!PubnubOperationMutex.TryLock()) \
+		{ \
+			PubnubError(FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), EPubnubErrorType::PET_Warning); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = FString::Printf(TEXT("Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently.")); \
 			return Result; \
 		} \
 	} while (false)

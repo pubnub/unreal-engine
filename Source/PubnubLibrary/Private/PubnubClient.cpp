@@ -1992,7 +1992,9 @@ void UPubnubClient::DeinitializeClient()
 	delete PubnubCallsThread;
 	PubnubCallsThread = nullptr;
 
+	SubscriptionDelegatesMutex.Lock();
 	SubscriptionResultDelegates.Empty();
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Notify that Deinitialization is finished
 	OnPubnubClientDeinitialized.Broadcast();
@@ -2035,6 +2037,7 @@ void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void
 	const pubnub_subscription_status_data_t* status_data = static_cast<const pubnub_subscription_status_data_t*>(StatusData);
 
 	//Call and remove the subscription result delegate with the smallest ID (FIFO order)
+	SubscriptionDelegatesMutex.Lock();
 	if(SubscriptionResultDelegates.Num() > 0)
 	{
 		//Find the smallest ID (oldest operation)
@@ -2059,6 +2062,7 @@ void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void
 			SubscriptionResultDelegates.Remove(SmallestId);
 		}
 	}
+	SubscriptionDelegatesMutex.Unlock();
 	
 	//Don't waste resources to translate data if there is no delegate bound to it
 	if(!OnPubnubSubscriptionStatusChanged.IsBound() && !OnPubnubSubscriptionStatusChangedNative.IsBound())
@@ -2153,6 +2157,8 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 		PubnubError("Subscribe key is empty, can't initialize Pubnub");
 		return;
 	}
+
+	PubnubOperationMutex.Lock();
 	
 	ctx_pub = pubnub_alloc();
 	ctx_ee = pubnub_alloc();
@@ -2188,6 +2194,8 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	{
 		SetSecretKey_priv();
 	}
+	
+	PubnubOperationMutex.Unlock();
 }
 
 void UPubnubClient::SetUserID_priv(FString UserID)
@@ -2230,6 +2238,8 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubPublishMessageResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubPublishMessageResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Message, FPubnubPublishMessageResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubPublishMessageResult());
 
 	FString FinalMessage = Message;
 
@@ -2256,6 +2266,8 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 	pubnub_publish_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
 
 	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
+	
+	PubnubOperationMutex.Unlock();
 	
 	FPubnubMessageData PublishedMessage;
 	FPubnubOperationResult PublishResult;
@@ -2290,7 +2302,9 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubSignalResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubSignalResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Message, FPubnubSignalResult());
-
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubSignalResult());
+	
 	FString FinalMessage = Message;
 	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
@@ -2307,6 +2321,8 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 	pubnub_signal_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
 	
 	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
+
+	PubnubOperationMutex.Unlock();
 
 	FPubnubMessageData SignalMessage;
 	FPubnubOperationResult PublishResult;
@@ -2371,15 +2387,19 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Add subscription listener and subscribe with subscription
 	if(!UPubnubInternalUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
 	{
 		PubnubError("[SubscribeToChannel]: Failed to subscribe to channel.");
 		//Remove the delegate if subscription failed immediately
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to subscribe to channel.");
 	}
@@ -2389,16 +2409,19 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 	ChannelSubscriptions.Add(Channel, SubscriptionData);
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 
@@ -2442,15 +2465,19 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Add subscription listener and subscribe with subscription
 	if(!UPubnubInternalUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
 	{
 		PubnubError("[SubscribeToGroup]: Failed to subscribe to channel group.");
 		//Remove the delegate if subscription failed immediately
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to subscribe to channel group.");
 	}
@@ -2460,16 +2487,19 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 	ChannelGroupSubscriptions.Add(ChannelGroup, SubscriptionData);
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 
@@ -2494,15 +2524,19 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromChannel_priv(FString Channe
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Remove subscription listener and unsubscribe with subscription
 	if(!UPubnubInternalUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
 	{
 		PubnubError("[UnsubscribeFromChannel]: Failed to unsubscribe.", EPubnubErrorType::PET_Warning);
 		//Remove the delegate if unsubscribe failed immediately
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to unsubscribe.");
 	}
@@ -2512,16 +2546,19 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromChannel_priv(FString Channe
 	ChannelSubscriptions.Remove(Channel);
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 
@@ -2546,15 +2583,19 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelG
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 	
 	//Remove subscription listener and unsubscribe with subscription
 	if(!UPubnubInternalUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
 	{
 		PubnubError("[UnsubscribeFromGroup]: Failed to unsubscribe.", EPubnubErrorType::PET_Warning);
 		//Remove the delegate if unsubscribe failed immediately
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to unsubscribe.");
 	}
@@ -2564,16 +2605,19 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelG
 	ChannelGroupSubscriptions.Remove(ChannelGroup);
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 
@@ -2600,8 +2644,10 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Unsubscribe from all
 	pubnub_unsubscribe_all(ctx_ee);
@@ -2609,16 +2655,19 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
 	CleanUpAllSubscriptions();
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 
@@ -2628,6 +2677,8 @@ FPubnubOperationResult UPubnubClient::AddChannelToGroup_priv(FString Channel, FS
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -2639,6 +2690,8 @@ FPubnubOperationResult UPubnubClient::AddChannelToGroup_priv(FString Channel, FS
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 
+	PubnubOperationMutex.Unlock();
+
 	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 }
 
@@ -2647,6 +2700,8 @@ FPubnubOperationResult UPubnubClient::RemoveChannelFromGroup_priv(FString Channe
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -2658,6 +2713,8 @@ FPubnubOperationResult UPubnubClient::RemoveChannelFromGroup_priv(FString Channe
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 
+	PubnubOperationMutex.Unlock();
+
 	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 }
 
@@ -2665,12 +2722,16 @@ FPubnubListChannelsFromGroupResult UPubnubClient::ListChannelsFromGroup_priv(FSt
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubListChannelsFromGroupResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ChannelGroup, FPubnubListChannelsFromGroupResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubListChannelsFromGroupResult());
 	
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 	
 	pubnub_list_channel_group(ctx_pub, ChannelGroupHolder.Get());
 	
 	FString JsonResponse = GetLastChannelResponse(ctx_pub);
+
+	PubnubOperationMutex.Unlock();
 
 	FPubnubOperationResult Result;
 	TArray<FString> Channels;
@@ -2683,6 +2744,8 @@ FPubnubOperationResult UPubnubClient::RemoveChannelGroup_priv(FString ChannelGro
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 
@@ -2693,6 +2756,8 @@ FPubnubOperationResult UPubnubClient::RemoveChannelGroup_priv(FString ChannelGro
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	
+	PubnubOperationMutex.Unlock();
+	
 	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 }
 
@@ -2702,6 +2767,8 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FStri
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubListUsersFromChannelResult());
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((ListUsersFromChannelSettings.Limit >= 0), TEXT("Limit can't be below 0."), FPubnubListUsersFromChannelResult());
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((ListUsersFromChannelSettings.Offset >= 0), TEXT("Offset can't be below 0."), FPubnubListUsersFromChannelResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubListUsersFromChannelResult());
 
 	//Set all options from ListUsersFromChannelSettings
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -2716,6 +2783,8 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FStri
 	pubnub_here_now_ex(ctx_pub, ChannelHolder.Get(), HereNowOptions);
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
+
+	PubnubOperationMutex.Unlock();
 	
 	FPubnubOperationResult Result;
 	
@@ -2737,11 +2806,15 @@ FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChanne
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubListUsersSubscribedChannelsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(UserID, FPubnubListUsersSubscribedChannelsResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubListUsersSubscribedChannelsResult());
 
 	FUTF8StringHolder UserIDHolder(UserID);
 	pubnub_where_now(ctx_pub, UserIDHolder.Get());
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	
+	PubnubOperationMutex.Unlock();
 	
 	FPubnubOperationResult Result;
 	TArray<FString> Channels;
@@ -2755,6 +2828,8 @@ FPubnubOperationResult UPubnubClient::SetState_priv(FString Channel, FString Sta
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(StateJson);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(StateJson, false))
 	{
@@ -2786,6 +2861,8 @@ FPubnubOperationResult UPubnubClient::SetState_priv(FString Channel, FString Sta
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 
+	PubnubOperationMutex.Unlock();
+
 	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 }
 
@@ -2793,6 +2870,8 @@ FPubnubGetStateResult UPubnubClient::GetState_priv(FString Channel, FString Chan
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetStateResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubGetStateResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetStateResult());
 
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -2807,12 +2886,16 @@ FPubnubGetStateResult UPubnubClient::GetState_priv(FString Channel, FString Chan
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 
+	PubnubOperationMutex.Unlock();
+
 	return FPubnubGetStateResult(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), JsonResponse);
 }
 
 FPubnubOperationResult UPubnubClient::Heartbeat_priv(FString Channel, FString ChannelGroup)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 	
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -2820,6 +2903,8 @@ FPubnubOperationResult UPubnubClient::Heartbeat_priv(FString Channel, FString Ch
 	pubnub_heartbeat(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get());
 
 	GetLastResponse(ctx_pub);
+	
+	PubnubOperationMutex.Unlock();
 	
 	FPubnubOperationResult Result;
 	Result.Error = false;
@@ -2830,6 +2915,8 @@ FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(FString PermissionObject)
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGrantTokenResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(PermissionObject, FPubnubGrantTokenResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGrantTokenResult());
 
 	FUTF8StringHolder PermissionObjectHolder(PermissionObject);
 	
@@ -2838,6 +2925,8 @@ FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(FString PermissionObject)
 	pubnub_await(ctx_pub);
 	
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	
+	PubnubOperationMutex.Unlock();
 	
 	//Access Manager has similar result structure to AppContext, so we use the same getter
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
@@ -2855,6 +2944,8 @@ FPubnubOperationResult UPubnubClient::RevokeToken_priv(FString Token)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Token);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 
 	FUTF8StringHolder TokenHolder(Token);
 	
@@ -2867,6 +2958,8 @@ FPubnubOperationResult UPubnubClient::RevokeToken_priv(FString Token)
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
+	
+	PubnubOperationMutex.Unlock();
 	
 	//Access Manager has similar result structure to AppContext, so we use the same getter
 	return UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
@@ -2910,6 +3003,8 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubFetchHistoryResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubFetchHistoryResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubFetchHistoryResult());
 	
 	//Set all options from HistorySettings
 
@@ -2946,6 +3041,8 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 		HistoryResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubOperationResult Result;
 	TArray<FPubnubHistoryMessageData> Messages;
@@ -2959,6 +3056,8 @@ FPubnubOperationResult UPubnubClient::DeleteMessages_priv(FString Channel, FPubn
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 
 	pubnub_delete_messages_options DeleteMessagesOptions = pubnub_delete_messages_defopts();
 	FUTF8StringHolder StartHolder(DeleteMessagesSettings.Start);
@@ -2978,6 +3077,8 @@ FPubnubOperationResult UPubnubClient::DeleteMessages_priv(FString Channel, FPubn
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 
+	PubnubOperationMutex.Unlock();
+
 	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 }
 
@@ -2985,6 +3086,8 @@ FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FS
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMessageCountsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubMessageCountsResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMessageCountsResult());
 
 	FUTF8StringHolder TimetokenHolder(Timetoken);
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -2998,12 +3101,16 @@ FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FS
 
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	
+	PubnubOperationMutex.Unlock();
+	
 	return FPubnubMessageCountsResult(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), MessageCountsNumber);
 }
 
 FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata_priv(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetAllUserMetadataResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetAllUserMetadataResult());
 
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3028,6 +3135,8 @@ FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata_priv(FString I
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubGetAllUserMetadataResult GetAllUserMetadataResult;
 	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(JsonResponse, GetAllUserMetadataResult.Result, GetAllUserMetadataResult.UsersData, GetAllUserMetadataResult.PageNext, GetAllUserMetadataResult.PagePrev);
@@ -3042,6 +3151,8 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(UserMetadataObj, FPubnubUserMetadataResult());
 	//Make sure that provided UserMetadataObj is a correct Json string
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(UserMetadataObj, false), TEXT("UserMetadataObj has to be a correct Json Object. Operation aborted."),  FPubnubUserMetadataResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubUserMetadataResult());
 	
 	FUTF8StringHolder UserHolder(User);
 	FUTF8StringHolder UserMetadataObjHolder(UserMetadataObj);
@@ -3056,6 +3167,8 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubUserMetadataResult SetUserMetadataResult;
 	UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, SetUserMetadataResult.Result, SetUserMetadataResult.UserData);
@@ -3067,6 +3180,8 @@ FPubnubUserMetadataResult UPubnubClient::GetUserMetadata_priv(FString User, FStr
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubUserMetadataResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubUserMetadataResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubUserMetadataResult());
 
 	FUTF8StringHolder UserHolder(User);
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3079,6 +3194,8 @@ FPubnubUserMetadataResult UPubnubClient::GetUserMetadata_priv(FString User, FStr
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubUserMetadataResult GetUserMetadataResult;
 	UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, GetUserMetadataResult.Result, GetUserMetadataResult.UserData);
@@ -3090,6 +3207,8 @@ FPubnubOperationResult UPubnubClient::RemoveUserMetadata_priv(FString User)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(User);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 
 	FUTF8StringHolder UserHolder(User);
 	
@@ -3102,12 +3221,16 @@ FPubnubOperationResult UPubnubClient::RemoveUserMetadata_priv(FString User)
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	return UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
 }
 
 FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata_priv(FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetAllChannelMetadataResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetAllChannelMetadataResult());
 	
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3133,6 +3256,8 @@ FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata_priv(FSt
 	}
 	
 	//Parse Json response into data
+	PubnubOperationMutex.Unlock();
+	
 	FPubnubGetAllChannelMetadataResult GetAllChannelMetadataResult;
 	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(JsonResponse, GetAllChannelMetadataResult.Result, GetAllChannelMetadataResult.ChannelsData, GetAllChannelMetadataResult.PageNext, GetAllChannelMetadataResult.PagePrev);
 	
@@ -3146,6 +3271,8 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ChannelMetadataObj, FPubnubChannelMetadataResult());
 	//Make sure that provided ChannelMetadataObj is a correct Json string
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(ChannelMetadataObj, false), TEXT("ChannelMetadataObj has to be a correct Json Object. Operation aborted."),  FPubnubChannelMetadataResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMetadataResult());
 	
 	FUTF8StringHolder ChannelMetadataObjHolder(ChannelMetadataObj);
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -3160,6 +3287,8 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubChannelMetadataResult SetChannelMetadataResult;
 	UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, SetChannelMetadataResult.Result, SetChannelMetadataResult.ChannelData);
@@ -3171,6 +3300,8 @@ FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata_priv(FString Chan
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMetadataResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMetadataResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMetadataResult());
 
 	FUTF8StringHolder ChannelHolder(Channel);
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3184,6 +3315,8 @@ FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata_priv(FString Chan
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubChannelMetadataResult GetChannelMetadataResult;
 	UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, GetChannelMetadataResult.Result, GetChannelMetadataResult.ChannelData);
@@ -3195,6 +3328,8 @@ FPubnubOperationResult UPubnubClient::RemoveChannelMetadata_priv(FString Channel
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 
 	FUTF8StringHolder ChannelHolder(Channel);
 
@@ -3207,6 +3342,8 @@ FPubnubOperationResult UPubnubClient::RemoveChannelMetadata_priv(FString Channel
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	return UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
 }
 
@@ -3214,6 +3351,8 @@ FPubnubMembershipsResult UPubnubClient::GetMemberships_priv(FString User, FStrin
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMembershipsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubMembershipsResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMembershipsResult());
 	
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
 	FUTF8StringHolder UserHolder(User);
@@ -3240,6 +3379,8 @@ FPubnubMembershipsResult UPubnubClient::GetMemberships_priv(FString User, FStrin
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubMembershipsResult GetMembershipsResult;
 	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, GetMembershipsResult.Result, GetMembershipsResult.MembershipsData, GetMembershipsResult.PageNext, GetMembershipsResult.PagePrev);
@@ -3254,6 +3395,8 @@ FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FStrin
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(SetObj, FPubnubMembershipsResult());
 	//Make sure that provided SetObj is a correct Json string
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false), TEXT("SetObj has to be a correct Json Object. Operation aborted."),  FPubnubMembershipsResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMembershipsResult());
 
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
 	FUTF8StringHolder UserHolder(User);
@@ -3281,6 +3424,8 @@ FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FStrin
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubMembershipsResult SetMembershipsResult;
 	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, SetMembershipsResult.Result, SetMembershipsResult.MembershipsData, SetMembershipsResult.PageNext, SetMembershipsResult.PagePrev);
@@ -3295,6 +3440,8 @@ FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FSt
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(RemoveObj, FPubnubMembershipsResult());
 	//Make sure that provided RemoveObj is a correct Json string
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false), TEXT("RemoveObj has to be a correct Json Object. Operation aborted."),  FPubnubMembershipsResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMembershipsResult());
 
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
 	FUTF8StringHolder UserHolder(User);
@@ -3322,6 +3469,8 @@ FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FSt
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubMembershipsResult RemoveMembershipsResult;
 	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, RemoveMembershipsResult.Result, RemoveMembershipsResult.MembershipsData, RemoveMembershipsResult.PageNext, RemoveMembershipsResult.PagePrev);
@@ -3334,6 +3483,8 @@ FPubnubChannelMembersResult UPubnubClient::GetChannelMembers_priv(FString Channe
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMembersResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMembersResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMembersResult());
 	
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3359,6 +3510,8 @@ FPubnubChannelMembersResult UPubnubClient::GetChannelMembers_priv(FString Channe
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubChannelMembersResult GetChannelMembersResult;
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, GetChannelMembersResult.Result, GetChannelMembersResult.MembersData, GetChannelMembersResult.PageNext, GetChannelMembersResult.PagePrev);
@@ -3373,6 +3526,8 @@ FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channe
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(SetObj, FPubnubChannelMembersResult());
 	//Make sure that provided SetObj is a correct Json string
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false), TEXT("SetObj has to be a correct Json Object. Operation aborted."),  FPubnubChannelMembersResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMembersResult());
 
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3399,6 +3554,8 @@ FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channe
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubChannelMembersResult SetChannelMembersResult;
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, SetChannelMembersResult.Result, SetChannelMembersResult.MembersData, SetChannelMembersResult.PageNext, SetChannelMembersResult.PagePrev);
@@ -3413,6 +3570,8 @@ FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers_priv(FString Cha
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(RemoveObj, FPubnubChannelMembersResult());
 	//Make sure that provided RemoveObj is a correct Json string
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false), TEXT("RemoveObj has to be a correct Json Object. Operation aborted."),  FPubnubChannelMembersResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMembersResult());
 
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3439,6 +3598,8 @@ FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers_priv(FString Cha
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubChannelMembersResult RemoveChannelMembersResult;
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, RemoveChannelMembersResult.Result, RemoveChannelMembersResult.MembersData, RemoveChannelMembersResult.PageNext, RemoveChannelMembersResult.PagePrev);
@@ -3451,6 +3612,8 @@ FPubnubAddMessageActionResult UPubnubClient::AddMessageAction_priv(FString Chann
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubAddMessageActionResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubAddMessageActionResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(MessageTimetoken, FPubnubAddMessageActionResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubAddMessageActionResult());
 	
 	//Add quotes to these fields as they are required by C-Core
 	FString FinalActionType = UPubnubUtilities::AddQuotesToString(ActionType);
@@ -3470,6 +3633,8 @@ FPubnubAddMessageActionResult UPubnubClient::AddMessageAction_priv(FString Chann
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 	
+	PubnubOperationMutex.Unlock();
+	
 	//Parse Json response into data
 	FPubnubAddMessageActionResult AddMessageActionResult;
 	UPubnubJsonUtilities::AddMessageActionJsonToData(JsonResponse, AddMessageActionResult.Result, AddMessageActionResult.MessageActionData);
@@ -3483,6 +3648,8 @@ FPubnubOperationResult UPubnubClient::RemoveMessageAction_priv(FString Channel, 
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(MessageTimetoken);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ActionTimetoken);
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
 	
 	//Add quotes to these fields as they are required by C-Core
 	FString FinalMessageTimetoken = UPubnubUtilities::AddQuotesToString(MessageTimetoken);
@@ -3516,6 +3683,8 @@ FPubnubOperationResult UPubnubClient::RemoveMessageAction_priv(FString Channel, 
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
 
+	PubnubOperationMutex.Unlock();
+
 	return UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
 }
 
@@ -3523,6 +3692,8 @@ FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions_priv(FString Cha
 {
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetMessageActionsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubGetMessageActionsResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetMessageActionsResult());
 	
 	FUTF8StringHolder ChannelHolder(Channel);
 	FUTF8StringHolder StartHolder(Start);
@@ -3535,6 +3706,8 @@ FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions_priv(FString Cha
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	}
+
+	PubnubOperationMutex.Unlock();
 
 	//Parse Json response into data
 	FPubnubGetMessageActionsResult GetMessageActionsResult;
@@ -3582,30 +3755,37 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscription(UPubnubSubscript
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Subscribe with subscription
 	if(!UPubnubInternalUtilities::EESubscribeWithSubscription(Subscription->CCoreSubscription, Cursor))
 	{
 		PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription.");
 		//Remove the delegate if subscription failed immediately
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to subscribe with Subscription.");
 	}
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 
@@ -3647,30 +3827,37 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscriptionSet(UPubnubSubscr
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Subscribe with subscription set
 	if(!UPubnubInternalUtilities::EESubscribeWithSubscriptionSet(SubscriptionSet->CCoreSubscriptionSet, Cursor))
 	{
 		PubnubError("[SubscribeWithSubscriptionSet]: Failed to subscribe with subscription set.");
 		//Remove the delegate if subscription failed immediately
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to subscribe with SubscriptionSet.");
 	}
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 
@@ -3712,30 +3899,37 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscription(UPubnubSubscri
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Unsubscribe with subscription
 	if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscription(&Subscription->CCoreSubscription))
 	{
 		PubnubError("[UnsubscribeWithSubscription]: Failed to unsubscribe with subscription.");
 		//Remove the delegate if unsubscribe failed immediately
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to unsubscribe with Subscription.");
 	}
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 
@@ -3777,30 +3971,37 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscriptionSet(UPubnubSubs
 	});
 	
 	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
+	SubscriptionDelegatesMutex.Lock();
 	int32 DelegateId = NextSubscriptionDelegateId++;
 	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
+	SubscriptionDelegatesMutex.Unlock();
 
 	//Unsubscribe with subscription set
 	if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscriptionSet(&SubscriptionSet->CCoreSubscriptionSet))
 	{
 		PubnubError("[UnsubscribeWithSubscriptionSet]: Failed to unsubscribe with subscription set.");
 		//Remove the delegate if unsubscribe failed immediately
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to unsubscribe with SubscriptionSet.");
 	}
 	
 	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(FTimespan::FromSeconds(30.0));
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
 	
 	if(!bCompleted)
 	{
-		//Timeout occurred - remove delegate by ID
+		//Timeout occurred - remove delegate by ID first, then return event to pool
+		SubscriptionDelegatesMutex.Lock();
 		SubscriptionResultDelegates.Remove(DelegateId);
+		SubscriptionDelegatesMutex.Unlock();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
 	}
 	
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
 

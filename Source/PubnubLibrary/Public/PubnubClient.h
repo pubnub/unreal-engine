@@ -2550,6 +2550,12 @@ private:
 	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
 	FPubnubFunctionThread* PubnubCallsThread = nullptr;
 
+	//Mutex to guard all Pubnub operations. As user can call multiple operations at the same time, they need to be guarded
+	FCriticalSection PubnubOperationMutex;
+	
+	//Mutex to guard subscription delegates map access from multiple threads
+	FCriticalSection SubscriptionDelegatesMutex;
+
 	//Pubnub context for the most of the pubnub operations
 	pubnub_t *ctx_pub = nullptr;
 	//Pubnub context for the event engine - subscribe operations
@@ -2615,6 +2621,8 @@ private:
 	TMap<int32, FOnPubnubSubscribeOperationResponseNative> SubscriptionResultDelegates;
 	//Counter for generating unique IDs for subscription delegates
 	int32 NextSubscriptionDelegateId = 0;
+	//Timeout duration for blocking subscription operations
+	FTimespan SubscriptionOperationTimeout = FTimespan::FromSeconds(30.0);
 
 	void OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData);
 
