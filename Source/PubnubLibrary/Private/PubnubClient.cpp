@@ -1049,17 +1049,17 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata(FString User, FPubnubUs
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
 	
-	return SetUserMetadata_priv(User, UPubnubJsonUtilities::GetJsonFromUserData(UserMetadata), UPubnubUtilities::GetMetadataIncludeToString(Include));
+	return SetUserMetadata_priv(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserMetadata), UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubClient::SetUserMetadataAsync(FString User, FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-	SetUserMetadataRawAsync(User, UPubnubJsonUtilities::GetJsonFromUserData(UserMetadata), OnSetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	SetUserMetadataRawAsync(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserMetadata), OnSetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubClient::SetUserMetadataAsync(FString User, FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
-	SetUserMetadataRawAsync(User, UPubnubJsonUtilities::GetJsonFromUserData(UserMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	SetUserMetadataRawAsync(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 FPubnubUserMetadataResult UPubnubClient::GetUserMetadataRaw(FString User, FString Include)
@@ -1241,17 +1241,17 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata(FString Channel, 
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
 	
-	return SetChannelMetadata_priv(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(ChannelMetadata), UPubnubUtilities::GetMetadataIncludeToString(Include));
+	return SetChannelMetadata_priv(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelMetadata), UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubClient::SetChannelMetadataAsync(FString Channel, FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-	SetChannelMetadataRawAsync(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(ChannelMetadata), OnSetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	SetChannelMetadataRawAsync(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelMetadata), OnSetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubClient::SetChannelMetadataAsync(FString Channel, FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
-	SetChannelMetadataRawAsync(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(ChannelMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	SetChannelMetadataRawAsync(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadataRaw(FString Channel, FString Include)

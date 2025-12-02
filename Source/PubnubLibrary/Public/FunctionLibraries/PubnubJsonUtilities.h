@@ -118,9 +118,10 @@ public:
 	static FPubnubUserData GetUserDataFromJson(FString ResponseJson);
 
 	/**
-	 * Converter from FPubnubUserData to Json string containing User data
+	 * Converter from FPubnubUserData to Json string containing User data.
+	 * UserID is provided separately, because during Set operations ID from the struct is ignored.
 	 */
-	static FString GetJsonFromUserData(const FPubnubUserData& UserData);
+	static FString GetJsonFromUserData(const FString UserID, const FPubnubUserData& UserData);
 
 	/**
 	 * Converter from Json string containing Channel data to FPubnubChannelData
@@ -129,9 +130,10 @@ public:
 	static FPubnubChannelData GetChannelDataFromJson(FString ResponseJson);
 
 	/**
-	 * Converter from FPubnubChannelData to Json string containing Channel data
+	 * Converter from FPubnubChannelData to Json string containing Channel data.
+	 * ChannelID is provided separately, because during Set operations ID from the struct is ignored.
 	 */
-	static FString GetJsonFromChannelData(const FPubnubChannelData& ChannelData);
+	static FString GetJsonFromChannelData(const FString ChannelID, const FPubnubChannelData& ChannelData);
 
 	/**
 	 * Converter from Json string containing Membership data to FPubnubMembershipData

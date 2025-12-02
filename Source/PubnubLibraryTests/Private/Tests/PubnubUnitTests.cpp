@@ -1785,7 +1785,7 @@ bool FGetJsonFromUserDataUnitTest::RunTest(const FString& Parameters)
 	UserData.Updated = "2024-10-28T09:03:32.977029Z";
 	UserData.ETag = "test-etag";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromUserData(UserData);
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromUserData(UserData.UserID, UserData);
 	
 	TestTrue("Should contain user ID", JsonString.Contains("\"id\":\"user123\""));
 	TestTrue("Should contain user name", JsonString.Contains("\"name\":\"Test User\""));
@@ -1801,7 +1801,7 @@ bool FGetJsonFromUserDataUnitTest::RunTest(const FString& Parameters)
 	FPubnubUserData MinimalUserData;
 	MinimalUserData.UserID = "user456";
 	
-	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromUserData(MinimalUserData);
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromUserData(MinimalUserData.UserID, MinimalUserData);
 	
 	TestTrue("Should contain user ID for minimal data", MinimalJsonString.Contains("\"id\":\"user456\""));
 	TestFalse("Should not contain empty name field", MinimalJsonString.Contains("\"name\":\"\""));
@@ -1853,7 +1853,7 @@ bool FGetJsonFromChannelDataUnitTest::RunTest(const FString& Parameters)
 	ChannelData.Updated = "2024-10-28T09:03:32.977029Z";
 	ChannelData.ETag = "test-etag";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelData(ChannelData);
+	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelData(ChannelData.ChannelID, ChannelData);
 	
 	TestTrue("Should contain channel ID", JsonString.Contains("\"id\":\"channel123\""));
 	TestTrue("Should contain channel name", JsonString.Contains("\"name\":\"Test Channel\""));
@@ -1867,7 +1867,7 @@ bool FGetJsonFromChannelDataUnitTest::RunTest(const FString& Parameters)
 	FPubnubChannelData MinimalChannelData;
 	MinimalChannelData.ChannelID = "channel456";
 	
-	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelData(MinimalChannelData);
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelData(MinimalChannelData.ChannelID, MinimalChannelData);
 	
 	TestTrue("Should contain channel ID for minimal data", MinimalJsonString.Contains("\"id\":\"channel456\""));
 	TestFalse("Should not contain empty name field", MinimalJsonString.Contains("\"name\":\"\""));

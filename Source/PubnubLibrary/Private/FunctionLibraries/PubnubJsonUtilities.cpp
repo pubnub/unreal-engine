@@ -588,13 +588,13 @@ FPubnubUserData UPubnubJsonUtilities::GetUserDataFromJson(FString ResponseJson)
 	return UserData;
 }
 
-FString UPubnubJsonUtilities::GetJsonFromUserData(const FPubnubUserData& UserData)
+FString UPubnubJsonUtilities::GetJsonFromUserData(const FString UserID, const FPubnubUserData& UserData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
 	if (!UserData.UserID.IsEmpty())
 	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("id"), UserData.UserID);
+		JsonObject->SetStringField(ANSI_TO_TCHAR("id"), UserID);
 	}
 	if (!UserData.UserName.IsEmpty())
 	{
@@ -669,13 +669,13 @@ FPubnubChannelData UPubnubJsonUtilities::GetChannelDataFromJson(FString Response
 	return ChannelData;
 }
 
-FString UPubnubJsonUtilities::GetJsonFromChannelData(const FPubnubChannelData& ChannelData)
+FString UPubnubJsonUtilities::GetJsonFromChannelData(const FString ChannelID, const FPubnubChannelData& ChannelData)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
 	if (!ChannelData.ChannelID.IsEmpty())
 	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelData.ChannelID);
+		JsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelID);
 	}
 	if (!ChannelData.ChannelName.IsEmpty())
 	{

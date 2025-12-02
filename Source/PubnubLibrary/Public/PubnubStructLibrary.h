@@ -404,7 +404,7 @@ struct FPubnubUserData
 {
 	GENERATED_BODY()
 
-	//Unique user identifier.
+	//Unique user identifier. Ignored during set operations.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
 	//Display name for the user.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserName = "";
@@ -435,7 +435,7 @@ struct FPubnubChannelData
 {
 	GENERATED_BODY()
 
-	//Unique channel identifier.
+	//Unique channel identifier. Ignored during set operations.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelID = "";
 	//Display name for the channel.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelName = "";
