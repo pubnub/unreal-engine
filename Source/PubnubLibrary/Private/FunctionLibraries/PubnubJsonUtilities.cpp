@@ -356,7 +356,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, FPubnubO
 	}
 }
 
-void UPubnubJsonUtilities::GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData>& UsersData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData>& UsersData, FPubnubPage& Page, int& TotalCount)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -369,8 +369,9 @@ void UPubnubJsonUtilities::GetAllUserMetadataJsonToData(FString ResponseJson, FP
 	
 	Result = GetOperationResultFromJson_AppContext(JsonObject);
 	
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), Page.Next);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), Page.Prev);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("totalCount"), TotalCount);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{
@@ -407,7 +408,7 @@ void UPubnubJsonUtilities::GetUserMetadataJsonToData(FString ResponseJson, FPubn
 	}
 }
 
-void UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData>& ChannelsData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData>& ChannelsData, FPubnubPage& Page, int& TotalCount)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -420,8 +421,9 @@ void UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(FString ResponseJson,
 	
 	Result = GetOperationResultFromJson_AppContext(JsonObject);
 	
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), Page.Next);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), Page.Prev);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("totalCount"), TotalCount);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{
@@ -514,7 +516,7 @@ void UPubnubJsonUtilities::AddMessageActionJsonToData(FString ResponseJson, FPub
 	}
 }
 
-void UPubnubJsonUtilities::GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMembershipData>& MembershipsData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage& Page, int& TotalCount)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -527,8 +529,9 @@ void UPubnubJsonUtilities::GetMembershipsJsonToData(FString ResponseJson, FPubnu
 
 	Result = GetOperationResultFromJson_AppContext(JsonObject);
 	
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), Page.Next);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), Page.Prev);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("totalCount"), TotalCount);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{
@@ -536,7 +539,7 @@ void UPubnubJsonUtilities::GetMembershipsJsonToData(FString ResponseJson, FPubnu
 	}
 }
 
-void UPubnubJsonUtilities::GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelMemberData>& MembershipsData, FString& PageNext, FString& PagePrev)
+void UPubnubJsonUtilities::GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelMemberData>& MembershipsData, FPubnubPage& Page, int& TotalCount)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
@@ -546,11 +549,12 @@ void UPubnubJsonUtilities::GetChannelMembersJsonToData(FString ResponseJson, FPu
 		Result.ErrorMessage = "Failed to parse Response";
 		return;
 	}
-	
+
 	Result = GetOperationResultFromJson_AppContext(JsonObject);
 	
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), PageNext);
-	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), PagePrev);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("next"), Page.Next);
+	JsonObject->TryGetStringField(ANSI_TO_TCHAR("prev"), Page.Prev);
+	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("totalCount"), TotalCount);
 
 	if(JsonObject->HasField(ANSI_TO_TCHAR("data")))
 	{

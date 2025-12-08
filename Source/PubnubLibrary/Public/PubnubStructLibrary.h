@@ -30,6 +30,20 @@ struct FPubnubConfig
 	
 };
 
+/**
+ * Pages used for pagination result. Use Next to get further chunk of data or Prev to get previous chunk.
+ */
+USTRUCT(BlueprintType)
+struct FPubnubPage
+{
+	GENERATED_BODY()
+	
+	/** Use to get next chunk of data in paginated result */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Next = "";
+	/** Use to get previous chunk of data in paginated result */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Prev = "";
+};
+
 USTRUCT(BlueprintType)
 struct FPubnubPublishSettings
 {
@@ -891,10 +905,10 @@ struct FPubnubGetAllUserMetadataResult
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
 	/** Array of user metadata objects retrieved */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserData> UsersData;
-	/** Pagination token for retrieving the next page of results */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PageNext;
-	/** Pagination token for retrieving the previous page of results */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PagePrev;
+	/** Pagination information for navigating through results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubPage Page;
+	/** Total count of users matching the query (if requested) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalCount = 0;
 };
 
 USTRUCT(BlueprintType)
@@ -906,10 +920,10 @@ struct FPubnubGetAllChannelMetadataResult
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
 	/** Array of channel metadata objects retrieved */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelData> ChannelsData;
-	/** Pagination token for retrieving the next page of results */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PageNext;
-	/** Pagination token for retrieving the previous page of results */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PagePrev;
+	/** Pagination information for navigating through results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubPage Page;
+	/** Total count of channels matching the query (if requested) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalCount = 0;
 };
 
 USTRUCT(BlueprintType)
@@ -932,10 +946,10 @@ struct FPubnubMembershipsResult
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
 	/** Array of membership data (returned by Get/Set/Remove operations) */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubMembershipData> MembershipsData;
-	/** Pagination token for retrieving the next page of results */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PageNext;
-	/** Pagination token for retrieving the previous page of results */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PagePrev;
+	/** Pagination information for navigating through results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubPage Page;
+	/** Total count of memberships matching the query (if requested) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalCount = 0;
 };
 
 USTRUCT(BlueprintType)
@@ -947,10 +961,10 @@ struct FPubnubChannelMembersResult
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
 	/** Array of member data (returned by Get/Set/Remove operations) */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelMemberData> MembersData;
-	/** Pagination token for retrieving the next page of results */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PageNext;
-	/** Pagination token for retrieving the previous page of results */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PagePrev;
+	/** Pagination information for navigating through results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubPage Page;
+	/** Total count of channel members matching the query (if requested) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalCount = 0;
 };
 
 USTRUCT(BlueprintType)

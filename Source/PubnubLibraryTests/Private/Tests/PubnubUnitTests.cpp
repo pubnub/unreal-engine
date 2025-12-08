@@ -746,20 +746,23 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 bool FGetAllUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with user data
-	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"user1\",\"name\":\"User One\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"custom\":{\"age\":30,\"location\":\"New York\"},\"status\":\"active\",\"type\":\"premium\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"},{\"id\":\"user2\",\"name\":\"User Two\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"custom\":{\"age\":25,\"location\":\"London\"},\"status\":\"inactive\",\"type\":\"basic\",\"updated\":\"2024-10-29T10:15:45.123456Z\",\"eTag\":\"BdzU2Prvrf41Eh\"}],\"next\":\"MQ\",\"prev\":\"LQ\"}";
+	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"user1\",\"name\":\"User One\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"custom\":{\"age\":30,\"location\":\"New York\"},\"status\":\"active\",\"type\":\"premium\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"},{\"id\":\"user2\",\"name\":\"User Two\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"custom\":{\"age\":25,\"location\":\"London\"},\"status\":\"inactive\",\"type\":\"basic\",\"updated\":\"2024-10-29T10:15:45.123456Z\",\"eTag\":\"BdzU2Prvrf41Eh\"}],\"next\":\"MQ\",\"prev\":\"LQ\",\"totalCount\":42}";
 	FPubnubOperationResult Result;
 	TArray<FPubnubUserData> UsersData;
-	FString PageNext;
-	FString PagePrev;
+	FPubnubPage Page;
+	int TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestJson, Result, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestJson, Result, UsersData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'MQ'", PageNext, "MQ");
-	TestEqual("Previous page token should be 'LQ'", PagePrev, "LQ");
+	TestEqual("Next page token should be 'MQ'", Page.Next, "MQ");
+	TestEqual("Previous page token should be 'LQ'", Page.Prev, "LQ");
+	
+	// Verify total count
+	TestEqual("Total count should be 42", TotalCount, 42);
 	
 	// Verify number of users
 	TestEqual("Should have 2 users", UsersData.Num(), 2);
@@ -789,41 +792,44 @@ bool FGetAllUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Second user eTag should be correct", UsersData[1].ETag, "BdzU2Prvrf41Eh");
 
 	// Test empty data array
-	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
+	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\",\"totalCount\":0}";
 	Result.Status = 0;
 	UsersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestEmptyJson, Result, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestEmptyJson, Result, UsersData, Page, TotalCount);
 	
 	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 users for empty data", UsersData.Num(), 0);
-	TestEqual("Next page token should be empty", PageNext, "");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be empty", Page.Next, "");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	TestEqual("Total count should be 0 for empty data", TotalCount, 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
 	Result.Status = 0;
 	UsersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestErrorJson, Result, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestErrorJson, Result, UsersData, Page, TotalCount);
 	
 	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 users for error", UsersData.Num(), 0);
+	TestEqual("Total count should be 0 when missing from error response", TotalCount, 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
 	Result.Status = 0;
 	UsersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestInvalidJson, Result, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestInvalidJson, Result, UsersData, Page, TotalCount);
 	
 	TestEqual("Should have 0 users for invalid JSON", UsersData.Num(), 0);
+	TestEqual("Total count should be 0 for invalid JSON", TotalCount, 0);
 
 	return true;
 }
@@ -887,20 +893,23 @@ bool FGetUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 bool FGetAllChannelMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with multiple channels
-	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":null,\"updated\":\"2024-10-25T13:00:19.963635Z\",\"eTag\":\"31b6f9075656544560fabdd8db0d444b\"},{\"id\":\"my_test_channel2\",\"name\":null,\"description\":null,\"updated\":\"2024-10-11T09:41:48.926019Z\",\"eTag\":\"483589bc29065816d2ff4b32b64abc6a\"},{\"id\":\"test_channel\",\"name\":null,\"description\":null,\"updated\":\"2024-09-30T07:48:48.503855Z\",\"eTag\":\"e5672a948a68853b2b3a47de043d2b56\"}],\"next\":\"Mw\"}";
+	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":null,\"updated\":\"2024-10-25T13:00:19.963635Z\",\"eTag\":\"31b6f9075656544560fabdd8db0d444b\"},{\"id\":\"my_test_channel2\",\"name\":null,\"description\":null,\"updated\":\"2024-10-11T09:41:48.926019Z\",\"eTag\":\"483589bc29065816d2ff4b32b64abc6a\"},{\"id\":\"test_channel\",\"name\":null,\"description\":null,\"updated\":\"2024-09-30T07:48:48.503855Z\",\"eTag\":\"e5672a948a68853b2b3a47de043d2b56\"}],\"next\":\"Mw\",\"totalCount\":15}";
 	FPubnubOperationResult Result;
 	TArray<FPubnubChannelData> ChannelsData;
-	FString PageNext;
-	FString PagePrev;
+	FPubnubPage Page;
+	int TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestJson, Result, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestJson, Result, ChannelsData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'Mw'", PageNext, "Mw");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be 'Mw'", Page.Next, "Mw");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	
+	// Verify total count
+	TestEqual("Total count should be 15", TotalCount, 15);
 	
 	// Verify number of channels
 	TestEqual("Should have 3 channels", ChannelsData.Num(), 3);
@@ -927,41 +936,44 @@ bool FGetAllChannelMetadataJsonToDataUnitTest::RunTest(const FString& Parameters
 	TestEqual("Third channel eTag should be correct", ChannelsData[2].ETag, "e5672a948a68853b2b3a47de043d2b56");
 
 	// Test empty data array
-	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
+	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\",\"totalCount\":0}";
 	Result.Status = 0;
 	ChannelsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestEmptyJson, Result, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestEmptyJson, Result, ChannelsData, Page, TotalCount);
 	
 	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 channels for empty data", ChannelsData.Num(), 0);
-	TestEqual("Next page token should be empty", PageNext, "");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be empty", Page.Next, "");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	TestEqual("Total count should be 0 for empty data", TotalCount, 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
 	Result.Status = 0;
 	ChannelsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestErrorJson, Result, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestErrorJson, Result, ChannelsData, Page, TotalCount);
 	
 	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 channels for error", ChannelsData.Num(), 0);
+	TestEqual("Total count should be 0 when missing from error response", TotalCount, 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
 	Result.Status = 0;
 	ChannelsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestInvalidJson, Result, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestInvalidJson, Result, ChannelsData, Page, TotalCount);
 	
 	TestEqual("Should have 0 channels for invalid JSON", ChannelsData.Num(), 0);
+	TestEqual("Total count should be 0 for invalid JSON", TotalCount, 0);
 
 	return true;
 }
@@ -1246,20 +1258,23 @@ bool FAddMessageActionJsonToDataUnitTest::RunTest(const FString& Parameters)
 bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with minimal channel data
-	FString TestJson1 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"custom\":{\"channel_custom\":\"value\"},\"status\":\"active\",\"type\":\"public\"},\"custom\":{\"hot\":\"warm\"},\"status\":\"active\",\"type\":\"member\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"}],\"next\":\"MQ\"}";
+	FString TestJson1 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"custom\":{\"channel_custom\":\"value\"},\"status\":\"active\",\"type\":\"public\"},\"custom\":{\"hot\":\"warm\"},\"status\":\"active\",\"type\":\"member\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"}],\"next\":\"MQ\",\"totalCount\":10}";
 	FPubnubOperationResult Result;
 	TArray<FPubnubMembershipData> MembershipsData;
-	FString PageNext;
-	FString PagePrev;
+	FPubnubPage Page;
+	int TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson1, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson1, Result, MembershipsData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'MQ'", PageNext, "MQ");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be 'MQ'", Page.Next, "MQ");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	
+	// Verify total count
+	TestEqual("Total count should be 10", TotalCount, 10);
 	
 	// Verify number of memberships
 	TestEqual("Should have 1 membership", MembershipsData.Num(), 1);
@@ -1278,20 +1293,23 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("First membership eTag should be correct", MembershipsData[0].ETag, "AdyU1Obvqe30Dg");
 
 	// Test successful response with full channel data and multiple memberships
-	FString TestJson2 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":\"Test Channel\",\"custom\":{\"channel_custom\":\"value1\"},\"status\":\"active\",\"type\":\"public\",\"updated\":\"2024-10-28T09:34:20.604564Z\",\"eTag\":\"cf9ba9ae8401fd369718d4f178bda4b7\"},\"type\":\"member\",\"status\":\"active\",\"custom\":{\"hotMembership\":\"warm\"},\"updated\":\"2024-10-28T09:35:26.660721Z\",\"eTag\":\"AdycwpOS7bWOKg\"},{\"channel\":{\"id\":\"my_channel2\",\"custom\":{\"channel_custom\":\"value2\"},\"status\":\"inactive\",\"type\":\"private\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"hot2Membership\":\"cold\"},\"updated\":\"2024-11-04T09:03:07.341822Z\",\"eTag\":\"AYfIn/PQoIPxlwE\"}],\"next\":\"Mg\"}";
+	FString TestJson2 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":\"Test Channel\",\"custom\":{\"channel_custom\":\"value1\"},\"status\":\"active\",\"type\":\"public\",\"updated\":\"2024-10-28T09:34:20.604564Z\",\"eTag\":\"cf9ba9ae8401fd369718d4f178bda4b7\"},\"type\":\"member\",\"status\":\"active\",\"custom\":{\"hotMembership\":\"warm\"},\"updated\":\"2024-10-28T09:35:26.660721Z\",\"eTag\":\"AdycwpOS7bWOKg\"},{\"channel\":{\"id\":\"my_channel2\",\"custom\":{\"channel_custom\":\"value2\"},\"status\":\"inactive\",\"type\":\"private\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"hot2Membership\":\"cold\"},\"updated\":\"2024-11-04T09:03:07.341822Z\",\"eTag\":\"AYfIn/PQoIPxlwE\"}],\"next\":\"Mg\",\"totalCount\":25}";
 	Result.Status = 0;
 	MembershipsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson2, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson2, Result, MembershipsData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200 for second test", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'Mg'", PageNext, "Mg");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be 'Mg'", Page.Next, "Mg");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	
+	// Verify total count
+	TestEqual("Total count should be 25", TotalCount, 25);
 	
 	// Verify number of memberships
 	TestEqual("Should have 2 memberships", MembershipsData.Num(), 2);
@@ -1323,41 +1341,44 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Second membership eTag should be correct", MembershipsData[1].ETag, "AYfIn/PQoIPxlwE");
 
 	// Test empty data array
-	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
+	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\",\"totalCount\":0}";
 	Result.Status = 0;
 	MembershipsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestEmptyJson, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestEmptyJson, Result, MembershipsData, Page, TotalCount);
 	
 	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 memberships for empty data", MembershipsData.Num(), 0);
-	TestEqual("Next page token should be empty", PageNext, "");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be empty", Page.Next, "");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	TestEqual("Total count should be 0 for empty data", TotalCount, 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
 	Result.Status = 0;
 	MembershipsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestErrorJson, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestErrorJson, Result, MembershipsData, Page, TotalCount);
 	
 	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 memberships for error", MembershipsData.Num(), 0);
+	TestEqual("Total count should be 0 when missing from error response", TotalCount, 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
 	Result.Status = 0;
 	MembershipsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestInvalidJson, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestInvalidJson, Result, MembershipsData, Page, TotalCount);
 	
 	TestEqual("Should have 0 memberships for invalid JSON", MembershipsData.Num(), 0);
+	TestEqual("Total count should be 0 for invalid JSON", TotalCount, 0);
 
 	return true;
 }
@@ -1365,20 +1386,23 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 bool FGetChannelMembersJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with channel members
-	FString TestJson = "{\"status\":200,\"data\":[{\"uuid\":{\"id\":\"cpp_chat_user\",\"name\":\"Chat User\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"type\":\"premium\",\"status\":\"active\",\"custom\":{\"age\":25,\"location\":\"New York\"},\"updated\":\"2025-03-14T13:23:50.608735Z\",\"eTag\":\"669571c9e7371edba566c9371bfd4aec\"},\"type\":\"user\",\"status\":\"active\",\"custom\":{\"lastReadMessageTimetoken\":\"17453138062518466\",\"platform\":\"desktop\"},\"updated\":\"2025-04-22T09:23:26.406843Z\",\"eTag\":\"AYWhgd7euNT0xgE\"},{\"uuid\":{\"id\":\"CppChatUser\",\"name\":\"Chat User 2\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"type\":\"standard\",\"status\":\"inactive\",\"custom\":{\"age\":30,\"location\":\"London\"},\"updated\":\"2025-03-19T09:08:14.60887Z\",\"eTag\":\"3bbbd36590c68b080b0f258843144afe\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"lastReadMessageTimetoken\":\"17447186377255230\",\"platform\":\"mobile\"},\"updated\":\"2025-04-15T12:04:00.151122Z\",\"eTag\":\"AfGZmbv/i4Hi2gE\"}],\"next\":\"Mw\"}";
+	FString TestJson = "{\"status\":200,\"data\":[{\"uuid\":{\"id\":\"cpp_chat_user\",\"name\":\"Chat User\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"type\":\"premium\",\"status\":\"active\",\"custom\":{\"age\":25,\"location\":\"New York\"},\"updated\":\"2025-03-14T13:23:50.608735Z\",\"eTag\":\"669571c9e7371edba566c9371bfd4aec\"},\"type\":\"user\",\"status\":\"active\",\"custom\":{\"lastReadMessageTimetoken\":\"17453138062518466\",\"platform\":\"desktop\"},\"updated\":\"2025-04-22T09:23:26.406843Z\",\"eTag\":\"AYWhgd7euNT0xgE\"},{\"uuid\":{\"id\":\"CppChatUser\",\"name\":\"Chat User 2\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"type\":\"standard\",\"status\":\"inactive\",\"custom\":{\"age\":30,\"location\":\"London\"},\"updated\":\"2025-03-19T09:08:14.60887Z\",\"eTag\":\"3bbbd36590c68b080b0f258843144afe\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"lastReadMessageTimetoken\":\"17447186377255230\",\"platform\":\"mobile\"},\"updated\":\"2025-04-15T12:04:00.151122Z\",\"eTag\":\"AfGZmbv/i4Hi2gE\"}],\"next\":\"Mw\",\"totalCount\":8}";
 	FPubnubOperationResult Result;
 	TArray<FPubnubChannelMemberData> MembersData;
-	FString PageNext;
-	FString PagePrev;
+	FPubnubPage Page;
+	int TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestJson, Result, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestJson, Result, MembersData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'Mw'", PageNext, "Mw");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be 'Mw'", Page.Next, "Mw");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	
+	// Verify total count
+	TestEqual("Total count should be 8", TotalCount, 8);
 	
 	// Verify number of members
 	TestEqual("Should have 2 members", MembersData.Num(), 2);
@@ -1418,41 +1442,44 @@ bool FGetChannelMembersJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Second member eTag should be correct", MembersData[1].ETag, "AfGZmbv/i4Hi2gE");
 
 	// Test empty data array
-	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
+	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\",\"totalCount\":0}";
 	Result.Status = 0;
 	MembersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestEmptyJson, Result, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestEmptyJson, Result, MembersData, Page, TotalCount);
 	
 	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 members for empty data", MembersData.Num(), 0);
-	TestEqual("Next page token should be empty", PageNext, "");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be empty", Page.Next, "");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	TestEqual("Total count should be 0 for empty data", TotalCount, 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
 	Result.Status = 0;
 	MembersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestErrorJson, Result, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestErrorJson, Result, MembersData, Page, TotalCount);
 	
 	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 members for error", MembersData.Num(), 0);
+	TestEqual("Total count should be 0 when missing from error response", TotalCount, 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
 	Result.Status = 0;
 	MembersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestInvalidJson, Result, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestInvalidJson, Result, MembersData, Page, TotalCount);
 	
 	TestEqual("Should have 0 members for invalid JSON", MembersData.Num(), 0);
+	TestEqual("Total count should be 0 for invalid JSON", TotalCount, 0);
 
 	return true;
 }

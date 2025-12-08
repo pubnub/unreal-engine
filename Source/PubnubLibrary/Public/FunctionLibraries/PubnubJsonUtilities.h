@@ -74,7 +74,7 @@ public:
 	/**
 	 * Converter from GetAllUserMetadata_Json response to actual types
 	 */
-	static void GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData> &UsersData, FString &PageNext, FString &PagePrev);
+	static void GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData> &UsersData, FPubnubPage &Page, int &TotalCount);
 
 	/**
 	 * Converter from GetUserMetadata_Json response to actual types
@@ -84,7 +84,7 @@ public:
 	/**
 	 * Converter from GetAllChannelMetadata_Json response to actual types
 	 */
-	static void GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData> &ChannelsData, FString &PageNext, FString &PagePrev);
+	static void GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData> &ChannelsData, FPubnubPage &Page, int &TotalCount);
 
 	/**
 	 * Converter from GetChannelMetadata_Json response to actual types
@@ -104,12 +104,12 @@ public:
 	/**
 	 * Converter from GetMemberships_Json response to actual types
 	 */
-	static void GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMembershipData> &MembershipsData, FString &PageNext, FString &PagePrev);
+	static void GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMembershipData> &MembershipsData, FPubnubPage &Page, int &TotalCount);
 
 	/**
 	 * Converter from GetChannelMembers_Json response to actual types
 	 */
-	static void GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelMemberData> &MembershipsData, FString &PageNext, FString &PagePrev);
+	static void GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelMemberData> &MembershipsData, FPubnubPage &Page, int &TotalCount);
 
 	/**
 	 * Converter from Json string containing User data to FPubnubUserData
