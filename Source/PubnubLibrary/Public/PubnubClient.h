@@ -2566,7 +2566,6 @@ private:
 	//Origin has to be kept alive for the lifetime of the sdk, so this is the container for it
 	char* OriginBuffer = nullptr;
 	size_t OriginLength = 0;
-	FString OriginString;
 
 #pragma endregion 
 

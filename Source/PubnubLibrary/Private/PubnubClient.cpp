@@ -844,7 +844,7 @@ int32 UPubnubClient::SetOrigin(FString Origin)
 
 FString UPubnubClient::GetOrigin() const
 {
-	return OriginString;
+	return pubnub_get_origin(ctx_pub);
 }
 
 FPubnubFetchHistoryResult UPubnubClient::FetchHistory(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)
@@ -2004,7 +2004,6 @@ void UPubnubClient::DeinitializeClient()
 	delete[] OriginBuffer;
 	OriginBuffer = nullptr;
 	OriginLength = 0;
-	OriginString.Empty();
 	delete PubnubCallsThread;
 	PubnubCallsThread = nullptr;
 
@@ -3018,9 +3017,6 @@ void UPubnubClient::SetAuthToken_priv(FString Token)
 int32 UPubnubClient::SetOrigin_priv(FString Origin)
 {
 	PUBNUB_RETURN_IF_USER_ID_NOT_SET(-1);
-
-	//Store the origin string for GetOrigin to return
-	OriginString = Origin;
 
 	int32 Result = 0;
 
