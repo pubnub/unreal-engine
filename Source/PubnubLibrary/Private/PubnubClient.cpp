@@ -835,6 +835,18 @@ void UPubnubClient::SetAuthToken(FString Token)
 	SetAuthToken_priv(Token);
 }
 
+int32 UPubnubClient::SetOrigin(FString Origin)
+{
+	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED(-1);
+
+	return SetOrigin_priv(Origin);
+}
+
+FString UPubnubClient::GetOrigin() const
+{
+	return OriginString;
+}
+
 FPubnubFetchHistoryResult UPubnubClient::FetchHistory(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubFetchHistoryResult());
@@ -1989,6 +2001,10 @@ void UPubnubClient::DeinitializeClient()
 	delete[] AuthTokenBuffer;
 	AuthTokenBuffer = nullptr;
 	AuthTokenLength = 0;
+	delete[] OriginBuffer;
+	OriginBuffer = nullptr;
+	OriginLength = 0;
+	OriginString.Empty();
 	delete PubnubCallsThread;
 	PubnubCallsThread = nullptr;
 
@@ -2997,6 +3013,39 @@ void UPubnubClient::SetAuthToken_priv(FString Token)
 	
 	//This is just a setter, so no need to call it on a separate thread
 	pubnub_set_auth_token(ctx_pub, AuthTokenBuffer);
+}
+
+int32 UPubnubClient::SetOrigin_priv(FString Origin)
+{
+	PUBNUB_RETURN_IF_USER_ID_NOT_SET(-1);
+
+	//Store the origin string for GetOrigin to return
+	OriginString = Origin;
+
+	int32 Result = 0;
+
+	//If origin is empty, pass null to pubnub_origin_set
+	if (Origin.IsEmpty())
+	{
+		delete[] OriginBuffer;
+		OriginBuffer = nullptr;
+		OriginLength = 0;
+		
+		Result = pubnub_origin_set(ctx_pub, nullptr);
+		return Result;
+	}
+
+	//Origin has to be kept alive for the lifetime of the sdk, so we copy it into OriginBuffer
+	FTCHARToUTF8 Converter(*Origin);
+	OriginLength = Converter.Length();
+	delete[] OriginBuffer;
+	OriginBuffer = new char[OriginLength + 1];
+	FMemory::Memcpy(OriginBuffer, Converter.Get(), OriginLength);
+	OriginBuffer[OriginLength] = '\0';
+	
+	//This is just a setter, so no need to call it on a separate thread
+	Result = pubnub_origin_set(ctx_pub, OriginBuffer);
+	return Result;
 }
 
 FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)

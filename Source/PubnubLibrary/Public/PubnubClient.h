@@ -872,6 +872,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
 	void SetAuthToken(FString Token);
 
+	/**
+	 * Sets the origin for the PubNub client.
+	 * 
+	 * @param Origin The origin string to set. If empty, null will be passed to the underlying SDK.
+	 * @return Returns the result from the underlying SDK:
+	 *         - 0: Origin set successfully
+	 *         - 1: Origin set, will be applied with new connection
+	 *         - -1: Setting origin error
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Config")
+	int32 SetOrigin(FString Origin);
+
+	/**
+	 * Gets the currently set origin for the PubNub client.
+	 * 
+	 * @return The origin string that was previously set, or empty string if none was set.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|Config")
+	FString GetOrigin() const;
+
 
 
 	/* MESSAGE PERSISTENCE API */
@@ -2543,6 +2563,11 @@ private:
 	char* AuthTokenBuffer = nullptr;
 	size_t AuthTokenLength = 0;
 
+	//Origin has to be kept alive for the lifetime of the sdk, so this is the container for it
+	char* OriginBuffer = nullptr;
+	size_t OriginLength = 0;
+	FString OriginString;
+
 #pragma endregion 
 
 #pragma region PUBNUB CONFIG
@@ -2615,6 +2640,7 @@ private:
 	FPubnubOperationResult RevokeToken_priv(FString Token);
 	FString ParseToken_priv(FString Token);
 	void SetAuthToken_priv(FString Token);
+	int32 SetOrigin_priv(FString Origin);
 	FPubnubFetchHistoryResult FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	FPubnubOperationResult DeleteMessages_priv(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 	FPubnubMessageCountsResult MessageCounts_priv(FString Channel, FString Timetoken);
