@@ -34,7 +34,7 @@ public:
 	 * @return Result structure containing operation status and updated channel metadata.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	FPubnubChannelMetadataResult SetChannelMetadata(FPubnubChannelData ChannelMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	FPubnubChannelMetadataResult SetChannelMetadata(FPubnubChannelInputData ChannelMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
@@ -46,7 +46,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
-	void SetChannelMetadataAsync(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetChannelMetadataAsync(FPubnubChannelInputData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for a specified Channel in the PubNub App Context.
@@ -58,7 +58,7 @@ public:
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void SetChannelMetadataAsync(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetChannelMetadataAsync(FPubnubChannelInputData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 	
 	/**
 	 * Retrieves metadata for this Channel from the PubNub App Context (blocking).

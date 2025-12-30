@@ -794,12 +794,14 @@ void UPubnubSubsystem::SetUserMetadataRaw(FString User, FString UserMetadataObj,
 
 void UPubnubSubsystem::SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-	SetUserMetadataRaw(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserMetadata), OnSetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	FPubnubUserInputData UserInputData = FPubnubUserInputData({UserMetadata.UserName, UserMetadata.ExternalID, UserMetadata.ProfileUrl, UserMetadata.Email, UserMetadata.Custom, UserMetadata.Status, UserMetadata.Type});
+	SetUserMetadataRaw(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserInputData), OnSetUserMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubSubsystem::SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
-	SetUserMetadataRaw(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	FPubnubUserInputData UserInputData = FPubnubUserInputData({UserMetadata.UserName, UserMetadata.ExternalID, UserMetadata.ProfileUrl, UserMetadata.Email, UserMetadata.Custom, UserMetadata.Status, UserMetadata.Type});
+	SetUserMetadataRaw(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserInputData), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubSubsystem::GetUserMetadataRaw(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include)
@@ -928,12 +930,14 @@ void UPubnubSubsystem::SetChannelMetadataRaw(FString Channel, FString ChannelMet
 
 void UPubnubSubsystem::SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
 {
-	SetChannelMetadataRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelMetadata), OnSetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData({ChannelMetadata.ChannelName, ChannelMetadata.Description, ChannelMetadata.Custom, ChannelMetadata.Status, ChannelMetadata.Type});
+	SetChannelMetadataRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelInputData), OnSetChannelMetadataResponse, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubSubsystem::SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
-	SetChannelMetadataRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelMetadata), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
+	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData({ChannelMetadata.ChannelName, ChannelMetadata.Description, ChannelMetadata.Custom, ChannelMetadata.Status, ChannelMetadata.Type});
+	SetChannelMetadataRaw(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelInputData), NativeCallback, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
 
 void UPubnubSubsystem::GetChannelMetadataRaw(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include)

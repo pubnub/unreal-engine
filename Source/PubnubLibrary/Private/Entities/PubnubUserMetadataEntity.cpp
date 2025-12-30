@@ -9,7 +9,7 @@ UPubnubUserMetadataEntity::UPubnubUserMetadataEntity()
 	EntityType = EPubnubEntityType::PEnT_UserMetadata;
 }
 
-FPubnubUserMetadataResult UPubnubUserMetadataEntity::SetUserMetadata(FPubnubUserData UserMetadata, FPubnubGetMetadataInclude Include)
+FPubnubUserMetadataResult UPubnubUserMetadataEntity::SetUserMetadata(FPubnubUserInputData UserMetadata, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{
@@ -24,7 +24,7 @@ FPubnubUserMetadataResult UPubnubUserMetadataEntity::SetUserMetadata(FPubnubUser
 	return PubnubClient->SetUserMetadata(EntityID, UserMetadata, Include);
 }
 
-void UPubnubUserMetadataEntity::SetUserMetadataAsync(FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
+void UPubnubUserMetadataEntity::SetUserMetadataAsync(FPubnubUserInputData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{
@@ -34,7 +34,7 @@ void UPubnubUserMetadataEntity::SetUserMetadataAsync(FPubnubUserData UserMetadat
 	PubnubClient->SetUserMetadataAsync(EntityID, UserMetadata, OnSetUserMetadataResponse, Include);
 }
 
-void UPubnubUserMetadataEntity::SetUserMetadataAsync(FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+void UPubnubUserMetadataEntity::SetUserMetadataAsync(FPubnubUserInputData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{

@@ -122,8 +122,7 @@ void ASample_ChannelMetadataEntity::ChannelMetadataEntitySetMetadataSample()
 	OnSetMetadataResult.BindDynamic(this, &ASample_ChannelMetadataEntity::OnSetChannelMetadataResult_Sample);
 
 	// Set tournament lobby information and rules
-	FPubnubChannelData TournamentLobbyInfo;
-	TournamentLobbyInfo.ChannelID = TournamentLobby;
+	FPubnubChannelInputData TournamentLobbyInfo;
 	TournamentLobbyInfo.ChannelName = "Championship Finals Lobby";
 	TournamentLobbyInfo.Description = "Final tournament matches - best of 5 rounds";
 	TournamentLobbyInfo.Custom = "{\"max_players\":10,\"tournament_tier\":\"championship\",\"prize_pool\":\"50000\"}";
@@ -161,7 +160,7 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataSample()
 	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
 
 	// Create channel metadata object
-	FPubnubChannelData ChannelMetadata;
+	FPubnubChannelInputData ChannelMetadata;
 	ChannelMetadata.ChannelName = "General Chat";
 	ChannelMetadata.Description = "Channel for all players to chat.";
 	ChannelMetadata.Custom = "{\"topic\": \"welcomes\"}";
@@ -192,7 +191,7 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataWithResultSample()
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_ChannelMetadataEntity::OnSetChannelMetadataResponse);
 
 	// Create channel metadata object
-	FPubnubChannelData ChannelMetadata;
+	FPubnubChannelInputData ChannelMetadata;
 	ChannelMetadata.ChannelName = "Trade Chat";
 	ChannelMetadata.Status = "active";
 	ChannelMetadata.Custom = "{\"rules\": \"wts_wtt_only\"}";
@@ -246,7 +245,7 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataWithLambdaSample()
 	});
 	
 	// Create channel metadata object
-	FPubnubChannelData ChannelMetadata;
+	FPubnubChannelInputData ChannelMetadata;
 	ChannelMetadata.ChannelName = "Guild Hall";
 	ChannelMetadata.Status = "archived";
 	ChannelMetadata.Custom = "{\"motd\": \"Raid tonight at 8!\"}";

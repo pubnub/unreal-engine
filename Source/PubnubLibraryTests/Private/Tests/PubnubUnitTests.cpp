@@ -1799,39 +1799,160 @@ bool FGetUserDataFromJsonUnitTest::RunTest(const FString& Parameters)
 
 bool FGetJsonFromUserDataUnitTest::RunTest(const FString& Parameters)
 {
-	// Test with complete user data
-	FPubnubUserData UserData;
-	UserData.UserID = "user123";
-	UserData.UserName = "Test User";
-	UserData.ExternalID = "ext456";
-	UserData.ProfileUrl = "https://example.com/profile";
-	UserData.Email = "test@example.com";
-	UserData.Custom = "{\"age\":25,\"location\":\"New York\"}";
-	UserData.Status = "active";
-	UserData.Type = "premium";
-	UserData.Updated = "2024-10-28T09:03:32.977029Z";
-	UserData.ETag = "test-etag";
+	// Test 1: Complete user input data with all fields set
+	FPubnubUserInputData CompleteUserData;
+	CompleteUserData.UserName = "Test User";
+	CompleteUserData.ExternalID = "ext456";
+	CompleteUserData.ProfileUrl = "https://example.com/profile";
+	CompleteUserData.Email = "test@example.com";
+	CompleteUserData.Custom = "{\"age\":25,\"location\":\"New York\"}";
+	CompleteUserData.Status = "active";
+	CompleteUserData.Type = "premium";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromUserData(UserData.UserID, UserData);
+	FString CompleteJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user123", CompleteUserData);
 	
-	TestTrue("Should contain user ID", JsonString.Contains("\"id\":\"user123\""));
-	TestTrue("Should contain user name", JsonString.Contains("\"name\":\"Test User\""));
-	TestTrue("Should contain external ID", JsonString.Contains("\"externalId\":\"ext456\""));
-	TestTrue("Should contain profile URL", JsonString.Contains("\"profileUrl\":\"https://example.com/profile\""));
-	TestTrue("Should contain email", JsonString.Contains("\"email\":\"test@example.com\""));
-	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
-	TestTrue("Should contain type", JsonString.Contains("\"type\":\"premium\""));
-	TestTrue("Should contain updated", JsonString.Contains("\"updated\":\"2024-10-28T09:03:32.977029Z\""));
-	TestTrue("Should contain eTag", JsonString.Contains("\"eTag\":\"test-etag\""));
+	TestTrue("Complete data should contain user ID", CompleteJsonString.Contains("\"id\":\"user123\""));
+	TestTrue("Complete data should contain user name", CompleteJsonString.Contains("\"name\":\"Test User\""));
+	TestTrue("Complete data should contain external ID", CompleteJsonString.Contains("\"externalId\":\"ext456\""));
+	TestTrue("Complete data should contain profile URL", CompleteJsonString.Contains("\"profileUrl\":\"https://example.com/profile\""));
+	TestTrue("Complete data should contain email", CompleteJsonString.Contains("\"email\":\"test@example.com\""));
+	TestTrue("Complete data should contain status", CompleteJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Complete data should contain type", CompleteJsonString.Contains("\"type\":\"premium\""));
+	TestTrue("Complete data should contain custom field", CompleteJsonString.Contains("\"custom\":"));
 
-	// Test with minimal user data (only required fields)
-	FPubnubUserData MinimalUserData;
-	MinimalUserData.UserID = "user456";
+	// Test 2: Minimal user input data (only UserID set)
+	FPubnubUserInputData MinimalUserData;
 	
-	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromUserData(MinimalUserData.UserID, MinimalUserData);
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user456", MinimalUserData);
 	
-	TestTrue("Should contain user ID for minimal data", MinimalJsonString.Contains("\"id\":\"user456\""));
-	TestFalse("Should not contain empty name field", MinimalJsonString.Contains("\"name\":\"\""));
+	TestTrue("Minimal data should contain user ID", MinimalJsonString.Contains("\"id\":\"user456\""));
+	TestFalse("Minimal data should not contain empty name field", MinimalJsonString.Contains("\"name\":"));
+	TestFalse("Minimal data should not contain empty email field", MinimalJsonString.Contains("\"email\":"));
+	TestFalse("Minimal data should not contain empty status field", MinimalJsonString.Contains("\"status\":"));
+
+	// Test 3: Empty fields with ForceAdd flags set to true (should include as null)
+	FPubnubUserInputData ForceAddEmptyData;
+	ForceAddEmptyData.UserName = "";
+	ForceAddEmptyData.ExternalID = "";
+	ForceAddEmptyData.ProfileUrl = "";
+	ForceAddEmptyData.Email = "";
+	ForceAddEmptyData.Custom = "";
+	ForceAddEmptyData.Status = "";
+	ForceAddEmptyData.Type = "";
+	ForceAddEmptyData.ForceAddUserName = true;
+	ForceAddEmptyData.ForceAddExternalID = true;
+	ForceAddEmptyData.ForceAddProfileUrl = true;
+	ForceAddEmptyData.ForceAddEmail = true;
+	ForceAddEmptyData.ForceAddCustom = true;
+	ForceAddEmptyData.ForceAddStatus = true;
+	ForceAddEmptyData.ForceAddType = true;
+	
+	FString ForceAddJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user789", ForceAddEmptyData);
+	
+	TestTrue("ForceAdd data should contain user ID", ForceAddJsonString.Contains("\"id\":\"user789\""));
+	TestTrue("ForceAdd data should contain name field as null", ForceAddJsonString.Contains("\"name\":null"));
+	TestTrue("ForceAdd data should contain externalId field as null", ForceAddJsonString.Contains("\"externalId\":null"));
+	TestTrue("ForceAdd data should contain profileUrl field as null", ForceAddJsonString.Contains("\"profileUrl\":null"));
+	TestTrue("ForceAdd data should contain email field as null", ForceAddJsonString.Contains("\"email\":null"));
+	TestTrue("ForceAdd data should contain custom field as null", ForceAddJsonString.Contains("\"custom\":null"));
+	TestTrue("ForceAdd data should contain status field as null", ForceAddJsonString.Contains("\"status\":null"));
+	TestTrue("ForceAdd data should contain type field as null", ForceAddJsonString.Contains("\"type\":null"));
+
+	// Test 4: Mixed scenario - some fields with values, some empty with ForceAdd
+	FPubnubUserInputData MixedData;
+	MixedData.UserName = "John Doe";
+	MixedData.ExternalID = "";  // Empty
+	MixedData.ProfileUrl = "https://example.com/john";
+	MixedData.Email = "";  // Empty
+	MixedData.Custom = "{\"role\":\"admin\"}";
+	MixedData.Status = "";  // Empty
+	MixedData.Type = "premium";
+	MixedData.ForceAddUserName = false;  // Has value, flag doesn't matter
+	MixedData.ForceAddExternalID = true;   // Empty but force add
+	MixedData.ForceAddProfileUrl = false; // Has value, flag doesn't matter
+	MixedData.ForceAddEmail = true;        // Empty but force add
+	MixedData.ForceAddCustom = false;      // Has value, flag doesn't matter
+	MixedData.ForceAddStatus = true;       // Empty but force add
+	MixedData.ForceAddType = false;        // Has value, flag doesn't matter
+	
+	FString MixedJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user999", MixedData);
+	
+	TestTrue("Mixed data should contain user ID", MixedJsonString.Contains("\"id\":\"user999\""));
+	TestTrue("Mixed data should contain name with value", MixedJsonString.Contains("\"name\":\"John Doe\""));
+	TestTrue("Mixed data should contain externalId as null", MixedJsonString.Contains("\"externalId\":null"));
+	TestTrue("Mixed data should contain profileUrl with value", MixedJsonString.Contains("\"profileUrl\":\"https://example.com/john\""));
+	TestTrue("Mixed data should contain email as null", MixedJsonString.Contains("\"email\":null"));
+	TestTrue("Mixed data should contain custom with value", MixedJsonString.Contains("\"custom\":"));
+	TestTrue("Mixed data should contain status as null", MixedJsonString.Contains("\"status\":null"));
+	TestTrue("Mixed data should contain type with value", MixedJsonString.Contains("\"type\":\"premium\""));
+	TestFalse("Mixed data should not contain empty name as null", MixedJsonString.Contains("\"name\":null"));
+
+	// Test 5: Fields with values should always be included regardless of ForceAdd flag
+	FPubnubUserInputData ValuesWithForceAddFalse;
+	ValuesWithForceAddFalse.UserName = "Jane";
+	ValuesWithForceAddFalse.ExternalID = "ext123";
+	ValuesWithForceAddFalse.ProfileUrl = "https://example.com/jane";
+	ValuesWithForceAddFalse.Email = "jane@example.com";
+	ValuesWithForceAddFalse.Custom = "{\"role\":\"user\"}";
+	ValuesWithForceAddFalse.Status = "active";
+	ValuesWithForceAddFalse.Type = "standard";
+	ValuesWithForceAddFalse.ForceAddUserName = false;
+	ValuesWithForceAddFalse.ForceAddExternalID = false;
+	ValuesWithForceAddFalse.ForceAddProfileUrl = false;
+	ValuesWithForceAddFalse.ForceAddEmail = false;
+	ValuesWithForceAddFalse.ForceAddCustom = false;
+	ValuesWithForceAddFalse.ForceAddStatus = false;
+	ValuesWithForceAddFalse.ForceAddType = false;
+	
+	FString ValuesJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user111", ValuesWithForceAddFalse);
+	
+	TestTrue("Values with ForceAdd false should contain name", ValuesJsonString.Contains("\"name\":\"Jane\""));
+	TestTrue("Values with ForceAdd false should contain externalId", ValuesJsonString.Contains("\"externalId\":\"ext123\""));
+	TestTrue("Values with ForceAdd false should contain profileUrl", ValuesJsonString.Contains("\"profileUrl\":\"https://example.com/jane\""));
+	TestTrue("Values with ForceAdd false should contain email", ValuesJsonString.Contains("\"email\":\"jane@example.com\""));
+	TestTrue("Values with ForceAdd false should contain custom", ValuesJsonString.Contains("\"custom\":"));
+	TestTrue("Values with ForceAdd false should contain status", ValuesJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Values with ForceAdd false should contain type", ValuesJsonString.Contains("\"type\":\"standard\""));
+
+	// Test 6: Empty UserID should return empty string
+	FPubnubUserInputData EmptyUserIDData;
+	EmptyUserIDData.UserName = "Test";
+	EmptyUserIDData.Status = "active";
+	
+	FString EmptyUserIDJsonString = UPubnubJsonUtilities::GetJsonFromUserData("", EmptyUserIDData);
+	
+	TestEqual("Empty UserID should return empty string", EmptyUserIDJsonString, "");
+
+	// Test 7: Empty custom with ForceAdd true should be null, not empty object
+	FPubnubUserInputData EmptyCustomForceAdd;
+	EmptyCustomForceAdd.UserName = "User";
+	EmptyCustomForceAdd.Custom = "";
+	EmptyCustomForceAdd.ForceAddCustom = true;
+	
+	FString EmptyCustomJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user222", EmptyCustomForceAdd);
+	
+	TestTrue("Empty custom with ForceAdd should contain null", EmptyCustomJsonString.Contains("\"custom\":null"));
+	TestFalse("Empty custom with ForceAdd should not contain empty string", EmptyCustomJsonString.Contains("\"custom\":\"\""));
+
+	// Test 8: Using ForceAddAllFields helper method
+	FPubnubUserInputData ForceAddAllData;
+	ForceAddAllData.UserName = "";
+	ForceAddAllData.ExternalID = "";
+	ForceAddAllData.ProfileUrl = "";
+	ForceAddAllData.Email = "";
+	ForceAddAllData.Custom = "";
+	ForceAddAllData.Status = "";
+	ForceAddAllData.Type = "";
+	ForceAddAllData.ForceAddAllFields();
+	
+	FString ForceAddAllJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user333", ForceAddAllData);
+	
+	TestTrue("ForceAddAllFields should set all flags", ForceAddAllData.ForceAddUserName && ForceAddAllData.ForceAddExternalID && 
+		ForceAddAllData.ForceAddProfileUrl && ForceAddAllData.ForceAddEmail && ForceAddAllData.ForceAddCustom && 
+		ForceAddAllData.ForceAddStatus && ForceAddAllData.ForceAddType);
+	TestTrue("ForceAddAllFields data should contain name as null", ForceAddAllJsonString.Contains("\"name\":null"));
+	TestTrue("ForceAddAllFields data should contain email as null", ForceAddAllJsonString.Contains("\"email\":null"));
+	TestTrue("ForceAddAllFields data should contain status as null", ForceAddAllJsonString.Contains("\"status\":null"));
 
 	return true;
 }
@@ -1869,35 +1990,134 @@ bool FGetChannelDataFromJsonUnitTest::RunTest(const FString& Parameters)
 
 bool FGetJsonFromChannelDataUnitTest::RunTest(const FString& Parameters)
 {
-	// Test with complete channel data
-	FPubnubChannelData ChannelData;
-	ChannelData.ChannelID = "channel123";
-	ChannelData.ChannelName = "Test Channel";
-	ChannelData.Description = "A test channel";
-	ChannelData.Custom = "{\"category\":\"test\",\"priority\":1}";
-	ChannelData.Status = "active";
-	ChannelData.Type = "public";
-	ChannelData.Updated = "2024-10-28T09:03:32.977029Z";
-	ChannelData.ETag = "test-etag";
+	// Test 1: Complete channel input data with all fields set
+	FPubnubChannelInputData CompleteChannelData;
+	CompleteChannelData.ChannelName = "Test Channel";
+	CompleteChannelData.Description = "A test channel";
+	CompleteChannelData.Custom = "{\"category\":\"test\",\"priority\":1}";
+	CompleteChannelData.Status = "active";
+	CompleteChannelData.Type = "public";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelData(ChannelData.ChannelID, ChannelData);
+	FString CompleteJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel123", CompleteChannelData);
 	
-	TestTrue("Should contain channel ID", JsonString.Contains("\"id\":\"channel123\""));
-	TestTrue("Should contain channel name", JsonString.Contains("\"name\":\"Test Channel\""));
-	TestTrue("Should contain description", JsonString.Contains("\"description\":\"A test channel\""));
-	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
-	TestTrue("Should contain type", JsonString.Contains("\"type\":\"public\""));
-	TestTrue("Should contain updated", JsonString.Contains("\"updated\":\"2024-10-28T09:03:32.977029Z\""));
-	TestTrue("Should contain eTag", JsonString.Contains("\"eTag\":\"test-etag\""));
+	TestTrue("Complete data should contain channel ID", CompleteJsonString.Contains("\"id\":\"channel123\""));
+	TestTrue("Complete data should contain channel name", CompleteJsonString.Contains("\"name\":\"Test Channel\""));
+	TestTrue("Complete data should contain description", CompleteJsonString.Contains("\"description\":\"A test channel\""));
+	TestTrue("Complete data should contain status", CompleteJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Complete data should contain type", CompleteJsonString.Contains("\"type\":\"public\""));
+	TestTrue("Complete data should contain custom field", CompleteJsonString.Contains("\"custom\":"));
 
-	// Test with minimal channel data
-	FPubnubChannelData MinimalChannelData;
-	MinimalChannelData.ChannelID = "channel456";
+	// Test 2: Minimal channel input data (only ChannelID set)
+	FPubnubChannelInputData MinimalChannelData;
 	
-	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelData(MinimalChannelData.ChannelID, MinimalChannelData);
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel456", MinimalChannelData);
 	
-	TestTrue("Should contain channel ID for minimal data", MinimalJsonString.Contains("\"id\":\"channel456\""));
-	TestFalse("Should not contain empty name field", MinimalJsonString.Contains("\"name\":\"\""));
+	TestTrue("Minimal data should contain channel ID", MinimalJsonString.Contains("\"id\":\"channel456\""));
+	TestFalse("Minimal data should not contain empty name field", MinimalJsonString.Contains("\"name\":"));
+	TestFalse("Minimal data should not contain empty description field", MinimalJsonString.Contains("\"description\":"));
+	TestFalse("Minimal data should not contain empty status field", MinimalJsonString.Contains("\"status\":"));
+
+	// Test 3: Empty fields with ForceAdd flags set to true (should include as null)
+	FPubnubChannelInputData ForceAddEmptyData;
+	ForceAddEmptyData.ChannelName = "";
+	ForceAddEmptyData.Description = "";
+	ForceAddEmptyData.Custom = "";
+	ForceAddEmptyData.Status = "";
+	ForceAddEmptyData.Type = "";
+	ForceAddEmptyData.ForceAddChannelName = true;
+	ForceAddEmptyData.ForceAddDescription = true;
+	ForceAddEmptyData.ForceAddCustom = true;
+	ForceAddEmptyData.ForceAddStatus = true;
+	ForceAddEmptyData.ForceAddType = true;
+	
+	FString ForceAddJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel789", ForceAddEmptyData);
+	
+	TestTrue("ForceAdd data should contain channel ID", ForceAddJsonString.Contains("\"id\":\"channel789\""));
+	TestTrue("ForceAdd data should contain name field as null", ForceAddJsonString.Contains("\"name\":null"));
+	TestTrue("ForceAdd data should contain description field as null", ForceAddJsonString.Contains("\"description\":null"));
+	TestTrue("ForceAdd data should contain status field as null", ForceAddJsonString.Contains("\"status\":null"));
+	TestTrue("ForceAdd data should contain type field as null", ForceAddJsonString.Contains("\"type\":null"));
+
+	// Test 4: Mixed scenario - some fields with values, some empty with ForceAdd
+	FPubnubChannelInputData MixedData;
+	MixedData.ChannelName = "Mixed Channel";
+	MixedData.Description = "";  // Empty
+	MixedData.Custom = "{\"category\":\"test\"}";
+	MixedData.Status = "";  // Empty
+	MixedData.Type = "private";
+	MixedData.ForceAddChannelName = false;  // Has value, flag doesn't matter
+	MixedData.ForceAddDescription = true;   // Empty but force add
+	MixedData.ForceAddCustom = false;      // Has value, flag doesn't matter
+	MixedData.ForceAddStatus = true;       // Empty but force add
+	MixedData.ForceAddType = false;        // Has value, flag doesn't matter
+	
+	FString MixedJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel999", MixedData);
+	
+	TestTrue("Mixed data should contain channel ID", MixedJsonString.Contains("\"id\":\"channel999\""));
+	TestTrue("Mixed data should contain name with value", MixedJsonString.Contains("\"name\":\"Mixed Channel\""));
+	TestTrue("Mixed data should contain description as null", MixedJsonString.Contains("\"description\":null"));
+	TestTrue("Mixed data should contain custom with value", MixedJsonString.Contains("\"custom\":"));
+	TestTrue("Mixed data should contain status as null", MixedJsonString.Contains("\"status\":null"));
+	TestTrue("Mixed data should contain type with value", MixedJsonString.Contains("\"type\":\"private\""));
+	TestFalse("Mixed data should not contain empty name as null", MixedJsonString.Contains("\"name\":null"));
+
+	// Test 5: Fields with values should always be included regardless of ForceAdd flag
+	FPubnubChannelInputData ValuesWithForceAddFalse;
+	ValuesWithForceAddFalse.ChannelName = "Test Channel";
+	ValuesWithForceAddFalse.Description = "Test Description";
+	ValuesWithForceAddFalse.Custom = "{\"category\":\"test\"}";
+	ValuesWithForceAddFalse.Status = "active";
+	ValuesWithForceAddFalse.Type = "public";
+	ValuesWithForceAddFalse.ForceAddChannelName = false;
+	ValuesWithForceAddFalse.ForceAddDescription = false;
+	ValuesWithForceAddFalse.ForceAddCustom = false;
+	ValuesWithForceAddFalse.ForceAddStatus = false;
+	ValuesWithForceAddFalse.ForceAddType = false;
+	
+	FString ValuesJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel111", ValuesWithForceAddFalse);
+	
+	TestTrue("Values with ForceAdd false should contain name", ValuesJsonString.Contains("\"name\":\"Test Channel\""));
+	TestTrue("Values with ForceAdd false should contain description", ValuesJsonString.Contains("\"description\":\"Test Description\""));
+	TestTrue("Values with ForceAdd false should contain custom", ValuesJsonString.Contains("\"custom\":"));
+	TestTrue("Values with ForceAdd false should contain status", ValuesJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Values with ForceAdd false should contain type", ValuesJsonString.Contains("\"type\":\"public\""));
+
+	// Test 6: Empty ChannelID should return empty string
+	FPubnubChannelInputData EmptyChannelIDData;
+	EmptyChannelIDData.ChannelName = "Test";
+	EmptyChannelIDData.Status = "active";
+	
+	FString EmptyChannelIDJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("", EmptyChannelIDData);
+	
+	TestEqual("Empty ChannelID should return empty string", EmptyChannelIDJsonString, "");
+
+	// Test 7: Empty custom with ForceAdd true should be null, not empty object
+	FPubnubChannelInputData EmptyCustomForceAdd;
+	EmptyCustomForceAdd.ChannelName = "Test";
+	EmptyCustomForceAdd.Custom = "";
+	EmptyCustomForceAdd.ForceAddCustom = true;
+	
+	FString EmptyCustomJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel222", EmptyCustomForceAdd);
+	
+	TestTrue("Empty custom with ForceAdd should contain null", EmptyCustomJsonString.Contains("\"custom\":null"));
+	TestFalse("Empty custom with ForceAdd should not contain empty string", EmptyCustomJsonString.Contains("\"custom\":\"\""));
+
+	// Test 8: Using ForceAddAllFields helper method
+	FPubnubChannelInputData ForceAddAllData;
+	ForceAddAllData.ChannelName = "";
+	ForceAddAllData.Description = "";
+	ForceAddAllData.Custom = "";
+	ForceAddAllData.Status = "";
+	ForceAddAllData.Type = "";
+	ForceAddAllData.ForceAddAllFields();
+	
+	FString ForceAddAllJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel333", ForceAddAllData);
+	
+	TestTrue("ForceAddAllFields should set all flags", ForceAddAllData.ForceAddChannelName && ForceAddAllData.ForceAddDescription && 
+		ForceAddAllData.ForceAddCustom && ForceAddAllData.ForceAddStatus && ForceAddAllData.ForceAddType);
+	TestTrue("ForceAddAllFields data should contain name as null", ForceAddAllJsonString.Contains("\"name\":null"));
+	TestTrue("ForceAddAllFields data should contain description as null", ForceAddAllJsonString.Contains("\"description\":null"));
+	TestTrue("ForceAddAllFields data should contain status as null", ForceAddAllJsonString.Contains("\"status\":null"));
 
 	return true;
 }
@@ -1935,27 +2155,117 @@ bool FGetMembershipDataFromJsonUnitTest::RunTest(const FString& Parameters)
 
 bool FGetJsonFromMembershipInputDataUnitTest::RunTest(const FString& Parameters)
 {
-	// Test with complete membership input data
-	FPubnubMembershipInputData MembershipInputData;
-	MembershipInputData.Channel = "channel123";
-	MembershipInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
-	MembershipInputData.Status = "active";
-	MembershipInputData.Type = "member";
+	// Test 1: Complete membership input data with all fields set
+	FPubnubMembershipInputData CompleteMembershipInputData;
+	CompleteMembershipInputData.Channel = "channel123";
+	CompleteMembershipInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
+	CompleteMembershipInputData.Status = "active";
+	CompleteMembershipInputData.Type = "member";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(MembershipInputData);
+	FString CompleteJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(CompleteMembershipInputData);
 	
-	TestTrue("Should contain channel ID", JsonString.Contains("\"channel\":{\"id\":\"channel123\"}"));
-	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
-	TestTrue("Should contain type", JsonString.Contains("\"type\":\"member\""));
+	TestTrue("Complete data should contain channel ID", CompleteJsonString.Contains("\"channel\":{\"id\":\"channel123\"}"));
+	TestTrue("Complete data should contain custom field", CompleteJsonString.Contains("\"custom\":"));
+	TestTrue("Complete data should contain status", CompleteJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Complete data should contain type", CompleteJsonString.Contains("\"type\":\"member\""));
 
-	// Test with minimal membership input data
+	// Test 2: Minimal membership input data (only Channel set)
 	FPubnubMembershipInputData MinimalMembershipInputData;
 	MinimalMembershipInputData.Channel = "channel456";
 	
 	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(MinimalMembershipInputData);
 	
-	TestTrue("Should contain channel ID for minimal data", MinimalJsonString.Contains("\"channel\":{\"id\":\"channel456\"}"));
-	TestFalse("Should not contain empty status field", MinimalJsonString.Contains("\"status\":\"\""));
+	TestTrue("Minimal data should contain channel ID", MinimalJsonString.Contains("\"channel\":{\"id\":\"channel456\"}"));
+	TestFalse("Minimal data should not contain empty status field", MinimalJsonString.Contains("\"status\":"));
+	TestFalse("Minimal data should not contain empty type field", MinimalJsonString.Contains("\"type\":"));
+	TestFalse("Minimal data should not contain empty custom field", MinimalJsonString.Contains("\"custom\":"));
+
+	// Test 3: Empty fields with ForceAdd flags set to true (should include as null)
+	FPubnubMembershipInputData ForceAddEmptyData;
+	ForceAddEmptyData.Channel = "channel789";
+	ForceAddEmptyData.Custom = "";
+	ForceAddEmptyData.Status = "";
+	ForceAddEmptyData.Type = "";
+	ForceAddEmptyData.ForceAddCustom = true;
+	ForceAddEmptyData.ForceAddStatus = true;
+	ForceAddEmptyData.ForceAddType = true;
+	
+	FString ForceAddJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(ForceAddEmptyData);
+	
+	TestTrue("ForceAdd data should contain channel ID", ForceAddJsonString.Contains("\"channel\":{\"id\":\"channel789\"}"));
+	TestTrue("ForceAdd data should contain custom field as null", ForceAddJsonString.Contains("\"custom\":null"));
+	TestTrue("ForceAdd data should contain status field as null", ForceAddJsonString.Contains("\"status\":null"));
+	TestTrue("ForceAdd data should contain type field as null", ForceAddJsonString.Contains("\"type\":null"));
+
+	// Test 4: Mixed scenario - some fields with values, some empty with ForceAdd
+	FPubnubMembershipInputData MixedData;
+	MixedData.Channel = "channel999";
+	MixedData.Custom = "{\"role\":\"moderator\"}";
+	MixedData.Status = "";  // Empty
+	MixedData.Type = "premium";  // Has value
+	MixedData.ForceAddCustom = false;  // Has value, flag doesn't matter
+	MixedData.ForceAddStatus = true;   // Empty but force add
+	MixedData.ForceAddType = false;    // Has value, flag doesn't matter
+	
+	FString MixedJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(MixedData);
+	
+	TestTrue("Mixed data should contain channel ID", MixedJsonString.Contains("\"channel\":{\"id\":\"channel999\"}"));
+	TestTrue("Mixed data should contain custom field with value", MixedJsonString.Contains("\"custom\":"));
+	TestTrue("Mixed data should contain status as null", MixedJsonString.Contains("\"status\":null"));
+	TestTrue("Mixed data should contain type with value", MixedJsonString.Contains("\"type\":\"premium\""));
+	TestFalse("Mixed data should not contain empty type as null", MixedJsonString.Contains("\"type\":null"));
+
+	// Test 5: Fields with values should always be included regardless of ForceAdd flag
+	FPubnubMembershipInputData ValuesWithForceAddFalse;
+	ValuesWithForceAddFalse.Channel = "channel111";
+	ValuesWithForceAddFalse.Custom = "{\"role\":\"admin\"}";
+	ValuesWithForceAddFalse.Status = "active";
+	ValuesWithForceAddFalse.Type = "member";
+	ValuesWithForceAddFalse.ForceAddCustom = false;
+	ValuesWithForceAddFalse.ForceAddStatus = false;
+	ValuesWithForceAddFalse.ForceAddType = false;
+	
+	FString ValuesJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(ValuesWithForceAddFalse);
+	
+	TestTrue("Values with ForceAdd false should contain custom", ValuesJsonString.Contains("\"custom\":"));
+	TestTrue("Values with ForceAdd false should contain status", ValuesJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Values with ForceAdd false should contain type", ValuesJsonString.Contains("\"type\":\"member\""));
+
+	// Test 6: Empty Channel should return empty string
+	FPubnubMembershipInputData EmptyChannelData;
+	EmptyChannelData.Channel = "";
+	EmptyChannelData.Status = "active";
+	EmptyChannelData.Type = "member";
+	
+	FString EmptyChannelJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(EmptyChannelData);
+	
+	TestEqual("Empty channel should return empty string", EmptyChannelJsonString, "");
+
+	// Test 7: Empty custom with ForceAdd true should be null, not empty object
+	FPubnubMembershipInputData EmptyCustomForceAdd;
+	EmptyCustomForceAdd.Channel = "channel333";
+	EmptyCustomForceAdd.Custom = "";
+	EmptyCustomForceAdd.ForceAddCustom = true;
+	
+	FString EmptyCustomJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(EmptyCustomForceAdd);
+	
+	TestTrue("Empty custom with ForceAdd should contain null", EmptyCustomJsonString.Contains("\"custom\":null"));
+	TestFalse("Empty custom with ForceAdd should not contain empty string", EmptyCustomJsonString.Contains("\"custom\":\"\""));
+
+	// Test 8: Using ForceAddAllFields helper method
+	FPubnubMembershipInputData ForceAddAllData;
+	ForceAddAllData.Channel = "channel444";
+	ForceAddAllData.Custom = "";
+	ForceAddAllData.Status = "";
+	ForceAddAllData.Type = "";
+	ForceAddAllData.ForceAddAllFields();
+	
+	FString ForceAddAllJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(ForceAddAllData);
+	
+	TestTrue("ForceAddAllFields should set all flags", ForceAddAllData.ForceAddCustom && ForceAddAllData.ForceAddStatus && ForceAddAllData.ForceAddType);
+	TestTrue("ForceAddAllFields data should contain custom as null", ForceAddAllJsonString.Contains("\"custom\":null"));
+	TestTrue("ForceAddAllFields data should contain status as null", ForceAddAllJsonString.Contains("\"status\":null"));
+	TestTrue("ForceAddAllFields data should contain type as null", ForceAddAllJsonString.Contains("\"type\":null"));
 
 	return true;
 }
@@ -2053,27 +2363,113 @@ bool FGetChannelMemberDataFromJsonUnitTest::RunTest(const FString& Parameters)
 
 bool FGetJsonFromChannelMemberDataUnitTest::RunTest(const FString& Parameters)
 {
-	// Test with complete channel member input data
-	FPubnubChannelMemberInputData MemberInputData;
-	MemberInputData.User = "user123";
-	MemberInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
-	MemberInputData.Status = "active";
-	MemberInputData.Type = "member";
+	// Test 1: Complete channel member input data with all fields set
+	FPubnubChannelMemberInputData CompleteMemberInputData;
+	CompleteMemberInputData.User = "user123";
+	CompleteMemberInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
+	CompleteMemberInputData.Status = "active";
+	CompleteMemberInputData.Type = "member";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(MemberInputData);
+	FString CompleteJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(CompleteMemberInputData);
 	
-	TestTrue("Should contain user ID", JsonString.Contains("\"uuid\":{\"id\":\"user123\"}"));
-	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
-	TestTrue("Should contain type", JsonString.Contains("\"type\":\"member\""));
+	TestTrue("Complete data should contain user ID", CompleteJsonString.Contains("\"uuid\":{\"id\":\"user123\"}"));
+	TestTrue("Complete data should contain custom field", CompleteJsonString.Contains("\"custom\":"));
+	TestTrue("Complete data should contain status", CompleteJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Complete data should contain type", CompleteJsonString.Contains("\"type\":\"member\""));
 
-	// Test with minimal channel member input data
+	// Test 2: Minimal channel member input data (only User set)
 	FPubnubChannelMemberInputData MinimalMemberInputData;
 	MinimalMemberInputData.User = "user456";
 	
 	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(MinimalMemberInputData);
 	
-	TestTrue("Should contain user ID for minimal data", MinimalJsonString.Contains("\"uuid\":{\"id\":\"user456\"}"));
-	TestFalse("Should not contain empty status field", MinimalJsonString.Contains("\"status\":\"\""));
+	TestTrue("Minimal data should contain user ID", MinimalJsonString.Contains("\"uuid\":{\"id\":\"user456\"}"));
+	TestFalse("Minimal data should not contain empty status field", MinimalJsonString.Contains("\"status\":"));
+	TestFalse("Minimal data should not contain empty type field", MinimalJsonString.Contains("\"type\":"));
+	TestFalse("Minimal data should not contain empty custom field", MinimalJsonString.Contains("\"custom\":"));
+
+	// Test 3: Empty fields with ForceAdd flags set to true (should include as null)
+	FPubnubChannelMemberInputData ForceAddEmptyData;
+	ForceAddEmptyData.User = "user789";
+	ForceAddEmptyData.Custom = "";
+	ForceAddEmptyData.Status = "";
+	ForceAddEmptyData.Type = "";
+	ForceAddEmptyData.ForceAddCustom = true;
+	ForceAddEmptyData.ForceAddStatus = true;
+	ForceAddEmptyData.ForceAddType = true;
+	
+	FString ForceAddJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(ForceAddEmptyData);
+	
+	TestTrue("ForceAdd data should contain user ID", ForceAddJsonString.Contains("\"uuid\":{\"id\":\"user789\"}"));
+	TestTrue("ForceAdd data should contain custom field as null", ForceAddJsonString.Contains("\"custom\":null"));
+	TestTrue("ForceAdd data should contain status field as null", ForceAddJsonString.Contains("\"status\":null"));
+	TestTrue("ForceAdd data should contain type field as null", ForceAddJsonString.Contains("\"type\":null"));
+
+	// Test 4: Mixed scenario - some fields with values, some empty with ForceAdd
+	FPubnubChannelMemberInputData MixedData;
+	MixedData.User = "user999";
+	MixedData.Custom = "{\"role\":\"moderator\"}";
+	MixedData.Status = "";  // Empty
+	MixedData.Type = "premium";  // Has value
+	MixedData.ForceAddCustom = false;  // Has value, flag doesn't matter
+	MixedData.ForceAddStatus = true;   // Empty but force add
+	MixedData.ForceAddType = false;    // Has value, flag doesn't matter
+	
+	FString MixedJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(MixedData);
+	
+	TestTrue("Mixed data should contain user ID", MixedJsonString.Contains("\"uuid\":{\"id\":\"user999\"}"));
+	TestTrue("Mixed data should contain custom field with value", MixedJsonString.Contains("\"custom\":"));
+	TestTrue("Mixed data should contain status as null", MixedJsonString.Contains("\"status\":null"));
+	TestTrue("Mixed data should contain type with value", MixedJsonString.Contains("\"type\":\"premium\""));
+	TestFalse("Mixed data should not contain empty type as null", MixedJsonString.Contains("\"type\":null"));
+
+	// Test 5: Fields with values should always be included regardless of ForceAdd flag
+	FPubnubChannelMemberInputData ValuesWithForceAddFalse;
+	ValuesWithForceAddFalse.User = "user111";
+	ValuesWithForceAddFalse.Custom = "{\"role\":\"admin\"}";
+	ValuesWithForceAddFalse.Status = "active";
+	ValuesWithForceAddFalse.Type = "member";
+	ValuesWithForceAddFalse.ForceAddCustom = false;
+	ValuesWithForceAddFalse.ForceAddStatus = false;
+	ValuesWithForceAddFalse.ForceAddType = false;
+	
+	FString ValuesJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(ValuesWithForceAddFalse);
+	
+	TestTrue("Values with ForceAdd false should contain custom", ValuesJsonString.Contains("\"custom\":"));
+	TestTrue("Values with ForceAdd false should contain status", ValuesJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Values with ForceAdd false should contain type", ValuesJsonString.Contains("\"type\":\"member\""));
+
+	// Test 6: Empty User should return empty string
+	FPubnubChannelMemberInputData EmptyUserData;
+	EmptyUserData.User = "";
+	EmptyUserData.Status = "active";
+	EmptyUserData.Type = "member";
+	
+	FString EmptyUserJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(EmptyUserData);
+	
+	TestEqual("Empty user should return empty string", EmptyUserJsonString, "");
+
+	// Test 7: Custom field with invalid JSON but ForceAdd true should still add as null
+	FPubnubChannelMemberInputData InvalidCustomData;
+	InvalidCustomData.User = "user222";
+	InvalidCustomData.Custom = "invalid json";
+	InvalidCustomData.ForceAddCustom = true;
+	
+	FString InvalidCustomJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(InvalidCustomData);
+	
+	TestTrue("Invalid custom with ForceAdd should contain user ID", InvalidCustomJsonString.Contains("\"uuid\":{\"id\":\"user222\"}"));
+	// Note: Invalid JSON won't be added as object, but if empty with ForceAdd it would be null
+
+	// Test 8: Empty custom with ForceAdd true should be null, not empty object
+	FPubnubChannelMemberInputData EmptyCustomForceAdd;
+	EmptyCustomForceAdd.User = "user333";
+	EmptyCustomForceAdd.Custom = "";
+	EmptyCustomForceAdd.ForceAddCustom = true;
+	
+	FString EmptyCustomJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(EmptyCustomForceAdd);
+	
+	TestTrue("Empty custom with ForceAdd should contain null", EmptyCustomJsonString.Contains("\"custom\":null"));
+	TestFalse("Empty custom with ForceAdd should not contain empty string", EmptyCustomJsonString.Contains("\"custom\":\"\""));
 
 	return true;
 }

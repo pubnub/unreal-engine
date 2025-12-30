@@ -34,7 +34,7 @@ public:
 	 * @return Result structure containing operation status and updated user metadata.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	FPubnubUserMetadataResult SetUserMetadata(FPubnubUserData UserMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	FPubnubUserMetadataResult SetUserMetadata(FPubnubUserInputData UserMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for this User in the PubNub App Context.
@@ -46,7 +46,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
-	void SetUserMetadataAsync(FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetUserMetadataAsync(FPubnubUserInputData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for this User in the PubNub App Context.
@@ -58,7 +58,7 @@ public:
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void SetUserMetadataAsync(FPubnubUserData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetUserMetadataAsync(FPubnubUserInputData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for this User from the PubNub App Context (blocking).

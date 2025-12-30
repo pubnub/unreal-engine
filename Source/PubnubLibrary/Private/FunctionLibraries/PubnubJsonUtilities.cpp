@@ -97,6 +97,40 @@ FString UPubnubJsonUtilities::DeserializeString(const FString InString)
 	return Parsed;
 }
 
+void UPubnubJsonUtilities::AddObjectFieldToJson(const FString& FieldName, const FString& JsonObjectString, TSharedPtr<FJsonObject>& JsonObject, bool AddNullFieldIfEmpty)
+{
+	if (JsonObjectString.IsEmpty() && !AddNullFieldIfEmpty)
+	{ return; }
+	
+	//If object string is empty, but it's explicitly stated to add it, add field as null
+	if(JsonObjectString.IsEmpty() && AddNullFieldIfEmpty)
+	{
+		JsonObject->SetField(FieldName, MakeShareable(new FJsonValueNull()));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> JsonObjectField;
+	if (StringToJsonObject(JsonObjectString, JsonObjectField))
+	{
+		JsonObject->SetObjectField(FieldName, JsonObjectField);
+	}
+}
+
+void UPubnubJsonUtilities::AddStringFieldToJson(const FString& FieldName, const FString& FieldValue, TSharedPtr<FJsonObject>& JsonObject, bool AddNullFieldIfEmpty)
+{
+	if (FieldValue.IsEmpty() && !AddNullFieldIfEmpty)
+	{ return; }
+	
+	//If object string is empty, but it's explicitly stated to add it, add field as null
+	if(FieldValue.IsEmpty() && AddNullFieldIfEmpty)
+	{
+		JsonObject->SetField(FieldName, MakeShareable(new FJsonValueNull()));
+		return;
+	}
+	
+	JsonObject->SetStringField(FieldName, FieldValue);
+}
+
 bool UPubnubJsonUtilities::IsCorrectJsonString(const FString InString, bool AllowSimpleTypes)
 {
 	//A String is correct Json if it's a valid Json Object
@@ -592,55 +626,20 @@ FPubnubUserData UPubnubJsonUtilities::GetUserDataFromJson(FString ResponseJson)
 	return UserData;
 }
 
-FString UPubnubJsonUtilities::GetJsonFromUserData(const FString UserID, const FPubnubUserData& UserData)
+FString UPubnubJsonUtilities::GetJsonFromUserData(const FString UserID, const FPubnubUserInputData& UserData)
 {
+	if (UserID.IsEmpty())
+	{ return ""; }
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
-	if (!UserData.UserID.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("id"), UserID);
-	}
-	if (!UserData.UserName.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("name"), UserData.UserName);
-	}
-	if (!UserData.ExternalID.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("externalId"), UserData.ExternalID);
-	}
-	if (!UserData.ProfileUrl.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("profileUrl"), UserData.ProfileUrl);
-	}
-	if (!UserData.Email.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("email"), UserData.Email);
-	}
-	if (!UserData.Status.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("status"), UserData.Status);
-	}
-	if (!UserData.Type.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("type"), UserData.Type);
-	}
-	if (!UserData.Updated.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("updated"), UserData.Updated);
-	}
-	if (!UserData.ETag.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("eTag"), UserData.ETag);
-	}
-
-	if (!UserData.Custom.IsEmpty())
-	{
-		TSharedPtr<FJsonObject> CustomJsonObject;
-		if (StringToJsonObject(UserData.Custom, CustomJsonObject))
-		{
-			JsonObject->SetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject);
-		}
-	}
+	JsonObject->SetStringField(ANSI_TO_TCHAR("id"), UserID);
+	AddStringFieldToJson(ANSI_TO_TCHAR("name"), UserData.UserName, JsonObject, UserData.ForceAddUserName);
+	AddStringFieldToJson(ANSI_TO_TCHAR("externalId"), UserData.ExternalID, JsonObject, UserData.ForceAddExternalID);
+	AddStringFieldToJson(ANSI_TO_TCHAR("profileUrl"), UserData.ProfileUrl, JsonObject, UserData.ForceAddProfileUrl);
+	AddStringFieldToJson(ANSI_TO_TCHAR("email"), UserData.Email, JsonObject, UserData.ForceAddEmail);
+	AddStringFieldToJson(ANSI_TO_TCHAR("status"), UserData.Status, JsonObject, UserData.ForceAddStatus);
+	AddStringFieldToJson(ANSI_TO_TCHAR("type"), UserData.Type, JsonObject, UserData.ForceAddType);
+	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), UserData.Custom, JsonObject, UserData.ForceAddCustom);
 
 	return JsonObjectToString(JsonObject);
 }
@@ -673,47 +672,20 @@ FPubnubChannelData UPubnubJsonUtilities::GetChannelDataFromJson(FString Response
 	return ChannelData;
 }
 
-FString UPubnubJsonUtilities::GetJsonFromChannelData(const FString ChannelID, const FPubnubChannelData& ChannelData)
+FString UPubnubJsonUtilities::GetJsonFromChannelData(const FString ChannelID, const FPubnubChannelInputData& ChannelData)
 {
+	if (ChannelID.IsEmpty())
+	{ return ""; }
+	
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
-	if (!ChannelData.ChannelID.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelID);
-	}
-	if (!ChannelData.ChannelName.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("name"), ChannelData.ChannelName);
-	}
-	if (!ChannelData.Description.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("description"), ChannelData.Description);
-	}
-	if (!ChannelData.Status.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("status"), ChannelData.Status);
-	}
-	if (!ChannelData.Type.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("type"), ChannelData.Type);
-	}
-	if (!ChannelData.Updated.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("updated"), ChannelData.Updated);
-	}
-	if (!ChannelData.ETag.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("eTag"), ChannelData.ETag);
-	}
-
-	if (!ChannelData.Custom.IsEmpty())
-	{
-		TSharedPtr<FJsonObject> CustomJsonObject;
-		if (StringToJsonObject(ChannelData.Custom, CustomJsonObject))
-		{
-			JsonObject->SetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject);
-		}
-	}
+	JsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelID);
+	
+	AddStringFieldToJson(ANSI_TO_TCHAR("name"), ChannelData.ChannelName, JsonObject, ChannelData.ForceAddChannelName);
+	AddStringFieldToJson(ANSI_TO_TCHAR("description"), ChannelData.Description, JsonObject, ChannelData.ForceAddDescription);
+	AddStringFieldToJson(ANSI_TO_TCHAR("status"), ChannelData.Status, JsonObject, ChannelData.ForceAddStatus);
+	AddStringFieldToJson(ANSI_TO_TCHAR("type"), ChannelData.Type, JsonObject, ChannelData.ForceAddType);
+	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), ChannelData.Custom, JsonObject, ChannelData.ForceAddCustom);
 
 	return JsonObjectToString(JsonObject);
 }
@@ -761,32 +733,20 @@ FPubnubMembershipData UPubnubJsonUtilities::GetMembershipDataFromJson(TSharedPtr
 
 FString UPubnubJsonUtilities::GetJsonFromMembershipInputData(const FPubnubMembershipInputData& MembershipInputData)
 {
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
-
-	if (!MembershipInputData.Channel.IsEmpty())
+	if (MembershipInputData.Channel.IsEmpty())
 	{
-		TSharedPtr<FJsonObject> ChannelJsonObject = MakeShareable(new FJsonObject());
-		ChannelJsonObject->SetStringField(ANSI_TO_TCHAR("id"), MembershipInputData.Channel);
-		JsonObject->SetObjectField(ANSI_TO_TCHAR("channel"), ChannelJsonObject);
-	}
-
-	if (!MembershipInputData.Custom.IsEmpty())
-	{
-		TSharedPtr<FJsonObject> CustomJsonObject;
-		if (StringToJsonObject(MembershipInputData.Custom, CustomJsonObject))
-		{
-			JsonObject->SetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject);
-		}
+		return "";
 	}
 	
-	if (!MembershipInputData.Status.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("status"), MembershipInputData.Status);
-	}
-	if (!MembershipInputData.Type.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("type"), MembershipInputData.Type);
-	}
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+	
+	TSharedPtr<FJsonObject> ChannelJsonObject = MakeShareable(new FJsonObject());
+	ChannelJsonObject->SetStringField(ANSI_TO_TCHAR("id"), MembershipInputData.Channel);
+	JsonObject->SetObjectField(ANSI_TO_TCHAR("channel"), ChannelJsonObject);
+	
+	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), MembershipInputData.Custom, JsonObject, MembershipInputData.ForceAddCustom);
+	AddStringFieldToJson(ANSI_TO_TCHAR("status"), MembershipInputData.Status, JsonObject, MembershipInputData.ForceAddStatus);
+	AddStringFieldToJson(ANSI_TO_TCHAR("type"), MembershipInputData.Type, JsonObject, MembershipInputData.ForceAddType);
 
 	return JsonObjectToString(JsonObject);
 }
@@ -897,32 +857,18 @@ FPubnubChannelMemberData UPubnubJsonUtilities::GetChannelMemberDataFromJson(TSha
 
 FString UPubnubJsonUtilities::GetJsonFromChannelMemberData(const FPubnubChannelMemberInputData& ChannelMemberInputData)
 {
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
-
-	if (!ChannelMemberInputData.User.IsEmpty())
-	{
-		TSharedPtr<FJsonObject> UserJsonObject = MakeShareable(new FJsonObject());
-		UserJsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelMemberInputData.User);
-		JsonObject->SetObjectField(ANSI_TO_TCHAR("uuid"), UserJsonObject);
-	}
-
-	if (!ChannelMemberInputData.Custom.IsEmpty())
-	{
-		TSharedPtr<FJsonObject> CustomJsonObject;
-		if (StringToJsonObject(ChannelMemberInputData.Custom, CustomJsonObject))
-		{
-			JsonObject->SetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject);
-		}
-	}
+	if (ChannelMemberInputData.User.IsEmpty())
+	{return "";}
 	
-	if (!ChannelMemberInputData.Status.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("status"), ChannelMemberInputData.Status);
-	}
-	if (!ChannelMemberInputData.Type.IsEmpty())
-	{
-		JsonObject->SetStringField(ANSI_TO_TCHAR("type"), ChannelMemberInputData.Type);
-	}
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+	
+	TSharedPtr<FJsonObject> UserJsonObject = MakeShareable(new FJsonObject());
+	UserJsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelMemberInputData.User);
+	JsonObject->SetObjectField(ANSI_TO_TCHAR("uuid"), UserJsonObject);
+	
+	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), ChannelMemberInputData.Custom, JsonObject, ChannelMemberInputData.ForceAddCustom);
+	AddStringFieldToJson(ANSI_TO_TCHAR("status"), ChannelMemberInputData.Status, JsonObject, ChannelMemberInputData.ForceAddStatus);
+	AddStringFieldToJson(ANSI_TO_TCHAR("type"), ChannelMemberInputData.Type, JsonObject, ChannelMemberInputData.ForceAddType);
 
 	return JsonObjectToString(JsonObject);
 }

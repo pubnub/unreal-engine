@@ -810,8 +810,7 @@ bool FPubnubSubscriptionListenersTest::RunTest(const FString& Parameters)
 		if (ChannelMetadataEntity)
 		{
 			// Use unique metadata to ensure object event is triggered (same metadata won't trigger event)
-			FPubnubChannelData UniqueChannelMetadata;
-			UniqueChannelMetadata.ChannelID = TestChannel;
+			FPubnubChannelInputData UniqueChannelMetadata;
 			UniqueChannelMetadata.ChannelName = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken(); // Unique name ensures event triggers
 			UniqueChannelMetadata.Description = "Listener test metadata";
 			

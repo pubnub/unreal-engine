@@ -518,6 +518,114 @@ struct FPubnubChannelMemberData
 };
 
 USTRUCT(BlueprintType)
+struct FPubnubUserInputData
+{
+	GENERATED_BODY()
+	
+	//Display name for the user.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserName = "";
+	//User's identifier in an external system.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ExternalID = "";
+	//The URL of the user's profile picture.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ProfileUrl = "";
+	//The user's email address.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Email = "";
+	//JSON object providing custom user data. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//User status. Max. 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//User type. Max. 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	
+	/** If true, the UserName field will be included in JSON even if empty (as null). If false, empty UserName field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddUserName = false;
+	/** If true, the ExternalID field will be included in JSON even if empty (as null). If false, empty ExternalID field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddExternalID = false;
+	/** If true, the ProfileUrl field will be included in JSON even if empty (as null). If false, empty ProfileUrl field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddProfileUrl = false;
+	/** If true, the Email field will be included in JSON even if empty (as null). If false, empty Email field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddEmail = false;
+	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddCustom = false;
+	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddStatus = false;
+	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddType = false;
+
+	/**
+	 * Sets all ForceAdd flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * include all fields in the JSON (empty fields will be set to null).
+	 */
+	void ForceAddAllFields()
+	{
+		ForceAddUserName = true;
+		ForceAddExternalID = true;
+		ForceAddProfileUrl = true;
+		ForceAddEmail = true;
+		ForceAddCustom = true;
+		ForceAddStatus = true;
+		ForceAddType = true;
+	}
+
+	/**
+	 * Utility converter from FPubnubUserData. Copies all related fields from UserData to FPubnubUserInputData.
+	 */
+	static FPubnubUserInputData FromPubnubUserData(const FPubnubUserData& UserData)
+	{
+		return FPubnubUserInputData({.UserName = UserData.UserName, .ExternalID = UserData.ExternalID, .ProfileUrl = UserData.ProfileUrl, .Email = UserData.Email, .Custom = UserData.Custom, .Status = UserData.Status, .Type = UserData.Type});
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelInputData
+{
+	GENERATED_BODY()
+	
+	//Display name for the channel.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelName = "";
+	//Description of the channel.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Description = "";
+	//JSON object providing custom channel data. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//Channel status. Max 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//Channel type. Max 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	
+	/** If true, the ChannelName field will be included in JSON even if empty (as null). If false, empty ChannelName field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddChannelName = false;
+	/** If true, the Description field will be included in JSON even if empty (as null). If false, empty Description field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddDescription = false;
+	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddCustom = false;
+	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddStatus = false;
+	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddType = false;
+
+	/**
+	 * Sets all ForceAdd flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * include all fields in the JSON (empty fields will be set to null).
+	 */
+	void ForceAddAllFields()
+	{
+		ForceAddChannelName = true;
+		ForceAddDescription = true;
+		ForceAddCustom = true;
+		ForceAddStatus = true;
+		ForceAddType = true;
+	}
+
+	/**
+	 * Utility converter from FPubnubChannelData. Copies all related fields from ChannelData to FPubnubChannelInputData.
+	 */
+	static FPubnubChannelInputData FromPubnubChannelData(const FPubnubChannelData& ChannelData)
+	{
+		return FPubnubChannelInputData({.ChannelName = ChannelData.ChannelName, .Description = ChannelData.Description, .Custom = ChannelData.Custom, .Status = ChannelData.Status, .Type = ChannelData.Type});
+	}
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubMembershipInputData
 {
 	GENERATED_BODY()
@@ -530,6 +638,32 @@ struct FPubnubMembershipInputData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
 	//Type of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	
+	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddCustom = false;
+	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddStatus = false;
+	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddType = false;
+
+	/**
+	 * Sets all ForceAdd flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * include all fields in the JSON (empty fields will be set to null).
+	 */
+	void ForceAddAllFields()
+	{
+		ForceAddCustom = true;
+		ForceAddStatus = true;
+		ForceAddType = true;
+	}
+
+	/**
+	 * Utility converter from FPubnubMembershipData. Copies all related fields from MembershipData to FPubnubMembershipInputData.
+	 */
+	static FPubnubMembershipInputData FromPubnubMembershipData(const FPubnubMembershipData& MembershipData)
+	{
+		return FPubnubMembershipInputData({.Channel = MembershipData.Channel.ChannelID, .Custom = MembershipData.Custom, .Status = MembershipData.Status, .Type = MembershipData.Type});
+	}
 };
 
 USTRUCT(BlueprintType)
@@ -545,6 +679,32 @@ struct FPubnubChannelMemberInputData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
 	//Type of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	
+	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddCustom = false;
+	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddStatus = false;
+	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddType = false;
+
+	/**
+	 * Sets all ForceAdd flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * include all fields in the JSON (empty fields will be set to null).
+	 */
+	void ForceAddAllFields()
+	{
+		ForceAddCustom = true;
+		ForceAddStatus = true;
+		ForceAddType = true;
+	}
+	
+	/**
+	 * Utility converter from FPubnubChannelMemberData. Copies all related fields from ChannelMemberData to FPubnubChannelMemberInputData.
+	 */
+	static FPubnubChannelMemberInputData FromPubnubMembershipData(const FPubnubChannelMemberData& ChannelMemberData)
+	{
+		return FPubnubChannelMemberInputData({.User = ChannelMemberData.User.UserID, .Custom = ChannelMemberData.Custom, .Status = ChannelMemberData.Status, .Type = ChannelMemberData.Type});
+	}
 };
 
 USTRUCT(BlueprintType)

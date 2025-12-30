@@ -9,7 +9,7 @@ UPubnubChannelMetadataEntity::UPubnubChannelMetadataEntity()
 	EntityType = EPubnubEntityType::PEnT_ChannelMetadata;
 }
 
-FPubnubChannelMetadataResult UPubnubChannelMetadataEntity::SetChannelMetadata(FPubnubChannelData ChannelMetadata, FPubnubGetMetadataInclude Include)
+FPubnubChannelMetadataResult UPubnubChannelMetadataEntity::SetChannelMetadata(FPubnubChannelInputData ChannelMetadata, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{
@@ -24,7 +24,7 @@ FPubnubChannelMetadataResult UPubnubChannelMetadataEntity::SetChannelMetadata(FP
 	return PubnubClient->SetChannelMetadata(EntityID, ChannelMetadata, Include);
 }
 
-void UPubnubChannelMetadataEntity::SetChannelMetadataAsync(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
+void UPubnubChannelMetadataEntity::SetChannelMetadataAsync(FPubnubChannelInputData ChannelMetadata, FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{
@@ -34,7 +34,7 @@ void UPubnubChannelMetadataEntity::SetChannelMetadataAsync(FPubnubChannelData Ch
 	PubnubClient->SetChannelMetadataAsync(EntityID, ChannelMetadata, OnSetChannelMetadataResponse, Include);
 }
 
-void UPubnubChannelMetadataEntity::SetChannelMetadataAsync(FPubnubChannelData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
+void UPubnubChannelMetadataEntity::SetChannelMetadataAsync(FPubnubChannelInputData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include)
 {
 	if (!PubnubClient)
 	{

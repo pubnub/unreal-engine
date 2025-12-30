@@ -122,8 +122,7 @@ void ASample_UserMetadataEntity::UserMetadataEntitySetMetadataSample()
 	OnSetPlayerInfoResult.BindDynamic(this, &ASample_UserMetadataEntity::OnSetUserMetadataResult_Sample);
 
 	// Set champion player profile and statistics
-	FPubnubUserData ChampionPlayerProfile;
-	ChampionPlayerProfile.UserID = PlayerToUpdate;
+	FPubnubUserInputData ChampionPlayerProfile;
 	ChampionPlayerProfile.UserName = "Alex 'Lightning' Rodriguez";
 	ChampionPlayerProfile.Email = "alex.lightning@esports.com";
 	ChampionPlayerProfile.Custom = "{\"rank\":\"Champion\",\"wins\":127,\"losses\":23,\"favorite_weapon\":\"Plasma Rifle\",\"achievements\":[\"First Blood\",\"Triple Kill Master\"]}";
@@ -160,7 +159,7 @@ void ASample_UserMetadataEntity::SetUserMetadataSample()
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
 
 	// Create user metadata object
-	FPubnubUserData UserMetadata;
+	FPubnubUserInputData UserMetadata;
 	UserMetadata.UserName = "Player One";
 	UserMetadata.Email = "player.one@pubnub.com";
 	UserMetadata.Custom = "{\"level\": 5, \"rank\": \"gold\"}";
@@ -190,7 +189,7 @@ void ASample_UserMetadataEntity::SetUserMetadataWithResultSample()
 	OnSetUserMetadataResponse.BindDynamic(this, &ASample_UserMetadataEntity::OnSetUserMetadataResponse);
 
 	// Create user metadata object
-	FPubnubUserData UserMetadata;
+	FPubnubUserInputData UserMetadata;
 	UserMetadata.UserName = "Player Two";
 	UserMetadata.Status = "active";
 	UserMetadata.Custom = "{\"inventory_slots\": 20, \"guild_id\": \"G2\"}";
@@ -243,7 +242,7 @@ void ASample_UserMetadataEntity::SetUserMetadataWithLambdaSample()
 	});
 	
 	// Create user metadata object
-	FPubnubUserData UserMetadata;
+	FPubnubUserInputData UserMetadata;
 	UserMetadata.UserName = "Player Three";
 	UserMetadata.Status = "inactive";
 	UserMetadata.Custom = "{\"last_seen\": \"2024-01-01\"}";

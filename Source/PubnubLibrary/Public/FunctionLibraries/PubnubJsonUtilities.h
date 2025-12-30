@@ -31,7 +31,13 @@ public:
 	static FString SerializeString(const FString& InString);
 	//Converts serialized string into it's normal, literal form
 	static FString DeserializeString(const FString InString);
+	
+	//Adds Provided string as ObjectField to JsonObject. If AddNullFieldIfEmpty is set to true, null field will be added in case if empty JsonObjectString
+	static void AddObjectFieldToJson(const FString& FieldName, const FString& JsonObjectString, TSharedPtr<FJsonObject> &JsonObject, bool AddNullFieldIfEmpty = false);
+	//Adds Provided string as StringField to JsonObject. If AddNullFieldIfEmpty is set to true, null field will be added in case if empty FieldValue
+	static void AddStringFieldToJson(const FString& FieldName, const FString& FieldValue, TSharedPtr<FJsonObject> &JsonObject, bool AddNullFieldIfEmpty = false);
 
+	
 	/**
 	 * Checks if gives string can be converted to a json
 	 * @param InString - String to check
@@ -121,7 +127,7 @@ public:
 	 * Converter from FPubnubUserData to Json string containing User data.
 	 * UserID is provided separately, because during Set operations ID from the struct is ignored.
 	 */
-	static FString GetJsonFromUserData(const FString UserID, const FPubnubUserData& UserData);
+	static FString GetJsonFromUserData(const FString UserID, const FPubnubUserInputData& UserData);
 
 	/**
 	 * Converter from Json string containing Channel data to FPubnubChannelData
@@ -133,7 +139,7 @@ public:
 	 * Converter from FPubnubChannelData to Json string containing Channel data.
 	 * ChannelID is provided separately, because during Set operations ID from the struct is ignored.
 	 */
-	static FString GetJsonFromChannelData(const FString ChannelID, const FPubnubChannelData& ChannelData);
+	static FString GetJsonFromChannelData(const FString ChannelID, const FPubnubChannelInputData& ChannelData);
 
 	/**
 	 * Converter from Json string containing Membership data to FPubnubMembershipData
