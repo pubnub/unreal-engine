@@ -399,6 +399,8 @@ struct FPubnubHistoryMessageData
 
 	//The message text.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Message = "";
+	/** Channel that message was published to */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Channel = "";
 	//User ID of the user who sent the message.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
 	//Timetoken indicating when the message was sent.

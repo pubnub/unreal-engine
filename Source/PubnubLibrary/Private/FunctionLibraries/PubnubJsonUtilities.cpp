@@ -340,6 +340,7 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, FPubnubO
 		for(auto MessageValue : ChannelJsonValue->AsArray())
 		{
 			FPubnubHistoryMessageData CurrentMessage;
+			CurrentMessage.Channel = Iterator.Key();
 			if(!MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message))
 			{
 				const TSharedPtr<FJsonObject>* MetaJsonObject = nullptr;

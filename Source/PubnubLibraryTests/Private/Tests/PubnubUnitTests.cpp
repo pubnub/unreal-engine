@@ -651,6 +651,7 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 	
 	// Verify messages array
 	TestEqual("Messages array should have 1 element", Messages.Num(), 1);
+	TestEqual("Channel should be 'my_channel'", Messages[0].Channel, "my_channel");
 	TestEqual("Message should be 'This is my message'", Messages[0].Message, "{\"text\":\"This is my message\"}");
 	TestEqual("UserID should be 'android_user'", Messages[0].UserID, "android_user");
 	TestEqual("Timetoken should be '17302160534651740'", Messages[0].Timetoken, "17302160534651740");
@@ -679,6 +680,7 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 	
 	// Verify messages array
 	TestEqual("Messages array should have 1 element for actions response", Messages.Num(), 1);
+	TestEqual("Channel should be 'my_channel' for actions response", Messages[0].Channel, "my_channel");
 	TestEqual("Message should be 'message from unreal to history'", Messages[0].Message, "message from unreal to history");
 	TestEqual("UserID should be 'User1'", Messages[0].UserID, "User1");
 	TestEqual("Timetoken should be '17302756128241865'", Messages[0].Timetoken, "17302756128241865");
@@ -706,6 +708,27 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Third action value should be 'bla bla'", Messages[0].MessageActions[2].Value, "bla bla");
 	TestEqual("Third action userID should be 'User1'", Messages[0].MessageActions[2].UserID, "User1");
 	TestEqual("Third action timetoken should be '17302763502280660'", Messages[0].MessageActions[2].ActionTimetoken, "17302763502280660");
+
+	// Test response with different channel name
+	FString TestDifferentChannelJson = "{\"status\": 200, \"channels\": {\"test_channel_123\": [{\"message\": \"Hello World\", \"timetoken\": \"17303000000000000\", \"uuid\": \"test_user\"}]}, \"error_message\": \"\", \"error\": false}";
+	Result.Error = true;
+	Result.Status = 0;
+	Result.ErrorMessage = "";
+	Messages.Empty();
+	
+	UPubnubJsonUtilities::FetchHistoryJsonToData(TestDifferentChannelJson, Result, Messages);
+	
+	// Verify error flag
+	TestTrue("Error flag should be false for different channel response", !Result.Error);
+	
+	// Verify status code
+	TestEqual("Status code should be 200 for different channel response", Result.Status, 200);
+	
+	// Verify messages array
+	TestEqual("Messages array should have 1 element for different channel response", Messages.Num(), 1);
+	TestEqual("Channel should be 'test_channel_123'", Messages[0].Channel, "test_channel_123");
+	TestEqual("Message should be 'Hello World'", Messages[0].Message, "Hello World");
+	TestEqual("UserID should be 'test_user'", Messages[0].UserID, "test_user");
 
 	// Test error response
 	FString TestErrorJson = "{\"status\": 400, \"channels\": {}, \"error_message\": \"Invalid channel\", \"error\": true}";
