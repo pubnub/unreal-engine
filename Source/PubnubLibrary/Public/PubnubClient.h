@@ -2370,18 +2370,18 @@ public:
 	 */
 	void RemoveMessageActionAsync(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnPubnubRemoveMessageActionResponseNative NativeCallback = nullptr);
 
-		/**
+	/**
 	 * Tries to reconnect all active subscriptions. Could be used in case of receiving PSS_DisconnectedUnexpectedly or PSS_ConnectionError
 	 * from OnSubscriptionStatusChanged listener. Or if DisconnectSubscriptions was called previously.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void ReconnectSubscriptions();
+	FPubnubOperationResult ReconnectSubscriptions(FString Timetoken = "");
 
 	/**
 	 * Pauses all active subscriptions.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
-	void DisconnectSubscriptions();
+	FPubnubOperationResult DisconnectSubscriptions();
 
 	/** Sets the provider-level crypto module to use for PubNub.
 	 *

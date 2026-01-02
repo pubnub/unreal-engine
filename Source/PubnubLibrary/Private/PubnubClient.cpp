@@ -1765,14 +1765,52 @@ void UPubnubClient::RemoveMessageActionAsync(FString Channel, FString MessageTim
 	});
 }
 
-void UPubnubClient::ReconnectSubscriptions()
+FPubnubOperationResult UPubnubClient::ReconnectSubscriptions(FString Timetoken)
 {
-	pubnub_reconnect(ctx_ee, nullptr);
+	enum pubnub_res ReconnectResult;
+	if (Timetoken.IsEmpty())
+	{
+		ReconnectResult = pubnub_reconnect(ctx_ee, nullptr);
+	}
+	else
+	{
+		FUTF8StringHolder ChannelHolder(Timetoken);
+		pubnub_subscribe_cursor_t cursor = pubnub_subscribe_cursor(ChannelHolder.Get());
+		ReconnectResult = pubnub_reconnect(ctx_ee, &cursor);
+	}
+
+	FPubnubOperationResult FinalResult;
+	
+	if (PNR_OK != ReconnectResult)
+	{
+		FinalResult.Error = true;
+		FinalResult.ErrorMessage = pubnub_res_2_string(ReconnectResult);
+	}
+	else
+	{
+		FinalResult.Status = 200;
+	}
+	
+	return FinalResult;
 }
 
-void UPubnubClient::DisconnectSubscriptions()
+FPubnubOperationResult UPubnubClient::DisconnectSubscriptions()
 {
-	pubnub_disconnect(ctx_ee);
+	enum pubnub_res DisconnectResult = pubnub_disconnect(ctx_ee);
+	
+	FPubnubOperationResult FinalResult;
+	
+	if (PNR_OK != DisconnectResult)
+	{
+		FinalResult.Error = true;
+		FinalResult.ErrorMessage = pubnub_res_2_string(DisconnectResult);
+	}
+	else
+	{
+		FinalResult.Status = 200;
+	}
+	
+	return FinalResult;
 }
 
 void UPubnubClient::SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule)
