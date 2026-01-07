@@ -19,3 +19,24 @@ FString UPubnubTimetokenUtilities::GetCurrentUnixTimetoken()
 
 	return FString::Printf(TEXT("%lld"), Timetoken);
 }
+
+FString UPubnubTimetokenUtilities::AddIntToTimetoken(const FString Timetoken, const int ToAdd)
+{
+	if (Timetoken.IsEmpty())
+	{
+		return FString();
+	}
+
+	// Validate that the string is numeric before parsing
+	if (!Timetoken.IsNumeric())
+	{
+		return FString();
+	}
+
+	int64 TimetokenInt = 0;
+	LexFromString(TimetokenInt, *Timetoken);
+
+	TimetokenInt += ToAdd;
+
+	return FString::Printf(TEXT("%lld"), TimetokenInt);
+}

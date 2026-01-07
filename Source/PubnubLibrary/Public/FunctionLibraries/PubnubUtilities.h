@@ -54,6 +54,7 @@ public:
 	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
 	static FString RemoveOuterQuotesFromString(const FString InString);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
+	static FString ArrayOfStringsToCommaSeparatedString(const TArray<FString> ArrayOfStrings);
 
 	/**
 	 * Safely copies an FString to a char buffer with proper bounds checking and null termination.

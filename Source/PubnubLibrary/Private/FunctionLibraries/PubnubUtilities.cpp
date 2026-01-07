@@ -67,6 +67,19 @@ FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block
 	return FString(Converter.Length(), Converter.Get());
 }
 
+FString UPubnubUtilities::ArrayOfStringsToCommaSeparatedString(const TArray<FString> ArrayOfStrings)
+{
+	FString FinalString = "";
+
+	for(const FString& StringItem : ArrayOfStrings)
+	{
+		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
+		FinalString.Append(StringItem);
+	}
+
+	return FinalString;
+}
+
 bool UPubnubUtilities::SafeCopyFStringToCharBuffer(char* Destination, int DestSize, const FString& Source, const TCHAR* KeyName)
 {
 	if (!Destination || DestSize <= 0)

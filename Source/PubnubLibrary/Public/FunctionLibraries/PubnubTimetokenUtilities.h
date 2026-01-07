@@ -22,5 +22,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Timetoken Utilities")
 	static FString GetCurrentUnixTimetoken();
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Timetoken Utilities")
+	static FString AddIntToTimetoken(const FString Timetoken, const int ToAdd);
 
 };

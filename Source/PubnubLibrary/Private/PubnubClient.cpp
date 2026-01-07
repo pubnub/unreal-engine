@@ -970,6 +970,65 @@ void UPubnubClient::MessageCountsAsync(FString Channel, FString Timetoken, FOnPu
 	});
 }
 
+FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple(TArray<FString> Channels, TArray<FString> Timetokens)
+{
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMessageCountsMultipleResult());
+	
+	return MessageCountsMultiple_priv(Channels, Timetokens);
+}
+
+void UPubnubClient::MessageCountsMultipleAsync(TArray<FString> Channels, TArray<FString> Timetokens, FOnPubnubMessageCountsMultipleResponse OnMessageCountsMultipleResponse)
+{
+	FOnPubnubMessageCountsMultipleResponseNative NativeCallback;
+	NativeCallback.BindLambda([OnMessageCountsMultipleResponse](const FPubnubMessageCountsMultipleResult& Result)
+	{
+		OnMessageCountsMultipleResponse.ExecuteIfBound(Result);
+	});
+
+	MessageCountsMultipleAsync(Channels, Timetokens, NativeCallback);
+}
+
+void UPubnubClient::MessageCountsMultipleAsync(TArray<FString> Channels, TArray<FString> Timetokens, FOnPubnubMessageCountsMultipleResponseNative NativeCallback)
+{
+	if (!IsInitialized)
+	{
+		PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
+		FPubnubMessageCountsMultipleResult ErrorResult;
+		ErrorResult.Result.Error = true;
+		ErrorResult.Result.ErrorMessage = TEXT("PubnubClient is not initialized.");
+		if (NativeCallback.IsBound())
+		{
+			NativeCallback.Execute(ErrorResult);
+		}
+		return;
+	}
+	if (!PubnubCallsThread)
+	{
+		PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
+		FPubnubMessageCountsMultipleResult ErrorResult;
+		ErrorResult.Result.Error = true;
+		ErrorResult.Result.ErrorMessage = TEXT("PubnubCallsThread is invalid.");
+		if (NativeCallback.IsBound())
+		{
+			NativeCallback.Execute(ErrorResult);
+		}
+		return;
+	}
+	
+	TWeakObjectPtr<UPubnubClient> WeakThis = MakeWeakObjectPtr<UPubnubClient>(this);
+
+	PubnubCallsThread->AddFunctionToQueue( [WeakThis, Channels, Timetokens, NativeCallback]
+	{
+		if(!WeakThis.IsValid())
+		{return;}
+		
+		FPubnubMessageCountsMultipleResult Result = WeakThis.Get()->MessageCountsMultiple_priv(Channels, Timetokens);
+		
+		//Execute provided delegate with results
+		UPubnubUtilities::CallPubnubDelegate(NativeCallback, Result);
+	});
+}
+
 FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadataRaw(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllUserMetadataResult());
@@ -3187,6 +3246,43 @@ FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FS
 	PubnubOperationMutex.Unlock();
 	
 	return FPubnubMessageCountsResult(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), MessageCountsNumber);
+}
+
+FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple_priv(TArray<FString> Channels, TArray<FString> Timetokens)
+{
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMessageCountsMultipleResult());
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((!Channels.IsEmpty()), TEXT("Channels array cannot be empty."), FPubnubMessageCountsMultipleResult());
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((Channels.Num() == Timetokens.Num()), TEXT("Number of channels must match number of timetokens."), FPubnubMessageCountsMultipleResult());
+	// Try to acquire lock - fail fast if another operation is in progress
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMessageCountsMultipleResult());
+
+	FUTF8StringHolder TimetokensHolder(UPubnubUtilities::ArrayOfStringsToCommaSeparatedString(Timetokens));
+	FUTF8StringHolder ChannelHolder(UPubnubUtilities::ArrayOfStringsToCommaSeparatedString(Channels));
+	
+	pubnub_message_counts(ctx_pub, ChannelHolder.Get(), TimetokensHolder.Get());
+
+	pubnub_await(ctx_pub);
+	
+	int Size = Channels.Num();
+	TArray<int> MessageCountsReturn;
+	MessageCountsReturn.SetNumZeroed(Size);
+	
+	int GetResponse = pubnub_get_message_counts(ctx_pub, ChannelHolder.Get(), MessageCountsReturn.GetData());
+	
+	TMap<FString, int> MessageCountsPerChannel;
+	for(int i = 0; i < Channels.Num(); i++)
+	{
+		MessageCountsPerChannel.Add(Channels[i], GetResponse >= 0 ? MessageCountsReturn[i] : 0);
+	}
+
+	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	
+	PubnubOperationMutex.Unlock();
+	
+	FPubnubMessageCountsMultipleResult Result;
+	Result.Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	Result.MessageCountsPerChannel = MessageCountsPerChannel;
+	return Result;
 }
 
 FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata_priv(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)

@@ -64,6 +64,8 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubFetchHistoryResponse, FPubnubOperati
 DECLARE_DELEGATE_TwoParams(FOnPubnubFetchHistoryResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubMessageCountsResponse, FPubnubOperationResult, Result, int, MessageCounts);
 DECLARE_DELEGATE_TwoParams(FOnPubnubMessageCountsResponseNative, const FPubnubOperationResult& Result, int MessageCounts);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubMessageCountsMultipleResponse, FPubnubMessageCountsMultipleResult, Result);
+DECLARE_DELEGATE_OneParam(FOnPubnubMessageCountsMultipleResponseNative, const FPubnubMessageCountsMultipleResult& Result);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubDeleteMessagesResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnPubnubDeleteMessagesResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FOnPubnubGetAllUserMetadataResponse, FPubnubOperationResult, Result, const TArray<FPubnubUserData>&, UsersData, FPubnubPage, Page, int, TotalCount);
@@ -1028,6 +1030,49 @@ public:
 	 */
 	void MessageCountsAsync(FString Channel, FString Timetoken, FOnPubnubMessageCountsResponseNative NativeCallback);
 
+	/**
+	 * Returns the number of messages published on one or more channels synchronously since a given time.
+	 * The count returned is the number of messages in history with a Timetoken value greater
+	 * than or equal to than the passed value in the Timetoken parameter.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channels The IDs of the channels to count messages for.
+	 * @param Timetokens Array of timetokens to start counting messages from, one per channel. (Exclusive, messages with the same timetoken, won't be counted).
+	 *                   Must match the number of channels provided.
+	 * @return FPubnubMessageCountsMultipleResult containing the operation result and message counts per channel.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	FPubnubMessageCountsMultipleResult MessageCountsMultiple(TArray<FString> Channels, TArray<FString> Timetokens);
+
+	/**
+	 * Returns the number of messages published on one or more channels since a given time.
+	 * The count returned is the number of messages in history with a Timetoken value greater
+	 * than or equal to than the passed value in the Timetoken parameter.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channels The IDs of the channels to count messages for.
+	 * @param Timetokens Array of timetokens to start counting messages from, one per channel. (Exclusive, messages with the same timetoken, won't be counted).
+	 *                   Must match the number of channels provided.
+	 * @param OnMessageCountsMultipleResponse The callback function used to handle the result.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	void MessageCountsMultipleAsync(TArray<FString> Channels, TArray<FString> Timetokens, FOnPubnubMessageCountsMultipleResponse OnMessageCountsMultipleResponse);
+
+	/**
+	 * Returns the number of messages published on one or more channels since a given time.
+	 * The count returned is the number of messages in history with a Timetoken value greater
+	 * than or equal to than the passed value in the Timetoken parameter.
+	 * 
+	 * @Note Requires the *Message Persistence* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Channels The IDs of the channels to count messages for.
+	 * @param Timetokens Array of timetokens to start counting messages from, one per channel. (Exclusive, messages with the same timetoken, won't be counted).
+	 *                   Must match the number of channels provided.
+	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
+	 */
+	void MessageCountsMultipleAsync(TArray<FString> Channels, TArray<FString> Timetokens, FOnPubnubMessageCountsMultipleResponseNative NativeCallback);
 
 	/* APP CONTEXT API */
 	
@@ -2643,6 +2688,7 @@ private:
 	FPubnubFetchHistoryResult FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	FPubnubOperationResult DeleteMessages_priv(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 	FPubnubMessageCountsResult MessageCounts_priv(FString Channel, FString Timetoken);
+	FPubnubMessageCountsMultipleResult MessageCountsMultiple_priv(TArray<FString> Channels, TArray<FString> Timetokens);
 	FPubnubGetAllUserMetadataResult GetAllUserMetadata_priv(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count);
 	FPubnubUserMetadataResult SetUserMetadata_priv(FString User, FString UserMetadataObj, FString Include);
 	FPubnubUserMetadataResult GetUserMetadata_priv(FString User, FString Include);

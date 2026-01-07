@@ -1,6 +1,7 @@
 // Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 #include "PubnubEnumLibrary.h"
 #include "PubnubStructLibrary.h"
 #include "Kismet/GameplayStatics.h"

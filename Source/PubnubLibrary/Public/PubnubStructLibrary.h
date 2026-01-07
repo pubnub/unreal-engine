@@ -1059,6 +1059,17 @@ struct FPubnubMessageCountsResult
 };
 
 USTRUCT(BlueprintType)
+struct FPubnubMessageCountsMultipleResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The number of messages in the specified time range on a given channel */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, int> MessageCountsPerChannel;
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubGetAllUserMetadataResult
 {
 	GENERATED_BODY()
