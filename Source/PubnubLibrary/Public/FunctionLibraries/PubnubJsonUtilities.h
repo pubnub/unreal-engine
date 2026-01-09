@@ -212,6 +212,14 @@ public:
 	static FPubnubOperationResult GetOperationResultFromJson_AppContext(TSharedPtr<FJsonObject> JsonObject);
 	static FPubnubOperationResult GetOperationResultFromJson_AppContext(FString ResponseJson);
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubChannelUpdateData GetChannelUpdateDataFromMessageContent(const FString& MessageContent);
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubUserUpdateData GetUserUpdateDataFromMessageContent(const FString& MessageContent);
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubMembershipUpdateData GetMembershipUpdateDataFromMessageContent(const FString& MessageContent);
 };
 
 

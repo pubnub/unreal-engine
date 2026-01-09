@@ -1161,3 +1161,63 @@ struct FPubnubAddMessageActionResult
 	/** The added message action data including timetokens */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubMessageActionData MessageActionData;
 };
+
+/**
+ * Struct used to show which fields were changed in an "objects" event related to channel metadata
+ */
+USTRUCT(BlueprintType)
+struct FPubnubChannelUpdateData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelName = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Description = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool ChannelNameUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool DescriptionUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool CustomUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StatusUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool TypeUpdated = false;
+};
+
+/**
+ * Struct used to show which fields were changed in an "objects" event related to user metadata
+ */
+USTRUCT(BlueprintType)
+struct FPubnubUserUpdateData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserName = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ExternalID = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ProfileUrl = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Email = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool UserNameUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool ExternalIDUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool ProfileUrlUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool EmailUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool CustomUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StatusUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool TypeUpdated = false;
+};
+
+/**
+ * Struct used to show which fields were changed in an "objects" event related to memberships/channel members
+ */
+USTRUCT(BlueprintType)
+struct FPubnubMembershipUpdateData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool CustomUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StatusUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool TypeUpdated = false;
+};

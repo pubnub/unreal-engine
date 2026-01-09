@@ -54,7 +54,7 @@ void UPubnubSubscription::SubscribeAsync(FPubnubSubscriptionCursor Cursor)
 
 FPubnubOperationResult UPubnubSubscription::Unsubscribe()
 {
-	return FPubnubOperationResult();
+	return PubnubClient->UnsubscribeWithSubscription(this);
 }
 
 void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse)
@@ -305,7 +305,7 @@ void UPubnubSubscriptionSet::SubscribeAsync(FPubnubSubscriptionCursor Cursor)
 
 FPubnubOperationResult UPubnubSubscriptionSet::Unsubscribe()
 {
-	return FPubnubOperationResult();
+	return PubnubClient->UnsubscribeWithSubscriptionSet(this);
 }
 
 void UPubnubSubscriptionSet::UnsubscribeAsync(FOnPubnubSubscribeOperationResponse OnUnsubscribeResponse)

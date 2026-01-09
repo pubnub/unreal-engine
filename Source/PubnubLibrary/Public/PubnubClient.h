@@ -115,7 +115,7 @@ struct FPubnubUserDataResponse
 /**
  * 
  */
-UCLASS()
+UCLASS(BlueprintType)
 class PUBNUBLIBRARY_API UPubnubClient : public UObject
 {
 	GENERATED_BODY()

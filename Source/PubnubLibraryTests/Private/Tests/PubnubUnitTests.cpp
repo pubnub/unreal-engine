@@ -48,6 +48,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelDataUnitTest, "Pubnub.aUnit.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipDataFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipDataFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipInputDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipInputData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipsDataArrayFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipsDataArrayFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelUpdateDataFromMessageContentUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelUpdateDataFromMessageContent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetUserUpdateDataFromMessageContentUnitTest, "Pubnub.aUnit.JsonUtilities.GetUserUpdateDataFromMessageContent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipUpdateDataFromMessageContentUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipUpdateDataFromMessageContent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipsDataArrayUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipsDataArray", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMemberDataFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMemberDataFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMemberDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromChannelMemberData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
@@ -2653,6 +2656,215 @@ bool FGetOperationResultFromJsonAppContextUnitTest::RunTest(const FString& Param
 	TestFalse("Invalid JSON: Error should be false (default)", ResultInvalid.Error);
 	TestEqual("Invalid JSON: ErrorMessage should be empty (default)", ResultInvalid.ErrorMessage, "");
 
+	return true;
+}
+
+bool FGetChannelUpdateDataFromMessageContentUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete channel data (all fields present with values)
+	FString TestJsonComplete = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"channel\",\"data\":{\"custom\":{\"premium\":\"ForSure\"},\"eTag\":\"37a48c8d040cb386a51e33f4492acc2c\",\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":\"Test Description\",\"status\":\"active\",\"type\":\"public\",\"updated\":\"2026-01-08T14:40:08.305937Z\"}}";
+	FPubnubChannelUpdateData ResultComplete = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonComplete);
+	
+	TestEqual("Complete: ChannelName should be 'UE_Channel'", ResultComplete.ChannelName, "UE_Channel");
+	TestTrue("Complete: ChannelNameUpdated should be true", ResultComplete.ChannelNameUpdated);
+	TestEqual("Complete: Description should be 'Test Description'", ResultComplete.Description, "Test Description");
+	TestTrue("Complete: DescriptionUpdated should be true", ResultComplete.DescriptionUpdated);
+	TestEqual("Complete: Status should be 'active'", ResultComplete.Status, "active");
+	TestTrue("Complete: StatusUpdated should be true", ResultComplete.StatusUpdated);
+	TestEqual("Complete: Type should be 'public'", ResultComplete.Type, "public");
+	TestTrue("Complete: TypeUpdated should be true", ResultComplete.TypeUpdated);
+	TestTrue("Complete: Custom should contain premium", ResultComplete.Custom.Contains("\"premium\":\"ForSure\""));
+	TestTrue("Complete: CustomUpdated should be true", ResultComplete.CustomUpdated);
+	
+	// Test with null fields (fields present but null)
+	FString TestJsonNullFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"channel\",\"data\":{\"name\":null,\"description\":null,\"status\":null,\"type\":null,\"custom\":null}}";
+	FPubnubChannelUpdateData ResultNullFields = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonNullFields);
+	
+	TestEqual("Null fields: ChannelName should be empty", ResultNullFields.ChannelName, "");
+	TestTrue("Null fields: ChannelNameUpdated should be true", ResultNullFields.ChannelNameUpdated);
+	TestEqual("Null fields: Description should be empty", ResultNullFields.Description, "");
+	TestTrue("Null fields: DescriptionUpdated should be true", ResultNullFields.DescriptionUpdated);
+	TestEqual("Null fields: Status should be empty", ResultNullFields.Status, "");
+	TestTrue("Null fields: StatusUpdated should be true", ResultNullFields.StatusUpdated);
+	TestEqual("Null fields: Type should be empty", ResultNullFields.Type, "");
+	TestTrue("Null fields: TypeUpdated should be true", ResultNullFields.TypeUpdated);
+	TestEqual("Null fields: Custom should be empty", ResultNullFields.Custom, "");
+	TestTrue("Null fields: CustomUpdated should be true", ResultNullFields.CustomUpdated);
+	
+	// Test with missing fields (fields not present in JSON)
+	FString TestJsonMissingFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"channel\",\"data\":{\"id\":\"my_channel\"}}";
+	FPubnubChannelUpdateData ResultMissingFields = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonMissingFields);
+	
+	TestEqual("Missing fields: ChannelName should be empty", ResultMissingFields.ChannelName, "");
+	TestFalse("Missing fields: ChannelNameUpdated should be false", ResultMissingFields.ChannelNameUpdated);
+	TestEqual("Missing fields: Description should be empty", ResultMissingFields.Description, "");
+	TestFalse("Missing fields: DescriptionUpdated should be false", ResultMissingFields.DescriptionUpdated);
+	TestEqual("Missing fields: Status should be empty", ResultMissingFields.Status, "");
+	TestFalse("Missing fields: StatusUpdated should be false", ResultMissingFields.StatusUpdated);
+	TestEqual("Missing fields: Type should be empty", ResultMissingFields.Type, "");
+	TestFalse("Missing fields: TypeUpdated should be false", ResultMissingFields.TypeUpdated);
+	TestEqual("Missing fields: Custom should be empty", ResultMissingFields.Custom, "");
+	TestFalse("Missing fields: CustomUpdated should be false", ResultMissingFields.CustomUpdated);
+	
+	// Test with empty message content
+	FString TestJsonEmpty = "";
+	FPubnubChannelUpdateData ResultEmpty = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonEmpty);
+	
+	TestEqual("Empty: ChannelName should be empty", ResultEmpty.ChannelName, "");
+	TestFalse("Empty: ChannelNameUpdated should be false", ResultEmpty.ChannelNameUpdated);
+	
+	// Test with missing data field
+	FString TestJsonNoData = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"channel\"}";
+	FPubnubChannelUpdateData ResultNoData = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonNoData);
+	
+	TestEqual("No data: ChannelName should be empty", ResultNoData.ChannelName, "");
+	TestFalse("No data: ChannelNameUpdated should be false", ResultNoData.ChannelNameUpdated);
+	
+	return true;
+}
+
+bool FGetUserUpdateDataFromMessageContentUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete user data (all fields present with values)
+	FString TestJsonComplete = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"user\",\"data\":{\"id\":\"User1\",\"name\":\"John Doe\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile.jpg\",\"email\":\"john@example.com\",\"custom\":{\"department\":\"Engineering\"},\"status\":\"active\",\"type\":\"premium\",\"updated\":\"2026-01-08T14:40:08.305937Z\"}}";
+	FPubnubUserUpdateData ResultComplete = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonComplete);
+	
+	TestEqual("Complete: UserName should be 'John Doe'", ResultComplete.UserName, "John Doe");
+	TestTrue("Complete: UserNameUpdated should be true", ResultComplete.UserNameUpdated);
+	TestEqual("Complete: ExternalID should be 'ext123'", ResultComplete.ExternalID, "ext123");
+	TestTrue("Complete: ExternalIDUpdated should be true", ResultComplete.ExternalIDUpdated);
+	TestEqual("Complete: ProfileUrl should be 'https://example.com/profile.jpg'", ResultComplete.ProfileUrl, "https://example.com/profile.jpg");
+	TestTrue("Complete: ProfileUrlUpdated should be true", ResultComplete.ProfileUrlUpdated);
+	TestEqual("Complete: Email should be 'john@example.com'", ResultComplete.Email, "john@example.com");
+	TestTrue("Complete: EmailUpdated should be true", ResultComplete.EmailUpdated);
+	TestEqual("Complete: Status should be 'active'", ResultComplete.Status, "active");
+	TestTrue("Complete: StatusUpdated should be true", ResultComplete.StatusUpdated);
+	TestEqual("Complete: Type should be 'premium'", ResultComplete.Type, "premium");
+	TestTrue("Complete: TypeUpdated should be true", ResultComplete.TypeUpdated);
+	TestTrue("Complete: Custom should contain department", ResultComplete.Custom.Contains("\"department\":\"Engineering\""));
+	TestTrue("Complete: CustomUpdated should be true", ResultComplete.CustomUpdated);
+	
+	// Test with null fields (fields present but null)
+	FString TestJsonNullFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"user\",\"data\":{\"name\":null,\"externalId\":null,\"profileUrl\":null,\"email\":null,\"status\":null,\"type\":null,\"custom\":null}}";
+	FPubnubUserUpdateData ResultNullFields = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonNullFields);
+	
+	TestEqual("Null fields: UserName should be empty", ResultNullFields.UserName, "");
+	TestTrue("Null fields: UserNameUpdated should be true", ResultNullFields.UserNameUpdated);
+	TestEqual("Null fields: ExternalID should be empty", ResultNullFields.ExternalID, "");
+	TestTrue("Null fields: ExternalIDUpdated should be true", ResultNullFields.ExternalIDUpdated);
+	TestEqual("Null fields: ProfileUrl should be empty", ResultNullFields.ProfileUrl, "");
+	TestTrue("Null fields: ProfileUrlUpdated should be true", ResultNullFields.ProfileUrlUpdated);
+	TestEqual("Null fields: Email should be empty", ResultNullFields.Email, "");
+	TestTrue("Null fields: EmailUpdated should be true", ResultNullFields.EmailUpdated);
+	TestEqual("Null fields: Status should be empty", ResultNullFields.Status, "");
+	TestTrue("Null fields: StatusUpdated should be true", ResultNullFields.StatusUpdated);
+	TestEqual("Null fields: Type should be empty", ResultNullFields.Type, "");
+	TestTrue("Null fields: TypeUpdated should be true", ResultNullFields.TypeUpdated);
+	TestEqual("Null fields: Custom should be empty", ResultNullFields.Custom, "");
+	TestTrue("Null fields: CustomUpdated should be true", ResultNullFields.CustomUpdated);
+	
+	// Test with missing fields (fields not present in JSON)
+	FString TestJsonMissingFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"user\",\"data\":{\"id\":\"User1\"}}";
+	FPubnubUserUpdateData ResultMissingFields = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonMissingFields);
+	
+	TestEqual("Missing fields: UserName should be empty", ResultMissingFields.UserName, "");
+	TestFalse("Missing fields: UserNameUpdated should be false", ResultMissingFields.UserNameUpdated);
+	TestEqual("Missing fields: ExternalID should be empty", ResultMissingFields.ExternalID, "");
+	TestFalse("Missing fields: ExternalIDUpdated should be false", ResultMissingFields.ExternalIDUpdated);
+	TestEqual("Missing fields: ProfileUrl should be empty", ResultMissingFields.ProfileUrl, "");
+	TestFalse("Missing fields: ProfileUrlUpdated should be false", ResultMissingFields.ProfileUrlUpdated);
+	TestEqual("Missing fields: Email should be empty", ResultMissingFields.Email, "");
+	TestFalse("Missing fields: EmailUpdated should be false", ResultMissingFields.EmailUpdated);
+	TestEqual("Missing fields: Status should be empty", ResultMissingFields.Status, "");
+	TestFalse("Missing fields: StatusUpdated should be false", ResultMissingFields.StatusUpdated);
+	TestEqual("Missing fields: Type should be empty", ResultMissingFields.Type, "");
+	TestFalse("Missing fields: TypeUpdated should be false", ResultMissingFields.TypeUpdated);
+	TestEqual("Missing fields: Custom should be empty", ResultMissingFields.Custom, "");
+	TestFalse("Missing fields: CustomUpdated should be false", ResultMissingFields.CustomUpdated);
+	
+	// Test with partial fields (some present, some missing)
+	FString TestJsonPartial = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"user\",\"data\":{\"name\":\"Jane Doe\",\"email\":\"jane@example.com\"}}";
+	FPubnubUserUpdateData ResultPartial = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonPartial);
+	
+	TestEqual("Partial: UserName should be 'Jane Doe'", ResultPartial.UserName, "Jane Doe");
+	TestTrue("Partial: UserNameUpdated should be true", ResultPartial.UserNameUpdated);
+	TestEqual("Partial: Email should be 'jane@example.com'", ResultPartial.Email, "jane@example.com");
+	TestTrue("Partial: EmailUpdated should be true", ResultPartial.EmailUpdated);
+	TestEqual("Partial: ExternalID should be empty", ResultPartial.ExternalID, "");
+	TestFalse("Partial: ExternalIDUpdated should be false", ResultPartial.ExternalIDUpdated);
+	TestEqual("Partial: Status should be empty", ResultPartial.Status, "");
+	TestFalse("Partial: StatusUpdated should be false", ResultPartial.StatusUpdated);
+	
+	// Test with empty message content
+	FString TestJsonEmpty = "";
+	FPubnubUserUpdateData ResultEmpty = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonEmpty);
+	
+	TestEqual("Empty: UserName should be empty", ResultEmpty.UserName, "");
+	TestFalse("Empty: UserNameUpdated should be false", ResultEmpty.UserNameUpdated);
+	
+	return true;
+}
+
+bool FGetMembershipUpdateDataFromMessageContentUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete membership data (all fields present with values)
+	FString TestJsonComplete = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\",\"data\":{\"channel\":{\"id\":\"my_channel\"},\"custom\":{\"hotMembership\":\"warm\"},\"status\":\"active\",\"type\":\"premium\",\"eTag\":\"AdycwpOS7bWOKg\",\"updated\":\"2026-01-08T14:41:26.09144009Z\",\"uuid\":{\"id\":\"User1\"}}}";
+	FPubnubMembershipUpdateData ResultComplete = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonComplete);
+	
+	TestEqual("Complete: Status should be 'active'", ResultComplete.Status, "active");
+	TestTrue("Complete: StatusUpdated should be true", ResultComplete.StatusUpdated);
+	TestEqual("Complete: Type should be 'premium'", ResultComplete.Type, "premium");
+	TestTrue("Complete: TypeUpdated should be true", ResultComplete.TypeUpdated);
+	TestTrue("Complete: Custom should contain hotMembership", ResultComplete.Custom.Contains("\"hotMembership\":\"warm\""));
+	TestTrue("Complete: CustomUpdated should be true", ResultComplete.CustomUpdated);
+	
+	// Test with null fields (fields present but null)
+	FString TestJsonNullFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\",\"data\":{\"channel\":{\"id\":\"my_channel\"},\"custom\":null,\"status\":null,\"type\":null,\"uuid\":{\"id\":\"User1\"}}}";
+	FPubnubMembershipUpdateData ResultNullFields = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonNullFields);
+	
+	TestEqual("Null fields: Status should be empty", ResultNullFields.Status, "");
+	TestTrue("Null fields: StatusUpdated should be true", ResultNullFields.StatusUpdated);
+	TestEqual("Null fields: Type should be empty", ResultNullFields.Type, "");
+	TestTrue("Null fields: TypeUpdated should be true", ResultNullFields.TypeUpdated);
+	TestEqual("Null fields: Custom should be empty", ResultNullFields.Custom, "");
+	TestTrue("Null fields: CustomUpdated should be true", ResultNullFields.CustomUpdated);
+	
+	// Test with missing fields (fields not present in JSON)
+	FString TestJsonMissingFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\",\"data\":{\"channel\":{\"id\":\"my_channel\"},\"uuid\":{\"id\":\"User1\"}}}";
+	FPubnubMembershipUpdateData ResultMissingFields = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonMissingFields);
+	
+	TestEqual("Missing fields: Status should be empty", ResultMissingFields.Status, "");
+	TestFalse("Missing fields: StatusUpdated should be false", ResultMissingFields.StatusUpdated);
+	TestEqual("Missing fields: Type should be empty", ResultMissingFields.Type, "");
+	TestFalse("Missing fields: TypeUpdated should be false", ResultMissingFields.TypeUpdated);
+	TestEqual("Missing fields: Custom should be empty", ResultMissingFields.Custom, "");
+	TestFalse("Missing fields: CustomUpdated should be false", ResultMissingFields.CustomUpdated);
+	
+	// Test with partial fields (some present, some missing)
+	FString TestJsonPartial = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\",\"data\":{\"channel\":{\"id\":\"my_channel\"},\"status\":\"pending\",\"uuid\":{\"id\":\"User1\"}}}";
+	FPubnubMembershipUpdateData ResultPartial = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonPartial);
+	
+	TestEqual("Partial: Status should be 'pending'", ResultPartial.Status, "pending");
+	TestTrue("Partial: StatusUpdated should be true", ResultPartial.StatusUpdated);
+	TestEqual("Partial: Type should be empty", ResultPartial.Type, "");
+	TestFalse("Partial: TypeUpdated should be false", ResultPartial.TypeUpdated);
+	TestEqual("Partial: Custom should be empty", ResultPartial.Custom, "");
+	TestFalse("Partial: CustomUpdated should be false", ResultPartial.CustomUpdated);
+	
+	// Test with empty message content
+	FString TestJsonEmpty = "";
+	FPubnubMembershipUpdateData ResultEmpty = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonEmpty);
+	
+	TestEqual("Empty: Status should be empty", ResultEmpty.Status, "");
+	TestFalse("Empty: StatusUpdated should be false", ResultEmpty.StatusUpdated);
+	
+	// Test with missing data field
+	FString TestJsonNoData = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\"}";
+	FPubnubMembershipUpdateData ResultNoData = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonNoData);
+	
+	TestEqual("No data: Status should be empty", ResultNoData.Status, "");
+	TestFalse("No data: StatusUpdated should be false", ResultNoData.StatusUpdated);
+	
 	return true;
 }
 

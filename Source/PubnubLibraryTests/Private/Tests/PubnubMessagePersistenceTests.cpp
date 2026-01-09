@@ -17,6 +17,7 @@
 using namespace PubnubTests;
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubMessageCountsTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessagePersistence.MessageCounts", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubMessageCountsMultipleTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessagePersistence.MessageCountsMultiple", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubFetchHistoryTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessagePersistence.FetchHistory", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubDeleteMessagesTest, FPubnubAutomationTestBase, "Pubnub.Integration.MessagePersistence.DeleteMessages", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
@@ -177,6 +178,208 @@ bool FPubnubMessageCountsTest::RunTest(const FString& Parameters)
 		if (*bMessageCountsOperationSuccess)
 		{
 			TestEqual("Message count after 2nd publish (no store) should still be 1", *MessageCountResult, 1);
+		}
+	}, 0.1f));
+	
+	CleanUp();
+	return true;
+}
+
+bool FPubnubMessageCountsMultipleTest::RunTest(const FString& Parameters)
+{
+	// Initial variables
+	const FString TestUser = SDK_PREFIX + "user_msg_counts_multiple";
+	const FString TestChannel1 = SDK_PREFIX + "chan_msg_counts_multiple_1";
+	const FString TestChannel2 = SDK_PREFIX + "chan_msg_counts_multiple_2";
+	const FString TestChannel3 = SDK_PREFIX + "chan_msg_counts_multiple_3";
+	const FString TestMessage1 = "\"Message one for multiple counts test\"";
+	const FString TestMessage2 = "\"Message two for multiple counts test\"";
+	const FString TestMessage3 = "\"Message three for multiple counts test (no store)\"";
+
+	TSharedPtr<FString> InitialTimetoken = MakeShared<FString>(UPubnubTimetokenUtilities::GetCurrentUnixTimetoken());
+	TSharedPtr<TArray<FString>> InitialTimetokens = MakeShared<TArray<FString>>();
+	InitialTimetokens->Add(*InitialTimetoken);
+	InitialTimetokens->Add(*InitialTimetoken);
+	InitialTimetokens->Add(*InitialTimetoken);
+	TSharedPtr<bool> bMessageCountsMultipleOperationDone = MakeShared<bool>(false);
+	TSharedPtr<bool> bMessageCountsMultipleOperationSuccess = MakeShared<bool>(false);
+	TSharedPtr<TMap<FString, int32>> MessageCountsPerChannelResult = MakeShared<TMap<FString, int32>>();
+	
+	// Variables to track publish operations
+	TSharedPtr<bool> bPublishMessage1Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage1Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage2Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage2Success = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage3Done = MakeShared<bool>(false);
+	TSharedPtr<bool> bPublishMessage3Success = MakeShared<bool>(false);
+
+	if (!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubMessageCountsMultipleTest");
+		return false;
+	}
+
+	// Set UserID  
+	PubnubSubsystem->SetUserID(TestUser);
+
+	// General error handler
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(FString::Printf(TEXT("Pubnub Error in FPubnubMessageCountsMultipleTest: %s, Type: %d"), *ErrorMessage, ErrorType));
+	});
+
+	// MessageCountsMultiple callback handler
+	FOnPubnubMessageCountsMultipleResponseNative MessageCountsMultipleCallback;
+	MessageCountsMultipleCallback.BindLambda([this, bMessageCountsMultipleOperationDone, bMessageCountsMultipleOperationSuccess, MessageCountsPerChannelResult](const FPubnubMessageCountsMultipleResult& Result)
+	{
+		*bMessageCountsMultipleOperationDone = true;
+		*bMessageCountsMultipleOperationSuccess = !Result.Result.Error && Result.Result.Status == 200;
+		*MessageCountsPerChannelResult = Result.MessageCountsPerChannel;
+		if (Result.Result.Error || Result.Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("MessageCountsMultiple failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Result.Error ? TEXT("true") : TEXT("false"), Result.Result.Status, *Result.Result.ErrorMessage));
+		}
+	});
+
+	// PublishMessage callbacks
+	FOnPublishMessageResponseNative PublishMessage1Callback;
+	PublishMessage1Callback.BindLambda([this, bPublishMessage1Done, bPublishMessage1Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*bPublishMessage1Done = true;
+		*bPublishMessage1Success = !Result.Error && Result.Status == 200;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("PublishMessage1 failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnPublishMessageResponseNative PublishMessage2Callback;
+	PublishMessage2Callback.BindLambda([this, bPublishMessage2Done, bPublishMessage2Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*bPublishMessage2Done = true;
+		*bPublishMessage2Success = !Result.Error && Result.Status == 200;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("PublishMessage2 failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	FOnPublishMessageResponseNative PublishMessage3Callback;
+	PublishMessage3Callback.BindLambda([this, bPublishMessage3Done, bPublishMessage3Success](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
+	{
+		*bPublishMessage3Done = true;
+		*bPublishMessage3Success = !Result.Error && Result.Status == 200;
+		if (Result.Error || Result.Status != 200)
+		{
+			AddError(FString::Printf(TEXT("PublishMessage3 failed - Error: %s, Status: %d, Message: %s"), 
+				Result.Error ? TEXT("true") : TEXT("false"), Result.Status, *Result.ErrorMessage));
+		}
+	});
+
+	// Step 1: Call MessageCountsMultiple with initial timetokens, expect 0 for all channels
+	TArray<FString> TestChannels = {TestChannel1, TestChannel2, TestChannel3};
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannels, InitialTimetokens, MessageCountsMultipleCallback, bMessageCountsMultipleOperationDone, bMessageCountsMultipleOperationSuccess, MessageCountsPerChannelResult]()
+	{
+		*bMessageCountsMultipleOperationDone = false;
+		*bMessageCountsMultipleOperationSuccess = false;
+		MessageCountsPerChannelResult->Empty();
+		if (PubnubSubsystem && PubnubSubsystem->GetPubnubClient(0))
+		{
+			PubnubSubsystem->GetPubnubClient(0)->MessageCountsMultipleAsync(TestChannels, *InitialTimetokens, MessageCountsMultipleCallback);
+		}
+		else
+		{
+			AddError("PubnubSubsystem or DefaultClient is null");
+			*bMessageCountsMultipleOperationDone = true;
+		}
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessageCountsMultipleOperationDone]() { return *bMessageCountsMultipleOperationDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestChannel2, TestChannel3, MessageCountsPerChannelResult, bMessageCountsMultipleOperationSuccess, bMessageCountsMultipleOperationDone]()
+	{
+		TestTrue("MessageCountsMultiple (initial) operation should have completed", *bMessageCountsMultipleOperationDone);
+		TestTrue("MessageCountsMultiple (initial) operation should have succeeded", *bMessageCountsMultipleOperationSuccess);
+		if (*bMessageCountsMultipleOperationSuccess)
+		{
+			TestEqual("Initial message count for channel 1 should be 0", MessageCountsPerChannelResult->FindRef(TestChannel1), 0);
+			TestEqual("Initial message count for channel 2 should be 0", MessageCountsPerChannelResult->FindRef(TestChannel2), 0);
+			TestEqual("Initial message count for channel 3 should be 0", MessageCountsPerChannelResult->FindRef(TestChannel3), 0);
+		}
+	}, 0.1f));
+
+	// Step 2: Publish message 1 to channel 1 (StoreInHistory = true)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestMessage1, PublishMessage1Callback, bPublishMessage1Done, bPublishMessage1Success]()
+	{
+		*bPublishMessage1Done = false;
+		*bPublishMessage1Success = false;
+		FPubnubPublishSettings PublishSettings;
+		PublishSettings.StoreInHistory = true;
+		PubnubSubsystem->PublishMessage(TestChannel1, TestMessage1, PublishMessage1Callback, PublishSettings);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessage1Done]() { return *bPublishMessage1Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessage1Success]()
+	{
+		TestTrue("PublishMessage1 should have succeeded", *bPublishMessage1Success);
+	}, 0.1f));
+
+	// Step 3: Publish message 2 to channel 2 (StoreInHistory = true)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel2, TestMessage2, PublishMessage2Callback, bPublishMessage2Done, bPublishMessage2Success]()
+	{
+		*bPublishMessage2Done = false;
+		*bPublishMessage2Success = false;
+		FPubnubPublishSettings PublishSettings;
+		PublishSettings.StoreInHistory = true;
+		PubnubSubsystem->PublishMessage(TestChannel2, TestMessage2, PublishMessage2Callback, PublishSettings);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessage2Done]() { return *bPublishMessage2Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessage2Success]()
+	{
+		TestTrue("PublishMessage2 should have succeeded", *bPublishMessage2Success);
+	}, 0.1f));
+
+	// Step 4: Publish message 3 to channel 3 (StoreInHistory = false)
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel3, TestMessage3, PublishMessage3Callback, bPublishMessage3Done, bPublishMessage3Success]()
+	{
+		*bPublishMessage3Done = false;
+		*bPublishMessage3Success = false;
+		FPubnubPublishSettings PublishSettings;
+		PublishSettings.StoreInHistory = false;
+		PubnubSubsystem->PublishMessage(TestChannel3, TestMessage3, PublishMessage3Callback, PublishSettings);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPublishMessage3Done]() { return *bPublishMessage3Done; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPublishMessage3Success]()
+	{
+		TestTrue("PublishMessage3 should have succeeded", *bPublishMessage3Success);
+	}, 0.1f));
+
+	// Step 5: Call MessageCountsMultiple again, expect 1 for channel 1, 1 for channel 2, 0 for channel 3
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannels, InitialTimetokens, MessageCountsMultipleCallback, bMessageCountsMultipleOperationDone, bMessageCountsMultipleOperationSuccess, MessageCountsPerChannelResult]()
+	{
+		*bMessageCountsMultipleOperationDone = false;
+		*bMessageCountsMultipleOperationSuccess = false;
+		MessageCountsPerChannelResult->Empty();
+		if (PubnubSubsystem && PubnubSubsystem->GetPubnubClient(0))
+		{
+			PubnubSubsystem->GetPubnubClient(0)->MessageCountsMultipleAsync(TestChannels, *InitialTimetokens, MessageCountsMultipleCallback);
+		}
+		else
+		{
+			AddError("PubnubSubsystem or DefaultClient is null");
+			*bMessageCountsMultipleOperationDone = true;
+		}
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bMessageCountsMultipleOperationDone]() { return *bMessageCountsMultipleOperationDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel1, TestChannel2, TestChannel3, MessageCountsPerChannelResult, bMessageCountsMultipleOperationSuccess, bMessageCountsMultipleOperationDone]()
+	{
+		TestTrue("MessageCountsMultiple (after publishes) operation should have completed", *bMessageCountsMultipleOperationDone);
+		TestTrue("MessageCountsMultiple (after publishes) operation should have succeeded", *bMessageCountsMultipleOperationSuccess);
+		if (*bMessageCountsMultipleOperationSuccess)
+		{
+			TestEqual("Message count for channel 1 after publish should be 1", MessageCountsPerChannelResult->FindRef(TestChannel1), 1);
+			TestEqual("Message count for channel 2 after publish should be 1", MessageCountsPerChannelResult->FindRef(TestChannel2), 1);
+			TestEqual("Message count for channel 3 after publish (no store) should be 0", MessageCountsPerChannelResult->FindRef(TestChannel3), 0);
 		}
 	}, 0.1f));
 	

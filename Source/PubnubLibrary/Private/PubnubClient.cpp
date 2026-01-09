@@ -2493,7 +2493,6 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 	FOnPubnubSubscribeOperationResponseNative TempDelegate;
 	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
 	{
-		FPlatformProcess::Sleep(5.0f);
 		CapturedResult = Result;
 		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
 	});
@@ -3921,7 +3920,7 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscription(UPubnubSubscript
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription, TEXT("Subscription is invalid."));
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->CCoreSubscription, TEXT("Subscription CCoreSubscription is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->CCoreSubscription, TEXT("CCoreSubscription is invalid."));
 
 	//Create event and result storage for blocking wait
 	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
@@ -3966,6 +3965,9 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscription(UPubnubSubscript
 		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
 	}
 	
+	//C-Core subscribe operation needs some time to operate, so it's not hanged in case of immediate unsubscribe
+	FPlatformProcess::Sleep(0.05f);
+	
 	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;
 }
@@ -3993,7 +3995,7 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscriptionSet(UPubnubSubscr
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet, TEXT("SubscriptionSet is invalid."));
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->CCoreSubscriptionSet, TEXT("SubscriptionSet CCoreSubscriptionSet is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->CCoreSubscriptionSet, TEXT("CCoreSubscriptionSet is invalid."));
 
 	//Create event and result storage for blocking wait
 	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
@@ -4037,6 +4039,9 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscriptionSet(UPubnubSubscr
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
 	}
+	
+	//C-Core subscribe operation needs some time to operate, so it's not hanged in case of immediate unsubscribe
+	FPlatformProcess::Sleep(0.05f);
 	
 	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 	return CapturedResult;

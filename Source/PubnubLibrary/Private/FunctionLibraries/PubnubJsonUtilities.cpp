@@ -1017,3 +1017,162 @@ FPubnubOperationResult UPubnubJsonUtilities::GetOperationResultFromJson_AppConte
 	
 	return GetOperationResultFromJson_AppContext(JsonObject);
 }
+
+FPubnubChannelUpdateData UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(const FString& MessageContent)
+{
+	FPubnubChannelUpdateData ChannelUpdateData;
+	
+	if (MessageContent.IsEmpty())
+	{ return ChannelUpdateData; }
+	
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	StringToJsonObject(MessageContent, JsonObject);
+	
+	TSharedPtr<FJsonObject> ChannelDataJsonObject = MakeShareable(new FJsonObject);
+	if (!JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{ return ChannelUpdateData; }
+	
+	ChannelDataJsonObject = JsonObject->GetObjectField(ANSI_TO_TCHAR("data"));
+	
+	if (ChannelDataJsonObject->HasField(ANSI_TO_TCHAR("name")))
+	{
+		ChannelDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("name"), ChannelUpdateData.ChannelName);
+		ChannelUpdateData.ChannelNameUpdated = true;
+	}
+	
+	if (ChannelDataJsonObject->HasField(ANSI_TO_TCHAR("description")))
+	{
+		ChannelDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("description"), ChannelUpdateData.Description);
+		ChannelUpdateData.DescriptionUpdated = true;
+	}
+	
+	if (ChannelDataJsonObject->HasField(ANSI_TO_TCHAR("status")))
+	{
+		ChannelDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("status"), ChannelUpdateData.Status);
+		ChannelUpdateData.StatusUpdated = true;
+	}
+	
+	if (ChannelDataJsonObject->HasField(ANSI_TO_TCHAR("type")))
+	{
+		ChannelDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("type"), ChannelUpdateData.Type);
+		ChannelUpdateData.TypeUpdated = true;
+	}
+	
+	if (ChannelDataJsonObject->HasField(ANSI_TO_TCHAR("custom")))
+	{
+		const TSharedPtr<FJsonObject>* CustomJsonObject;
+		if (ChannelDataJsonObject->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
+		{
+			ChannelUpdateData.Custom = JsonObjectToString(*CustomJsonObject);
+		}
+		ChannelUpdateData.CustomUpdated = true;
+	}
+	
+	return ChannelUpdateData;
+}
+
+FPubnubUserUpdateData UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(const FString& MessageContent)
+{
+	FPubnubUserUpdateData UserUpdateData;
+	
+	if (MessageContent.IsEmpty())
+	{ return UserUpdateData; }
+	
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	StringToJsonObject(MessageContent, JsonObject);
+	
+	TSharedPtr<FJsonObject> UserDataJsonObject = MakeShareable(new FJsonObject);
+	if (!JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{ return UserUpdateData; }
+	
+	UserDataJsonObject = JsonObject->GetObjectField(ANSI_TO_TCHAR("data"));
+	
+	if (UserDataJsonObject->HasField(ANSI_TO_TCHAR("name")))
+	{
+		UserDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("name"), UserUpdateData.UserName);
+		UserUpdateData.UserNameUpdated = true;
+	}
+	
+	if (UserDataJsonObject->HasField(ANSI_TO_TCHAR("externalId")))
+	{
+		UserDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("externalId"), UserUpdateData.ExternalID);
+		UserUpdateData.ExternalIDUpdated = true;
+	}
+	
+	if (UserDataJsonObject->HasField(ANSI_TO_TCHAR("profileUrl")))
+	{
+		UserDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("profileUrl"), UserUpdateData.ProfileUrl);
+		UserUpdateData.ProfileUrlUpdated = true;
+	}
+	
+	if (UserDataJsonObject->HasField(ANSI_TO_TCHAR("email")))
+	{
+		UserDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("email"), UserUpdateData.Email);
+		UserUpdateData.EmailUpdated = true;
+	}
+	
+	if (UserDataJsonObject->HasField(ANSI_TO_TCHAR("status")))
+	{
+		UserDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("status"), UserUpdateData.Status);
+		UserUpdateData.StatusUpdated = true;
+	}
+	
+	if (UserDataJsonObject->HasField(ANSI_TO_TCHAR("type")))
+	{
+		UserDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("type"), UserUpdateData.Type);
+		UserUpdateData.TypeUpdated = true;
+	}
+	
+	if (UserDataJsonObject->HasField(ANSI_TO_TCHAR("custom")))
+	{
+		const TSharedPtr<FJsonObject>* CustomJsonObject;
+		if (UserDataJsonObject->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
+		{
+			UserUpdateData.Custom = JsonObjectToString(*CustomJsonObject);
+		}
+		UserUpdateData.CustomUpdated = true;
+	}
+	
+	return UserUpdateData;
+}
+
+FPubnubMembershipUpdateData UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(const FString& MessageContent)
+{
+	FPubnubMembershipUpdateData MembershipUpdateData;
+	
+	if (MessageContent.IsEmpty())
+	{ return MembershipUpdateData; }
+	
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	StringToJsonObject(MessageContent, JsonObject);
+	
+	TSharedPtr<FJsonObject> MembershipDataJsonObject = MakeShareable(new FJsonObject);
+	if (!JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{ return MembershipUpdateData; }
+	
+	MembershipDataJsonObject = JsonObject->GetObjectField(ANSI_TO_TCHAR("data"));
+	
+	if (MembershipDataJsonObject->HasField(ANSI_TO_TCHAR("status")))
+	{
+		MembershipDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("status"), MembershipUpdateData.Status);
+		MembershipUpdateData.StatusUpdated = true;
+	}
+	
+	if (MembershipDataJsonObject->HasField(ANSI_TO_TCHAR("type")))
+	{
+		MembershipDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("type"), MembershipUpdateData.Type);
+		MembershipUpdateData.TypeUpdated = true;
+	}
+	
+	if (MembershipDataJsonObject->HasField(ANSI_TO_TCHAR("custom")))
+	{
+		const TSharedPtr<FJsonObject>* CustomJsonObject;
+		if (MembershipDataJsonObject->TryGetObjectField(ANSI_TO_TCHAR("custom"), CustomJsonObject))
+		{
+			MembershipUpdateData.Custom = JsonObjectToString(*CustomJsonObject);
+		}
+		MembershipUpdateData.CustomUpdated = true;
+	}
+	
+	return MembershipUpdateData;
+}
