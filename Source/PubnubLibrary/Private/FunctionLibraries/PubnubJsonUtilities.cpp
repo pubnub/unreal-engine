@@ -634,13 +634,13 @@ FString UPubnubJsonUtilities::GetJsonFromUserData(const FString UserID, const FP
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
 	JsonObject->SetStringField(ANSI_TO_TCHAR("id"), UserID);
-	AddStringFieldToJson(ANSI_TO_TCHAR("name"), UserData.UserName, JsonObject, UserData.ForceAddUserName);
-	AddStringFieldToJson(ANSI_TO_TCHAR("externalId"), UserData.ExternalID, JsonObject, UserData.ForceAddExternalID);
-	AddStringFieldToJson(ANSI_TO_TCHAR("profileUrl"), UserData.ProfileUrl, JsonObject, UserData.ForceAddProfileUrl);
-	AddStringFieldToJson(ANSI_TO_TCHAR("email"), UserData.Email, JsonObject, UserData.ForceAddEmail);
-	AddStringFieldToJson(ANSI_TO_TCHAR("status"), UserData.Status, JsonObject, UserData.ForceAddStatus);
-	AddStringFieldToJson(ANSI_TO_TCHAR("type"), UserData.Type, JsonObject, UserData.ForceAddType);
-	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), UserData.Custom, JsonObject, UserData.ForceAddCustom);
+	AddStringFieldToJson(ANSI_TO_TCHAR("name"), UserData.UserName, JsonObject, UserData.ForceSetUserName);
+	AddStringFieldToJson(ANSI_TO_TCHAR("externalId"), UserData.ExternalID, JsonObject, UserData.ForceSetExternalID);
+	AddStringFieldToJson(ANSI_TO_TCHAR("profileUrl"), UserData.ProfileUrl, JsonObject, UserData.ForceSetProfileUrl);
+	AddStringFieldToJson(ANSI_TO_TCHAR("email"), UserData.Email, JsonObject, UserData.ForceSetEmail);
+	AddStringFieldToJson(ANSI_TO_TCHAR("status"), UserData.Status, JsonObject, UserData.ForceSetStatus);
+	AddStringFieldToJson(ANSI_TO_TCHAR("type"), UserData.Type, JsonObject, UserData.ForceSetType);
+	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), UserData.Custom, JsonObject, UserData.ForceSetCustom);
 
 	return JsonObjectToString(JsonObject);
 }
@@ -682,11 +682,11 @@ FString UPubnubJsonUtilities::GetJsonFromChannelData(const FString ChannelID, co
 
 	JsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelID);
 	
-	AddStringFieldToJson(ANSI_TO_TCHAR("name"), ChannelData.ChannelName, JsonObject, ChannelData.ForceAddChannelName);
-	AddStringFieldToJson(ANSI_TO_TCHAR("description"), ChannelData.Description, JsonObject, ChannelData.ForceAddDescription);
-	AddStringFieldToJson(ANSI_TO_TCHAR("status"), ChannelData.Status, JsonObject, ChannelData.ForceAddStatus);
-	AddStringFieldToJson(ANSI_TO_TCHAR("type"), ChannelData.Type, JsonObject, ChannelData.ForceAddType);
-	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), ChannelData.Custom, JsonObject, ChannelData.ForceAddCustom);
+	AddStringFieldToJson(ANSI_TO_TCHAR("name"), ChannelData.ChannelName, JsonObject, ChannelData.ForceSetChannelName);
+	AddStringFieldToJson(ANSI_TO_TCHAR("description"), ChannelData.Description, JsonObject, ChannelData.ForceSetDescription);
+	AddStringFieldToJson(ANSI_TO_TCHAR("status"), ChannelData.Status, JsonObject, ChannelData.ForceSetStatus);
+	AddStringFieldToJson(ANSI_TO_TCHAR("type"), ChannelData.Type, JsonObject, ChannelData.ForceSetType);
+	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), ChannelData.Custom, JsonObject, ChannelData.ForceSetCustom);
 
 	return JsonObjectToString(JsonObject);
 }
@@ -745,9 +745,9 @@ FString UPubnubJsonUtilities::GetJsonFromMembershipInputData(const FPubnubMember
 	ChannelJsonObject->SetStringField(ANSI_TO_TCHAR("id"), MembershipInputData.Channel);
 	JsonObject->SetObjectField(ANSI_TO_TCHAR("channel"), ChannelJsonObject);
 	
-	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), MembershipInputData.Custom, JsonObject, MembershipInputData.ForceAddCustom);
-	AddStringFieldToJson(ANSI_TO_TCHAR("status"), MembershipInputData.Status, JsonObject, MembershipInputData.ForceAddStatus);
-	AddStringFieldToJson(ANSI_TO_TCHAR("type"), MembershipInputData.Type, JsonObject, MembershipInputData.ForceAddType);
+	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), MembershipInputData.Custom, JsonObject, MembershipInputData.ForceSetCustom);
+	AddStringFieldToJson(ANSI_TO_TCHAR("status"), MembershipInputData.Status, JsonObject, MembershipInputData.ForceSetStatus);
+	AddStringFieldToJson(ANSI_TO_TCHAR("type"), MembershipInputData.Type, JsonObject, MembershipInputData.ForceSetType);
 
 	return JsonObjectToString(JsonObject);
 }
@@ -867,9 +867,9 @@ FString UPubnubJsonUtilities::GetJsonFromChannelMemberData(const FPubnubChannelM
 	UserJsonObject->SetStringField(ANSI_TO_TCHAR("id"), ChannelMemberInputData.User);
 	JsonObject->SetObjectField(ANSI_TO_TCHAR("uuid"), UserJsonObject);
 	
-	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), ChannelMemberInputData.Custom, JsonObject, ChannelMemberInputData.ForceAddCustom);
-	AddStringFieldToJson(ANSI_TO_TCHAR("status"), ChannelMemberInputData.Status, JsonObject, ChannelMemberInputData.ForceAddStatus);
-	AddStringFieldToJson(ANSI_TO_TCHAR("type"), ChannelMemberInputData.Type, JsonObject, ChannelMemberInputData.ForceAddType);
+	AddObjectFieldToJson(ANSI_TO_TCHAR("custom"), ChannelMemberInputData.Custom, JsonObject, ChannelMemberInputData.ForceSetCustom);
+	AddStringFieldToJson(ANSI_TO_TCHAR("status"), ChannelMemberInputData.Status, JsonObject, ChannelMemberInputData.ForceSetStatus);
+	AddStringFieldToJson(ANSI_TO_TCHAR("type"), ChannelMemberInputData.Type, JsonObject, ChannelMemberInputData.ForceSetType);
 
 	return JsonObjectToString(JsonObject);
 }

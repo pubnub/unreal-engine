@@ -540,33 +540,33 @@ struct FPubnubUserInputData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
 	
 	/** If true, the UserName field will be included in JSON even if empty (as null). If false, empty UserName field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddUserName = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetUserName = false;
 	/** If true, the ExternalID field will be included in JSON even if empty (as null). If false, empty ExternalID field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddExternalID = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetExternalID = false;
 	/** If true, the ProfileUrl field will be included in JSON even if empty (as null). If false, empty ProfileUrl field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddProfileUrl = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetProfileUrl = false;
 	/** If true, the Email field will be included in JSON even if empty (as null). If false, empty Email field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddEmail = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetEmail = false;
 	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddCustom = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetCustom = false;
 	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddStatus = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetStatus = false;
 	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddType = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetType = false;
 
 	/**
-	 * Sets all ForceAdd flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * Sets all ForceSet flags to true. Useful for full replacement scenarios where you want to explicitly
 	 * include all fields in the JSON (empty fields will be set to null).
 	 */
-	void ForceAddAllFields()
+	void ForceSetAllFields()
 	{
-		ForceAddUserName = true;
-		ForceAddExternalID = true;
-		ForceAddProfileUrl = true;
-		ForceAddEmail = true;
-		ForceAddCustom = true;
-		ForceAddStatus = true;
-		ForceAddType = true;
+		ForceSetUserName = true;
+		ForceSetExternalID = true;
+		ForceSetProfileUrl = true;
+		ForceSetEmail = true;
+		ForceSetCustom = true;
+		ForceSetStatus = true;
+		ForceSetType = true;
 	}
 
 	/**
@@ -595,27 +595,27 @@ struct FPubnubChannelInputData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
 	
 	/** If true, the ChannelName field will be included in JSON even if empty (as null). If false, empty ChannelName field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddChannelName = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetChannelName = false;
 	/** If true, the Description field will be included in JSON even if empty (as null). If false, empty Description field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddDescription = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetDescription = false;
 	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddCustom = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetCustom = false;
 	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddStatus = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetStatus = false;
 	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddType = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetType = false;
 
 	/**
-	 * Sets all ForceAdd flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * Sets all ForceSet flags to true. Useful for full replacement scenarios where you want to explicitly
 	 * include all fields in the JSON (empty fields will be set to null).
 	 */
-	void ForceAddAllFields()
+	void ForceSetAllFields()
 	{
-		ForceAddChannelName = true;
-		ForceAddDescription = true;
-		ForceAddCustom = true;
-		ForceAddStatus = true;
-		ForceAddType = true;
+		ForceSetChannelName = true;
+		ForceSetDescription = true;
+		ForceSetCustom = true;
+		ForceSetStatus = true;
+		ForceSetType = true;
 	}
 
 	/**
@@ -642,21 +642,21 @@ struct FPubnubMembershipInputData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
 	
 	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddCustom = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetCustom = false;
 	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddStatus = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetStatus = false;
 	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddType = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetType = false;
 
 	/**
-	 * Sets all ForceAdd flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * Sets all ForceSet flags to true. Useful for full replacement scenarios where you want to explicitly
 	 * include all fields in the JSON (empty fields will be set to null).
 	 */
-	void ForceAddAllFields()
+	void ForceSetAllFields()
 	{
-		ForceAddCustom = true;
-		ForceAddStatus = true;
-		ForceAddType = true;
+		ForceSetCustom = true;
+		ForceSetStatus = true;
+		ForceSetType = true;
 	}
 
 	/**
@@ -683,21 +683,21 @@ struct FPubnubChannelMemberInputData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
 	
 	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddCustom = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetCustom = false;
 	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddStatus = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetStatus = false;
 	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceAddType = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetType = false;
 
 	/**
-	 * Sets all ForceAdd flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * Sets all ForceSet flags to true. Useful for full replacement scenarios where you want to explicitly
 	 * include all fields in the JSON (empty fields will be set to null).
 	 */
-	void ForceAddAllFields()
+	void ForceSetAllFields()
 	{
-		ForceAddCustom = true;
-		ForceAddStatus = true;
-		ForceAddType = true;
+		ForceSetCustom = true;
+		ForceSetStatus = true;
+		ForceSetType = true;
 	}
 	
 	/**
