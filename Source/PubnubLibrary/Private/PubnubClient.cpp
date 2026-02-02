@@ -2177,7 +2177,7 @@ void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void
 	SubscriptionDelegatesMutex.Unlock();
 	
 	//Don't waste resources to translate data if there is no delegate bound to it
-	if(!OnPubnubSubscriptionStatusChanged.IsBound() && !OnPubnubSubscriptionStatusChangedNative.IsBound())
+	if(!OnSubscriptionStatusChanged.IsBound() && !OnSubscriptionStatusChangedNative.IsBound())
 	{return;}
 
 	FPubnubSubscriptionStatusData SubscriptionStatusData;
@@ -2202,8 +2202,8 @@ void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void
 	}
 
 	//Call SubscriptionStatusChanged delegates 
-	OnPubnubSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
-	OnPubnubSubscriptionStatusChangedNative.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
+	OnSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
+	OnSubscriptionStatusChangedNative.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
 }
 
 FString UPubnubClient::GetLastResponse(pubnub_t* context)
