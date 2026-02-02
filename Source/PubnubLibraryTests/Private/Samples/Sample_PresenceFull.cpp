@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
 #include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 
 void ASample_PresenceFull::BeginPlay()
@@ -21,18 +22,21 @@ void ASample_PresenceFull::RunPresenceFullExample()
 	//Get PubnubSubsystem from GameInstance
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Create Pubnub Client using Pubnub Subsystem
+	FPubnubConfig Config;
+	Config.PublishKey = TEXT("demo");   //replace with your Publish Key from Admin Portal
+	Config.SubscribeKey = TEXT("demo"); //replace with your Subscribe Key from Admin Portal
+	Config.UserID = TEXT("Player_001");
+	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
 
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
-
-	UE_LOG(LogTemp, Log, TEXT("Presence example: User ID is set"));
+	UE_LOG(LogTemp, Log, TEXT("Presence example: Pubnub Client is created"));
 	
 	//Subscribe to a channel with presence events enabled.
 	FPubnubSubscribeSettings SubscribeSettings;
 	SubscribeSettings.ReceivePresenceEvents = true;
 	FString Channel = TEXT("presence-channel-full");
-	PubnubSubsystem->SubscribeToChannel(Channel, SubscribeSettings);
+	PubnubClient->SubscribeToChannelAsync(Channel, SubscribeSettings);
 
 	// NOTE: Subscribing to a group or channel may take a few seconds to complete.
 	// This sleep is used to simulate the waiting period in an actual application.
@@ -40,20 +44,21 @@ void ASample_PresenceFull::RunPresenceFullExample()
 	UE_LOG(LogTemp, Log, TEXT("Presence example: subscribed to channel: %s"), *Channel);
 
 	//Set the user's state on the channel.
-	FOnSetStateResponse OnSetStateResponse;
+	FOnPubnubSetStateResponse OnSetStateResponse;
 	OnSetStateResponse.BindDynamic(this, &ASample_PresenceFull::OnSetStateResponse);
 	FString StateJson = R"({"health": 100, "status": "ready"})";
-	PubnubSubsystem->SetState(Channel, StateJson, OnSetStateResponse);
+	PubnubClient->SetStateAsync(Channel, StateJson, OnSetStateResponse);
 
 	//List the users on the channel.
-	FOnListUsersFromChannelResponse OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponse OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_PresenceFull::OnListUsersFromChannelResponse);
-	PubnubSubsystem->ListUsersFromChannel(Channel, OnListUsersFromChannelResponse);
+	PubnubClient->ListUsersFromChannelAsync(Channel, OnListUsersFromChannelResponse);
 
 	//Get the state for our user.
-	FOnGetStateResponse OnGetStateResponse;
+	FString UserID = TEXT("Player_001");
+	FOnPubnubGetStateResponse OnGetStateResponse;
 	OnGetStateResponse.BindDynamic(this, &ASample_PresenceFull::OnGetStateResponse);
-	PubnubSubsystem->GetState(Channel, "", UserID, OnGetStateResponse);
+	PubnubClient->GetStateAsync(Channel, "", UserID, OnGetStateResponse);
 }
 
 

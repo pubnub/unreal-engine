@@ -2,28 +2,20 @@
 
 
 #include "Samples/Sample_Presence.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 //Internal function, don't copy it with the samples
@@ -55,22 +47,20 @@ ASample_Presence::ASample_Presence()
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::ListUsersFromChannelSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-	FOnListUsersFromChannelResponse OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponse OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_Presence::OnListUsersFromChannelResponse_Simple);
 
 	//List users from a channel
 	FString Channel = TEXT("guild-channel");
-	PubnubSubsystem->ListUsersFromChannel(Channel, OnListUsersFromChannelResponse);
+	PubnubClient->ListUsersFromChannelAsync(Channel, OnListUsersFromChannelResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
@@ -90,17 +80,15 @@ void ASample_Presence::OnListUsersFromChannelResponse_Simple(FPubnubOperationRes
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::ListUsersFromChannelWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-	FOnListUsersFromChannelResponse OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponse OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_Presence::OnListUsersFromChannelResponse_WithSettings);
 
 	// Create additional settings
@@ -110,7 +98,7 @@ void ASample_Presence::ListUsersFromChannelWithSettingsSample()
 
 	//List users from a channel
 	FString Channel = TEXT("guild-channel");
-	PubnubSubsystem->ListUsersFromChannel(Channel, OnListUsersFromChannelResponse, Settings);
+	PubnubClient->ListUsersFromChannelAsync(Channel, OnListUsersFromChannelResponse, Settings);
 }
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
@@ -135,16 +123,14 @@ void ASample_Presence::OnListUsersFromChannelResponse_WithSettings(FPubnubOperat
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::ListUsersFromChannelWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubListUsersFromChannelWrapper& Data)
 	{
 		if(Result.Error)
@@ -159,28 +145,27 @@ void ASample_Presence::ListUsersFromChannelWithLambdaSample()
 	
 	//List users from a channel
 	FString Channel = TEXT("guild-channel");
-	PubnubSubsystem->ListUsersFromChannel(Channel, OnListUsersFromChannelResponse);
+	PubnubClient->ListUsersFromChannelAsync(Channel, OnListUsersFromChannelResponse);
 }
 
 // snippet.list_user_subscribed_channels
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::ListUserSubscribedChannelsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-	FOnListUsersSubscribedChannelsResponse OnListUsersSubscribedChannelsResponse;
+	FOnPubnubListUsersSubscribedChannelsResponse OnListUsersSubscribedChannelsResponse;
 	OnListUsersSubscribedChannelsResponse.BindDynamic(this, &ASample_Presence::OnListUserSubscribedChannelsResponse);
 
 	//List channels the user is subscribed to
-	PubnubSubsystem->ListUserSubscribedChannels(UserID, OnListUsersSubscribedChannelsResponse);
+	PubnubClient->ListUserSubscribedChannelsAsync(UserID, OnListUsersSubscribedChannelsResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
@@ -205,16 +190,15 @@ void ASample_Presence::OnListUserSubscribedChannelsResponse(FPubnubOperationResu
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::ListUserSubscribedChannelsWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnListUsersSubscribedChannelsResponseNative OnListUsersSubscribedChannelsResponse;
+	FOnPubnubListUsersSubscribedChannelsResponseNative OnListUsersSubscribedChannelsResponse;
 	OnListUsersSubscribedChannelsResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		if(Result.Error)
@@ -233,38 +217,34 @@ void ASample_Presence::ListUserSubscribedChannelsWithLambdaSample()
 	});
 	
 	//List channels the user is subscribed to
-	PubnubSubsystem->ListUserSubscribedChannels(UserID, OnListUsersSubscribedChannelsResponse);
+	PubnubClient->ListUserSubscribedChannelsAsync(UserID, OnListUsersSubscribedChannelsResponse);
 }
 
 // snippet.set_state
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::SetStateSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set state for the user on a channel
 	FString Channel = TEXT("presence-channel");
 	FString StateJson = R"({"health": 100, "status": "active"})";
-	PubnubSubsystem->SetState(Channel, StateJson);
+	PubnubClient->SetStateAsync(Channel, StateJson);
 }
 
 // snippet.set_state_with_settings
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::SetStateWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set state for the user on a channel
 	FString Channel = TEXT("presence-channel");
@@ -275,30 +255,28 @@ void ASample_Presence::SetStateWithSettingsSample()
 	Settings.ChannelGroup = TEXT("all-presence-channels");
 	Settings.UserID = TEXT("Player_005");
 	
-	PubnubSubsystem->SetState(Channel, StateJson, Settings);
+	PubnubClient->SetStateAsync(Channel, StateJson, Settings);
 }
 
 // snippet.set_state_with_result
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::SetStateWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-	FOnSetStateResponse OnSetStateResponse;
+	FOnPubnubSetStateResponse OnSetStateResponse;
 	OnSetStateResponse.BindDynamic(this, &ASample_Presence::OnSetStateResponse);
 
 	//Set state for the user on a channel
 	FString Channel = TEXT("presence-channel");
 	FString StateJson = R"({"health": 100, "status": "active"})";
-	PubnubSubsystem->SetState(Channel, StateJson, OnSetStateResponse);
+	PubnubClient->SetStateAsync(Channel, StateJson, OnSetStateResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
@@ -318,16 +296,14 @@ void ASample_Presence::OnSetStateResponse(FPubnubOperationResult Result)
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::SetStateWithResultLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnSetStateResponseNative OnSetStateResponse;
+	FOnPubnubSetStateResponseNative OnSetStateResponse;
 	OnSetStateResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -343,30 +319,29 @@ void ASample_Presence::SetStateWithResultLambdaSample()
 	//Set state for the user on a channel
 	FString Channel = TEXT("presence-channel");
 	FString StateJson = R"({"health": 100, "status": "active"})";
-	PubnubSubsystem->SetState(Channel, StateJson, OnSetStateResponse);
+	PubnubClient->SetStateAsync(Channel, StateJson, OnSetStateResponse);
 }
 
 // snippet.get_state
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::GetStateSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-	FOnGetStateResponse OnGetStateResponse;
+	FOnPubnubGetStateResponse OnGetStateResponse;
 	OnGetStateResponse.BindDynamic(this, &ASample_Presence::OnGetStateResponse_Simple);
 
 	//Get state for the user on a channel
 	FString Channel = TEXT("presence-channel");
 	FString ChannelGroup = TEXT("");
-	PubnubSubsystem->GetState(Channel, ChannelGroup, UserID, OnGetStateResponse);
+	PubnubClient->GetStateAsync(Channel, ChannelGroup, UserID, OnGetStateResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
@@ -386,16 +361,15 @@ void ASample_Presence::OnGetStateResponse_Simple(FPubnubOperationResult Result, 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
 void ASample_Presence::GetStateWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnGetStateResponseNative OnGetStateResponse;
+	FOnPubnubGetStateResponseNative OnGetStateResponse;
 	OnGetStateResponse.BindLambda([](const FPubnubOperationResult& Result, FString StateResponse)
 	{
 		if(Result.Error)
@@ -411,7 +385,19 @@ void ASample_Presence::GetStateWithLambdaSample()
 	//Get state for the user on a channel
 	FString Channel = TEXT("presence-channel");
 	FString ChannelGroup = TEXT("");
-	PubnubSubsystem->GetState(Channel, ChannelGroup, UserID, OnGetStateResponse);
+	PubnubClient->GetStateAsync(Channel, ChannelGroup, UserID, OnGetStateResponse);
 }
 
 // snippet.end
+
+UPubnubClient* ASample_Presence::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

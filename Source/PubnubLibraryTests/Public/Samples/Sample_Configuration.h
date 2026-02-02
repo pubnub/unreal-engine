@@ -3,7 +3,7 @@
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -76,6 +76,9 @@ public:
 	void InitWithConfigSample();
 	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

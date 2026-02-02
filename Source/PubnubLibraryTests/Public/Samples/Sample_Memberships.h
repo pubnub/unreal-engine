@@ -3,7 +3,7 @@
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -35,7 +35,7 @@ public:
 	void SetMembershipsWithResultSample();
 
 	UFUNCTION()
-	void OnSetMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+	void OnSetMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.set_memberships_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -46,21 +46,21 @@ public:
 	void SetMembershipsRawSample();
 	
 	UFUNCTION()
-	void OnSetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+	void OnSetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_memberships
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetMembershipsSample();
 	
 	UFUNCTION()
-	void OnGetMembershipsResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+	void OnGetMembershipsResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 	
 	// snippet.get_memberships_with_settings
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetMembershipsWithSettingsSample();
 
 	UFUNCTION()
-	void OnGetMembershipsResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+	void OnGetMembershipsResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_memberships_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -71,7 +71,7 @@ public:
 	void GetMembershipsRawSample();
 
 	UFUNCTION()
-	void OnGetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+	void OnGetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.remove_memberships
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -82,7 +82,7 @@ public:
 	void RemoveMembershipsWithResultSample();
 
 	UFUNCTION()
-	void OnRemoveMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+	void OnRemoveMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.remove_memberships_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -93,7 +93,7 @@ public:
 	void RemoveMembershipsRawSample();
 	
 	UFUNCTION()
-	void OnRemoveMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev);
+	void OnRemoveMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.set_channel_members
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -104,7 +104,7 @@ public:
 	void SetChannelMembersWithResultSample();
 
 	UFUNCTION()
-	void OnSetChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+	void OnSetChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.set_channel_members_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -115,21 +115,21 @@ public:
 	void SetChannelMembersRawSample();
 	
 	UFUNCTION()
-	void OnSetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+	void OnSetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_channel_members
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetChannelMembersSample();
 	
 	UFUNCTION()
-	void OnGetChannelMembersResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+	void OnGetChannelMembersResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 	
 	// snippet.get_channel_members_with_settings
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetChannelMembersWithSettingsSample();
 
 	UFUNCTION()
-	void OnGetChannelMembersResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+	void OnGetChannelMembersResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_channel_members_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -140,7 +140,7 @@ public:
 	void GetChannelMembersRawSample();
 
 	UFUNCTION()
-	void OnGetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+	void OnGetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.remove_channel_members
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -151,7 +151,7 @@ public:
 	void RemoveChannelMembersWithResultSample();
 
 	UFUNCTION()
-	void OnRemoveChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+	void OnRemoveChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.remove_channel_members_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -162,9 +162,12 @@ public:
 	void RemoveChannelMembersRawSample();
 	
 	UFUNCTION()
-	void OnRemoveChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev);
+	void OnRemoveChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

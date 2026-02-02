@@ -3,7 +3,7 @@
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -87,6 +87,9 @@ public:
 	void GetStateWithLambdaSample();
 	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

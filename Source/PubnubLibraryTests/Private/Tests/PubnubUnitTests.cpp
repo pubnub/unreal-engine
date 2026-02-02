@@ -59,6 +59,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMembersDataArrayUnitTest, "P
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipsToRemoveUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipsToRemove", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMembersToRemoveUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromChannelMembersToRemove", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetOperationResultFromJsonAppContextUnitTest, "Pubnub.aUnit.JsonUtilities.GetOperationResultFromJsonAppContext", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMessageActionFromMessageDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMessageActionFromMessageData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 
 
 
@@ -2864,6 +2865,106 @@ bool FGetMembershipUpdateDataFromMessageContentUnitTest::RunTest(const FString& 
 	
 	TestEqual("No data: Status should be empty", ResultNoData.Status, "");
 	TestFalse("No data: StatusUpdated should be false", ResultNoData.StatusUpdated);
+	
+	return true;
+}
+
+bool FGetMessageActionFromMessageDataUnitTest::RunTest(const FString& Parameters)
+{
+	// Test 1: AddMessageAction - Complete message action data with "added" event
+	FPubnubMessageData MessageDataAdd;
+	MessageDataAdd.Message = "{\"data\":{\"actionTimetoken\":\"17682219108127920\",\"messageTimetoken\":\"17682218927268428\",\"type\":\"edit\",\"value\":\"edited action\"},\"event\":\"added\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataAdd.UserID = "User123";
+	MessageDataAdd.Channel = "test-channel";
+	MessageDataAdd.Timetoken = "17682218927268428";
+	
+	FPubnubMessageActionData ResultAdd = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataAdd);
+	
+	TestEqual("AddMessageAction: ActionTimetoken should be correct", ResultAdd.ActionTimetoken, "17682219108127920");
+	TestEqual("AddMessageAction: MessageTimetoken should be correct", ResultAdd.MessageTimetoken, "17682218927268428");
+	TestEqual("AddMessageAction: Type should be 'edit'", ResultAdd.Type, "edit");
+	TestEqual("AddMessageAction: Value should be 'edited action'", ResultAdd.Value, "edited action");
+	TestEqual("AddMessageAction: UserID should be from MessageData", ResultAdd.UserID, "User123");
+	
+	// Test 2: RemoveMessageAction - Complete message action data with "removed" event
+	FPubnubMessageData MessageDataRemove;
+	MessageDataRemove.Message = "{\"data\":{\"actionTimetoken\":\"17682219108127920\",\"messageTimetoken\":\"17682218927268428\",\"type\":\"edit\",\"value\":\"edited action\"},\"event\":\"removed\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataRemove.UserID = "User456";
+	MessageDataRemove.Channel = "test-channel-2";
+	MessageDataRemove.Timetoken = "17682218927268428";
+	
+	FPubnubMessageActionData ResultRemove = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataRemove);
+	
+	TestEqual("RemoveMessageAction: ActionTimetoken should be correct", ResultRemove.ActionTimetoken, "17682219108127920");
+	TestEqual("RemoveMessageAction: MessageTimetoken should be correct", ResultRemove.MessageTimetoken, "17682218927268428");
+	TestEqual("RemoveMessageAction: Type should be 'edit'", ResultRemove.Type, "edit");
+	TestEqual("RemoveMessageAction: Value should be 'edited action'", ResultRemove.Value, "edited action");
+	TestEqual("RemoveMessageAction: UserID should be from MessageData", ResultRemove.UserID, "User456");
+	
+	// Test 3: Empty message - should return empty MessageActionData
+	FPubnubMessageData MessageDataEmpty;
+	MessageDataEmpty.Message = "";
+	MessageDataEmpty.UserID = "User789";
+	
+	FPubnubMessageActionData ResultEmpty = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataEmpty);
+	
+	TestEqual("Empty message: ActionTimetoken should be empty", ResultEmpty.ActionTimetoken, "");
+	TestEqual("Empty message: MessageTimetoken should be empty", ResultEmpty.MessageTimetoken, "");
+	TestEqual("Empty message: Type should be empty", ResultEmpty.Type, "");
+	TestEqual("Empty message: Value should be empty", ResultEmpty.Value, "");
+	TestEqual("Empty message: UserID should be empty", ResultEmpty.UserID, "");
+	
+	// Test 4: Message without "data" field - should return empty MessageActionData
+	FPubnubMessageData MessageDataNoData;
+	MessageDataNoData.Message = "{\"event\":\"added\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataNoData.UserID = "User999";
+	
+	FPubnubMessageActionData ResultNoData = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataNoData);
+	
+	TestEqual("No data field: ActionTimetoken should be empty", ResultNoData.ActionTimetoken, "");
+	TestEqual("No data field: MessageTimetoken should be empty", ResultNoData.MessageTimetoken, "");
+	TestEqual("No data field: Type should be empty", ResultNoData.Type, "");
+	TestEqual("No data field: Value should be empty", ResultNoData.Value, "");
+	TestEqual("No data field: UserID should be empty", ResultNoData.UserID, "");
+	
+	// Test 5: Invalid JSON - should return empty MessageActionData
+	FPubnubMessageData MessageDataInvalid;
+	MessageDataInvalid.Message = "this is not valid json";
+	MessageDataInvalid.UserID = "UserInvalid";
+	
+	FPubnubMessageActionData ResultInvalid = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataInvalid);
+	
+	TestEqual("Invalid JSON: ActionTimetoken should be empty", ResultInvalid.ActionTimetoken, "");
+	TestEqual("Invalid JSON: MessageTimetoken should be empty", ResultInvalid.MessageTimetoken, "");
+	TestEqual("Invalid JSON: Type should be empty", ResultInvalid.Type, "");
+	TestEqual("Invalid JSON: Value should be empty", ResultInvalid.Value, "");
+	TestEqual("Invalid JSON: UserID should be empty", ResultInvalid.UserID, "");
+	
+	// Test 6: Partial data - some fields missing from data object
+	FPubnubMessageData MessageDataPartial;
+	MessageDataPartial.Message = "{\"data\":{\"actionTimetoken\":\"17682219108127920\",\"type\":\"reaction\"},\"event\":\"added\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataPartial.UserID = "UserPartial";
+	
+	FPubnubMessageActionData ResultPartial = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataPartial);
+	
+	TestEqual("Partial data: ActionTimetoken should be correct", ResultPartial.ActionTimetoken, "17682219108127920");
+	TestEqual("Partial data: MessageTimetoken should be empty", ResultPartial.MessageTimetoken, "");
+	TestEqual("Partial data: Type should be 'reaction'", ResultPartial.Type, "reaction");
+	TestEqual("Partial data: Value should be empty", ResultPartial.Value, "");
+	TestEqual("Partial data: UserID should be from MessageData", ResultPartial.UserID, "UserPartial");
+	
+	// Test 7: Different action type (reaction)
+	FPubnubMessageData MessageDataReaction;
+	MessageDataReaction.Message = "{\"data\":{\"actionTimetoken\":\"17682219108127921\",\"messageTimetoken\":\"17682218927268429\",\"type\":\"reaction\",\"value\":\"thumbs_up\"},\"event\":\"added\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataReaction.UserID = "UserReaction";
+	
+	FPubnubMessageActionData ResultReaction = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataReaction);
+	
+	TestEqual("Reaction: ActionTimetoken should be correct", ResultReaction.ActionTimetoken, "17682219108127921");
+	TestEqual("Reaction: MessageTimetoken should be correct", ResultReaction.MessageTimetoken, "17682218927268429");
+	TestEqual("Reaction: Type should be 'reaction'", ResultReaction.Type, "reaction");
+	TestEqual("Reaction: Value should be 'thumbs_up'", ResultReaction.Value, "thumbs_up");
+	TestEqual("Reaction: UserID should be from MessageData", ResultReaction.UserID, "UserReaction");
 	
 	return true;
 }

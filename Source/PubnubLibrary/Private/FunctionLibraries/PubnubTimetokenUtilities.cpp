@@ -20,7 +20,7 @@ FString UPubnubTimetokenUtilities::GetCurrentUnixTimetoken()
 	return FString::Printf(TEXT("%lld"), Timetoken);
 }
 
-FString UPubnubTimetokenUtilities::AddIntToTimetoken(const FString Timetoken, const int ToAdd)
+FString UPubnubTimetokenUtilities::AddIntToTimetoken(const FString Timetoken, const int64 ToAdd)
 {
 	if (Timetoken.IsEmpty())
 	{

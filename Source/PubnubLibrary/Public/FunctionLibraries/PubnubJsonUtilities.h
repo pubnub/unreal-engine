@@ -220,6 +220,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
 	static FPubnubMembershipUpdateData GetMembershipUpdateDataFromMessageContent(const FString& MessageContent);
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubMessageActionData GetMessageActionFromMessageData(const FPubnubMessageData& MessageData);
 };
 
 

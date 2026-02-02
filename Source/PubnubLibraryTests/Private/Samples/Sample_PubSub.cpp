@@ -2,28 +2,21 @@
 
 
 #include "Samples/Sample_PubSub.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
+
+
 
 
 //Internal function, don't copy it with the samples
@@ -60,31 +53,27 @@ ASample_PubSub::ASample_PubSub()
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::PublishSimpleSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
-
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
+	
 	//Publish simple text message to provided channel
 	FString Channel = TEXT("global_chat");
 	FString SimpleMessage = TEXT("Ready to start the mission!");
-	PubnubSubsystem->PublishMessage(Channel, SimpleMessage);
+	PubnubClient->PublishMessageAsync(Channel, SimpleMessage);
 }
 
 // snippet.publish_with_settings
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::PublishWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set Channel and Message to Publish
 	FString Channel = TEXT("global_chat");
@@ -96,30 +85,28 @@ void ASample_PubSub::PublishWithSettingsSample()
 	PublishSettings.CustomMessageType = "game-event";
 
 	//Publish message with settings
-	PubnubSubsystem->PublishMessage(Channel, JsonMessage, PublishSettings);
+	PubnubClient->PublishMessageAsync(Channel, JsonMessage, PublishSettings);
 }
 
 // snippet.publish_with_result
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::PublishWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Bind PublishedMessageResponse to be fired with PublishMessage result
 	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
-	FOnPublishMessageResponse OnPublishMessageResponse;
+	FOnPubnubPublishMessageResponse OnPublishMessageResponse;
 	OnPublishMessageResponse.BindDynamic(this, &ASample_PubSub::PublishedMessageResponse);
 	
 	//Publish simple text message to provided channel
 	FString Channel = TEXT("global_chat");
 	FString SimpleMessage = TEXT("Ready to start the mission!");
-	PubnubSubsystem->PublishMessage(Channel, SimpleMessage, OnPublishMessageResponse);
+	PubnubClient->PublishMessageAsync(Channel, SimpleMessage, OnPublishMessageResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
@@ -139,16 +126,14 @@ void ASample_PubSub::PublishedMessageResponse(FPubnubOperationResult Result, FPu
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::PublishWithResultLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Bind lambda function to PublishMessageResponse delegate
-	FOnPublishMessageResponseNative OnPublishMessageResponse;
+	FOnPubnubPublishMessageResponseNative OnPublishMessageResponse;
 	OnPublishMessageResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubMessageData& Message)
 	{
 		if(Result.Error)
@@ -164,38 +149,34 @@ void ASample_PubSub::PublishWithResultLambdaSample()
 	//Publish simple text message to provided channel
 	FString Channel = TEXT("global_chat");
 	FString SimpleMessage = TEXT("Ready to start the mission!");
-	PubnubSubsystem->PublishMessage(Channel, SimpleMessage, OnPublishMessageResponse);
+	PubnubClient->PublishMessageAsync(Channel, SimpleMessage, OnPublishMessageResponse);
 }
 
 // snippet.simple_signal
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SimpleSignalSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Send signal message to provided channel
 	FString Channel = TEXT("global_chat");
 	FString SimpleMessage = TEXT("Ready to start the mission!");
-	PubnubSubsystem->Signal(Channel, SimpleMessage);
+	PubnubClient->SignalAsync(Channel, SimpleMessage);
 }
 
 // snippet.signal_with_settings
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SignalWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set Channel and Message to Signal
 	FString Channel = TEXT("guild_chat");
@@ -206,30 +187,28 @@ void ASample_PubSub::SignalWithSettingsSample()
 	SignalSettings.CustomMessageType = "typing-indicator";
 
 	//Send signal with settings
-	PubnubSubsystem->Signal(Channel, Message, SignalSettings);
+	PubnubClient->SignalAsync(Channel, Message, SignalSettings);
 }
 
 // snippet.signal_with_result
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SignalWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Bind SignalMessageResponse to be fired with Signal result
 	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
-	FOnSignalResponse OnSignalResponse;
+	FOnPubnubSignalResponse OnSignalResponse;
 	OnSignalResponse.BindDynamic(this, &ASample_PubSub::SignalMessageResponse);
 	
 	//Send signal message to provided channel
 	FString Channel = TEXT("global_chat");
 	FString SimpleMessage = TEXT("Player is aiming");
-	PubnubSubsystem->Signal(Channel, SimpleMessage, OnSignalResponse);
+	PubnubClient->SignalAsync(Channel, SimpleMessage, OnSignalResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
@@ -249,16 +228,14 @@ void ASample_PubSub::SignalMessageResponse(FPubnubOperationResult Result, FPubnu
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SignalWithResultLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Bind lambda function to SignalResponse delegate
-	FOnSignalResponseNative OnSignalResponse;
+	FOnPubnubSignalResponseNative OnSignalResponse;
 	OnSignalResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubMessageData& Message)
 	{
 		if(Result.Error)
@@ -274,28 +251,26 @@ void ASample_PubSub::SignalWithResultLambdaSample()
 	//Send signal message to provided channel
 	FString Channel = TEXT("global_chat");
 	FString SimpleMessage = TEXT("Player is aiming");
-	PubnubSubsystem->Signal(Channel, SimpleMessage, OnSignalResponse);
+	PubnubClient->SignalAsync(Channel, SimpleMessage, OnSignalResponse);
 }
 
 // snippet.subscribe
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
 	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
-	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeSample);
+	PubnubClient->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeSample);
 
 	//Subscribe to the Channel
 	FString Channel = TEXT("guild_chat");
-	PubnubSubsystem->SubscribeToChannel(Channel);
+	PubnubClient->SubscribeToChannelAsync(Channel);
 }
 
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
@@ -308,44 +283,40 @@ void ASample_PubSub::OnMessageReceived_SubscribeSample(FPubnubMessageData Messag
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 	
 	//Add Lambda Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
-	PubnubSubsystem->OnMessageReceivedNative.AddLambda([](const FPubnubMessageData& Message)
+	PubnubClient->OnMessageReceivedNative.AddLambda([](const FPubnubMessageData& Message)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Message received on Channel: %s, Message Content: %s"), *Message.Channel, *Message.Message);
 	});
 
 	//Subscribe to the Channel
 	FString Channel = TEXT("guild_chat");
-	PubnubSubsystem->SubscribeToChannel(Channel);
+	PubnubClient->SubscribeToChannelAsync(Channel);
 }
 
 // snippet.subscribe_to_group
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeToGroupSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 	
 	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
 	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
-	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeToGroupSample);
+	PubnubClient->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeToGroupSample);
 
 	//Subscribe to the Channel
 	FString Group = TEXT("my_group_chats");
-	PubnubSubsystem->SubscribeToGroup(Group);
+	PubnubClient->SubscribeToGroupAsync(Group);
 }
 
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
@@ -358,17 +329,15 @@ void ASample_PubSub::OnMessageReceived_SubscribeToGroupSample(FPubnubMessageData
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeWithPresenceSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
 	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
-	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeWithPresenceSample);
+	PubnubClient->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeWithPresenceSample);
 
 	//Create additional subscribe settings
 	FPubnubSubscribeSettings SubscribeSettings;
@@ -376,7 +345,7 @@ void ASample_PubSub::SubscribeWithPresenceSample()
 	
 	//Subscribe to the Channel
 	FString Channel = TEXT("guild_chat");
-	PubnubSubsystem->SubscribeToChannel(Channel, SubscribeSettings);
+	PubnubClient->SubscribeToChannelAsync(Channel, SubscribeSettings);
 }
 
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
@@ -397,27 +366,25 @@ void ASample_PubSub::OnMessageReceived_SubscribeWithPresenceSample(FPubnubMessag
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::SubscribeWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
 	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
-	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeSample);
+	PubnubClient->OnMessageReceived.AddDynamic(this, &ASample_PubSub::OnMessageReceived_SubscribeWithResultSample);
 
 	//Add Listener/Delegate that will be called when subscribe operation is established with it's result
 	//Note:: this is not listener for messages incoming to the subscribed channel
 	// ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
-	FOnSubscribeOperationResponse OnSubscribeOperationResponse;
+	FOnPubnubSubscribeOperationResponse OnSubscribeOperationResponse;
 	OnSubscribeOperationResponse.BindDynamic(this, &ASample_PubSub::OnSubscribeResultReceived);
 	
 	//Subscribe to the Channel
 	FString Channel = TEXT("guild_chat");
-	PubnubSubsystem->SubscribeToChannel(Channel, OnSubscribeOperationResponse);
+	PubnubClient->SubscribeToChannelAsync(Channel, OnSubscribeOperationResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
@@ -443,50 +410,56 @@ void ASample_PubSub::OnSubscribeResultReceived(FPubnubOperationResult Result)
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::UnsubscribeFromChannelSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Unsubscribe from the Channel - stop listening for messages on that channel
 	FString Channel = TEXT("guild_chat");
-	PubnubSubsystem->UnsubscribeFromChannel(Channel);
+	PubnubClient->UnsubscribeFromChannelAsync(Channel);
 }
 
 // snippet.unsubscribe_from_group
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::UnsubscribeFromGroupSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Unsubscribe from the Group - stop listening for messages on all channels that belong to that group
 	FString Group = TEXT("my_group_chats");
-	PubnubSubsystem->UnsubscribeFromGroup(Group);
+	PubnubClient->UnsubscribeFromGroupAsync(Group);
 }
 
 // snippet.unsubscribe_from_all
 // ACTION REQUIRED: Replace ASample_PubSub with name of your Actor class
 void ASample_PubSub::UnsubscribeFromAllSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Unsubscribe from all - stop receiving any messages from all channels and groups
-	PubnubSubsystem->UnsubscribeFromAll();
+	PubnubClient->UnsubscribeFromAllAsync();
 }
 
 // snippet.end
+
+UPubnubClient* ASample_PubSub::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

@@ -1,11 +1,13 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
+#include "Pubnub.h"
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "PubnubStructLibrary.h"
 #include "PubnubEnumLibrary.h"
+#include "PubnubSubsystem.h"
 #include "Crypto/PubnubCryptorInterface.h"
 #include "PubnubClient.generated.h"
 
@@ -130,21 +132,21 @@ public:
 
 	/**Delegate that is called when PubnubClient is deinitialized*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
-	FOnPubnubClientDeinitialized OnPubnubClientDeinitialized;
+	FOnPubnubClientDeinitialized OnClientDeinitialized;
 	
 	/**Listener to react for subscription status changed*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
-	FOnPubnubSubscriptionStatusChanged OnPubnubSubscriptionStatusChanged;
+	FOnPubnubSubscriptionStatusChanged OnSubscriptionStatusChanged;
 
 	/**Listener to react for subscription status changed , equivalent that accepts lambdas*/
-	FOnPubnubSubscriptionStatusChangedNative OnPubnubSubscriptionStatusChangedNative;
+	FOnPubnubSubscriptionStatusChangedNative OnSubscriptionStatusChangedNative;
 
 	/**Global listener for all messages received on subscribed channels*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
-	FOnPubnubMessageReceived OnPubnubMessageReceived;
+	FOnPubnubMessageReceived OnMessageReceived;
 
 	/**Global listener for all messages received on subscribed channels, equivalent that accepts lambdas*/
-	FOnPubnubMessageReceivedNative OnPubnubMessageReceivedNative;
+	FOnPubnubMessageReceivedNative OnMessageReceivedNative;
 
 	/**Listener to react for all Errors in Pubnub functions */
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")

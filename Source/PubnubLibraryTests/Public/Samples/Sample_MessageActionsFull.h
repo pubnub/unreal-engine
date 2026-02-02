@@ -3,10 +3,9 @@
 // snippet.full_message_actions_example
 #pragma once
 
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 #include "CoreMinimal.h"
-#include "PubnubSampleBase.h"
 #include "Sample_MessageActionsFull.generated.h"
 
 // ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
@@ -25,7 +24,7 @@ public:
 	
 private:
 	UPROPERTY()
-	TObjectPtr<UPubnubSubsystem> PubnubSubsystem = nullptr;
+	UPubnubClient* PubnubClient = nullptr;
 
 	FString TestChannel = "message-actions-full-channel";
 	FString TestMessageTimetoken = "";

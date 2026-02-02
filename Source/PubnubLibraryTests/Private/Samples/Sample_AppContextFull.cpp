@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
 #include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 
 void ASample_AppContextFull::BeginPlay()
@@ -20,12 +21,16 @@ void ASample_AppContextFull::RunAppContextFullExample()
 {
 	//Get PubnubSubsystem from GameInstance
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Create Pubnub Client using Pubnub Subsystem
+	FPubnubConfig Config;
+	Config.PublishKey = TEXT("demo");   //replace with your Publish Key from Admin Portal
+	Config.SubscribeKey = TEXT("demo"); //replace with your Subscribe Key from Admin Portal
+	Config.UserID = ExampleUserID;
+	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
 
-	//Set UserID
-	PubnubSubsystem->SetUserID(ExampleUserID);
-
-	UE_LOG(LogTemp, Log, TEXT("App Context Example: User ID is set"));
+	UE_LOG(LogTemp, Log, TEXT("App Context Example: Pubnub Client is created"));
 	
 	// Start the example by setting user metadata
 	UE_LOG(LogTemp, Log, TEXT("App Context Example: Running..."));
@@ -38,10 +43,11 @@ void ASample_AppContextFull::RunAppContextFullExample()
 	UserMetadata.Email = "dragon.slayer91@email.com";
 	UserMetadata.Custom = "{\"class\": \"Warrior\", \"level\": 42, \"guild\": \"TheSilverSwords\"}";
 
-	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
+	FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse;
 	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContextFull::OnSetUserMetadataResponse);
 	
-	PubnubSubsystem->SetUserMetadata(ExampleUserID, UserMetadata, OnSetUserMetadataResponse);
+	FPubnubUserInputData UserInputData = FPubnubUserInputData::FromPubnubUserData(UserMetadata);
+	PubnubClient->SetUserMetadataAsync(ExampleUserID, UserInputData, OnSetUserMetadataResponse);
 }
 
 void ASample_AppContextFull::OnSetUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
@@ -61,10 +67,11 @@ void ASample_AppContextFull::OnSetUserMetadataResponse(FPubnubOperationResult Re
 	ChannelMetadata.Description = "A dangerous quest to retrieve the Sunstone.";
 	ChannelMetadata.Custom = "{\"difficulty\": \"Hard\", \"min_level\": 30}";
 
-	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContextFull::OnSetChannelMetadataResponse);
 	
-	PubnubSubsystem->SetChannelMetadata(ExampleChannelID, ChannelMetadata, OnSetChannelMetadataResponse);
+	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData::FromPubnubChannelData(ChannelMetadata);
+	PubnubClient->SetChannelMetadataAsync(ExampleChannelID, ChannelInputData, OnSetChannelMetadataResponse);
 }
 
 void ASample_AppContextFull::OnSetChannelMetadataResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData)
@@ -85,13 +92,13 @@ void ASample_AppContextFull::OnSetChannelMetadataResponse(FPubnubOperationResult
 	Membership.Custom = "{\"role\": \"QuestLeader\", \"party_invite_pending\": false}";
 	MembershipsToSet.Add(Membership);
 
-	FOnSetMembershipsResponse OnSetMembershipsResponse;
+	FOnPubnubSetMembershipsResponse OnSetMembershipsResponse;
 	OnSetMembershipsResponse.BindDynamic(this, &ASample_AppContextFull::OnSetMembershipsResponse);
 
-	PubnubSubsystem->SetMemberships(ExampleUserID, MembershipsToSet, OnSetMembershipsResponse);
+	PubnubClient->SetMembershipsAsync(ExampleUserID, MembershipsToSet, OnSetMembershipsResponse);
 }
 
-void ASample_AppContextFull::OnSetMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_AppContextFull::OnSetMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if (Result.Error)
 	{
@@ -103,13 +110,13 @@ void ASample_AppContextFull::OnSetMembershipsResponse(FPubnubOperationResult Res
 	// 4a. Verify by getting the user's memberships
 	UE_LOG(LogTemp, Log, TEXT("App Context Example: Step 4a: Verifying by getting user's memberships..."));
 	
-	FOnGetMembershipsResponse OnGetMembershipsResponse;
+	FOnPubnubGetMembershipsResponse OnGetMembershipsResponse;
 	OnGetMembershipsResponse.BindDynamic(this, &ASample_AppContextFull::OnGetMembershipsResponse);
 
-	PubnubSubsystem->GetMemberships(ExampleUserID, OnGetMembershipsResponse);
+	PubnubClient->GetMembershipsAsync(ExampleUserID, OnGetMembershipsResponse);
 }
 
-void ASample_AppContextFull::OnGetMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_AppContextFull::OnGetMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if (Result.Error || MembershipsData.Num() == 0 || MembershipsData[0].Channel.ChannelID != ExampleChannelID)
 	{
@@ -121,13 +128,13 @@ void ASample_AppContextFull::OnGetMembershipsResponse(FPubnubOperationResult Res
 	// 4b. Verify by getting the channel's members
 	UE_LOG(LogTemp, Log, TEXT("App Context Example: Step 4b: Verifying by getting channel's members..."));
 
-	FOnGetChannelMembersResponse OnGetChannelMembersResponse;
+	FOnPubnubGetChannelMembersResponse OnGetChannelMembersResponse;
 	OnGetChannelMembersResponse.BindDynamic(this, &ASample_AppContextFull::OnGetChannelMembersResponse);
 
-	PubnubSubsystem->GetChannelMembers(ExampleChannelID, OnGetChannelMembersResponse);
+	PubnubClient->GetChannelMembersAsync(ExampleChannelID, OnGetChannelMembersResponse);
 }
 
-void ASample_AppContextFull::OnGetChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+void ASample_AppContextFull::OnGetChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 {
 	if (Result.Error || MembersData.Num() == 0 || MembersData[0].User.UserID != ExampleUserID)
 	{
@@ -142,13 +149,13 @@ void ASample_AppContextFull::OnGetChannelMembersResponse(FPubnubOperationResult 
 	TArray<FString> ChannelsToRemove;
 	ChannelsToRemove.Add(ExampleChannelID);
 
-	FOnRemoveMembershipsResponse OnRemoveMembershipsResponse;
+	FOnPubnubRemoveMembershipsResponse OnRemoveMembershipsResponse;
 	OnRemoveMembershipsResponse.BindDynamic(this, &ASample_AppContextFull::OnRemoveMembershipsResponse);
 
-	PubnubSubsystem->RemoveMemberships(ExampleUserID, ChannelsToRemove, OnRemoveMembershipsResponse);
+	PubnubClient->RemoveMembershipsAsync(ExampleUserID, ChannelsToRemove, OnRemoveMembershipsResponse);
 }
 
-void ASample_AppContextFull::OnRemoveMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_AppContextFull::OnRemoveMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if (Result.Error)
 	{
@@ -160,10 +167,10 @@ void ASample_AppContextFull::OnRemoveMembershipsResponse(FPubnubOperationResult 
 	// 6. Clean up: Remove the user metadata
 	UE_LOG(LogTemp, Log, TEXT("App Context Example: Step 6: Cleaning up... Removing user metadata."));
 
-	FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse;
+	FOnPubnubRemoveUserMetadataResponse OnRemoveUserMetadataResponse;
 	OnRemoveUserMetadataResponse.BindDynamic(this, &ASample_AppContextFull::OnRemoveUserMetadataResponse);
 
-	PubnubSubsystem->RemoveUserMetadata(ExampleUserID, OnRemoveUserMetadataResponse);
+	PubnubClient->RemoveUserMetadataAsync(ExampleUserID, OnRemoveUserMetadataResponse);
 }
 
 void ASample_AppContextFull::OnRemoveUserMetadataResponse(FPubnubOperationResult Result)
@@ -178,10 +185,10 @@ void ASample_AppContextFull::OnRemoveUserMetadataResponse(FPubnubOperationResult
 	// 7. Clean up: Remove the channel metadata
 	UE_LOG(LogTemp, Log, TEXT("App Context Example: Step 7: Cleaning up... Removing channel metadata."));
 
-	FOnRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse;
+	FOnPubnubRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse;
 	OnRemoveChannelMetadataResponse.BindDynamic(this, &ASample_AppContextFull::OnRemoveChannelMetadataResponse);
 
-	PubnubSubsystem->RemoveChannelMetadata(ExampleChannelID, OnRemoveChannelMetadataResponse);
+	PubnubClient->RemoveChannelMetadataAsync(ExampleChannelID, OnRemoveChannelMetadataResponse);
 }
 
 void ASample_AppContextFull::OnRemoveChannelMetadataResponse(FPubnubOperationResult Result)

@@ -3,7 +3,7 @@
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -82,8 +82,11 @@ public:
 	// snippet.remove_channel_group_with_result_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Channel Groups")
 	void RemoveChannelGroupWithResultLambdaSample();
-
+	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

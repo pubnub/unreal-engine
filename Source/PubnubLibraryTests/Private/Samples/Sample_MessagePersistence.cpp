@@ -2,28 +2,20 @@
 
 
 #include "Samples/Sample_MessagePersistence.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 //Internal function, don't copy it with the samples
@@ -54,22 +46,20 @@ ASample_MessagePersistence::ASample_MessagePersistence()
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::FetchHistorySample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
-	FOnFetchHistoryResponse OnFetchHistoryResponse;
+	FOnPubnubFetchHistoryResponse OnFetchHistoryResponse;
 	OnFetchHistoryResponse.BindDynamic(this, &ASample_MessagePersistence::OnFetchHistoryResponse_Simple);
 
 	//Fetch history for a channel
 	FString Channel = TEXT("history-channel");
-	PubnubSubsystem->FetchHistory(Channel, OnFetchHistoryResponse);
+	PubnubClient->FetchHistoryAsync(Channel, OnFetchHistoryResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
@@ -94,16 +84,14 @@ void ASample_MessagePersistence::OnFetchHistoryResponse_Simple(FPubnubOperationR
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::FetchHistoryWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnFetchHistoryResponseNative OnFetchHistoryResponse;
+	FOnPubnubFetchHistoryResponseNative OnFetchHistoryResponse;
 	OnFetchHistoryResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages)
 	{
 		if(Result.Error)
@@ -123,20 +111,18 @@ void ASample_MessagePersistence::FetchHistoryWithLambdaSample()
 	
 	//Fetch history for a channel
 	FString Channel = TEXT("history-channel");
-	PubnubSubsystem->FetchHistory(Channel, OnFetchHistoryResponse);
+	PubnubClient->FetchHistoryAsync(Channel, OnFetchHistoryResponse);
 }
 
 // snippet.fetch_history_with_time_window
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::FetchHistoryWithTimeWindowSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create settings with a specific time window
 	FPubnubFetchHistorySettings Settings;
@@ -145,12 +131,12 @@ void ASample_MessagePersistence::FetchHistoryWithTimeWindowSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
-	FOnFetchHistoryResponse OnFetchHistoryResponse;
+	FOnPubnubFetchHistoryResponse OnFetchHistoryResponse;
 	OnFetchHistoryResponse.BindDynamic(this, &ASample_MessagePersistence::OnFetchHistoryResponse_WithTimeWindow);
 
 	//Fetch history for a channel
 	FString Channel = TEXT("history-channel");
-	PubnubSubsystem->FetchHistory(Channel, OnFetchHistoryResponse, Settings);
+	PubnubClient->FetchHistoryAsync(Channel, OnFetchHistoryResponse, Settings);
 }
 
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
@@ -175,13 +161,11 @@ void ASample_MessagePersistence::OnFetchHistoryResponse_WithTimeWindow(FPubnubOp
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::FetchHistoryWithAllIncludesSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create settings to include all extra data
 	FPubnubFetchHistorySettings Settings;
@@ -193,12 +177,12 @@ void ASample_MessagePersistence::FetchHistoryWithAllIncludesSample()
 	
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
-	FOnFetchHistoryResponse OnFetchHistoryResponse;
+	FOnPubnubFetchHistoryResponse OnFetchHistoryResponse;
 	OnFetchHistoryResponse.BindDynamic(this, &ASample_MessagePersistence::OnFetchHistoryResponse_WithAllIncludes);
 
 	//Fetch history for a channel
 	FString Channel = TEXT("history-channel");
-	PubnubSubsystem->FetchHistory(Channel, OnFetchHistoryResponse, Settings);
+	PubnubClient->FetchHistoryAsync(Channel, OnFetchHistoryResponse, Settings);
 }
 
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
@@ -224,30 +208,26 @@ void ASample_MessagePersistence::OnFetchHistoryResponse_WithAllIncludes(FPubnubO
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::DeleteMessagesSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Delete all messages from a channel
 	FString Channel = TEXT("history-channel");
-	PubnubSubsystem->DeleteMessages(Channel);
+	PubnubClient->DeleteMessagesAsync(Channel);
 }
 
 // snippet.delete_messages_with_settings
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::DeleteMessagesWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create settings with a specific time window to delete
 	FPubnubDeleteMessagesSettings Settings;
@@ -256,29 +236,27 @@ void ASample_MessagePersistence::DeleteMessagesWithSettingsSample()
 	
 	//Delete messages from a channel within the specified time window
 	FString Channel = TEXT("history-channel");
-	PubnubSubsystem->DeleteMessages(Channel, Settings);
+	PubnubClient->DeleteMessagesAsync(Channel, Settings);
 }
 
 // snippet.delete_messages_with_result
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::DeleteMessagesWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
-	FOnDeleteMessagesResponse OnDeleteMessagesResponse;
+	FOnPubnubDeleteMessagesResponse OnDeleteMessagesResponse;
 	OnDeleteMessagesResponse.BindDynamic(this, &ASample_MessagePersistence::OnDeleteMessagesResponse);
 
 	//Delete all messages from a channel
 	FString Channel = TEXT("history-channel");
-	PubnubSubsystem->DeleteMessages(Channel, OnDeleteMessagesResponse);
+	PubnubClient->DeleteMessagesAsync(Channel, OnDeleteMessagesResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
@@ -298,16 +276,14 @@ void ASample_MessagePersistence::OnDeleteMessagesResponse(FPubnubOperationResult
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::DeleteMessagesWithResultLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnDeleteMessagesResponseNative OnDeleteMessagesResponse;
+	FOnPubnubDeleteMessagesResponseNative OnDeleteMessagesResponse;
 	OnDeleteMessagesResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -322,30 +298,28 @@ void ASample_MessagePersistence::DeleteMessagesWithResultLambdaSample()
 	
 	//Delete all messages from a channel
 	FString Channel = TEXT("history-channel");
-	PubnubSubsystem->DeleteMessages(Channel, OnDeleteMessagesResponse);
+	PubnubClient->DeleteMessagesAsync(Channel, OnDeleteMessagesResponse);
 }
 
 // snippet.message_counts
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::MessageCountsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
-	FOnMessageCountsResponse OnMessageCountsResponse;
+	FOnPubnubMessageCountsResponse OnMessageCountsResponse;
 	OnMessageCountsResponse.BindDynamic(this, &ASample_MessagePersistence::OnMessageCountsResponse);
 
 	//Get message counts for a channel from a specific timetoken
 	FString Channel = TEXT("history-channel");
 	FString Timetoken = TEXT("17292370360000000");
-	PubnubSubsystem->MessageCounts(Channel, Timetoken, OnMessageCountsResponse);
+	PubnubClient->MessageCountsAsync(Channel, Timetoken, OnMessageCountsResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
@@ -365,16 +339,14 @@ void ASample_MessagePersistence::OnMessageCountsResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_MessagePersistence with name of your Actor class
 void ASample_MessagePersistence::MessageCountsWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnMessageCountsResponseNative OnMessageCountsResponse;
+	FOnPubnubMessageCountsResponseNative OnMessageCountsResponse;
 	OnMessageCountsResponse.BindLambda([](const FPubnubOperationResult& Result, int MessageCounts)
 	{
 		if(Result.Error)
@@ -390,7 +362,19 @@ void ASample_MessagePersistence::MessageCountsWithLambdaSample()
 	//Get message counts for a channel from a specific timetoken
 	FString Channel = TEXT("history-channel");
 	FString Timetoken = TEXT("17292370360000000");
-	PubnubSubsystem->MessageCounts(Channel, Timetoken, OnMessageCountsResponse);
+	PubnubClient->MessageCountsAsync(Channel, Timetoken, OnMessageCountsResponse);
 }
 
 // snippet.end
+
+UPubnubClient* ASample_MessagePersistence::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

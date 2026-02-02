@@ -79,7 +79,7 @@ void UPubnubSubsystem::InitPubnubWithConfig(FPubnubConfig Config)
 
 	//Bind delegates to the default client, so subsystem can also call them
 	TWeakObjectPtr<UPubnubSubsystem> WeakThis = MakeWeakObjectPtr(this);
-	DefaultClient->OnPubnubMessageReceivedNative.AddLambda([WeakThis](FPubnubMessageData MessageData)
+	DefaultClient->OnMessageReceivedNative.AddLambda([WeakThis](FPubnubMessageData MessageData)
 	{
 		if(WeakThis.IsValid())
 		{
@@ -99,7 +99,7 @@ void UPubnubSubsystem::InitPubnubWithConfig(FPubnubConfig Config)
 
 	});
 
-	DefaultClient->OnPubnubSubscriptionStatusChangedNative.AddLambda([WeakThis](EPubnubSubscriptionStatus Status, FPubnubSubscriptionStatusData StatusData)
+	DefaultClient->OnSubscriptionStatusChangedNative.AddLambda([WeakThis](EPubnubSubscriptionStatus Status, FPubnubSubscriptionStatusData StatusData)
 	{
 		if(WeakThis.IsValid())
 		{

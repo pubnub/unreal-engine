@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PubnubClient.h"
@@ -2109,7 +2109,7 @@ void UPubnubClient::DeinitializeClient()
 	SubscriptionDelegatesMutex.Unlock();
 
 	//Notify that Deinitialization is finished
-	OnPubnubClientDeinitialized.Broadcast();
+	OnClientDeinitialized.Broadcast();
 }
 
 void UPubnubClient::DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages)
@@ -2479,8 +2479,8 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 		{
 			if(ThisClientWeak.IsValid())
 			{
-				ThisClientWeak.Get()->OnPubnubMessageReceived.Broadcast(MessageData);
-				ThisClientWeak.Get()->OnPubnubMessageReceivedNative.Broadcast(MessageData);
+				ThisClientWeak.Get()->OnMessageReceived.Broadcast(MessageData);
+				ThisClientWeak.Get()->OnMessageReceivedNative.Broadcast(MessageData);
 			}
 		});
 	};
@@ -2557,8 +2557,8 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 		{
 			if(ThisClientWeak.IsValid())
 			{
-				ThisClientWeak.Get()->OnPubnubMessageReceived.Broadcast(MessageData);
-				ThisClientWeak.Get()->OnPubnubMessageReceivedNative.Broadcast(MessageData);
+				ThisClientWeak.Get()->OnMessageReceived.Broadcast(MessageData);
+				ThisClientWeak.Get()->OnMessageReceivedNative.Broadcast(MessageData);
 			}
 		});
 	};
@@ -3792,6 +3792,8 @@ FPubnubAddMessageActionResult UPubnubClient::AddMessageAction_priv(FString Chann
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubAddMessageActionResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubAddMessageActionResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(MessageTimetoken, FPubnubAddMessageActionResult());
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ActionType, FPubnubAddMessageActionResult());
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Value, FPubnubAddMessageActionResult());
 	// Try to acquire lock - fail fast if another operation is in progress
 	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubAddMessageActionResult());
 	

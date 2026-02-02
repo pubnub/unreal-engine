@@ -2,28 +2,20 @@
 
 
 #include "Samples/Sample_Configuration.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 //Internal function, don't copy it with the samples
@@ -53,13 +45,15 @@ ASample_Configuration::ASample_Configuration()
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::MessageListenerSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Bind delegate to the messages listener
 	// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_Configuration::OnPubnubMessageReceived);
+	PubnubClient->OnMessageReceived.AddDynamic(this, &ASample_Configuration::OnPubnubMessageReceived);
 }
 
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
@@ -73,12 +67,14 @@ void ASample_Configuration::OnPubnubMessageReceived(FPubnubMessageData MessageDa
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::MessageListenerLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Bind lambda delegate to the messages listener
-	PubnubSubsystem->OnMessageReceivedNative.AddLambda([](const FPubnubMessageData& MessageData)
+	PubnubClient->OnMessageReceivedNative.AddLambda([](const FPubnubMessageData& MessageData)
 	{
 		//Do something with the message, for example print it
 		UE_LOG(LogTemp, Log, TEXT("Message received on channel: %s. Message: %s"), *MessageData.Channel, *MessageData.Message);
@@ -89,13 +85,15 @@ void ASample_Configuration::MessageListenerLambdaSample()
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::ErrorListenerSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
-	//Bind delegate to the messages listener
+	//Bind delegate to the error listener
 	// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-	PubnubSubsystem->OnPubnubError.AddDynamic(this, &ASample_Configuration::OnPubnubErrorReceived);
+	PubnubClient->OnPubnubError.AddDynamic(this, &ASample_Configuration::OnPubnubErrorReceived);
 }
 
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
@@ -109,12 +107,14 @@ void ASample_Configuration::OnPubnubErrorReceived(FString ErrorMessage, EPubnubE
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::ErrorListenerLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
-	//Bind lambda delegate to the messages listener
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([](FString ErrorMessage, EPubnubErrorType ErrorType)
+	//Bind lambda delegate to the error listener
+	PubnubClient->OnPubnubErrorNative.AddLambda([](FString ErrorMessage, EPubnubErrorType ErrorType)
 	{
 		//Do something with the error, for example print it
 		UE_LOG(LogTemp, Warning, TEXT("Pubnub error: %s"), *ErrorMessage);
@@ -125,13 +125,15 @@ void ASample_Configuration::ErrorListenerLambdaSample()
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::SubscriptionStatusListenerSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Bind delegate to the subscription status listener
 	// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-	PubnubSubsystem->OnSubscriptionStatusChanged.AddDynamic(this, &ASample_Configuration::OnSubscriptionStatusChanged);
+	PubnubClient->OnSubscriptionStatusChanged.AddDynamic(this, &ASample_Configuration::OnSubscriptionStatusChanged);
 }
 
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
@@ -148,12 +150,14 @@ void ASample_Configuration::OnSubscriptionStatusChanged(EPubnubSubscriptionStatu
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::SubscriptionStatusListenerLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
-	//Bind lambda delegate to the messages listener
-	PubnubSubsystem->OnSubscriptionStatusChangedNative.AddLambda([](EPubnubSubscriptionStatus Status, FPubnubSubscriptionStatusData StatusData)
+	//Bind lambda delegate to the subscription status listener
+	PubnubClient->OnSubscriptionStatusChangedNative.AddLambda([](EPubnubSubscriptionStatus Status, FPubnubSubscriptionStatusData StatusData)
 	{
 		//Do something with changed status, for example print whenever there is connection error
 		if(Status == EPubnubSubscriptionStatus::PSS_ConnectionError || Status == EPubnubSubscriptionStatus::PSS_DisconnectedUnexpectedly)
@@ -167,22 +171,20 @@ void ASample_Configuration::SubscriptionStatusListenerLambdaSample()
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::ListUsersFromChannelSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-	FOnListUsersFromChannelResponse OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponse OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindDynamic(this, &ASample_Configuration::OnListUsersFromChannelResponse);
 
 	//List users from a channel
 	FString Channel = TEXT("guild-channel");
-	PubnubSubsystem->ListUsersFromChannel(Channel, OnListUsersFromChannelResponse);
+	PubnubClient->ListUsersFromChannelAsync(Channel, OnListUsersFromChannelResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
@@ -202,16 +204,14 @@ void ASample_Configuration::OnListUsersFromChannelResponse(FPubnubOperationResul
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::ListUsersFromChannelLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
+	FOnPubnubListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
 	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubListUsersFromChannelWrapper& Data)
 	{
 		if(Result.Error)
@@ -226,7 +226,7 @@ void ASample_Configuration::ListUsersFromChannelLambdaSample()
 	
 	//List users from a channel
 	FString Channel = TEXT("guild-channel");
-	PubnubSubsystem->ListUsersFromChannel(Channel, OnListUsersFromChannelResponse);
+	PubnubClient->ListUsersFromChannelAsync(Channel, OnListUsersFromChannelResponse);
 }
 
 // snippet.init_with_config
@@ -237,12 +237,26 @@ void ASample_Configuration::InitWithConfigSample()
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 
-	// InitPubnubWithConfig will only work if in ProjectSettings in Pubnub SDK section "InitializeAutomatically" is disabled
+	// Create Pubnub Client using Pubnub Subsystem
 	FPubnubConfig PubnubConfig;
-	PubnubConfig.PublishKey = "demo";
-	PubnubConfig.SubscribeKey = "demo";
-	PubnubConfig.UserID = "Player_001";
-	PubnubSubsystem->InitPubnubWithConfig(PubnubConfig);
+	PubnubConfig.PublishKey = TEXT("demo");   //replace with your Publish Key from Admin Portal
+	PubnubConfig.SubscribeKey = TEXT("demo"); //replace with your Subscribe Key from Admin Portal
+	PubnubConfig.UserID = TEXT("Player_001");
+	UPubnubClient* PubnubClient = PubnubSubsystem->CreatePubnubClient(PubnubConfig);
+	
+	UE_LOG(LogTemp, Log, TEXT("Pubnub Client created with config"));
 }
 
 // snippet.end
+
+UPubnubClient* ASample_Configuration::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

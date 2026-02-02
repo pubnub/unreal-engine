@@ -1176,3 +1176,28 @@ FPubnubMembershipUpdateData UPubnubJsonUtilities::GetMembershipUpdateDataFromMes
 	
 	return MembershipUpdateData;
 }
+
+FPubnubMessageActionData UPubnubJsonUtilities::GetMessageActionFromMessageData(const FPubnubMessageData& MessageData)
+{
+	FPubnubMessageActionData MessageActionData;
+	
+	if (MessageData.Message.IsEmpty())
+	{ return MessageActionData; }
+	
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	StringToJsonObject(MessageData.Message, JsonObject);
+	
+	TSharedPtr<FJsonObject> MessageActionDataJsonObject = MakeShareable(new FJsonObject);
+	if (!JsonObject->HasField(ANSI_TO_TCHAR("data")))
+	{ return MessageActionData; }
+	
+	MessageActionDataJsonObject = JsonObject->GetObjectField(ANSI_TO_TCHAR("data"));
+	
+	MessageActionDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("actionTimetoken"), MessageActionData.ActionTimetoken);
+	MessageActionDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("messageTimetoken"), MessageActionData.MessageTimetoken);
+	MessageActionDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("type"), MessageActionData.Type);
+	MessageActionDataJsonObject->TryGetStringField(ANSI_TO_TCHAR("value"), MessageActionData.Value);
+	MessageActionData.UserID = MessageData.UserID;
+	
+	return MessageActionData;
+}

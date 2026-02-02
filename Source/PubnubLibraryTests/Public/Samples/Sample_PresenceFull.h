@@ -3,10 +3,9 @@
 // snippet.full_presence_example
 #pragma once
 
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 #include "CoreMinimal.h"
-#include "PubnubSampleBase.h"
 #include "Sample_PresenceFull.generated.h"
 
 // ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
@@ -32,6 +31,9 @@ public:
 	UFUNCTION()
 	void OnGetStateResponse(FPubnubOperationResult Result, FString StateResponse);
 	
+private:
+	UPROPERTY()
+	UPubnubClient* PubnubClient = nullptr;
 };
 
 // snippet.end

@@ -2,26 +2,22 @@
 
 
 #include "Samples/Sample_Crypto.h"
-// snippet.includes
 #include "Crypto/PubnubAesCryptor.h"
 #include "Crypto/PubnubCryptoModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem before performing any PubNub operations.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 //Internal function, don't copy it with the samples
@@ -51,9 +47,11 @@ ASample_Crypto::ASample_Crypto()
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
 void ASample_Crypto::SetCryptoModuleSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create Aes Cryptor - our main encryption algorithm
 	UPubnubAesCryptor* AesCryptor = NewObject<UPubnubAesCryptor>(this);
@@ -63,8 +61,8 @@ void ASample_Crypto::SetCryptoModuleSample()
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
 	CryptoModule->InitCryptoModule(AesCryptor, {});
 
-	// Set CryptoModule to Pubnub Subsystem
-	PubnubSubsystem->SetCryptoModule(CryptoModule);
+	// Set CryptoModule to Pubnub Client
+	PubnubClient->SetCryptoModule(CryptoModule);
 }
 
 // snippet.set_crypto_module_with_legacy
@@ -73,9 +71,11 @@ void ASample_Crypto::SetCryptoModuleSample()
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
 void ASample_Crypto::SetCryptoModuleWithLegacySample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create Aes Cryptor - our main encryption algorithm
 	UPubnubAesCryptor* AesCryptor = NewObject<UPubnubAesCryptor>(this);
@@ -90,19 +90,21 @@ void ASample_Crypto::SetCryptoModuleWithLegacySample()
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
 	CryptoModule->InitCryptoModule(AesCryptor, {LegacyCryptor});
 
-	// Set CryptoModule to Pubnub Subsystem
-	PubnubSubsystem->SetCryptoModule(CryptoModule);
+	// Set CryptoModule to Pubnub Client
+	PubnubClient->SetCryptoModule(CryptoModule);
 }
 
 // snippet.get_crypto_module
 void ASample_Crypto::GetCryptoModuleSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Get Crypto Module - assuming CryptoModule was already set
-	TScriptInterface<IPubnubCryptoProviderInterface> CryptoModuleInterface = PubnubSubsystem->GetCryptoModule();
+	TScriptInterface<IPubnubCryptoProviderInterface> CryptoModuleInterface = PubnubClient->GetCryptoModule();
 
 	//Get Crypto Module as Object
 	UObject* CryptoModuleObject = CryptoModuleInterface.GetObject();
@@ -151,12 +153,14 @@ void ASample_Crypto::ProviderDecryptSample()
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
 void ASample_Crypto::ProviderEncryptUsingAlreadySetModuleSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Get Crypto Module - assuming CryptoModule was already set
-	TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule = PubnubSubsystem->GetCryptoModule();
+	TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule = PubnubClient->GetCryptoModule();
 
 	UObject* CryptoModuleObject = CryptoModule.GetObject();
 
@@ -171,12 +175,14 @@ void ASample_Crypto::ProviderEncryptUsingAlreadySetModuleSample()
 // ACTION REQUIRED: Replace ASample_Crypto with name of your Actor class
 void ASample_Crypto::ProviderDecryptUsingAlreadySetModuleSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Get Crypto Module - assuming CryptoModule was already set
-	TScriptInterface<IPubnubCryptoProviderInterface> CryptoModuleInterface = PubnubSubsystem->GetCryptoModule();
+	TScriptInterface<IPubnubCryptoProviderInterface> CryptoModuleInterface = PubnubClient->GetCryptoModule();
 
 	UObject* CryptoModuleObject = CryptoModuleInterface.GetObject();
 
@@ -188,3 +194,15 @@ void ASample_Crypto::ProviderDecryptUsingAlreadySetModuleSample()
 }
 
 // snippet.end
+
+UPubnubClient* ASample_Crypto::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

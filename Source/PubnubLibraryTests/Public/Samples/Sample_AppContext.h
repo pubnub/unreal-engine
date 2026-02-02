@@ -3,7 +3,7 @@
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -63,21 +63,21 @@ public:
 	void GetAllUserMetadataSample();
 
 	UFUNCTION()
-	void OnGetAllUserMetadataResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
+	void OnGetAllUserMetadataResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_all_user_metadata_with_settings
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetAllUserMetadataWithSettingsSample();
 
 	UFUNCTION()
-	void OnGetAllUserMetadataResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
+	void OnGetAllUserMetadataResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_all_user_metadata_with_all_includes
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetAllUserMetadataWithAllIncludesSample();
 
 	UFUNCTION()
-	void OnGetAllUserMetadataResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
+	void OnGetAllUserMetadataResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_all_user_metadata_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -88,7 +88,7 @@ public:
 	void GetAllUserMetadataRawSample();
 
 	UFUNCTION()
-	void OnGetAllUserMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev);
+	void OnGetAllUserMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_user_metadata
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -168,21 +168,21 @@ public:
 	void GetAllChannelMetadataSample();
 
 	UFUNCTION()
-	void OnGetAllChannelMetadataResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
+	void OnGetAllChannelMetadataResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_all_channel_metadata_with_settings
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetAllChannelMetadataWithSettingsSample();
 
 	UFUNCTION()
-	void OnGetAllChannelMetadataResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
+	void OnGetAllChannelMetadataResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_all_channel_metadata_with_all_includes
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetAllChannelMetadataWithAllIncludesSample();
 
 	UFUNCTION()
-	void OnGetAllChannelMetadataResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
+	void OnGetAllChannelMetadataResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_all_channel_metadata_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -193,7 +193,7 @@ public:
 	void GetAllChannelMetadataRawSample();
 
 	UFUNCTION()
-	void OnGetAllChannelMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev);
+	void OnGetAllChannelMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_channel_metadata
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -236,6 +236,9 @@ public:
 	void RemoveChannelMetadataWithResultLambdaSample();
 
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

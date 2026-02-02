@@ -3,7 +3,7 @@
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -71,8 +71,11 @@ public:
 	// snippet.remove_message_action_with_result_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void RemoveMessageActionWithResultLambdaSample();
-
+	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 
