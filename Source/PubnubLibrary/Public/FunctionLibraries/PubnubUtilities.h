@@ -104,16 +104,13 @@ public:
 		{
 			auto CopiedDelegate = Delegate;
 			auto ArgsTuple = std::make_tuple(std::forward<Args>(args)...);
-
-			CallDelegateWithTuple(CopiedDelegate, std::move(ArgsTuple),
-									  std::make_index_sequence<sizeof...(Args)>{});
 			
-			/*// Launch the async task, all such delegates should be called on GameThread to work well with widgets and other systems
+			// Launch the async task, all such delegates should be called on GameThread to work well with widgets and other systems
 			AsyncTask(ENamedThreads::GameThread, [CopiedDelegate, ArgsTuple = std::move(ArgsTuple)]() mutable
 			{
 				CallDelegateWithTuple(CopiedDelegate, std::move(ArgsTuple),
 									  std::make_index_sequence<sizeof...(Args)>{});
-			});*/
+			});
 		}
 	}
 

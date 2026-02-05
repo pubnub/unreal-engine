@@ -71,14 +71,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void ListUsersFromChannelLambdaSample();
 
-	// snippet.init_with_config
+	// snippet.create_pubnub_client
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
-	void InitWithConfigSample();
+	void CreatePubnubClient();
+	
+	// snippet.get_pubnub_client
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	UPubnubClient* GetPubnubClient();
+	
+	// snippet.destroy_pubnub_client
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void DestroyPubnubClient();
 	
 	// snippet.end
 	
-private:
-	UPubnubClient* GetPubnubClient();
 };
 
 

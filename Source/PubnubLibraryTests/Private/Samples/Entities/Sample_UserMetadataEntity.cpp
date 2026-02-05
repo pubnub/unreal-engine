@@ -1,30 +1,22 @@
 // Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #include "Samples/Entities/Sample_UserMetadataEntity.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  * 
  * USER METADATA ENTITY SAMPLES demonstrate working with PubNub user metadata through the entity-based approach.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 ASample_UserMetadataEntity::ASample_UserMetadataEntity()
 {
@@ -54,13 +46,13 @@ void ASample_UserMetadataEntity::RunSamples()
 // snippet.create_user_metadata_entity
 void ASample_UserMetadataEntity::CreateUserMetadataEntitySample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity for the user you want to monitor metadata changes
 	FString UserToMonitor = TEXT("Player_002");
@@ -71,13 +63,13 @@ void ASample_UserMetadataEntity::CreateUserMetadataEntitySample()
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::SubscribeWithUserMetadataEntitySample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity for the user you want to monitor metadata changes
 	FString UserToMonitor = TEXT("Player_002");
@@ -104,13 +96,13 @@ void ASample_UserMetadataEntity::OnObjectEvent_UserMetadataEntitySample(FPubnubM
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::UserMetadataEntitySetMetadataSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity for updating player profile
 	FString PlayerToUpdate = TEXT("Champion_Alex");
@@ -147,13 +139,14 @@ void ASample_UserMetadataEntity::OnSetUserMetadataResult_Sample(FPubnubOperation
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::SetUserMetadataSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
 	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
@@ -172,13 +165,14 @@ void ASample_UserMetadataEntity::SetUserMetadataSample()
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::SetUserMetadataWithResultSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
 	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
@@ -216,13 +210,14 @@ void ASample_UserMetadataEntity::OnSetUserMetadataResponse(FPubnubOperationResul
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::SetUserMetadataWithLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
 	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
@@ -256,13 +251,14 @@ void ASample_UserMetadataEntity::SetUserMetadataWithLambdaSample()
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::GetUserMetadataSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
 	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
@@ -293,13 +289,14 @@ void ASample_UserMetadataEntity::OnGetUserMetadataResponse_Simple(FPubnubOperati
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::GetUserMetadataWithLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
 	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
@@ -326,13 +323,14 @@ void ASample_UserMetadataEntity::GetUserMetadataWithLambdaSample()
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::RemoveUserMetadataSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
 	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity
 	UPubnubUserMetadataEntity* UserMetadataEntity = PubnubSubsystem->CreateUserMetadataEntity(UserID);
@@ -345,13 +343,13 @@ void ASample_UserMetadataEntity::RemoveUserMetadataSample()
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::RemoveUserMetadataWithResultSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity
 	FString UserToRemove = TEXT("Player_002");
@@ -383,13 +381,13 @@ void ASample_UserMetadataEntity::OnRemoveUserMetadataResponse(FPubnubOperationRe
 // ACTION REQUIRED: Replace ASample_UserMetadataEntity with name of your Actor class
 void ASample_UserMetadataEntity::RemoveUserMetadataWithResultLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a user metadata entity
 	FString UserToRemove = TEXT("Player_003");
@@ -414,3 +412,15 @@ void ASample_UserMetadataEntity::RemoveUserMetadataWithResultLambdaSample()
 }
 
 // snippet.end
+
+UPubnubClient* ASample_UserMetadataEntity::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

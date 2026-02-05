@@ -1,23 +1,15 @@
 // Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #include "Samples/Entities/Sample_ChannelEntity.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  * 
@@ -25,7 +17,7 @@
  * a more object-oriented and intuitive way to work with PubNub channels, channel groups, and metadata.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 ASample_ChannelEntity::ASample_ChannelEntity()
@@ -61,13 +53,13 @@ void ASample_ChannelEntity::RunSamples()
 // snippet.create_channel_entity
 void ASample_ChannelEntity::CreateChannelEntitySample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("game_lobby");
@@ -78,13 +70,13 @@ void ASample_ChannelEntity::CreateChannelEntitySample()
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::PublishSimpleSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("global_chat");
@@ -99,13 +91,13 @@ void ASample_ChannelEntity::PublishSimpleSample()
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::PublishWithSettingsSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("global_chat");
@@ -127,13 +119,13 @@ void ASample_ChannelEntity::PublishWithSettingsSample()
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::PublishWithResultSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("global_chat");
@@ -166,13 +158,13 @@ void ASample_ChannelEntity::PublishedMessageResponse(FPubnubOperationResult Resu
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::PublishWithResultLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("global_chat");
@@ -201,13 +193,13 @@ void ASample_ChannelEntity::PublishWithResultLambdaSample()
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::SimpleSignalSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("global_chat");
@@ -222,13 +214,13 @@ void ASample_ChannelEntity::SimpleSignalSample()
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::SignalWithSettingsSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("guild_chat");
@@ -249,13 +241,13 @@ void ASample_ChannelEntity::SignalWithSettingsSample()
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::SignalWithResultSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("global_chat");
@@ -288,13 +280,13 @@ void ASample_ChannelEntity::SignalMessageResponse(FPubnubOperationResult Result,
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::SignalWithResultLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("global_chat");
@@ -323,13 +315,13 @@ void ASample_ChannelEntity::SignalWithResultLambdaSample()
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::ListUsersFromChannelSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to list users from
 	FString ChannelName = TEXT("guild-channel");
@@ -361,13 +353,13 @@ void ASample_ChannelEntity::OnListUsersFromChannelResponse_Simple(FPubnubOperati
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::ListUsersFromChannelWithSettingsSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to list users from
 	FString ChannelName = TEXT("guild-channel");
@@ -409,13 +401,13 @@ void ASample_ChannelEntity::OnListUsersFromChannelResponse_WithSettings(FPubnubO
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::ListUsersFromChannelWithLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to list users from
 	FString ChannelName = TEXT("guild-channel");
@@ -443,13 +435,13 @@ void ASample_ChannelEntity::ListUsersFromChannelWithLambdaSample()
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::SubscribeWithChannelEntitySample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the channel you want to work with
 	FString ChannelName = TEXT("game_lobby");
@@ -476,13 +468,13 @@ void ASample_ChannelEntity::OnMessageReceived_ChannelEntitySample(FPubnubMessage
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::ChannelEntityAllListenersSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity
 	FString ChannelName = TEXT("comprehensive_channel");
@@ -569,13 +561,13 @@ void ASample_ChannelEntity::OnAnyEvent_AllListenersSample(FPubnubMessageData Mes
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
 void ASample_ChannelEntity::ChannelEntityPublishMessageSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel entity for the game chat channel
 	FString GameChatChannel = TEXT("team_alpha_chat");
@@ -605,3 +597,15 @@ void ASample_ChannelEntity::OnPublishResult_ChannelEntitySample(FPubnubOperation
 }
 
 // snippet.end
+
+UPubnubClient* ASample_ChannelEntity::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

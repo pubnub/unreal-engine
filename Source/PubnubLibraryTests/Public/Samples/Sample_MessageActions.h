@@ -45,13 +45,16 @@ public:
 	// snippet.get_message_actions
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void GetMessageActionsSample();
+	
+	UFUNCTION()
+	void OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions);
 
 	// snippet.get_message_actions_with_settings
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void GetMessageActionsWithSettingsSample();
 
 	UFUNCTION()
-	void OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions);
+	void OnGetMessageActionsResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions);
 
 	// snippet.get_message_actions_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")

@@ -1,23 +1,15 @@
 // Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #include "Samples/Entities/Sample_SubscriptionSet.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  * 
@@ -25,7 +17,7 @@
  * managing multiple subscriptions as a single unit for complex monitoring and communication scenarios.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 //Internal function, don't copy it with the samples
@@ -52,13 +44,13 @@ ASample_SubscriptionSet::ASample_SubscriptionSet()
 // ACTION REQUIRED: Replace ASample_SubscriptionSet with name of your Actor class
 void ASample_SubscriptionSet::CreateSubscriptionSetFromNamesSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Squad_Leader");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Define multiple channels and channel groups to monitor for team coordination
 	TArray<FString> TeamChannels = {
@@ -94,13 +86,13 @@ void ASample_SubscriptionSet::OnMessage_SubscriptionSetFromNamesSample(FPubnubMe
 // ACTION REQUIRED: Replace ASample_SubscriptionSet with name of your Actor class
 void ASample_SubscriptionSet::CreateSubscriptionSetFromEntitiesSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Command_Center");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create individual entities for different aspects of game monitoring
 	UPubnubChannelEntity* PlayerStatsChannel = PubnubSubsystem->CreateChannelEntity(TEXT("player_statistics"));
@@ -142,13 +134,13 @@ void ASample_SubscriptionSet::OnMessage_SubscriptionSetFromEntitiesSample(FPubnu
 // ACTION REQUIRED: Replace ASample_SubscriptionSet with name of your Actor class
 void ASample_SubscriptionSet::SubscriptionSetAddRemoveSubscriptionsSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Match_Coordinator");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a subscription set for tournament management
 	TArray<FString> TournamentChannels = {TEXT("tournament_lobby"), TEXT("match_results")};
@@ -181,13 +173,13 @@ void ASample_SubscriptionSet::SubscriptionSetAddRemoveSubscriptionsSample()
 // ACTION REQUIRED: Replace ASample_SubscriptionSet with name of your Actor class
 void ASample_SubscriptionSet::SubscriptionSetMergeOperationsSample()
 {
-	// Get PubnubSubsystem from GameInstance
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Event_Manager");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create main subscription set for core game channels
 	TArray<FString> CoreChannels = {TEXT("game_lobby"), TEXT("general_chat")};
@@ -221,3 +213,15 @@ void ASample_SubscriptionSet::SubscriptionSetMergeOperationsSample()
 }
 
 // snippet.end
+
+UPubnubClient* ASample_SubscriptionSet::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

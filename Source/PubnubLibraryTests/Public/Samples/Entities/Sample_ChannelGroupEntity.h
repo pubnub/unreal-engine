@@ -3,7 +3,7 @@
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 #include "Entities/PubnubChannelGroupEntity.h"
 #include "Entities/PubnubSubscription.h"
 
@@ -98,4 +98,7 @@ public:
 
 	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };

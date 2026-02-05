@@ -155,6 +155,24 @@ void ASample_MessageActions::GetMessageActionsSample()
 	PubnubClient->GetMessageActionsAsync(Channel, OnGetMessageActionsResponse);
 }
 
+// ACTION REQUIRED: Replace ASample_MessageActions with name of your Actor class
+void ASample_MessageActions::OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to get message actions. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully got message actions. Number of actions: %d"), MessageActions.Num());
+		//List all received message actions
+		for (const FPubnubMessageActionData& Action : MessageActions)
+		{
+			UE_LOG(LogTemp, Log, TEXT("- Type: '%s', Value: '%s', UserID: %s, Action Timetoken: %s"), *Action.Type, *Action.Value, *Action.UserID, *Action.ActionTimetoken);
+		}
+	}
+}
+
 // snippet.get_message_actions_with_settings
 // ACTION REQUIRED: Replace ASample_MessageActions with name of your Actor class
 void ASample_MessageActions::GetMessageActionsWithSettingsSample()
@@ -168,7 +186,7 @@ void ASample_MessageActions::GetMessageActionsWithSettingsSample()
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_MessageActions with name of your Actor class
 	FOnPubnubGetMessageActionsResponse OnGetMessageActionsResponse;
-	OnGetMessageActionsResponse.BindDynamic(this, &ASample_MessageActions::OnGetMessageActionsResponse);
+	OnGetMessageActionsResponse.BindDynamic(this, &ASample_MessageActions::OnGetMessageActionsResponse_WithSettings);
 
 	//Get message actions from a channel with a specific time window and limit
 	FString Channel = TEXT("message-actions-channel");
@@ -179,7 +197,7 @@ void ASample_MessageActions::GetMessageActionsWithSettingsSample()
 }
 
 // ACTION REQUIRED: Replace ASample_MessageActions with name of your Actor class
-void ASample_MessageActions::OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions)
+void ASample_MessageActions::OnGetMessageActionsResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions)
 {
 	if(Result.Error)
 	{

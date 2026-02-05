@@ -191,6 +191,19 @@ void ASample_AppContext::SetUserMetadataRawSample()
 	PubnubClient->SetUserMetadataRawAsync(UserID, UserMetadataJson, OnSetUserMetadataResponse, Include);
 }
 
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnSetUserMetadataRawResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set user metadata (raw). Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully set user metadata (raw). UserID: %s, Name: %s, Custom: %s"), *UserData.UserID, *UserData.UserName, *UserData.Custom);
+	}
+}
+
 // snippet.update_user_metadata_iteratively
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::UpdateUserMetadataIterativelySample()
@@ -203,10 +216,10 @@ void ASample_AppContext::UpdateUserMetadataIterativelySample()
 	
 	// Create initial user metadata object
 	FString UserID = TEXT("Player_005");
-	FPubnubUserData UserMetadata;
-	UserMetadata.UserName = "Player Two";
-	UserMetadata.Status = "active";
-	UserMetadata.Custom = "{\"inventory_slots\": 20, \"guild_id\": \"G2\"}";
+	FPubnubUserInputData UserInputData;
+	UserInputData.UserName = "Player Two";
+	UserInputData.Status = "active";
+	UserInputData.Custom = "{\"inventory_slots\": 20, \"guild_id\": \"G2\"}";
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -215,7 +228,6 @@ void ASample_AppContext::UpdateUserMetadataIterativelySample()
 
 	// Set initial user metadata
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	FPubnubUserInputData UserInputData = FPubnubUserInputData::FromPubnubUserData(UserMetadata);
 	PubnubClient->SetUserMetadataAsync(UserID, UserInputData, OnSetUserMetadataResponse, Include);
 }
 
@@ -260,19 +272,6 @@ void ASample_AppContext::OnUpdateUserMetadataResponse(FPubnubOperationResult Res
 	else
 	{
 		UE_LOG(LogTemp, Log, TEXT("Successfully updated user metadata. New status is: %s"), *UserData.Status);
-	}
-}
-
-// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnSetUserMetadataRawResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
-{
-	if(Result.Error)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to set user metadata (raw). Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Successfully set user metadata (raw). UserID: %s, Name: %s, Custom: %s"), *UserData.UserID, *UserData.UserName, *UserData.Custom);
 	}
 }
 
@@ -735,15 +734,14 @@ void ASample_AppContext::SetChannelMetadataWithResultSample()
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetChannelMetadataResponse);
 
 	// Create channel metadata object
-	FPubnubChannelData ChannelMetadata;
-	ChannelMetadata.ChannelName = "Trade Chat";
-	ChannelMetadata.Status = "active";
-	ChannelMetadata.Custom = "{\"rules\": \"wts_wtt_only\"}";
+	FPubnubChannelInputData ChannelInputData;
+	ChannelInputData.ChannelName = "Trade Chat";
+	ChannelInputData.Status = "active";
+	ChannelInputData.Custom = "{\"rules\": \"wts_wtt_only\"}";
 
 	// Set channel metadata with all available data included in response
 	FString Channel = "trade-chat-channel";
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData::FromPubnubChannelData(ChannelMetadata);
 	PubnubClient->SetChannelMetadataAsync(Channel, ChannelInputData, OnSetChannelMetadataResponse, Include);
 }
 

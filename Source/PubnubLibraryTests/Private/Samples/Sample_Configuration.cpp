@@ -229,9 +229,9 @@ void ASample_Configuration::ListUsersFromChannelLambdaSample()
 	PubnubClient->ListUsersFromChannelAsync(Channel, OnListUsersFromChannelResponse);
 }
 
-// snippet.init_with_config
+// snippet.create_pubnub_client
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-void ASample_Configuration::InitWithConfigSample()
+void ASample_Configuration::CreatePubnubClient()
 {
 	//Get PubnubSubsystem from GameInstance
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
@@ -247,8 +247,8 @@ void ASample_Configuration::InitWithConfigSample()
 	UE_LOG(LogTemp, Log, TEXT("Pubnub Client created with config"));
 }
 
-// snippet.end
-
+// snippet.get_pubnub_client
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 UPubnubClient* ASample_Configuration::GetPubnubClient()
 {
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
@@ -260,3 +260,19 @@ UPubnubClient* ASample_Configuration::GetPubnubClient()
 	PubnubClient->SetUserID(TEXT("player_001"));
 	return PubnubClient;
 }
+
+// snippet.destroy_pubnub_client
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::DestroyPubnubClient()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	PubnubSubsystem->DestroyPubnubClient(PubnubClient);
+}
+
+// snippet.end
