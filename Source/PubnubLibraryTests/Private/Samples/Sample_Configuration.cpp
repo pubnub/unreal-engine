@@ -2,9 +2,7 @@
 
 
 #include "Samples/Sample_Configuration.h"
-#include "Kismet/GameplayStatics.h"
-#include "Engine/GameInstance.h"
-#include "PubnubSubsystem.h"
+
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
@@ -230,6 +228,11 @@ void ASample_Configuration::ListUsersFromChannelLambdaSample()
 }
 
 // snippet.create_pubnub_client
+
+#include "Kismet/GameplayStatics.h"
+#include "Engine/GameInstance.h"
+#include "PubnubSubsystem.h"
+
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::CreatePubnubClient()
 {
@@ -248,6 +251,11 @@ void ASample_Configuration::CreatePubnubClient()
 }
 
 // snippet.get_pubnub_client
+
+#include "Kismet/GameplayStatics.h"
+#include "Engine/GameInstance.h"
+#include "PubnubSubsystem.h"
+
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 UPubnubClient* ASample_Configuration::GetPubnubClient()
 {
@@ -262,6 +270,11 @@ UPubnubClient* ASample_Configuration::GetPubnubClient()
 }
 
 // snippet.destroy_pubnub_client
+
+#include "Kismet/GameplayStatics.h"
+#include "Engine/GameInstance.h"
+#include "PubnubSubsystem.h"
+
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::DestroyPubnubClient()
 {
