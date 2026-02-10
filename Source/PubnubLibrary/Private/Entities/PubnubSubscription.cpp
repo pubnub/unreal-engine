@@ -160,26 +160,56 @@ void UPubnubSubscription::InternalInit()
 	// Messages and Presence
 	pubnub_subscribe_message_callback_t CallbackMessages = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(static_cast<UPubnubSubscription*>(user_data));
+		if(!user_data)
+		{return;}
+		
+		// Validate object before creating weak pointer to prevent crashes during destruction
+		UPubnubSubscription* SubscriptionPtr = static_cast<UPubnubSubscription*>(user_data);
+		if(!SubscriptionPtr->IsValidLowLevelFast())
+		{return;}
+		
+		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(SubscriptionPtr);
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
-			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S))
+			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
 			{
+				if(!S->PubnubClient)
+				{return;}
 				// In C-Core there is no separate listener for Presence Events. They come together with published messages.
 				// So we check if it's Presence Event here and choose equivalent delegates to call
+				// Check IsInitialized before each broadcast to prevent race conditions during destruction
 				if(MessageData.Channel.Contains("-pnpres"))
 				{
-					S->OnPubnubPresenceEvent.Broadcast(MessageData);
-					S->OnPubnubPresenceEventNative.Broadcast(MessageData);
+					// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast 
+					if(S->IsInitialized)
+					{
+						S->OnPubnubPresenceEvent.Broadcast(MessageData);
+					}
+					if(S->IsInitialized)
+					{
+						S->OnPubnubPresenceEventNative.Broadcast(MessageData);
+					}
 				}
 				else
 				{
-					S->OnPubnubMessage.Broadcast(MessageData);
-					S->OnPubnubMessageNative.Broadcast(MessageData);
+					if(S->IsInitialized)
+					{
+						S->OnPubnubMessage.Broadcast(MessageData);
+					}
+					if(S->IsInitialized)
+					{
+						S->OnPubnubMessageNative.Broadcast(MessageData);
+					}
 				}
-				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				}
 			}
 		});
 	};
@@ -187,16 +217,39 @@ void UPubnubSubscription::InternalInit()
 	// Signals
 	pubnub_subscribe_message_callback_t CallbackSignals = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(static_cast<UPubnubSubscription*>(user_data));
+		if(!user_data)
+		{return;}
+		
+		// Validate object before creating weak pointer to prevent crashes during destruction
+		UPubnubSubscription* SubscriptionPtr = static_cast<UPubnubSubscription*>(user_data);
+		if(!SubscriptionPtr->IsValidLowLevelFast())
+		{return;}
+		
+		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(SubscriptionPtr);
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
-			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S))
+			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
 			{
-				S->OnPubnubSignal.Broadcast(MessageData);
-				S->OnPubnubSignalNative.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				if(!S->PubnubClient)
+				{return;}
+				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
+				if(S->IsInitialized)
+				{
+					S->OnPubnubSignal.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->OnPubnubSignalNative.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				}
 			}
 		});
 	};
@@ -204,16 +257,39 @@ void UPubnubSubscription::InternalInit()
 	// Objects (App Context)
 	pubnub_subscribe_message_callback_t CallbackObjects = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(static_cast<UPubnubSubscription*>(user_data));
+		if(!user_data)
+		{return;}
+		
+		// Validate object before creating weak pointer to prevent crashes during destruction
+		UPubnubSubscription* SubscriptionPtr = static_cast<UPubnubSubscription*>(user_data);
+		if(!SubscriptionPtr->IsValidLowLevelFast())
+		{return;}
+		
+		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(SubscriptionPtr);
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
-			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S))
+			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
 			{
-				S->OnPubnubObjectEvent.Broadcast(MessageData);
-				S->OnPubnubObjectEventNative.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				if(!S->PubnubClient)
+				{return;}
+				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
+				if(S->IsInitialized)
+				{
+					S->OnPubnubObjectEvent.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->OnPubnubObjectEventNative.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				}
 			}
 		});
 	};
@@ -221,16 +297,39 @@ void UPubnubSubscription::InternalInit()
 	// Message Actions
 	pubnub_subscribe_message_callback_t CallbackMessageActions= +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(static_cast<UPubnubSubscription*>(user_data));
+		if(!user_data)
+		{return;}
+		
+		// Validate object before creating weak pointer to prevent crashes during destruction
+		UPubnubSubscription* SubscriptionPtr = static_cast<UPubnubSubscription*>(user_data);
+		if(!SubscriptionPtr->IsValidLowLevelFast())
+		{return;}
+		
+		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(SubscriptionPtr);
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
-			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S))
+			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
 			{
-				S->OnPubnubMessageAction.Broadcast(MessageData);
-				S->OnPubnubMessageActionNative.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				if(!S->PubnubClient)
+				{return;}
+				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
+				if(S->IsInitialized)
+				{
+					S->OnPubnubMessageAction.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->OnPubnubMessageActionNative.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				}
 			}
 		});
 	};
@@ -252,6 +351,23 @@ void UPubnubSubscription::CleanUpSubscription()
 {
 	if(!IsInitialized) {return;}
 
+	// Set IsInitialized to false FIRST to prevent any pending async tasks from broadcasting
+	IsInitialized = false;
+
+	// Clear all delegates to prevent broadcasting during destruction
+	OnPubnubMessage.Clear();
+	OnPubnubMessageNative.Clear();
+	OnPubnubSignal.Clear();
+	OnPubnubSignalNative.Clear();
+	OnPubnubPresenceEvent.Clear();
+	OnPubnubPresenceEventNative.Clear();
+	OnPubnubObjectEvent.Clear();
+	OnPubnubObjectEventNative.Clear();
+	OnPubnubMessageAction.Clear();
+	OnPubnubMessageActionNative.Clear();
+	FOnPubnubAnyMessageType.Clear();
+	FOnPubnubAnyMessageTypeNative.Clear();
+
 	if(CCoreSubscription)
 	{
 		pubnub_subscription_free(&CCoreSubscription);
@@ -261,8 +377,6 @@ void UPubnubSubscription::CleanUpSubscription()
 	{
 		PubnubClient->OnClientDeinitialized.RemoveDynamic(this, &UPubnubSubscription::CleanUpSubscription);
 	}
-
-	IsInitialized = false;
 }
 
 FPubnubOperationResult UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
@@ -506,26 +620,54 @@ void UPubnubSubscriptionSet::InternalInit()
 	// Messages and Presence
 	pubnub_subscribe_message_callback_t CallbackMessages = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(static_cast<UPubnubSubscriptionSet*>(user_data));
+		if(!user_data)
+		{return;}
+		
+		// Validate object before creating weak pointer to prevent crashes during destruction
+		UPubnubSubscriptionSet* SubscriptionPtr = static_cast<UPubnubSubscriptionSet*>(user_data);
+		if(!SubscriptionPtr->IsValidLowLevelFast())
+		{return;}
+		
+		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(SubscriptionPtr);
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
-			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S))
+			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
 			{
 				// In C-Core there is no separate listener for Presence Events. They come together with published messages.
 				// So we check if it's Presence Event here and choose equivalent delegates to call
+				// Check IsInitialized before each broadcast to prevent race conditions during destruction
 				if(MessageData.Channel.Contains("-pnpres"))
 				{
-					S->OnPubnubPresenceEvent.Broadcast(MessageData);
-					S->OnPubnubPresenceEventNative.Broadcast(MessageData);
+					// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
+					if(S->IsInitialized)
+					{
+						S->OnPubnubPresenceEvent.Broadcast(MessageData);
+					}
+					if(S->IsInitialized)
+					{
+						S->OnPubnubPresenceEventNative.Broadcast(MessageData);
+					}
 				}
 				else
 				{
-					S->OnPubnubMessage.Broadcast(MessageData);
-					S->OnPubnubMessageNative.Broadcast(MessageData);
+					if(S->IsInitialized)
+					{
+						S->OnPubnubMessage.Broadcast(MessageData);
+					}
+					if(S->IsInitialized)
+					{
+						S->OnPubnubMessageNative.Broadcast(MessageData);
+					}
 				}
-				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				}
 			}
 		});
 	};
@@ -533,16 +675,37 @@ void UPubnubSubscriptionSet::InternalInit()
 	// Signals
 	pubnub_subscribe_message_callback_t CallbackSignals = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(static_cast<UPubnubSubscriptionSet*>(user_data));
+		if(!user_data)
+		{return;}
+		
+		// Validate object before creating weak pointer to prevent crashes during destruction
+		UPubnubSubscriptionSet* SubscriptionPtr = static_cast<UPubnubSubscriptionSet*>(user_data);
+		if(!SubscriptionPtr->IsValidLowLevelFast())
+		{return;}
+		
+		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(SubscriptionPtr);
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
-			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S))
+			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
 			{
-				S->OnPubnubSignal.Broadcast(MessageData);
-				S->OnPubnubSignalNative.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
+				if(S->IsInitialized)
+				{
+					S->OnPubnubSignal.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->OnPubnubSignalNative.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				}
 			}
 		});
 	};
@@ -550,16 +713,37 @@ void UPubnubSubscriptionSet::InternalInit()
 	// Objects (App Context)
 	pubnub_subscribe_message_callback_t CallbackObjects = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(static_cast<UPubnubSubscriptionSet*>(user_data));
+		if(!user_data)
+		{return;}
+		
+		// Validate object before creating weak pointer to prevent crashes during destruction
+		UPubnubSubscriptionSet* SubscriptionPtr = static_cast<UPubnubSubscriptionSet*>(user_data);
+		if(!SubscriptionPtr->IsValidLowLevelFast())
+		{return;}
+		
+		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(SubscriptionPtr);
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
-			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S))
+			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
 			{
-				S->OnPubnubObjectEvent.Broadcast(MessageData);
-				S->OnPubnubObjectEventNative.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
+				if(S->IsInitialized)
+				{
+					S->OnPubnubObjectEvent.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->OnPubnubObjectEventNative.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				}
 			}
 		});
 	};
@@ -567,16 +751,37 @@ void UPubnubSubscriptionSet::InternalInit()
 	// Message Actions
 	pubnub_subscribe_message_callback_t CallbackMessageActions= +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(static_cast<UPubnubSubscriptionSet*>(user_data));
+		if(!user_data)
+		{return;}
+		
+		// Validate object before creating weak pointer to prevent crashes during destruction
+		UPubnubSubscriptionSet* SubscriptionPtr = static_cast<UPubnubSubscriptionSet*>(user_data);
+		if(!SubscriptionPtr->IsValidLowLevelFast())
+		{return;}
+		
+		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(SubscriptionPtr);
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
-			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S))
+			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
 			{
-				S->OnPubnubMessageAction.Broadcast(MessageData);
-				S->OnPubnubMessageActionNative.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
+				if(S->IsInitialized)
+				{
+					S->OnPubnubMessageAction.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->OnPubnubMessageActionNative.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
+				}
+				if(S->IsInitialized)
+				{
+					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+				}
 			}
 		});
 	};
@@ -598,6 +803,24 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 {
 	if(!IsInitialized) {return;}
 
+	// Set IsInitialized to false FIRST to prevent any pending async tasks from broadcasting
+	IsInitialized = false;
+
+	// Clear all delegates to prevent broadcasting during destruction
+	// This must be done after setting IsInitialized = false so queued async tasks will skip broadcasting
+	OnPubnubMessage.Clear();
+	OnPubnubMessageNative.Clear();
+	OnPubnubSignal.Clear();
+	OnPubnubSignalNative.Clear();
+	OnPubnubPresenceEvent.Clear();
+	OnPubnubPresenceEventNative.Clear();
+	OnPubnubObjectEvent.Clear();
+	OnPubnubObjectEventNative.Clear();
+	OnPubnubMessageAction.Clear();
+	OnPubnubMessageActionNative.Clear();
+	FOnPubnubAnyMessageType.Clear();
+	FOnPubnubAnyMessageTypeNative.Clear();
+
 	if(CCoreSubscriptionSet)
 	{
 		pubnub_subscription_set_free(&CCoreSubscriptionSet);
@@ -607,6 +830,4 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 	{
 		PubnubClient->OnClientDeinitialized.RemoveDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
 	}
-
-	IsInitialized = false;
 }

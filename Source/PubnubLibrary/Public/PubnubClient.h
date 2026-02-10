@@ -9,6 +9,7 @@
 #include "PubnubEnumLibrary.h"
 #include "PubnubSubsystem.h"
 #include "Crypto/PubnubCryptorInterface.h"
+#include <atomic>
 #include "PubnubClient.generated.h"
 
 class UPubnubSubsystem;
@@ -163,6 +164,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="PubnubClient")
 	void DestroyClient();
+
+	/**Override BeginDestroy to ensure proper cleanup when object is garbage collected*/
+	virtual void BeginDestroy() override;
 
 	/**
 	 * Sets the user ID for the current session.
@@ -2589,7 +2593,8 @@ private:
 	TObjectPtr<UPubnubSubsystem> PubnubSubsystem = nullptr;
 	int ClientID = -1;
 	FString DebugName = "";
-	bool IsInitialized = false;
+	// Generic check if this client is valid and initialized
+	std::atomic<bool> IsInitialized{false};
 	bool IsUserIDSet = false;
 
 #pragma endregion

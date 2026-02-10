@@ -2052,16 +2052,26 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 	InitPubnub_priv(InConfig);
 
 	//If initialized correctly, create required thread.
-	if(IsInitialized)
+	if(IsInitialized.load(std::memory_order_acquire))
 	{
 		//Create new thread to queue all pubnub operations
 		PubnubCallsThread = new FPubnubFunctionThread;
 	}
 }
 
+void UPubnubClient::BeginDestroy()
+{
+	if(IsInitialized.load(std::memory_order_acquire))
+	{
+		DeinitializeClient();
+	}
+	
+	Super::BeginDestroy();
+}
+
 void UPubnubClient::DeinitializeClient()
 {
-	if(!IsInitialized)
+	if(!IsInitialized.load(std::memory_order_acquire))
 	{return;}
 
 	if(PubnubCallsThread)
