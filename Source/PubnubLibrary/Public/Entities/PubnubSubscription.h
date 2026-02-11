@@ -212,6 +212,7 @@ public:
 private:
 
 	pubnub_subscription_t* CCoreSubscription = nullptr;
+	bool bIsSubscribed = false;
 
 	void InitSubscription(UPubnubClient* InPubnubClient, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings);
 	void InitWithCCoreSubscription(UPubnubClient* InPubnubClient, pubnub_subscription_t* InCCoreSubscription);
@@ -360,6 +361,7 @@ private:
 	
 
 	pubnub_subscription_set_t* CCoreSubscriptionSet = nullptr;
+	bool bIsSubscribed = false;
 
 	void InitSubscriptionSet(UPubnubClient* InPubnubClient, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings);
 	void InitWithSubscriptions(UPubnubClient* InPubnubClient, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2);

@@ -2575,9 +2575,11 @@ private:
 
 	//Mutex to guard all Pubnub operations. As user can call multiple operations at the same time, they need to be guarded
 	FCriticalSection PubnubOperationMutex;
-	
-	//Mutex to guard subscription delegates map access from multiple threads
-	FCriticalSection SubscriptionDelegatesMutex;
+
+	//Serializes all subscribe/unsubscribe operations across all API entry points.
+	FCriticalSection SubscriptionOperationExecutionMutex;
+	//Guards pending subscription operation state used by callback completion.
+	FCriticalSection PendingSubscriptionOperationMutex;
 
 	//Pubnub context for the most of the pubnub operations
 	pubnub_t *ctx_pub = nullptr;
@@ -2645,12 +2647,24 @@ private:
 	TMap<FString, CCoreSubscriptionCallback*> ChannelSubscriptions;
 	TMap<FString, CCoreSubscriptionCallback*> ChannelGroupSubscriptions;
 
-	//Map storing delegates for all queued subscription operations (ID -> Delegate)
-	TMap<int32, FOnPubnubSubscribeOperationResponseNative> SubscriptionResultDelegates;
-	//Counter for generating unique IDs for subscription delegates
-	int32 NextSubscriptionDelegateId = 0;
+	struct FPendingSubscriptionOperationState
+	{
+		int32 OperationId = INDEX_NONE;
+		FEvent* CompletionEvent = nullptr;
+		FPubnubOperationResult Result = FPubnubOperationResult();
+		bool bIsActive = false;
+	};
+
+	FPendingSubscriptionOperationState PendingSubscriptionOperation;
+	int32 NextSubscriptionOperationId = 0;
 	//Timeout duration for blocking subscription operations
 	FTimespan SubscriptionOperationTimeout = FTimespan::FromSeconds(30.0);
+
+	FPubnubOperationResult ExecuteSerializedSubscriptionOperation(const FString& StartFailureMessage, const FString& TimeoutMessage, TFunctionRef<bool()> StartOperation);
+	void ActivatePendingSubscriptionOperation(FEvent* CompletionEvent, int32 OperationId);
+	bool CompletePendingSubscriptionOperation(const FPubnubOperationResult& Result);
+	void ClearPendingSubscriptionOperation();
+	void CancelPendingSubscriptionOperation(const FString& CancelReason);
 
 	void OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData);
 

@@ -39,6 +39,7 @@ public:
 private:
 	TArray<TFunction<void()>> PubnubAsyncFunctionsBuffer;
 	TArray<TFunction<void()>> PubnubAsyncFunctionsQueue;
+	FCriticalSection QueueMutex;
 	
 	float QueueLoopDelay = 0.05f;
 };

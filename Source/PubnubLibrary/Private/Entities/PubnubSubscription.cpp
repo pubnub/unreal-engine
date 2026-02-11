@@ -353,6 +353,7 @@ void UPubnubSubscription::CleanUpSubscription()
 
 	// Set IsInitialized to false FIRST to prevent any pending async tasks from broadcasting
 	IsInitialized = false;
+	bIsSubscribed = false;
 
 	// Clear all delegates to prevent broadcasting during destruction
 	OnPubnubMessage.Clear();
@@ -381,7 +382,19 @@ void UPubnubSubscription::CleanUpSubscription()
 
 FPubnubOperationResult UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
 {
-	return FPubnubOperationResult();
+	if(!IsInitialized)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
+		return FPubnubOperationResult(0, true, TEXT("SubscriptionSet is invalid."));
+	}
+
+	if(!CCoreSubscriptionSet)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription set is invalid."));
+		return FPubnubOperationResult(0, true, TEXT("CCoreSubscriptionSet is invalid."));
+	}
+
+	return PubnubClient->SubscribeWithSubscriptionSet(this, Cursor);
 }
 
 void UPubnubSubscriptionSet::SubscribeAsync(FOnPubnubSubscribeOperationResponse OnSubscribeResponse, FPubnubSubscriptionCursor Cursor)
@@ -805,6 +818,7 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 
 	// Set IsInitialized to false FIRST to prevent any pending async tasks from broadcasting
 	IsInitialized = false;
+	bIsSubscribed = false;
 
 	// Clear all delegates to prevent broadcasting during destruction
 	// This must be done after setting IsInitialized = false so queued async tasks will skip broadcasting

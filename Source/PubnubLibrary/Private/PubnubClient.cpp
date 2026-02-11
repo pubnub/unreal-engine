@@ -2074,13 +2074,18 @@ void UPubnubClient::DeinitializeClient()
 	if(!IsInitialized.load(std::memory_order_acquire))
 	{return;}
 
+	CancelPendingSubscriptionOperation(TEXT("Subscription operation cancelled because PubnubClient is being deinitialized."));
+
 	if(PubnubCallsThread)
 	{
 		PubnubCallsThread->Stop();
 	}
-	
-	//Unsubscribe from all channels and groups so this user will not be visible for others anymore
-	UnsubscribeAllForDeinit();
+
+	{
+		FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
+		//Unsubscribe from all channels and groups so this user will not be visible for others anymore
+		UnsubscribeAllForDeinit();
+	}
 	
 	IsInitialized = false;
 	PubnubSubsystem = nullptr;
@@ -2113,10 +2118,6 @@ void UPubnubClient::DeinitializeClient()
 	OriginLength = 0;
 	delete PubnubCallsThread;
 	PubnubCallsThread = nullptr;
-
-	SubscriptionDelegatesMutex.Lock();
-	SubscriptionResultDelegates.Empty();
-	SubscriptionDelegatesMutex.Unlock();
 
 	//Notify that Deinitialization is finished
 	OnClientDeinitialized.Broadcast();
@@ -2152,49 +2153,104 @@ void UPubnubClient::SavePubnubConfig(const FPubnubConfig& InConfig)
 	UPubnubUtilities::SafeCopyFStringToCharBuffer(SecretKey, SecretKeySize + 1, InConfig.SecretKey, TEXT("SecretKey"));
 }
 
+FPubnubOperationResult UPubnubClient::ExecuteSerializedSubscriptionOperation(const FString& StartFailureMessage, const FString& TimeoutMessage, TFunctionRef<bool()> StartOperation)
+{
+	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
+
+	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
+	const int32 OperationId = NextSubscriptionOperationId++;
+	ActivatePendingSubscriptionOperation(CompletionEvent, OperationId);
+
+	if(!StartOperation())
+	{
+		ClearPendingSubscriptionOperation();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+		return FPubnubOperationResult(0, true, StartFailureMessage);
+	}
+
+	const bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
+	if(!bCompleted)
+	{
+		ClearPendingSubscriptionOperation();
+		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+		return FPubnubOperationResult(408, true, TimeoutMessage);
+	}
+
+	FPubnubOperationResult OperationResult;
+	{
+		FScopeLock PendingOperationLock(&PendingSubscriptionOperationMutex);
+		OperationResult = PendingSubscriptionOperation.Result;
+	}
+
+	ClearPendingSubscriptionOperation();
+	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	return OperationResult;
+}
+
+void UPubnubClient::ActivatePendingSubscriptionOperation(FEvent* CompletionEvent, int32 OperationId)
+{
+	FScopeLock PendingOperationLock(&PendingSubscriptionOperationMutex);
+	PendingSubscriptionOperation.OperationId = OperationId;
+	PendingSubscriptionOperation.CompletionEvent = CompletionEvent;
+	PendingSubscriptionOperation.Result = FPubnubOperationResult();
+	PendingSubscriptionOperation.bIsActive = true;
+}
+
+bool UPubnubClient::CompletePendingSubscriptionOperation(const FPubnubOperationResult& Result)
+{
+	FScopeLock PendingOperationLock(&PendingSubscriptionOperationMutex);
+	if(!PendingSubscriptionOperation.bIsActive || !PendingSubscriptionOperation.CompletionEvent)
+	{
+		return false;
+	}
+
+	PendingSubscriptionOperation.Result = Result;
+	PendingSubscriptionOperation.CompletionEvent->Trigger();
+	return true;
+}
+
+void UPubnubClient::ClearPendingSubscriptionOperation()
+{
+	FScopeLock PendingOperationLock(&PendingSubscriptionOperationMutex);
+	PendingSubscriptionOperation.OperationId = INDEX_NONE;
+	PendingSubscriptionOperation.CompletionEvent = nullptr;
+	PendingSubscriptionOperation.Result = FPubnubOperationResult();
+	PendingSubscriptionOperation.bIsActive = false;
+}
+
+void UPubnubClient::CancelPendingSubscriptionOperation(const FString& CancelReason)
+{
+	FScopeLock PendingOperationLock(&PendingSubscriptionOperationMutex);
+	if(!PendingSubscriptionOperation.bIsActive || !PendingSubscriptionOperation.CompletionEvent)
+	{
+		return;
+	}
+
+	PendingSubscriptionOperation.Result = FPubnubOperationResult(499, true, CancelReason);
+	PendingSubscriptionOperation.CompletionEvent->Trigger();
+}
+
 void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData)
 {
 	//Cast data back to C-Core types
 	pubnub_subscription_status status = static_cast<pubnub_subscription_status>(StatusEnum);
 	const pubnub_subscription_status_data_t* status_data = static_cast<const pubnub_subscription_status_data_t*>(StatusData);
 
-	//Call and remove the subscription result delegate with the smallest ID (FIFO order)
-	SubscriptionDelegatesMutex.Lock();
-	if(SubscriptionResultDelegates.Num() > 0)
-	{
-		//Find the smallest ID (oldest operation)
-		int32 SmallestId = TNumericLimits<int32>::Max();
-		for(const auto& Pair : SubscriptionResultDelegates)
-		{
-			if(Pair.Key < SmallestId)
-			{
-				SmallestId = Pair.Key;
-			}
-		}
-		
-		//Execute and remove the delegate with smallest ID
-		if(FOnPubnubSubscribeOperationResponseNative* Delegate = SubscriptionResultDelegates.Find(SmallestId))
-		{
-			FPubnubOperationResult Result;
-			Result.Error = status == PNSS_SUBSCRIPTION_STATUS_CONNECTION_ERROR || status == PNSS_SUBSCRIPTION_STATUS_DISCONNECTED_UNEXPECTEDLY;
-			Result.Status = Result.Error ? 503 : 200;
-			Result.ErrorMessage = pubnub_res_2_string(status_data->reason);
-			Delegate->ExecuteIfBound(Result);
-			
-			SubscriptionResultDelegates.Remove(SmallestId);
-		}
-	}
-	SubscriptionDelegatesMutex.Unlock();
+	FPubnubOperationResult Result;
+	Result.Error = status == PNSS_SUBSCRIPTION_STATUS_CONNECTION_ERROR || status == PNSS_SUBSCRIPTION_STATUS_DISCONNECTED_UNEXPECTEDLY;
+	Result.Status = Result.Error ? 503 : 200;
+	Result.ErrorMessage = status_data ? FString(pubnub_res_2_string(status_data->reason)) : TEXT("No status data.");
+	CompletePendingSubscriptionOperation(Result);
 	
 	//Don't waste resources to translate data if there is no delegate bound to it
 	if(!OnSubscriptionStatusChanged.IsBound() && !OnSubscriptionStatusChangedNative.IsBound())
 	{return;}
 
 	FPubnubSubscriptionStatusData SubscriptionStatusData;
-	SubscriptionStatusData.Reason = pubnub_res_2_string(status_data->reason);
+	SubscriptionStatusData.Reason = status_data ? FString(pubnub_res_2_string(status_data->reason)) : TEXT("No status data.");
 
 	//If status is disconnected we don't need to give subscribed channels
-	if(status != PNSS_SUBSCRIPTION_STATUS_DISCONNECTED)
+	if(status_data && status != PNSS_SUBSCRIPTION_STATUS_DISCONNECTED)
 	{
 		//Fill channels and channel groups data, from C-Core
 		if (NULL != status_data->channels)
@@ -2472,8 +2528,6 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
-	//Return if already subscribed to this channel
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(!ChannelSubscriptions.Contains(Channel), TEXT("Already subscribed to this channel. Aborting operation."));
 
 	//Create subscription for channel entity
 	pubnub_subscription_t* Subscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(ctx_ee, Channel, EPubnubEntityType::PEnT_Channel, SubscribeSettings);
@@ -2495,55 +2549,31 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 		});
 	};
 
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
-	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
+	FString StartFailureMessage = TEXT("Failed to subscribe to channel.");
+	return ExecuteSerializedSubscriptionOperation(
+		StartFailureMessage,
+		TEXT("Subscribe operation timed out"),
+		[&]()
+		{
+			if(ChannelSubscriptions.Contains(Channel))
+			{
+				StartFailureMessage = TEXT("Already subscribed to this channel. Aborting operation.");
+				pubnub_subscription_free(&Subscription);
+				return false;
+			}
 
-	//Add subscription listener and subscribe with subscription
-	if(!UPubnubInternalUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
-	{
-		PubnubError("[SubscribeToChannel]: Failed to subscribe to channel.");
-		//Remove the delegate if subscription failed immediately
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(0, true, "Failed to subscribe to channel.");
-	}
+			if(!UPubnubInternalUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
+			{
+				PubnubError("[SubscribeToChannel]: Failed to subscribe to channel.");
+				pubnub_subscription_free(&Subscription);
+				return false;
+			}
 
-	//Save Callback and Subscription, so later we can use it to unsubscribe
-	CCoreSubscriptionCallback* SubscriptionData = new CCoreSubscriptionCallback{Callback, Subscription};
-	ChannelSubscriptions.Add(Channel, SubscriptionData);
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
-	}
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+			//Save callback and subscription so it can be unsubscribed later.
+			CCoreSubscriptionCallback* SubscriptionData = new CCoreSubscriptionCallback{Callback, Subscription};
+			ChannelSubscriptions.Add(Channel, SubscriptionData);
+			return true;
+		});
 }
 
 
@@ -2551,7 +2581,6 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(!ChannelGroupSubscriptions.Contains(ChannelGroup), TEXT("Already subscribed to this channel group. Aborting operation."));
 	
 	//Create subscription for channel group entity
 	pubnub_subscription_t* Subscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(ctx_ee, ChannelGroup, EPubnubEntityType::PEnT_ChannelGroup, SubscribeSettings);
@@ -2573,114 +2602,55 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 		});
 	};
 
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
-	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
+	FString StartFailureMessage = TEXT("Failed to subscribe to channel group.");
+	return ExecuteSerializedSubscriptionOperation(
+		StartFailureMessage,
+		TEXT("Subscribe operation timed out"),
+		[&]()
+		{
+			if(ChannelGroupSubscriptions.Contains(ChannelGroup))
+			{
+				StartFailureMessage = TEXT("Already subscribed to this channel group. Aborting operation.");
+				pubnub_subscription_free(&Subscription);
+				return false;
+			}
 
-	//Add subscription listener and subscribe with subscription
-	if(!UPubnubInternalUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
-	{
-		PubnubError("[SubscribeToGroup]: Failed to subscribe to channel group.");
-		//Remove the delegate if subscription failed immediately
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(0, true, "Failed to subscribe to channel group.");
-	}
+			if(!UPubnubInternalUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
+			{
+				PubnubError("[SubscribeToGroup]: Failed to subscribe to channel group.");
+				pubnub_subscription_free(&Subscription);
+				return false;
+			}
 
-	//Save Callback and Subscription, so later we can use it to unsubscribe
-	CCoreSubscriptionCallback* SubscriptionData = new CCoreSubscriptionCallback{Callback, Subscription};
-	ChannelGroupSubscriptions.Add(ChannelGroup, SubscriptionData);
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
-	}
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+			//Save callback and subscription so it can be unsubscribed later.
+			CCoreSubscriptionCallback* SubscriptionData = new CCoreSubscriptionCallback{Callback, Subscription};
+			ChannelGroupSubscriptions.Add(ChannelGroup, SubscriptionData);
+			return true;
+		});
 }
 
 FPubnubOperationResult UPubnubClient::UnsubscribeFromChannel_priv(FString Channel)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
-	
-	CCoreSubscriptionCallback* SubscriptionData =  ChannelSubscriptions.FindRef(Channel);
+
+	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
+
+	CCoreSubscriptionCallback* SubscriptionData = ChannelSubscriptions.FindRef(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionData, TEXT("There is no such subscription. Aborting operation."));
 
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
-	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
-
-	//Remove subscription listener and unsubscribe with subscription
 	if(!UPubnubInternalUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
 	{
 		PubnubError("[UnsubscribeFromChannel]: Failed to unsubscribe.", EPubnubErrorType::PET_Warning);
-		//Remove the delegate if unsubscribe failed immediately
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to unsubscribe.");
 	}
 
-	//Free subscription memory
+	//Free subscription memory and remove local tracking.
 	pubnub_subscription_free(&SubscriptionData->Subscription);
 	ChannelSubscriptions.Remove(Channel);
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
-	}
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+	delete SubscriptionData;
+
+	return FPubnubOperationResult(200, false, "");
 }
 
 FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelGroup)
@@ -2688,108 +2658,44 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelG
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
 
-	CCoreSubscriptionCallback* SubscriptionData =  ChannelGroupSubscriptions.FindRef(ChannelGroup);
+	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
+
+	CCoreSubscriptionCallback* SubscriptionData = ChannelGroupSubscriptions.FindRef(ChannelGroup);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionData, TEXT("There is no such subscription. Aborting operation."));
 
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
-	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
-	
-	//Remove subscription listener and unsubscribe with subscription
 	if(!UPubnubInternalUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
 	{
 		PubnubError("[UnsubscribeFromGroup]: Failed to unsubscribe.", EPubnubErrorType::PET_Warning);
-		//Remove the delegate if unsubscribe failed immediately
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to unsubscribe.");
 	}
 
-	//Free subscription memory
+	//Free subscription memory and remove local tracking.
 	pubnub_subscription_free(&SubscriptionData->Subscription);
 	ChannelGroupSubscriptions.Remove(ChannelGroup);
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
-	}
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+	delete SubscriptionData;
+
+	return FPubnubOperationResult(200, false, "");
 }
 
 FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
 {
-	//If there are no subscriptions, return success immediately
+	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
+	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
+
+	//If there are no subscriptions, return success immediately.
 	if(ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty())
 	{
 		return FPubnubOperationResult(200, false, "");
 	}
 
-	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
-
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
+	const enum pubnub_res UnsubscribeAllResult = pubnub_unsubscribe_all(ctx_ee);
+	if(UnsubscribeAllResult != PNR_OK)
 	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
-
-	//Unsubscribe from all
-	pubnub_unsubscribe_all(ctx_ee);
-	
-	CleanUpAllSubscriptions();
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
+		return FPubnubOperationResult(0, true, FString::Printf(TEXT("Failed to unsubscribe all. Error: %s"), UTF8_TO_TCHAR(pubnub_res_2_string(UnsubscribeAllResult))));
 	}
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+
+	CleanUpAllSubscriptions();
+	return FPubnubOperationResult(200, false, "");
 }
 
 
@@ -3933,55 +3839,29 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscription(UPubnubSubscript
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription, TEXT("Subscription is invalid."));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->CCoreSubscription, TEXT("CCoreSubscription is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(!Subscription->bIsSubscribed, TEXT("Subscription is already subscribed."));
 
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
-	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
+	FPubnubOperationResult SubscribeResult = ExecuteSerializedSubscriptionOperation(
+		TEXT("Failed to subscribe with Subscription."),
+		TEXT("Subscribe operation timed out"),
+		[&]()
+		{
+			if(!UPubnubInternalUtilities::EESubscribeWithSubscription(Subscription->CCoreSubscription, Cursor))
+			{
+				PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription.");
+				return false;
+			}
+			return true;
+		});
 
-	//Subscribe with subscription
-	if(!UPubnubInternalUtilities::EESubscribeWithSubscription(Subscription->CCoreSubscription, Cursor))
+	if(!SubscribeResult.Error)
 	{
-		PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription.");
-		//Remove the delegate if subscription failed immediately
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(0, true, "Failed to subscribe with Subscription.");
+		Subscription->bIsSubscribed = true;
+		//C-Core subscribe operation needs some time to operate, so it's not hanged in case of immediate unsubscribe
+		FPlatformProcess::Sleep(0.05f);
 	}
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
-	}
-	
-	//C-Core subscribe operation needs some time to operate, so it's not hanged in case of immediate unsubscribe
-	FPlatformProcess::Sleep(0.05f);
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+
+	return SubscribeResult;
 }
 
 void UPubnubClient::SubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse)
@@ -4008,55 +3888,29 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscriptionSet(UPubnubSubscr
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet, TEXT("SubscriptionSet is invalid."));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->CCoreSubscriptionSet, TEXT("CCoreSubscriptionSet is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(!SubscriptionSet->bIsSubscribed, TEXT("SubscriptionSet is already subscribed."));
 
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
-	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
+	FPubnubOperationResult SubscribeResult = ExecuteSerializedSubscriptionOperation(
+		TEXT("Failed to subscribe with SubscriptionSet."),
+		TEXT("Subscribe operation timed out"),
+		[&]()
+		{
+			if(!UPubnubInternalUtilities::EESubscribeWithSubscriptionSet(SubscriptionSet->CCoreSubscriptionSet, Cursor))
+			{
+				PubnubError("[SubscribeWithSubscriptionSet]: Failed to subscribe with subscription set.");
+				return false;
+			}
+			return true;
+		});
 
-	//Subscribe with subscription set
-	if(!UPubnubInternalUtilities::EESubscribeWithSubscriptionSet(SubscriptionSet->CCoreSubscriptionSet, Cursor))
+	if(!SubscribeResult.Error)
 	{
-		PubnubError("[SubscribeWithSubscriptionSet]: Failed to subscribe with subscription set.");
-		//Remove the delegate if subscription failed immediately
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(0, true, "Failed to subscribe with SubscriptionSet.");
+		SubscriptionSet->bIsSubscribed = true;
+		//C-Core subscribe operation needs some time to operate, so it's not hanged in case of immediate unsubscribe
+		FPlatformProcess::Sleep(0.05f);
 	}
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Subscribe operation timed out");
-	}
-	
-	//C-Core subscribe operation needs some time to operate, so it's not hanged in case of immediate unsubscribe
-	FPlatformProcess::Sleep(0.05f);
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+
+	return SubscribeResult;
 }
 
 void UPubnubClient::UnsubscribeWithSubscriptionAsync(UPubnubSubscription* Subscription, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse)
@@ -4083,52 +3937,17 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscription(UPubnubSubscri
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription, TEXT("Subscription is invalid."));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->CCoreSubscription, TEXT("Subscription CCoreSubscription is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->bIsSubscribed, TEXT("Subscription is not subscribed."));
 
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
-	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
-
-	//Unsubscribe with subscription
+	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
 	if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscription(&Subscription->CCoreSubscription))
 	{
 		PubnubError("[UnsubscribeWithSubscription]: Failed to unsubscribe with subscription.");
-		//Remove the delegate if unsubscribe failed immediately
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to unsubscribe with Subscription.");
 	}
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
-	}
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+
+	Subscription->bIsSubscribed = false;
+	return FPubnubOperationResult(200, false, "");
 }
 
 void UPubnubClient::UnsubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* SubscriptionSet, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse)
@@ -4155,52 +3974,17 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscriptionSet(UPubnubSubs
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet, TEXT("SubscriptionSet is invalid."));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->CCoreSubscriptionSet, TEXT("SubscriptionSet CCoreSubscriptionSet is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->bIsSubscribed, TEXT("SubscriptionSet is not subscribed."));
 
-	//Create event and result storage for blocking wait
-	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
-	FPubnubOperationResult CapturedResult;
-	
-	//Create a temporary delegate that will capture the result
-	FOnPubnubSubscribeOperationResponseNative TempDelegate;
-	TempDelegate.BindLambda([CompletionEvent, &CapturedResult](FPubnubOperationResult Result)
-	{
-		CapturedResult = Result;
-		CompletionEvent->Trigger(); // Signal completion from C-core callback thread
-	});
-	
-	//Generate unique ID and add delegate to map (will be called by OnCCoreSubscriptionStatusReceived)
-	SubscriptionDelegatesMutex.Lock();
-	int32 DelegateId = NextSubscriptionDelegateId++;
-	SubscriptionResultDelegates.Add(DelegateId, TempDelegate);
-	SubscriptionDelegatesMutex.Unlock();
-
-	//Unsubscribe with subscription set
+	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
 	if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscriptionSet(&SubscriptionSet->CCoreSubscriptionSet))
 	{
 		PubnubError("[UnsubscribeWithSubscriptionSet]: Failed to unsubscribe with subscription set.");
-		//Remove the delegate if unsubscribe failed immediately
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
 		return FPubnubOperationResult(0, true, "Failed to unsubscribe with SubscriptionSet.");
 	}
-	
-	//Wait for completion (with timeout) - safe because callback comes from different thread
-	bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
-	
-	if(!bCompleted)
-	{
-		//Timeout occurred - remove delegate by ID first, then return event to pool
-		SubscriptionDelegatesMutex.Lock();
-		SubscriptionResultDelegates.Remove(DelegateId);
-		SubscriptionDelegatesMutex.Unlock();
-		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, "Unsubscribe operation timed out");
-	}
-	
-	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-	return CapturedResult;
+
+	SubscriptionSet->bIsSubscribed = false;
+	return FPubnubOperationResult(200, false, "");
 }
 
 void UPubnubClient::CleanUpAllSubscriptions()

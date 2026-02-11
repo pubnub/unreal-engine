@@ -25,15 +25,28 @@ bool FPubnubFunctionThread::Init()
 
 uint32 FPubnubFunctionThread::Run()
 {
-	
 	while(!bShutdown)
 	{
-		if(!PubnubAsyncFunctionsQueue.IsEmpty())
+		TArray<TFunction<void()>> FunctionsToExecute;
+		{
+			FScopeLock QueueLock(&QueueMutex);
+			if(PubnubAsyncFunctionsQueue.IsEmpty() && !PubnubAsyncFunctionsBuffer.IsEmpty())
+			{
+				PubnubAsyncFunctionsQueue = MoveTemp(PubnubAsyncFunctionsBuffer);
+			}
+
+			if(!PubnubAsyncFunctionsQueue.IsEmpty())
+			{
+				FunctionsToExecute = MoveTemp(PubnubAsyncFunctionsQueue);
+			}
+		}
+
+		if(!FunctionsToExecute.IsEmpty())
 		{
 			//Run all functions from the queue
-			for(int i = 0; i <  PubnubAsyncFunctionsQueue.Num(); i++)
+			for(int i = 0; i < FunctionsToExecute.Num(); i++)
 			{
-				PubnubAsyncFunctionsQueue[i]();
+				FunctionsToExecute[i]();
 
 				//Stop executing functions if thread was set to Shutdown
 				if(bShutdown)
@@ -41,17 +54,7 @@ uint32 FPubnubFunctionThread::Run()
 					break;
 				}
 			}
-			
-			//Clear queue
-			PubnubAsyncFunctionsQueue.Empty();
 		}
-
-		//Add functions from buffer to queue. Lock Mutex until everything is finished.
-		FCriticalSection Mutex;
-		Mutex.Lock();
-		PubnubAsyncFunctionsQueue = PubnubAsyncFunctionsBuffer;
-		PubnubAsyncFunctionsBuffer.Empty();
-		Mutex.Unlock();
 		
 		FPlatformProcess::Sleep(QueueLoopDelay);
 	}
@@ -71,8 +74,6 @@ void FPubnubFunctionThread::AddFunctionToQueue(TFunction<void()> InFunction)
 {
 	//Add function to buffer firstly, it will be added to queue after current queue is done
 	//Lock this array for other threads, so it can be added safely
-	FCriticalSection Mutex;
-	Mutex.Lock();
+	FScopeLock QueueLock(&QueueMutex);
 	PubnubAsyncFunctionsBuffer.Add(InFunction);
-	Mutex.Unlock();
 }

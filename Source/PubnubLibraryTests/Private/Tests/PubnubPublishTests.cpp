@@ -1,9 +1,13 @@
 // Copyright 2025 PubNub Inc. All Rights Reserved.
 
 #include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 #include "PubnubEnumLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "Entities/PubnubChannelEntity.h"
+#include "Entities/PubnubSubscription.h"
+#include "PubnubStructLibrary.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -19,6 +23,11 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSignalTest, FPubnubAutomationTest
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSignalWithSettingsTest, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.SendSignalWithSettings", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeTest, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.UnsubscribeFromChannel", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubPublishVariousMessageTypesTest, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.PublishVariousMessageTypes", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+// Subscription status delegate matching edge cases (use GetPubnubClient(0) + PubnubClient only)
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSubscriptionStatusDelegateMatch_SameChannelClientAndEntity, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.SubscriptionStatusDelegateMatch.SameChannelClientAndEntity", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSubscriptionStatusDelegateMatch_EntitySubscribeUnsubscribeBlocking, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.SubscriptionStatusDelegateMatch.EntitySubscribeUnsubscribeBlocking", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSubscriptionStatusDelegateMatch_TwoDifferentChannels, FPubnubAutomationTestBase, "Pubnub.Integration.PubSub.SubscriptionStatusDelegateMatch.TwoDifferentChannels", EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubPublishMessageTest::RunTest(const FString& Parameters)
 {
@@ -759,6 +768,224 @@ bool FPubnubPublishVariousMessageTypesTest::RunTest(const FString& Parameters)
 				}
 			}, 0.1f));
 	}
+
+	CleanUp();
+	return true;
+}
+
+// --- Subscription status delegate matching edge-case tests (use GetPubnubClient(0) + PubnubClient only) ---
+
+bool FPubnubSubscriptionStatusDelegateMatch_SameChannelClientAndEntity::RunTest(const FString& Parameters)
+{
+	const FString TestUser = SDK_PREFIX + "status_match_user";
+	const FString TestChannel = SDK_PREFIX + "status_match_same_ch";
+
+	if (!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubSubscriptionStatusDelegateMatch_SameChannelClientAndEntity");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(ErrorMessage);
+	});
+	PubnubSubsystem->SetUserID(TestUser);
+
+	UPubnubClient* Client = PubnubSubsystem->GetPubnubClient(0);
+	if (!Client)
+	{
+		AddError("GetPubnubClient(0) returned null");
+		CleanUp();
+		return false;
+	}
+
+	TSharedPtr<bool> SubscribeClientDone = MakeShared<bool>(false);
+	TSharedPtr<bool> SubscribeEntityDone = MakeShared<bool>(false);
+	TSharedPtr<bool> UnsubscribeClientDone = MakeShared<bool>(false);
+	TSharedPtr<bool> UnsubscribeEntityDone = MakeShared<bool>(false);
+
+	FOnPubnubSubscribeOperationResponseNative SubscribeClientCb = FOnPubnubSubscribeOperationResponseNative::CreateLambda(
+		[this, SubscribeClientDone](const FPubnubOperationResult& Result)
+		{
+			*SubscribeClientDone = true;
+			TestFalse("Subscribe (client) should not have failed", Result.Error);
+			TestEqual("Subscribe (client) status", Result.Status, 200);
+		});
+	FOnPubnubSubscribeOperationResponseNative SubscribeEntityCb = FOnPubnubSubscribeOperationResponseNative::CreateLambda(
+		[this, SubscribeEntityDone](const FPubnubOperationResult& Result)
+		{
+			*SubscribeEntityDone = true;
+			TestFalse("Subscribe (entity) should not have failed", Result.Error);
+			TestEqual("Subscribe (entity) status", Result.Status, 200);
+		});
+	FOnPubnubSubscribeOperationResponseNative UnsubscribeClientCb = FOnPubnubSubscribeOperationResponseNative::CreateLambda(
+		[UnsubscribeClientDone](const FPubnubOperationResult& Result) { *UnsubscribeClientDone = true; });
+	FOnPubnubSubscribeOperationResponseNative UnsubscribeEntityCb = FOnPubnubSubscribeOperationResponseNative::CreateLambda(
+		[UnsubscribeEntityDone](const FPubnubOperationResult& Result) { *UnsubscribeEntityDone = true; });
+
+	struct FSubscriptionHolder { UPubnubSubscription* Sub = nullptr; };
+	TSharedPtr<FSubscriptionHolder> SubHolder = MakeShared<FSubscriptionHolder>();
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Client, TestChannel, SubscribeClientCb, SubscribeEntityCb, SubHolder]()
+	{
+		UPubnubChannelEntity* ChannelEntity = Client->CreateChannelEntity(TestChannel);
+		if (!ChannelEntity) { AddError("CreateChannelEntity failed"); return; }
+		UPubnubSubscription* Subscription = ChannelEntity->CreateSubscription();
+		if (!Subscription) { AddError("CreateSubscription failed"); return; }
+		SubHolder->Sub = Subscription;
+		Client->SubscribeToChannelAsync(TestChannel, SubscribeClientCb);
+		Subscription->SubscribeAsync(SubscribeEntityCb, FPubnubSubscriptionCursor());
+	}, 0.1f));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([SubscribeClientDone, SubscribeEntityDone]() -> bool {
+		return *SubscribeClientDone && *SubscribeEntityDone;
+	}, MAX_WAIT_TIME));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SubscribeClientDone, SubscribeEntityDone]()
+	{
+		if (!*SubscribeClientDone) AddError("Subscribe (client) callback was not received");
+		if (!*SubscribeEntityDone) AddError("Subscribe (entity) callback was not received");
+	}, 0.1f));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([Client, TestChannel, SubHolder, UnsubscribeClientCb, UnsubscribeEntityCb]()
+	{
+		Client->UnsubscribeFromChannelAsync(TestChannel, UnsubscribeClientCb);
+		if (SubHolder->Sub)
+		{
+			SubHolder->Sub->UnsubscribeAsync(UnsubscribeEntityCb);
+		}
+	}, 0.1f));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([UnsubscribeClientDone, UnsubscribeEntityDone]() -> bool {
+		return *UnsubscribeClientDone && *UnsubscribeEntityDone;
+	}, MAX_WAIT_TIME));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, UnsubscribeClientDone, UnsubscribeEntityDone]()
+	{
+		if (!*UnsubscribeClientDone) AddError("Unsubscribe (client) callback was not received");
+		if (!*UnsubscribeEntityDone) AddError("Unsubscribe (entity) callback was not received");
+	}, 0.1f));
+
+	CleanUp();
+	return true;
+}
+
+bool FPubnubSubscriptionStatusDelegateMatch_EntitySubscribeUnsubscribeBlocking::RunTest(const FString& Parameters)
+{
+	const FString TestUser = SDK_PREFIX + "status_match_entity_block_user";
+	const FString TestChannel = SDK_PREFIX + "status_match_entity_block_ch";
+
+	if (!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubSubscriptionStatusDelegateMatch_EntitySubscribeUnsubscribeBlocking");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(ErrorMessage);
+	});
+	PubnubSubsystem->SetUserID(TestUser);
+
+	UPubnubClient* Client = PubnubSubsystem->GetPubnubClient(0);
+	if (!Client)
+	{
+		AddError("GetPubnubClient(0) returned null");
+		CleanUp();
+		return false;
+	}
+
+	TSharedPtr<FPubnubOperationResult> SubscribeResult = MakeShared<FPubnubOperationResult>();
+	TSharedPtr<FPubnubOperationResult> UnsubscribeResult = MakeShared<FPubnubOperationResult>();
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Client, TestChannel, SubscribeResult, UnsubscribeResult]()
+	{
+		UPubnubChannelEntity* ChannelEntity = Client->CreateChannelEntity(TestChannel);
+		if (!ChannelEntity) { AddError("CreateChannelEntity failed"); return; }
+		UPubnubSubscription* Subscription = ChannelEntity->CreateSubscription();
+		if (!Subscription) { AddError("CreateSubscription failed"); return; }
+
+		*SubscribeResult = Subscription->Subscribe(FPubnubSubscriptionCursor());
+		TestFalse("Subscribe should not have failed", SubscribeResult->Error);
+		TestEqual("Subscribe status", SubscribeResult->Status, 200);
+
+		*UnsubscribeResult = Subscription->Unsubscribe();
+		TestFalse("Unsubscribe should not have failed", UnsubscribeResult->Error);
+		TestEqual("Unsubscribe status", UnsubscribeResult->Status, 200);
+	}, 0.1f));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SubscribeResult, UnsubscribeResult]()
+	{
+		if (SubscribeResult->Error) AddError(FString::Printf(TEXT("Subscribe failed: %s"), *SubscribeResult->ErrorMessage));
+		if (UnsubscribeResult->Error) AddError(FString::Printf(TEXT("Unsubscribe failed: %s"), *UnsubscribeResult->ErrorMessage));
+	}, 0.1f));
+
+	CleanUp();
+	return true;
+}
+
+bool FPubnubSubscriptionStatusDelegateMatch_TwoDifferentChannels::RunTest(const FString& Parameters)
+{
+	const FString TestUser = SDK_PREFIX + "status_match_two_ch_user";
+	const FString TestChannelA = SDK_PREFIX + "status_match_ch_a";
+	const FString TestChannelB = SDK_PREFIX + "status_match_ch_b";
+
+	if (!InitTest())
+	{
+		AddError("TestInitialization failed for FPubnubSubscriptionStatusDelegateMatch_TwoDifferentChannels");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(ErrorMessage);
+	});
+	PubnubSubsystem->SetUserID(TestUser);
+
+	UPubnubClient* Client = PubnubSubsystem->GetPubnubClient(0);
+	if (!Client)
+	{
+		AddError("GetPubnubClient(0) returned null");
+		CleanUp();
+		return false;
+	}
+
+	TSharedPtr<FPubnubOperationResult> SubAResult = MakeShared<FPubnubOperationResult>();
+	TSharedPtr<FPubnubOperationResult> SubBResult = MakeShared<FPubnubOperationResult>();
+	TSharedPtr<FPubnubOperationResult> UnsubAResult = MakeShared<FPubnubOperationResult>();
+	TSharedPtr<FPubnubOperationResult> UnsubBResult = MakeShared<FPubnubOperationResult>();
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Client, TestChannelA, TestChannelB, SubAResult, SubBResult, UnsubAResult, UnsubBResult]()
+	{
+		// Subscribe to channel A via client (blocking)
+		*SubAResult = Client->SubscribeToChannel(TestChannelA);
+		TestFalse("SubscribeToChannel(A) should not have failed", SubAResult->Error);
+		TestEqual("SubscribeToChannel(A) status", SubAResult->Status, 200);
+
+		// Subscribe to channel B via real subscription (blocking)
+		UPubnubChannelEntity* EntityB = Client->CreateChannelEntity(TestChannelB);
+		if (!EntityB) { AddError("CreateChannelEntity(B) failed"); return; }
+		UPubnubSubscription* SubB = EntityB->CreateSubscription();
+		if (!SubB) { AddError("CreateSubscription(B) failed"); return; }
+		*SubBResult = SubB->Subscribe(FPubnubSubscriptionCursor());
+		TestFalse("Subscription->Subscribe(B) should not have failed", SubBResult->Error);
+		TestEqual("Subscription->Subscribe(B) status", SubBResult->Status, 200);
+
+		// Unsubscribe both
+		*UnsubAResult = Client->UnsubscribeFromChannel(TestChannelA);
+		TestFalse("UnsubscribeFromChannel(A) should not have failed", UnsubAResult->Error);
+		*UnsubBResult = SubB->Unsubscribe();
+		TestFalse("Subscription->Unsubscribe(B) should not have failed", UnsubBResult->Error);
+	}, 0.1f));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, SubAResult, SubBResult, UnsubAResult, UnsubBResult]()
+	{
+		if (SubAResult->Error) AddError(FString::Printf(TEXT("Subscribe A failed: %s"), *SubAResult->ErrorMessage));
+		if (SubBResult->Error) AddError(FString::Printf(TEXT("Subscribe B failed: %s"), *SubBResult->ErrorMessage));
+		if (UnsubAResult->Error) AddError(FString::Printf(TEXT("Unsubscribe A failed: %s"), *UnsubAResult->ErrorMessage));
+		if (UnsubBResult->Error) AddError(FString::Printf(TEXT("Unsubscribe B failed: %s"), *UnsubBResult->ErrorMessage));
+	}, 0.1f));
 
 	CleanUp();
 	return true;
