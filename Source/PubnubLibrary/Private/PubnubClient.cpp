@@ -835,7 +835,7 @@ void UPubnubClient::SetAuthToken(FString Token)
 	SetAuthToken_priv(Token);
 }
 
-int32 UPubnubClient::SetOrigin(FString Origin)
+int UPubnubClient::SetOrigin(FString Origin)
 {
 	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED(-1);
 
@@ -3026,11 +3026,11 @@ void UPubnubClient::SetAuthToken_priv(FString Token)
 	pubnub_set_auth_token(ctx_pub, AuthTokenBuffer);
 }
 
-int32 UPubnubClient::SetOrigin_priv(FString Origin)
+int UPubnubClient::SetOrigin_priv(FString Origin)
 {
 	PUBNUB_RETURN_IF_USER_ID_NOT_SET(-1);
 
-	int32 Result = 0;
+	int Result = 0;
 
 	//If origin is empty, pass null to pubnub_origin_set
 	if (Origin.IsEmpty())

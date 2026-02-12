@@ -889,7 +889,7 @@ public:
 	 *         - -1: Setting origin error
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Config")
-	int32 SetOrigin(FString Origin);
+	int SetOrigin(FString Origin);
 
 	/**
 	 * Gets the currently set origin for the PubNub client.
@@ -2704,7 +2704,7 @@ private:
 	FPubnubOperationResult RevokeToken_priv(FString Token);
 	FString ParseToken_priv(FString Token);
 	void SetAuthToken_priv(FString Token);
-	int32 SetOrigin_priv(FString Origin);
+	int SetOrigin_priv(FString Origin);
 	FPubnubFetchHistoryResult FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	FPubnubOperationResult DeleteMessages_priv(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 	FPubnubMessageCountsResult MessageCounts_priv(FString Channel, FString Timetoken);
