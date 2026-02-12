@@ -6,6 +6,7 @@
 #define PUBNUB_CALLBACK_API 1
 #define PUBNUB_NTF_RUNTIME_SELECTION 1
 #define PUBNUB_USE_LOG_CALLBACK 1
+#define PUBNUB_USE_RETRY_CONFIGURATION 0
 
 extern "C" {
 //Required defines from C-Core

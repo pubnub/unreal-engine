@@ -5,6 +5,7 @@
 
 #include "PubnubClient.h"
 
+#include "GameFramework/Actor.h"
 #include "CoreMinimal.h"
 #include "Sample_GroupsFull.generated.h"
 

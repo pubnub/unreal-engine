@@ -2165,7 +2165,7 @@ FPubnubOperationResult UPubnubClient::ExecuteSerializedSubscriptionOperation(con
 	{
 		ClearPendingSubscriptionOperation();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(0, true, StartFailureMessage);
+		return FPubnubOperationResult({0, true, StartFailureMessage});
 	}
 
 	const bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
@@ -2173,7 +2173,7 @@ FPubnubOperationResult UPubnubClient::ExecuteSerializedSubscriptionOperation(con
 	{
 		ClearPendingSubscriptionOperation();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult(408, true, TimeoutMessage);
+		return FPubnubOperationResult({408, true, TimeoutMessage});
 	}
 
 	FPubnubOperationResult OperationResult;
@@ -2226,7 +2226,7 @@ void UPubnubClient::CancelPendingSubscriptionOperation(const FString& CancelReas
 		return;
 	}
 
-	PendingSubscriptionOperation.Result = FPubnubOperationResult(499, true, CancelReason);
+	PendingSubscriptionOperation.Result = FPubnubOperationResult({499, true, CancelReason});
 	PendingSubscriptionOperation.CompletionEvent->Trigger();
 }
 
@@ -2472,7 +2472,7 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 		PublishedMessage.MessageType = EPubnubMessageType::PMT_Published;
 		PublishedMessage.CustomMessageType = PublishSettings.CustomMessageType;
 	}
-	return FPubnubPublishMessageResult(PublishResult, PublishedMessage);
+	return FPubnubPublishMessageResult({PublishResult, PublishedMessage});
 }
 
 FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
@@ -2520,7 +2520,7 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 		SignalMessage.CustomMessageType = SignalSettings.CustomMessageType;
 	}
 
-	return FPubnubSignalResult(PublishResult, SignalMessage);
+	return FPubnubSignalResult({PublishResult, SignalMessage});
 }
 
 
@@ -2642,7 +2642,7 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromChannel_priv(FString Channe
 	if(!UPubnubInternalUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
 	{
 		PubnubError("[UnsubscribeFromChannel]: Failed to unsubscribe.", EPubnubErrorType::PET_Warning);
-		return FPubnubOperationResult(0, true, "Failed to unsubscribe.");
+		return FPubnubOperationResult({0, true, "Failed to unsubscribe."});
 	}
 
 	//Free subscription memory and remove local tracking.
@@ -2650,7 +2650,7 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromChannel_priv(FString Channe
 	ChannelSubscriptions.Remove(Channel);
 	delete SubscriptionData;
 
-	return FPubnubOperationResult(200, false, "");
+	return FPubnubOperationResult({200, false, ""});
 }
 
 FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelGroup)
@@ -2666,7 +2666,7 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelG
 	if(!UPubnubInternalUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
 	{
 		PubnubError("[UnsubscribeFromGroup]: Failed to unsubscribe.", EPubnubErrorType::PET_Warning);
-		return FPubnubOperationResult(0, true, "Failed to unsubscribe.");
+		return FPubnubOperationResult({0, true, "Failed to unsubscribe."});
 	}
 
 	//Free subscription memory and remove local tracking.
@@ -2674,7 +2674,7 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelG
 	ChannelGroupSubscriptions.Remove(ChannelGroup);
 	delete SubscriptionData;
 
-	return FPubnubOperationResult(200, false, "");
+	return FPubnubOperationResult({200, false, ""});
 }
 
 FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
@@ -2685,17 +2685,17 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
 	//If there are no subscriptions, return success immediately.
 	if(ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty())
 	{
-		return FPubnubOperationResult(200, false, "");
+		return FPubnubOperationResult({200, false, ""});
 	}
 
 	const enum pubnub_res UnsubscribeAllResult = pubnub_unsubscribe_all(ctx_ee);
 	if(UnsubscribeAllResult != PNR_OK)
 	{
-		return FPubnubOperationResult(0, true, FString::Printf(TEXT("Failed to unsubscribe all. Error: %s"), UTF8_TO_TCHAR(pubnub_res_2_string(UnsubscribeAllResult))));
+		return FPubnubOperationResult({0, true, FString::Printf(TEXT("Failed to unsubscribe all. Error: %s"), UTF8_TO_TCHAR(pubnub_res_2_string(UnsubscribeAllResult)))});
 	}
 
 	CleanUpAllSubscriptions();
-	return FPubnubOperationResult(200, false, "");
+	return FPubnubOperationResult({200, false, ""});
 }
 
 
@@ -2764,7 +2764,7 @@ FPubnubListChannelsFromGroupResult UPubnubClient::ListChannelsFromGroup_priv(FSt
 	TArray<FString> Channels;
 	UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(JsonResponse, Result, Channels);
 	
-	return FPubnubListChannelsFromGroupResult(Result, Channels);
+	return FPubnubListChannelsFromGroupResult({Result, Channels});
 }
 
 FPubnubOperationResult UPubnubClient::RemoveChannelGroup_priv(FString ChannelGroup)
@@ -2826,7 +2826,7 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FStri
 	FPubnubListUsersFromChannelWrapper Data;
 	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(JsonResponse, Result, Data);
 	
-	return FPubnubListUsersFromChannelResult(Result, Data);
+	return FPubnubListUsersFromChannelResult({Result, Data});
 }
 
 FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChannels_priv(FString UserID)
@@ -2847,7 +2847,7 @@ FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChanne
 	TArray<FString> Channels;
 	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(JsonResponse, Result, Channels);
 	
-	return FPubnubListUsersSubscribedChannelsResult(Result, Channels);
+	return FPubnubListUsersSubscribedChannelsResult({Result, Channels});
 }
 
 FPubnubOperationResult UPubnubClient::SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings)
@@ -2915,7 +2915,7 @@ FPubnubGetStateResult UPubnubClient::GetState_priv(FString Channel, FString Chan
 
 	PubnubOperationMutex.Unlock();
 
-	return FPubnubGetStateResult(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), JsonResponse);
+	return FPubnubGetStateResult({UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), JsonResponse});
 }
 
 FPubnubOperationResult UPubnubClient::Heartbeat_priv(FString Channel, FString ChannelGroup)
@@ -2964,7 +2964,7 @@ FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(FString PermissionObject)
 		Token = UPubnubUtilities::PubnubCharMemBlockToString(grant_token_resp);
 	}
 	
-	return FPubnubGrantTokenResult(Result, Token);
+	return FPubnubGrantTokenResult({Result, Token});
 }
 
 FPubnubOperationResult UPubnubClient::RevokeToken_priv(FString Token)
@@ -3106,7 +3106,7 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 	UPubnubJsonUtilities::FetchHistoryJsonToData(HistoryResponse, Result, Messages);
 	DecryptHistoryMessages(Messages);
 			
-	return FPubnubFetchHistoryResult(Result, Messages);
+	return FPubnubFetchHistoryResult({Result, Messages});
 }
 
 FPubnubOperationResult UPubnubClient::DeleteMessages_priv(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
@@ -3160,7 +3160,7 @@ FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FS
 	
 	PubnubOperationMutex.Unlock();
 	
-	return FPubnubMessageCountsResult(UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), MessageCountsNumber);
+	return FPubnubMessageCountsResult({UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), MessageCountsNumber});
 }
 
 FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple_priv(TArray<FString> Channels, TArray<FString> Timetokens)
@@ -3943,11 +3943,11 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscription(UPubnubSubscri
 	if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscription(&Subscription->CCoreSubscription))
 	{
 		PubnubError("[UnsubscribeWithSubscription]: Failed to unsubscribe with subscription.");
-		return FPubnubOperationResult(0, true, "Failed to unsubscribe with Subscription.");
+		return FPubnubOperationResult({0, true, "Failed to unsubscribe with Subscription."});
 	}
 
 	Subscription->bIsSubscribed = false;
-	return FPubnubOperationResult(200, false, "");
+	return FPubnubOperationResult({200, false, ""});
 }
 
 void UPubnubClient::UnsubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* SubscriptionSet, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse)
@@ -3980,11 +3980,11 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscriptionSet(UPubnubSubs
 	if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscriptionSet(&SubscriptionSet->CCoreSubscriptionSet))
 	{
 		PubnubError("[UnsubscribeWithSubscriptionSet]: Failed to unsubscribe with subscription set.");
-		return FPubnubOperationResult(0, true, "Failed to unsubscribe with SubscriptionSet.");
+		return FPubnubOperationResult({0, true, "Failed to unsubscribe with SubscriptionSet."});
 	}
 
 	SubscriptionSet->bIsSubscribed = false;
-	return FPubnubOperationResult(200, false, "");
+	return FPubnubOperationResult({200, false, ""});
 }
 
 void UPubnubClient::CleanUpAllSubscriptions()

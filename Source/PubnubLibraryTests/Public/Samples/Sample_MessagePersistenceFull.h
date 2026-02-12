@@ -3,6 +3,7 @@
 // snippet.full_message_persistence_example
 #pragma once
 
+#include "GameFramework/Actor.h"
 #include "PubnubClient.h"
 
 #include "CoreMinimal.h"

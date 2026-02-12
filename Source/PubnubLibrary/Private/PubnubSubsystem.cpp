@@ -740,7 +740,7 @@ void UPubnubSubsystem::GetAllUserMetadataRaw(FOnGetAllUserMetadataResponse OnGet
 		OnGetAllUserMetadataResponse.ExecuteIfBound(Result, UsersData, Page.Next, Page.Prev);
 	});
 
-	DefaultClient->GetAllUserMetadataRawAsync(ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, FPubnubPage(PageNext, PagePrev), Count);
+	DefaultClient->GetAllUserMetadataRawAsync(ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, FPubnubPage({PageNext, PagePrev}), Count);
 }
 
 void UPubnubSubsystem::GetAllUserMetadataRaw(FOnGetAllUserMetadataResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
@@ -753,7 +753,7 @@ void UPubnubSubsystem::GetAllUserMetadataRaw(FOnGetAllUserMetadataResponseNative
 		NativeCallback.ExecuteIfBound(Result, UsersData, Page.Next, Page.Prev);
 	});
 	
-	DefaultClient->GetAllUserMetadataRawAsync(ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, FPubnubPage(PageNext, PagePrev), Count);
+	DefaultClient->GetAllUserMetadataRawAsync(ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, FPubnubPage({PageNext, PagePrev}), Count);
 }
 
 void UPubnubSubsystem::GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
@@ -876,7 +876,7 @@ void UPubnubSubsystem::GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse
 		OnGetAllChannelMetadataResponse.ExecuteIfBound(Result, ChannelsData, Page.Next, Page.Prev);
 	});
 
-	DefaultClient->GetAllChannelMetadataRawAsync(ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, FPubnubPage(PageNext, PagePrev), Count);
+	DefaultClient->GetAllChannelMetadataRawAsync(ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, FPubnubPage({PageNext, PagePrev}), Count);
 }
 
 void UPubnubSubsystem::GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponseNative NativeCallback, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count)
@@ -889,7 +889,7 @@ void UPubnubSubsystem::GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse
 		NativeCallback.ExecuteIfBound(Result, ChannelsData, Page.Next, Page.Prev);
 	});
 	
-	DefaultClient->GetAllChannelMetadataRawAsync(ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, FPubnubPage(PageNext, PagePrev), Count);
+	DefaultClient->GetAllChannelMetadataRawAsync(ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, FPubnubPage({PageNext, PagePrev}), Count);
 }
 
 void UPubnubSubsystem::GetAllChannelMetadata(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FString PageNext, FString PagePrev)
@@ -1012,7 +1012,7 @@ void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse
 		OnGetMembershipsResponse.ExecuteIfBound(Result, MembershipsData, Page.Next, Page.Prev);
 	});
 
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->GetMembershipsRawAsync(User, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1026,7 +1026,7 @@ void UPubnubSubsystem::GetMembershipsRaw(FString User, FOnGetMembershipsResponse
 		NativeCallback.ExecuteIfBound(Result, MembershipsData, Page.Next, Page.Prev);
 	});
 	
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->GetMembershipsRawAsync(User, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1050,7 +1050,7 @@ void UPubnubSubsystem::SetMembershipsRaw(FString User, FString SetObj, FOnSetMem
 		OnSetMembershipResponse.ExecuteIfBound(Result, MembershipsData, Page.Next, Page.Prev);
 	});
 
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->SetMembershipsRawAsync(User, SetObj, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1064,7 +1064,7 @@ void UPubnubSubsystem::SetMembershipsRaw(FString User, FString SetObj, FOnSetMem
 		NativeCallback.ExecuteIfBound(Result, MembershipsData, Page.Next, Page.Prev);
 	});
 	
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->SetMembershipsRawAsync(User, SetObj, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1088,7 +1088,7 @@ void UPubnubSubsystem::RemoveMembershipsRaw(FString User, FString RemoveObj, FOn
 		OnRemoveMembershipResponse.ExecuteIfBound(Result, MembershipsData, Page.Next, Page.Prev);
 	});
 
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->RemoveMembershipsRawAsync(User, RemoveObj, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1102,7 +1102,7 @@ void UPubnubSubsystem::RemoveMembershipsRaw(FString User, FString RemoveObj, FOn
 		NativeCallback.ExecuteIfBound(Result, MembershipsData, Page.Next, Page.Prev);
 	});
 	
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->RemoveMembershipsRawAsync(User, RemoveObj, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1126,7 +1126,7 @@ void UPubnubSubsystem::GetChannelMembersRaw(FString Channel, FOnGetChannelMember
 		OnGetMembersResponse.ExecuteIfBound(Result, MembersData, Page.Next, Page.Prev);
 	});
 
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->GetChannelMembersRawAsync(Channel, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1140,7 +1140,7 @@ void UPubnubSubsystem::GetChannelMembersRaw(FString Channel, FOnGetChannelMember
 		NativeCallback.ExecuteIfBound(Result, MembersData, Page.Next, Page.Prev);
 	});
 	
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->GetChannelMembersRawAsync(Channel, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1164,7 +1164,7 @@ void UPubnubSubsystem::SetChannelMembersRaw(FString Channel, FString SetObj, FOn
 		OnSetMembersResponse.ExecuteIfBound(Result, MembersData, Page.Next, Page.Prev);
 	});
 
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->SetChannelMembersRawAsync(Channel, SetObj, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1178,7 +1178,7 @@ void UPubnubSubsystem::SetChannelMembersRaw(FString Channel, FString SetObj, FOn
 		NativeCallback.ExecuteIfBound(Result, MembersData, Page.Next, Page.Prev);
 	});
 	
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->SetChannelMembersRawAsync(Channel, SetObj, ConvertedCallback, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1202,7 +1202,7 @@ void UPubnubSubsystem::RemoveChannelMembersRaw(FString Channel, FString RemoveOb
 		OnRemoveMembersResponse.ExecuteIfBound(Result, MembersData, Page.Next, Page.Prev);
 	});
 
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->RemoveChannelMembersRawAsync(Channel, RemoveObj, ConvertedCallback, Include, Limit, Filter, Sort, Page, Count);
 }
 
@@ -1216,7 +1216,7 @@ void UPubnubSubsystem::RemoveChannelMembersRaw(FString Channel, FString RemoveOb
 		NativeCallback.ExecuteIfBound(Result, MembersData, Page.Next, Page.Prev);
 	});
 	
-	FPubnubPage Page(PageNext, PagePrev);
+	FPubnubPage Page({PageNext, PagePrev});
 	DefaultClient->RemoveChannelMembersRawAsync(Channel, RemoveObj, ConvertedCallback, Include, Limit, Filter, Sort, Page, Count);
 }
 

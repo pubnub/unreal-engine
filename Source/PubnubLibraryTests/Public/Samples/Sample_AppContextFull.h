@@ -4,8 +4,9 @@
 #pragma once
 
 #include "PubnubClient.h"
-
+#include "GameFramework/Actor.h"
 #include "CoreMinimal.h"
+
 #include "Sample_AppContextFull.generated.h"
 
 // ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)

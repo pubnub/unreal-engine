@@ -3,6 +3,7 @@
 // snippet.full_pubsub_example
 #pragma once
 
+#include "GameFramework/Actor.h"
 #include "CoreMinimal.h"
 #include "Sample_PubSubFull.generated.h"
 

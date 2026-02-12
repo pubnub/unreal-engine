@@ -385,13 +385,13 @@ FPubnubOperationResult UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCurs
 	if(!IsInitialized)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
-		return FPubnubOperationResult(0, true, TEXT("SubscriptionSet is invalid."));
+		return FPubnubOperationResult({0, true, TEXT("SubscriptionSet is invalid.")});
 	}
 
 	if(!CCoreSubscriptionSet)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription set is invalid."));
-		return FPubnubOperationResult(0, true, TEXT("CCoreSubscriptionSet is invalid."));
+		return FPubnubOperationResult({0, true, TEXT("CCoreSubscriptionSet is invalid.")});
 	}
 
 	return PubnubClient->SubscribeWithSubscriptionSet(this, Cursor);
