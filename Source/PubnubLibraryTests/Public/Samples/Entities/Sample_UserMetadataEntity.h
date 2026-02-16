@@ -30,6 +30,7 @@ public:
 	/* USER METADATA ENTITY SAMPLE FUNCTIONS */
 	
     // snippet.create_user_metadata_entity
+    // blueprint.4kgvihsx
     UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|UserMetadataEntity")
     void CreateUserMetadataEntitySample();
 

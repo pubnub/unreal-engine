@@ -28,6 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.add_message_action
+	// blueprint.5ws2hz84
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void AddMessageActionSample();
 
@@ -43,6 +44,7 @@ public:
 	void AddMessageActionWithResultLambdaSample();
 
 	// snippet.get_message_actions
+	// blueprint._bkkj7ln
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void GetMessageActionsSample();
 	
@@ -61,6 +63,7 @@ public:
 	void GetMessageActionsWithLambdaSample();
 
 	// snippet.remove_message_action
+	// blueprint.7c_dos8t
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void RemoveMessageActionSample();
 

@@ -1,6 +1,7 @@
 // Copyright 2025 PubNub Inc. All Rights Reserved.
 
 // snippet.full_presence_example
+// blueprint.z1nf7p3w
 #pragma once
 
 #include "PubnubClient.h"

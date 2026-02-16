@@ -30,6 +30,7 @@ public:
 	/* CHANNEL METADATA ENTITY SAMPLE FUNCTIONS */
 	
     // snippet.create_channel_metadata_entity
+    // blueprint.5pbi727k
     UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|ChannelMetadataEntity")
     void CreateChannelMetadataEntitySample();
 

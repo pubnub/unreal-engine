@@ -28,6 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.set_crypto_module
+	// blueprint.kvmh9-q4
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void SetCryptoModuleSample();
 
@@ -36,6 +37,7 @@ public:
 	void SetCryptoModuleWithLegacySample();
 	
 	// snippet.get_crypto_module
+	// blueprint.wpnnrw6k
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void GetCryptoModuleSample();
 

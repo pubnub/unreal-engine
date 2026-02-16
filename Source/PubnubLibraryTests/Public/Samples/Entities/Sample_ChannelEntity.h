@@ -29,10 +29,12 @@ public:
 	/* CHANNEL ENTITY SAMPLE FUNCTIONS */
 
     // snippet.create_channel_entity
+    // blueprint.e1-eg4ch
     UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|ChannelEntity")
     void CreateChannelEntitySample();
 
 	// snippet.publish_simple_entity
+	// blueprint.q927jwux
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|ChannelEntity")
 	void PublishSimpleSample();
 
@@ -118,6 +120,7 @@ public:
 	void OnAnyEvent_AllListenersSample(FPubnubMessageData Message);
 
 	// snippet.channel_entity_publish_message
+	// blueprint.86kccdrk
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|ChannelEntity")
 	void ChannelEntityPublishMessageSample();
 

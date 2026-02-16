@@ -28,6 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.list_users_from_channel
+	// blueprint.w-qs5s7j
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
 	void ListUsersFromChannelSample();
 
@@ -35,6 +36,7 @@ public:
 	void OnListUsersFromChannelResponse_Simple(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data);
 
 	// snippet.list_users_from_channel_with_settings
+	// blueprint._b89ktgr
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
 	void ListUsersFromChannelWithSettingsSample();
 
@@ -46,6 +48,7 @@ public:
 	void ListUsersFromChannelWithLambdaSample();
 
 	// snippet.list_user_subscribed_channels
+	// blueprint.lvjys815
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
 	void ListUserSubscribedChannelsSample();
 
@@ -57,14 +60,17 @@ public:
 	void ListUserSubscribedChannelsWithLambdaSample();
 
 	// snippet.set_state
+	// blueprint.n0gg8yqg
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
 	void SetStateSample();
 
 	// snippet.set_state_with_settings
+	// blueprint.js86cm8b
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
 	void SetStateWithSettingsSample();
 
 	// snippet.set_state_with_result
+	// blueprint.8l84j8-9
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
 	void SetStateWithResultSample();
 
@@ -76,6 +82,7 @@ public:
 	void SetStateWithResultLambdaSample();
 
 	// snippet.get_state
+	// blueprint.msg62_si
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
 	void GetStateSample();
 

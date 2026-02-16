@@ -30,6 +30,7 @@ public:
 	/* CHANNEL GROUP ENTITY SAMPLE FUNCTIONS */
 	
     // snippet.create_channel_group_entity
+    // blueprint.5tpcgkrz
     UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|ChannelGroupEntity")
     void CreateChannelGroupEntitySample();
 

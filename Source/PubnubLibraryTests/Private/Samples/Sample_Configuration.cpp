@@ -39,7 +39,7 @@ ASample_Configuration::ASample_Configuration()
 
 /* SAMPLE FUNCTIONS */
 
-// snippet.publish_simple
+// snippet.message_listener
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
 void ASample_Configuration::MessageListenerSample()
 {

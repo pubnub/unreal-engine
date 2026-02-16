@@ -27,6 +27,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.set_memberships
+	// blueprint.3mw6rugy
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void SetMembershipsSample();
 
@@ -49,6 +50,7 @@ public:
 	void OnSetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_memberships
+	// blueprint.cnuss9_f
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetMembershipsSample();
 	
@@ -74,6 +76,7 @@ public:
 	void OnGetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.remove_memberships
+	// blueprint.zpirbmkw
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void RemoveMembershipsSample();
 
@@ -96,6 +99,7 @@ public:
 	void OnRemoveMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount);
 
 	// snippet.set_channel_members
+	// blueprint.usr3zz15
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void SetChannelMembersSample();
 
@@ -118,6 +122,7 @@ public:
 	void OnSetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.get_channel_members
+	// blueprint.reh47h3d
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void GetChannelMembersSample();
 	
@@ -143,6 +148,7 @@ public:
 	void OnGetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount);
 
 	// snippet.remove_channel_members
+	// blueprint.8qmyssi1
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void RemoveChannelMembersSample();
 

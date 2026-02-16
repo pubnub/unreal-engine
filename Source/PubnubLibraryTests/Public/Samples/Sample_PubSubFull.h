@@ -1,6 +1,7 @@
 // Copyright 2025 PubNub Inc. All Rights Reserved.
 
 // snippet.full_pubsub_example
+// blueprint.7s012a54
 #pragma once
 
 #include "GameFramework/Actor.h"

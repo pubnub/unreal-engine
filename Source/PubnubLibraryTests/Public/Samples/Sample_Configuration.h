@@ -28,6 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.message_listener
+	// blueprint.v3uoi8lo
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void MessageListenerSample();
 
@@ -39,6 +40,7 @@ public:
 	void MessageListenerLambdaSample();
 
 	// snippet.error_listener
+	// blueprint.fb_9oopg
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void ErrorListenerSample();
 
@@ -50,6 +52,7 @@ public:
 	void ErrorListenerLambdaSample();
 
 	// snippet.subscription_status_listener
+	// blueprint.ld_4o3t8
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void SubscriptionStatusListenerSample();
 	
@@ -61,6 +64,7 @@ public:
 	void SubscriptionStatusListenerLambdaSample();
 
 	// snippet.callback_function
+	// blueprint.w8o07e-l
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void ListUsersFromChannelSample();
 
@@ -72,14 +76,17 @@ public:
 	void ListUsersFromChannelLambdaSample();
 
 	// snippet.create_pubnub_client
+	// blueprint._9byc9q1
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void CreatePubnubClient();
 	
 	// snippet.get_pubnub_client
+	// blueprint.poqf2o09
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	UPubnubClient* GetPubnubClient();
 	
 	// snippet.destroy_pubnub_client
+	// blueprint.256-9zfg
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void DestroyPubnubClient();
 	

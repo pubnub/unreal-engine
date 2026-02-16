@@ -28,6 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.fetch_history
+	// blueprint.yy21j44m
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Persistence")
 	void FetchHistorySample();
 	
@@ -53,6 +54,7 @@ public:
 	void OnFetchHistoryResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubHistoryMessageData>& Messages);
 	
 	// snippet.delete_messages
+	// blueprint.6nhkck5i
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Persistence")
 	void DeleteMessagesSample();
 
@@ -72,6 +74,7 @@ public:
 	void DeleteMessagesWithResultLambdaSample();
 
 	// snippet.message_counts
+	// blueprint.cw7px-_q
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Persistence")
 	void MessageCountsSample();
 
