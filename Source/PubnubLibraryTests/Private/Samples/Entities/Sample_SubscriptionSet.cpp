@@ -46,8 +46,6 @@ void ASample_SubscriptionSet::CreateSubscriptionSetFromNamesSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
@@ -65,7 +63,7 @@ void ASample_SubscriptionSet::CreateSubscriptionSetFromNamesSample()
 	};
 
 	// Create subscription set from channel and group names - monitors all team communications
-	UPubnubSubscriptionSet* TeamCommSubscriptionSet = PubnubSubsystem->CreateSubscriptionSet(TeamChannels, OperationChannelGroups);
+	UPubnubSubscriptionSet* TeamCommSubscriptionSet = PubnubClient->CreateSubscriptionSet(TeamChannels, OperationChannelGroups);
 
 	// Add message listener to monitor all team communications
 	// ACTION REQUIRED: Replace ASample_SubscriptionSet with name of your Actor class
@@ -88,17 +86,15 @@ void ASample_SubscriptionSet::CreateSubscriptionSetFromEntitiesSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create individual entities for different aspects of game monitoring
-	UPubnubChannelEntity* PlayerStatsChannel = PubnubSubsystem->CreateChannelEntity(TEXT("player_statistics"));
-	UPubnubChannelEntity* GameEventsChannel = PubnubSubsystem->CreateChannelEntity(TEXT("game_events_feed"));
-	UPubnubChannelGroupEntity* ServerStatusGroup = PubnubSubsystem->CreateChannelGroupEntity(TEXT("server_monitoring"));
-	UPubnubChannelMetadataEntity* MatchConfigEntity = PubnubSubsystem->CreateChannelMetadataEntity(TEXT("match_configuration"));
+	UPubnubChannelEntity* PlayerStatsChannel = PubnubClient->CreateChannelEntity(TEXT("player_statistics"));
+	UPubnubChannelEntity* GameEventsChannel = PubnubClient->CreateChannelEntity(TEXT("game_events_feed"));
+	UPubnubChannelGroupEntity* ServerStatusGroup = PubnubClient->CreateChannelGroupEntity(TEXT("server_monitoring"));
+	UPubnubChannelMetadataEntity* MatchConfigEntity = PubnubClient->CreateChannelMetadataEntity(TEXT("match_configuration"));
 
 	// Combine different entity types into a comprehensive monitoring subscription set
 	TArray<UPubnubBaseEntity*> MonitoringEntities = {
@@ -109,7 +105,7 @@ void ASample_SubscriptionSet::CreateSubscriptionSetFromEntitiesSample()
 	};
 
 	// Create subscription set from existing entities - provides unified monitoring dashboard
-	UPubnubSubscriptionSet* GameMonitoringSet = PubnubSubsystem->CreateSubscriptionSetFromEntities(MonitoringEntities);
+	UPubnubSubscriptionSet* GameMonitoringSet = PubnubClient->CreateSubscriptionSetFromEntities(MonitoringEntities);
 
 	// Add message listener to capture all monitoring data
 	// ACTION REQUIRED: Replace ASample_SubscriptionSet with name of your Actor class
@@ -136,21 +132,19 @@ void ASample_SubscriptionSet::SubscriptionSetAddRemoveSubscriptionsSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a subscription set for tournament management
 	TArray<FString> TournamentChannels = {TEXT("tournament_lobby"), TEXT("match_results")};
-	UPubnubSubscriptionSet* TournamentSet = PubnubSubsystem->CreateSubscriptionSet(TournamentChannels, TArray<FString>());
+	UPubnubSubscriptionSet* TournamentSet = PubnubClient->CreateSubscriptionSet(TournamentChannels, TArray<FString>());
 
 	// Create individual subscriptions for different game areas
-	UPubnubChannelEntity* PlayerFeedbackChannel = PubnubSubsystem->CreateChannelEntity(TEXT("player_feedback"));
+	UPubnubChannelEntity* PlayerFeedbackChannel = PubnubClient->CreateChannelEntity(TEXT("player_feedback"));
 	UPubnubSubscription* FeedbackSubscription = PlayerFeedbackChannel->CreateSubscription();
 
-	UPubnubChannelEntity* AdminNoticesChannel = PubnubSubsystem->CreateChannelEntity(TEXT("admin_notices"));
+	UPubnubChannelEntity* AdminNoticesChannel = PubnubClient->CreateChannelEntity(TEXT("admin_notices"));
 	UPubnubSubscription* AdminSubscription = AdminNoticesChannel->CreateSubscription();
 
 	// Add individual subscriptions to the tournament set
@@ -175,23 +169,21 @@ void ASample_SubscriptionSet::SubscriptionSetMergeOperationsSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create main subscription set for core game channels
 	TArray<FString> CoreChannels = {TEXT("game_lobby"), TEXT("general_chat")};
-	UPubnubSubscriptionSet* CoreGameSet = PubnubSubsystem->CreateSubscriptionSet(CoreChannels, TArray<FString>());
+	UPubnubSubscriptionSet* CoreGameSet = PubnubClient->CreateSubscriptionSet(CoreChannels, TArray<FString>());
 
 	// Create additional subscription set for special events
 	TArray<FString> EventChannels = {TEXT("special_events"), TEXT("tournament_updates")};
-	UPubnubSubscriptionSet* SpecialEventsSet = PubnubSubsystem->CreateSubscriptionSet(EventChannels, TArray<FString>());
+	UPubnubSubscriptionSet* SpecialEventsSet = PubnubClient->CreateSubscriptionSet(EventChannels, TArray<FString>());
 
 	// Create VIP subscription set for premium features
 	TArray<FString> VipChannels = {TEXT("vip_lounge"), TEXT("premium_support")};
-	UPubnubSubscriptionSet* VipSet = PubnubSubsystem->CreateSubscriptionSet(VipChannels, TArray<FString>());
+	UPubnubSubscriptionSet* VipSet = PubnubClient->CreateSubscriptionSet(VipChannels, TArray<FString>());
 
 	UE_LOG(LogTemp, Log, TEXT("Created core game set, special events set, and VIP set"));
 

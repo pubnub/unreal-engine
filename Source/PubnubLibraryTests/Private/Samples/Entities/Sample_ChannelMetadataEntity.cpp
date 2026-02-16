@@ -48,15 +48,13 @@ void ASample_ChannelMetadataEntity::CreateChannelMetadataEntitySample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity for the channel you want to monitor metadata changes
 	FString ChannelName = TEXT("lobby_settings");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 }
 
 // snippet.subscribe_with_channel_metadata_entity
@@ -65,15 +63,13 @@ void ASample_ChannelMetadataEntity::SubscribeWithChannelMetadataEntitySample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity for the channel you want to monitor metadata changes
 	FString ChannelName = TEXT("lobby_settings");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 
 	// Create a subscription from the channel metadata entity
 	UPubnubSubscription* MetadataSubscription = ChannelMetadataEntity->CreateSubscription();
@@ -98,15 +94,13 @@ void ASample_ChannelMetadataEntity::ChannelMetadataEntitySetMetadataSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity for a tournament lobby
 	FString TournamentLobby = TEXT("tournament_lobby_finals");
-	UPubnubChannelMetadataEntity* LobbyMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(TournamentLobby);
+	UPubnubChannelMetadataEntity* LobbyMetadataEntity = PubnubClient->CreateChannelMetadataEntity(TournamentLobby);
 
 	// Set up callback to handle metadata set result
 	// ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
@@ -141,15 +135,13 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity
 	FString ChannelName = TEXT("general-chat-channel");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 
 	// Create channel metadata object
 	FPubnubChannelInputData ChannelMetadata;
@@ -167,15 +159,13 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataWithResultSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity
 	FString ChannelName = TEXT("trade-chat-channel");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 	
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
@@ -212,15 +202,13 @@ void ASample_ChannelMetadataEntity::SetChannelMetadataWithLambdaSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity
 	FString ChannelName = TEXT("guild-hall-channel");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 
 	// Bind lambda to response delegate
 	FOnPubnubSetChannelMetadataResponseNative OnSetChannelMetadataResponse;
@@ -253,15 +241,13 @@ void ASample_ChannelMetadataEntity::GetChannelMetadataSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity
 	FString ChannelName = TEXT("general-chat-channel");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
@@ -291,15 +277,13 @@ void ASample_ChannelMetadataEntity::GetChannelMetadataWithLambdaSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity
 	FString ChannelName = TEXT("guild-hall-channel");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 
 	// Bind lambda to response delegate
 	FOnPubnubGetChannelMetadataResponseNative OnGetChannelMetadataResponse;
@@ -325,15 +309,13 @@ void ASample_ChannelMetadataEntity::RemoveChannelMetadataSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity
 	FString ChannelName = TEXT("general-chat-channel");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 	
 	// Remove channel metadata using the channel metadata entity
 	ChannelMetadataEntity->RemoveChannelMetadataAsync();
@@ -345,15 +327,13 @@ void ASample_ChannelMetadataEntity::RemoveChannelMetadataWithResultSample()
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity
 	FString ChannelName = TEXT("trade-chat-channel");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelMetadataEntity with name of your Actor class
@@ -383,15 +363,13 @@ void ASample_ChannelMetadataEntity::RemoveChannelMetadataWithResultLambdaSample(
 {
 	// snippet.hide
 	UPubnubClient* PubnubClient = GetPubnubClient();
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	// snippet.show
 	
 	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel metadata entity
 	FString ChannelName = TEXT("guild-hall-channel");
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubSubsystem->CreateChannelMetadataEntity(ChannelName);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = PubnubClient->CreateChannelMetadataEntity(ChannelName);
 
 	// Bind lambda to response delegate
 	FOnPubnubRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse;
