@@ -3024,6 +3024,7 @@ void UPubnubClient::SetAuthToken_priv(FString Token)
 	
 	//This is just a setter, so no need to call it on a separate thread
 	pubnub_set_auth_token(ctx_pub, AuthTokenBuffer);
+	pubnub_set_auth_token(ctx_ee, AuthTokenBuffer);
 }
 
 int UPubnubClient::SetOrigin_priv(FString Origin)
