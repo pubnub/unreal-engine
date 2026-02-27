@@ -1,6 +1,6 @@
 /* -*- c-file-style:"stroustrup"; indent-tabs-mode: nil -*- */
 #if !defined INC_PUBNUB_CONFIG
-#define      INC_PUBNUB_CONFIG
+#define INC_PUBNUB_CONFIG
 
 
 /* -- Next few definitions can be tweaked by the user, but with care -- */
@@ -62,7 +62,7 @@
 /** This is the URL of the Pubnub server. Change only for testing
     purposes.
 */
-#define PUBNUB_ORIGIN  "pubsub.pubnub.com"
+#define PUBNUB_ORIGIN "pubsub.pubnub.com"
 
 /** Set to 0 to disable changing the origin from the default
     #PUBNUB_ORIGIN.  Set to anything != 0 to enable changing the
@@ -71,15 +71,15 @@
 #define PUBNUB_ORIGIN_SETTABLE 1
 
 /** Duration of the transaction timeout set during context initialization,
-    in milliseconds. Timeout dration in the context can be changed by the 
+    in milliseconds. Timeout dration in the context can be changed by the
     user after initialization.
     */
-#define PUBNUB_DEFAULT_TRANSACTION_TIMER    310000
+#define PUBNUB_DEFAULT_TRANSACTION_TIMER 310000
 
 /** Duration of the 'wait_connect_TCP_socket' timeout set during context
     initialization, in milliseconds. Can be changed later by the user.
     */
-#define PUBNUB_DEFAULT_WAIT_CONNECT_TIMER    10000
+#define PUBNUB_DEFAULT_WAIT_CONNECT_TIMER 10000
 
 /** Mininmal duration of the 'wait_connect_TCP_socket' timer, in milliseconds.
  *  You can't set less than this.
@@ -97,12 +97,12 @@
 #endif
 
 #if defined(PUBNUB_CALLBACK_API)
-/** The size of the stack (in kilobytes) for the "polling" thread, when using 
-    the callback interface. We don't need much, so, if you want to conserve 
-    memory, you can try small values. It's hard to say what is the minumum, 
-    as it depends on the OS functions we call, but, you probably 
+/** The size of the stack (in kilobytes) for the "polling" thread, when using
+    the callback interface. We don't need much, so, if you want to conserve
+    memory, you can try small values. It's hard to say what is the minumum,
+    as it depends on the OS functions we call, but, you probably
     shouldn't try less than 64 KB.
-    
+
     Set to `0` to use the default stack size.
     */
 #define PUBNUB_CALLBACK_THREAD_STACK_SIZE_KB 0
@@ -139,8 +139,13 @@
 /** Maximum number of consecutive retries when sending DNS query in a single transaction */
 #define PUBNUB_MAX_DNS_QUERIES 3
 #if PUBNUB_CHANGE_DNS_SERVERS
+#if PUBNUB_USE_IPV6
+/** Maximum number of DNS servers list rotation in a single transaction */
+#define PUBNUB_MAX_DNS_ROTATION 5
+#else /* PUBNUB_USE_IPV6 */
 /** Maximum number of DNS servers list rotation in a single transaction */
 #define PUBNUB_MAX_DNS_ROTATION 3
+#endif /* !PUBNUB_USE_IPV6 */
 #endif /* PUBNUB_CHANGE_DNS_SERVERS */
 #endif /* defined(PUBNUB_CALLBACK_API) */
 
@@ -157,10 +162,6 @@
 #if PUBNUB_USE_GZIP_COMPRESSION
 /* Maximum compressed message length allowed. Could be shortened by the user */
 #define PUBNUB_COMPRESSED_MAXLEN 32000
-#endif
-
-#if !defined(PUBNUB_USE_LOG_CALLBACK)
-#define PUBNUB_USE_LOG_CALLBACK 1
 #endif
 
 /** The maximum length (in characters) of the host name of the proxy
@@ -205,9 +206,9 @@
 
 #if !defined(PUBNUB_USE_OBJECTS_API)
 /** If true (!=0) will enable using the objects API, which is a
-    collection of rest API features that enables "CRUD"(Create, Read, Update and Delete)
-    on two new pubnub objects: User and Space, as well as manipulating connections
-    between them. */
+    collection of rest API features that enables "CRUD"(Create, Read, Update and
+   Delete) on two new pubnub objects: User and Space, as well as manipulating
+   connections between them. */
 #define PUBNUB_USE_OBJECTS_API 1
 #endif
 
@@ -236,10 +237,28 @@
     these things all by himself using pubnub_heartbeat() transaction */
 #define PUBNUB_USE_AUTO_HEARTBEAT 1
 #endif
+
+#if !defined(PUBNUB_ADVANCED_KEEP_ALIVE)
+/** If true (!=0) will enable use of advanced keep-alive parameters,
+    see pubnub_set_keep_alive_param() and will observe the
+    `Connection: close` if received from server or proxy.
+*/
+#define PUBNUB_ADVANCED_KEEP_ALIVE 1
+#endif
+
 #define PUBNUB_MAX_URL_PARAMS 12
 
 #ifndef PUBNUB_RAND_INIT_VECTOR
 #define PUBNUB_RAND_INIT_VECTOR 1
 #endif
+
+#if !defined(PUBNUB_USE_LOGGER)
+/** Enable built-in logger by default. */
+#define PUBNUB_USE_LOGGER 1
+#endif // !defined(PUBNUB_USE_LOGGER)
+#if !defined(PUBNUB_USE_DEFAULT_LOGGER)
+/** Whether built-in stdout/stderr logger should be used or not. */
+#define PUBNUB_USE_DEFAULT_LOGGER 1
+#endif // !defined(PUBNUB_USE_DEFAULT_LOGGER)
 
 #endif /* !defined INC_PUBNUB_CONFIG */

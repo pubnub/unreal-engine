@@ -2342,7 +2342,7 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	ctx_ee = pubnub_alloc();
 
 	//Send logging callback to Pubnub sdk, so we can pass all logs to UE
-	pubnub_set_log_callback(PubnubSDKLogConverter);
+	//pubnub_set_log_callback(PubnubSDKLogConverter);
 	
 	pubnub_enforce_api(ctx_pub, PNA_SYNC);
 	pubnub_enforce_api(ctx_ee, PNA_CALLBACK);
