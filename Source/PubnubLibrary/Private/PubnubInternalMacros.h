@@ -3,6 +3,151 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "FunctionLibraries/PubnubLogUtilities.h"
+
+/**
+ * Formats a single named value as "Name=Value" using PubnubLogUtilities::LogToString.
+ *
+ * Example:
+ *   PUBNUB_LOG_VALUE(Channel)
+ */
+#define PUBNUB_LOG_VALUE(Var) \
+	FString::Printf(TEXT("%s = %s"), TEXT(#Var), *UPubnubLogUtilities::LogToString(Var))
+
+/**
+ * Backward-compatible alias for input logging.
+ */
+#define PUBNUB_LOG_INPUT(Var) \
+	PUBNUB_LOG_VALUE(Var)
+
+/**
+ * Logs a message prefixed with current function name at the provided level.
+ *
+ * Usage:
+ *   PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Info, TEXT("operation started."));
+ */
+#define PUBNUB_LOG_FUNCTION(Level, MessageText) \
+	do { \
+		if (LoggerManager) \
+		{ \
+			const FString FunctionName = UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)); \
+			LoggerManager->Log( \
+				Level, \
+				EPubnubLogSource::PLS_UE, \
+				FString::Printf(TEXT("%s %s"), *FunctionName, *FString(MessageText)), \
+				ANSI_TO_TCHAR(__FUNCTION__) \
+			); \
+		} \
+	} while (false)
+
+/**
+ * Logs function inputs at Debug level through LoggerManager->Log.
+ *
+ * Usage:
+ *   PUBNUB_LOG_FUNCTION_INPUTS_DEBUG( \
+ *       PUBNUB_LOG_INPUT(Channel), \
+ *       PUBNUB_LOG_INPUT(Message), \
+ *       PUBNUB_LOG_INPUT(PublishSettings) \
+ *   );
+ */
+#define PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(...) \
+	do { \
+		if (LoggerManager) \
+		{ \
+			const TArray<FString> InputPairs = { __VA_ARGS__ }; \
+			const FString InputsText = FString::Join(InputPairs, TEXT("\n\t-")); \
+			const FString FunctionName = UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)); \
+			LoggerManager->Log( \
+				EPubnubLogLevel::PLL_Debug, \
+				EPubnubLogSource::PLS_UE, \
+				FString::Printf(TEXT("%s with inputs:\n\t-%s"), *FunctionName, *InputsText), \
+				ANSI_TO_TCHAR(__FUNCTION__) \
+			); \
+		} \
+	} while (false)
+
+/**
+ * Logs custom debug text and one or more named values.
+ *
+ * Usage:
+ *   PUBNUB_LOG_FUNCTION_DEBUG( \
+ *       TEXT("publish completed."), \
+ *       PUBNUB_LOG_VALUE(PublishResult) \
+ *   );
+ */
+#define PUBNUB_LOG_FUNCTION_DEBUG(Comment, ...) \
+	do { \
+		if (LoggerManager) \
+		{ \
+			const TArray<FString> ValuePairs = { __VA_ARGS__ }; \
+			const FString ValuesText = FString::Join(ValuePairs, TEXT("\n\t-")); \
+			const FString FunctionName = UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)); \
+			const FString ValuesSuffix = ValuesText.IsEmpty() ? TEXT("") : FString::Printf(TEXT("\n\t-%s"), *ValuesText); \
+			LoggerManager->Log( \
+				EPubnubLogLevel::PLL_Debug, \
+				EPubnubLogSource::PLS_UE, \
+				FString::Printf(TEXT("%s %s%s"), *FunctionName, *FString(Comment), *ValuesSuffix), \
+				ANSI_TO_TCHAR(__FUNCTION__) \
+			); \
+		} \
+	} while (false)
+
+/**
+ * Logs custom text at Debug level for current function.
+ */
+#define PUBNUB_LOG_FUNCTION_DEBUG_TEXT(MessageText) \
+	PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Debug, MessageText)
+
+/**
+ * Logs custom text at Warning level for current function.
+ */
+#define PUBNUB_LOG_FUNCTION_WARNING(MessageText) \
+	PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Warning, MessageText)
+
+/**
+ * Logs custom text at Error level for current function.
+ */
+#define PUBNUB_LOG_FUNCTION_ERROR(MessageText) \
+	PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Error, MessageText)
+
+/**
+ * Logs an operation result with automatic severity:
+ * - Debug when ResultVar.Error is false
+ * - Error when ResultVar.Error is true
+ *
+ * Usage:
+ *   PUBNUB_LOG_OPERATION_RESULT(PublishResult);
+ */
+#define PUBNUB_LOG_OPERATION_RESULT(ResultVar) \
+	do { \
+		const FPubnubOperationResult& PubnubOpResult = (ResultVar); \
+		if (PubnubOpResult.Error) \
+		{ \
+			PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Error, FString::Printf(TEXT("failed with result:\n\t-%s"), *PUBNUB_LOG_VALUE(ResultVar))); \
+		} \
+		else \
+		{ \
+			PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Debug, FString::Printf(TEXT("succeeded with result:\n\t-%s"), *PUBNUB_LOG_VALUE(ResultVar))); \
+		} \
+	} while (false)
+
+/**
+ * Logs a trace message that the current function was called.
+ *
+ * Usage:
+ *   PUBNUB_LOG_FUNCTION_CALLED_TRACE();
+ */
+#define PUBNUB_LOG_FUNCTION_CALLED_TRACE() \
+	PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Trace, TEXT("called."))
+
+/**
+ * Logs a trace message with additional custom text for the current function.
+ *
+ * Usage:
+ *   PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("State changed: %s"), *State));
+ */
+#define PUBNUB_LOG_FUNCTION_TRACE(AdditionalText) \
+	PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Trace, AdditionalText)
 
 
 /**
@@ -120,7 +265,10 @@
 	do { \
 		if (!IsUserIDSet) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Error, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			return __VA_ARGS__; \
 		} \
 	} while (false)
@@ -143,7 +291,10 @@
 	do { \
 		if (!Condition) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: %s Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), Message)); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Error, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: %s Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), Message), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = Message; \
@@ -168,7 +319,10 @@
 	do { \
 		if (!Condition) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: %s Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), Message)); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Error, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: %s Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), Message), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = Message; \
@@ -257,7 +411,10 @@
 	do { \
 		if (!IsUserIDSet) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Error, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = TEXT("Pubnub user ID is not set. Operation aborted."); \
@@ -279,7 +436,10 @@
 	do { \
 		if (!IsUserIDSet) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Error, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Pubnub user ID is not set. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = TEXT("Pubnub user ID is not set. Operation aborted."); \
@@ -304,7 +464,10 @@
 	do { \
 		if (Field.IsEmpty()) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = FString::Printf(TEXT("Missing required input: '%s' (field is empty). Operation aborted."), TEXT(#Field)); \
@@ -328,7 +491,10 @@
 	do { \
 		if (Field.IsEmpty()) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = FString::Printf(TEXT("Missing required input: '%s' (field is empty). Operation aborted."), TEXT(#Field)); \
@@ -353,7 +519,10 @@
 	do { \
 		if (!PubnubOperationMutex.TryLock()) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), EPubnubErrorType::PET_Warning); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = FString::Printf(TEXT("Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently.")); \
@@ -376,7 +545,10 @@
 	do { \
 		if (!PubnubOperationMutex.TryLock()) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), EPubnubErrorType::PET_Warning); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			FPubnubOperationResult Result; \
 			Result.Error = true; \
 			Result.ErrorMessage = FString::Printf(TEXT("Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently.")); \
@@ -401,7 +573,10 @@
 	do { \
 		if (Field.IsEmpty()) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), EPubnubErrorType::PET_Warning); \
+			if (LoggerManager) \
+			{ \
+				LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: %s field can't be empty. Aborting operation."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)), TEXT(#Field)), ANSI_TO_TCHAR(__FUNCTION__)); \
+			} \
 			return __VA_ARGS__; \
 		} \
 	} while (false)

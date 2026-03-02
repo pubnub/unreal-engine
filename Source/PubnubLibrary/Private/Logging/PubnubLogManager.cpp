@@ -281,7 +281,7 @@ void UPubnubLogManager::SetUESdkEmitterID(const FString& InEmitterID)
 	UESdkEmitterID = InEmitterID.IsEmpty() ? TEXT("PubNub-unknown") : InEmitterID;
 }
 
-void UPubnubLogManager::Log(EPubnubLogLevel Level, EPubnubLogSource Source, const FString& Message, const FString& Location)
+void UPubnubLogManager::Log(EPubnubLogLevel Level, EPubnubLogSource Source, const FString& Message, const FString& Callsite)
 {
 	if (Level == EPubnubLogLevel::PLL_None)
 	{
@@ -293,7 +293,7 @@ void UPubnubLogManager::Log(EPubnubLogLevel Level, EPubnubLogSource Source, cons
 	PubnubLogMessage.Source = Source;
 	PubnubLogMessage.Message = Message;
 	PubnubLogMessage.TimestampUtc = FDateTime::UtcNow();
-	PubnubLogMessage.Callsite = Location;
+	PubnubLogMessage.Callsite = Callsite;
 	PubnubLogMessage.PubnubInstanceID = Source == EPubnubLogSource::PLS_CCore ? TEXT("PubNub-unknown") : UESdkEmitterID;
 	DispatchMessage(PubnubLogMessage);
 }

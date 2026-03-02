@@ -23,7 +23,7 @@ public:
 	TArray<TScriptInterface<IPubnubLoggerInterface>> GetLoggers() const;
 	void SetUESdkEmitterID(const FString& InEmitterID);
 
-	void Log(EPubnubLogLevel Level, EPubnubLogSource Source, const FString& Message, const FString& Location = TEXT(""));
+	void Log(EPubnubLogLevel Level, EPubnubLogSource Source, const FString& Message, const FString& Callsite = TEXT(""));
 	void HandleCCoreLog(const pubnub_log_message_t* Message);
 	static const pubnub_logger_interface& GetCCoreLoggerInterface();
 

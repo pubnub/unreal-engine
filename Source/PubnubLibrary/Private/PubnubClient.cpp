@@ -87,23 +87,8 @@ void UPubnubClient::SetSecretKey()
 
 FPubnubPublishMessageResult UPubnubClient::PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
 {
-	LogSDK(
-		EPubnubLogLevel::PLL_Trace,
-		FString::Printf(
-			TEXT("PublishMessage called. Channel='%s', MessageLength=%d, StoreInHistory=%s, Replicate=%s, PublishMethod=%d, Ttl=%d, CustomMessageType='%s', MetaLength=%d"),
-			*Channel,
-			Message.Len(),
-			PublishSettings.StoreInHistory ? TEXT("true") : TEXT("false"),
-			PublishSettings.Replicate ? TEXT("true") : TEXT("false"),
-			static_cast<int32>(PublishSettings.PublishMethod),
-			PublishSettings.Ttl,
-			*PublishSettings.CustomMessageType,
-			PublishSettings.MetaData.Len()
-		),
-		TEXT("PublishMessage")
-	);
-
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubPublishMessageResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return PublishMessage_priv(Channel, Message, PublishSettings);
 }
@@ -206,6 +191,7 @@ void UPubnubClient::SignalAsync(FString Channel, FString Message, FPubnubSignalS
 FPubnubOperationResult UPubnubClient::SubscribeToChannel(FString Channel, FPubnubSubscribeSettings SubscribeSettings)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return SubscribeToChannel_priv(Channel, SubscribeSettings);
 }
 
@@ -249,6 +235,7 @@ void UPubnubClient::SubscribeToChannelAsync(FString Channel, FPubnubSubscribeSet
 FPubnubOperationResult UPubnubClient::SubscribeToGroup(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return SubscribeToGroup_priv(ChannelGroup, SubscribeSettings);
 }
 
@@ -291,6 +278,7 @@ void UPubnubClient::SubscribeToGroupAsync(FString ChannelGroup, FPubnubSubscribe
 FPubnubOperationResult UPubnubClient::UnsubscribeFromChannel(FString Channel)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return UnsubscribeFromChannel_priv(Channel);
 }
 
@@ -326,6 +314,7 @@ void UPubnubClient::UnsubscribeFromChannelAsync(FString Channel, FOnPubnubSubscr
 FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup(FString ChannelGroup)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return UnsubscribeFromGroup_priv(ChannelGroup);
 }
 
@@ -361,6 +350,7 @@ void UPubnubClient::UnsubscribeFromGroupAsync(FString ChannelGroup, FOnPubnubSub
 FPubnubOperationResult UPubnubClient::UnsubscribeFromAll()
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return UnsubscribeFromAll_priv();
 }
 
@@ -2533,15 +2523,10 @@ void UPubnubClient::SetSecretKey_priv()
 
 FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
 {
-	LogSDK(
-		EPubnubLogLevel::PLL_Debug,
-		FString::Printf(
-			TEXT("PublishMessage_priv started. Channel='%s', RawMessageLength=%d, MetaLength=%d"),
-			*Channel,
-			Message.Len(),
-			PublishSettings.MetaData.Len()
-		),
-		TEXT("PublishMessage_priv")
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_INPUT(Channel),
+		PUBNUB_LOG_INPUT(Message),
+		PUBNUB_LOG_INPUT(PublishSettings)
 	);
 
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubPublishMessageResult());
@@ -2556,7 +2541,7 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
 	{
 		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
-		LogSDK(EPubnubLogLevel::PLL_Trace, TEXT("PublishMessage_priv serialized non-JSON message payload."), TEXT("PublishMessage_priv"));
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("serialized non-JSON message payload. Final serialized message: %s"), *FinalMessage));
 	}
 
 	FUTF8StringHolder MessageHolder(FinalMessage);
@@ -2576,6 +2561,7 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 	pubnub_publish_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
 
 	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("publish await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(PublishResultStatus))));
 	
 	PubnubOperationMutex.Unlock();
 	
@@ -2587,21 +2573,12 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
 	PublishResult.Error = PublishResultStatus != PNR_OK;
 
-	LogSDK(
-		EPubnubLogLevel::PLL_Debug,
-		FString::Printf(
-			TEXT("PublishMessage_priv completed. Channel='%s', HttpStatus=%d, ResultCode=%s, Error=%s"),
-			*Channel,
-			PublishResult.Status,
-			UTF8_TO_TCHAR(pubnub_res_2_string(PublishResultStatus)),
-			PublishResult.Error ? TEXT("true") : TEXT("false")
-		),
-		TEXT("PublishMessage_priv")
-	);
+	PUBNUB_LOG_OPERATION_RESULT(PublishResult);
 
 	//In case error message is empty, we just put status there, it might be more useful than nothing
 	if(PublishResult.ErrorMessage.IsEmpty())
 	{
+		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("received empty publish error message, falling back to result code string: %s"), UTF8_TO_TCHAR(pubnub_res_2_string(PublishResultStatus))));
 		PublishResult.ErrorMessage = pubnub_res_2_string(PublishResultStatus);
 	}
 	
@@ -2615,12 +2592,22 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 		PublishedMessage.Metadata = PublishSettings.MetaData;
 		PublishedMessage.MessageType = EPubnubMessageType::PMT_Published;
 		PublishedMessage.CustomMessageType = PublishSettings.CustomMessageType;
+		PUBNUB_LOG_FUNCTION_DEBUG(
+			TEXT("published message: "),
+			PUBNUB_LOG_VALUE(PublishedMessage)
+		);
 	}
 	return FPubnubPublishMessageResult({PublishResult, PublishedMessage});
 }
 
 FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_INPUT(Channel),
+		PUBNUB_LOG_INPUT(Message),
+		PUBNUB_LOG_INPUT(SignalSettings)
+	);
+
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubSignalResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubSignalResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Message, FPubnubSignalResult());
@@ -2632,6 +2619,7 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
 	{
 		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("serialized non-JSON signal payload. Final serialized message: %s"), *FinalMessage));
 	}
 	
 	FUTF8StringHolder MessageHolder(FinalMessage);
@@ -2643,6 +2631,7 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 	pubnub_signal_ex(ctx_pub, ChannelHolder.Get(), MessageHolder.Get(), PubnubOptions);
 	
 	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("signal await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(PublishResultStatus))));
 
 	PubnubOperationMutex.Unlock();
 
@@ -2652,6 +2641,14 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 	PublishResult.Status = pubnub_last_http_code(ctx_pub);
 	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
 	PublishResult.Error = PublishResultStatus != PNR_OK;
+	PUBNUB_LOG_OPERATION_RESULT(PublishResult);
+
+	//In case error message is empty, we just put status there, it might be more useful than nothing
+	if(PublishResult.ErrorMessage.IsEmpty())
+	{
+		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("received empty signal error message, falling back to result code string: %s"), UTF8_TO_TCHAR(pubnub_res_2_string(PublishResultStatus))));
+		PublishResult.ErrorMessage = pubnub_res_2_string(PublishResultStatus);
+	}
 
 	if(PublishResultStatus == PNR_OK)
 	{
@@ -2662,6 +2659,10 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 		SignalMessage.Metadata = ""; // Signals don't have metadata
 		SignalMessage.MessageType = EPubnubMessageType::PMT_Signal;
 		SignalMessage.CustomMessageType = SignalSettings.CustomMessageType;
+		PUBNUB_LOG_FUNCTION_DEBUG(
+			TEXT("signal message created."),
+			PUBNUB_LOG_VALUE(SignalMessage)
+		);
 	}
 
 	return FPubnubSignalResult({PublishResult, SignalMessage});
@@ -2670,6 +2671,10 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 
 FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(SubscribeSettings)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 
@@ -2694,13 +2699,14 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 	};
 
 	FString StartFailureMessage = TEXT("Failed to subscribe to channel.");
-	return ExecuteSerializedSubscriptionOperation(
+	FPubnubOperationResult SubscribeResult = ExecuteSerializedSubscriptionOperation(
 		StartFailureMessage,
 		TEXT("Subscribe operation timed out"),
 		[&]()
 		{
 			if(ChannelSubscriptions.Contains(Channel))
 			{
+				PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("subscription for channel '%s' already exists. Aborting operation."), *Channel));
 				StartFailureMessage = TEXT("Already subscribed to this channel. Aborting operation.");
 				pubnub_subscription_free(&Subscription);
 				return false;
@@ -2708,7 +2714,7 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 
 			if(!UPubnubInternalUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
 			{
-				PubnubError("[SubscribeToChannel]: Failed to subscribe to channel.");
+				PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("failed to add listener and subscribe for channel '%s'."), *Channel));
 				pubnub_subscription_free(&Subscription);
 				return false;
 			}
@@ -2716,13 +2722,20 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 			//Save callback and subscription so it can be unsubscribed later.
 			CCoreSubscriptionCallback* SubscriptionData = new CCoreSubscriptionCallback{Callback, Subscription};
 			ChannelSubscriptions.Add(Channel, SubscriptionData);
+			PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("channel subscription stored.\n\t-%s"), *PUBNUB_LOG_VALUE(Channel)));
 			return true;
 		});
+	PUBNUB_LOG_OPERATION_RESULT(SubscribeResult);
+	return SubscribeResult;
 }
 
 
 FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(ChannelGroup),
+		PUBNUB_LOG_VALUE(SubscribeSettings)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
 	
@@ -2747,13 +2760,14 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 	};
 
 	FString StartFailureMessage = TEXT("Failed to subscribe to channel group.");
-	return ExecuteSerializedSubscriptionOperation(
+	FPubnubOperationResult SubscribeResult = ExecuteSerializedSubscriptionOperation(
 		StartFailureMessage,
 		TEXT("Subscribe operation timed out"),
 		[&]()
 		{
 			if(ChannelGroupSubscriptions.Contains(ChannelGroup))
 			{
+				PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("subscription for channel group '%s' already exists. Aborting operation."), *ChannelGroup));
 				StartFailureMessage = TEXT("Already subscribed to this channel group. Aborting operation.");
 				pubnub_subscription_free(&Subscription);
 				return false;
@@ -2761,7 +2775,7 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 
 			if(!UPubnubInternalUtilities::EEAddListenerAndSubscribe(Subscription, Callback, this))
 			{
-				PubnubError("[SubscribeToGroup]: Failed to subscribe to channel group.");
+				PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("failed to add listener and subscribe for channel group '%s'."), *ChannelGroup));
 				pubnub_subscription_free(&Subscription);
 				return false;
 			}
@@ -2769,12 +2783,18 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 			//Save callback and subscription so it can be unsubscribed later.
 			CCoreSubscriptionCallback* SubscriptionData = new CCoreSubscriptionCallback{Callback, Subscription};
 			ChannelGroupSubscriptions.Add(ChannelGroup, SubscriptionData);
+			PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("channel group subscription stored.\n\t-%s"), *PUBNUB_LOG_VALUE(ChannelGroup)));
 			return true;
 		});
+	PUBNUB_LOG_OPERATION_RESULT(SubscribeResult);
+	return SubscribeResult;
 }
 
 FPubnubOperationResult UPubnubClient::UnsubscribeFromChannel_priv(FString Channel)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 
@@ -2785,20 +2805,31 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromChannel_priv(FString Channe
 
 	if(!UPubnubInternalUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
 	{
-		PubnubError("[UnsubscribeFromChannel]: Failed to unsubscribe.", EPubnubErrorType::PET_Warning);
-		return FPubnubOperationResult({0, true, "Failed to unsubscribe."});
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("failed to unsubscribe channel '%s'."), *Channel));
+		FPubnubOperationResult Result({0, true, "Failed to unsubscribe."});
+		PUBNUB_LOG_OPERATION_RESULT(Result);
+		return Result;
 	}
 
 	//Free subscription memory and remove local tracking.
 	pubnub_subscription_free(&SubscriptionData->Subscription);
 	ChannelSubscriptions.Remove(Channel);
 	delete SubscriptionData;
+	PUBNUB_LOG_FUNCTION_DEBUG(
+		TEXT("channel subscription removed."),
+		PUBNUB_LOG_VALUE(Channel)
+	);
 
-	return FPubnubOperationResult({200, false, ""});
+	FPubnubOperationResult Result({200, false, ""});
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelGroup)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(ChannelGroup)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
 
@@ -2809,37 +2840,53 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromGroup_priv(FString ChannelG
 
 	if(!UPubnubInternalUtilities::EERemoveListenerAndUnsubscribe(&SubscriptionData->Subscription, SubscriptionData->Callback, this))
 	{
-		PubnubError("[UnsubscribeFromGroup]: Failed to unsubscribe.", EPubnubErrorType::PET_Warning);
-		return FPubnubOperationResult({0, true, "Failed to unsubscribe."});
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("failed to unsubscribe channel group '%s'."), *ChannelGroup));
+		FPubnubOperationResult Result({0, true, "Failed to unsubscribe."});
+		PUBNUB_LOG_OPERATION_RESULT(Result);
+		return Result;
 	}
 
 	//Free subscription memory and remove local tracking.
 	pubnub_subscription_free(&SubscriptionData->Subscription);
 	ChannelGroupSubscriptions.Remove(ChannelGroup);
 	delete SubscriptionData;
+	PUBNUB_LOG_FUNCTION_DEBUG(
+		TEXT("channel group subscription removed."),
+		PUBNUB_LOG_VALUE(ChannelGroup)
+	);
 
-	return FPubnubOperationResult({200, false, ""});
+	FPubnubOperationResult Result({200, false, ""});
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
 
 	//If there are no subscriptions, return success immediately.
 	if(ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty())
 	{
-		return FPubnubOperationResult({200, false, ""});
+		PUBNUB_LOG_FUNCTION_WARNING(TEXT("unsubscribe all requested but there are no active subscriptions."));
+		FPubnubOperationResult Result({200, false, ""});
+		PUBNUB_LOG_OPERATION_RESULT(Result);
+		return Result;
 	}
 
 	const enum pubnub_res UnsubscribeAllResult = pubnub_unsubscribe_all(ctx_ee);
 	if(UnsubscribeAllResult != PNR_OK)
 	{
-		return FPubnubOperationResult({0, true, FString::Printf(TEXT("Failed to unsubscribe all. Error: %s"), UTF8_TO_TCHAR(pubnub_res_2_string(UnsubscribeAllResult)))});
+		FPubnubOperationResult Result({0, true, FString::Printf(TEXT("Failed to unsubscribe all. Error: %s"), UTF8_TO_TCHAR(pubnub_res_2_string(UnsubscribeAllResult)))});
+		PUBNUB_LOG_OPERATION_RESULT(Result);
+		return Result;
 	}
 
 	CleanUpAllSubscriptions();
-	return FPubnubOperationResult({200, false, ""});
+	FPubnubOperationResult Result({200, false, ""});
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 
@@ -3980,6 +4027,10 @@ void UPubnubClient::SubscribeWithSubscriptionAsync(UPubnubSubscription* Subscrip
 
 FPubnubOperationResult UPubnubClient::SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Subscription),
+		PUBNUB_LOG_VALUE(Cursor)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription, TEXT("Subscription is invalid."));
@@ -3993,11 +4044,12 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscription(UPubnubSubscript
 		{
 			if(!UPubnubInternalUtilities::EESubscribeWithSubscription(Subscription->CCoreSubscription, Cursor))
 			{
-				PubnubError("[SubscribeWithSubscription]: Failed to subscribe with subscription.");
+				PUBNUB_LOG_FUNCTION_ERROR(TEXT("failed to subscribe with subscription."));
 				return false;
 			}
 			return true;
 		});
+	PUBNUB_LOG_OPERATION_RESULT(SubscribeResult);
 
 	if(!SubscribeResult.Error)
 	{
@@ -4029,6 +4081,10 @@ void UPubnubClient::SubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* Su
 
 FPubnubOperationResult UPubnubClient::SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(SubscriptionSet),
+		PUBNUB_LOG_VALUE(Cursor)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet, TEXT("SubscriptionSet is invalid."));
@@ -4042,11 +4098,12 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscriptionSet(UPubnubSubscr
 		{
 			if(!UPubnubInternalUtilities::EESubscribeWithSubscriptionSet(SubscriptionSet->CCoreSubscriptionSet, Cursor))
 			{
-				PubnubError("[SubscribeWithSubscriptionSet]: Failed to subscribe with subscription set.");
+				PUBNUB_LOG_FUNCTION_ERROR(TEXT("failed to subscribe with subscription set."));
 				return false;
 			}
 			return true;
 		});
+	PUBNUB_LOG_OPERATION_RESULT(SubscribeResult);
 
 	if(!SubscribeResult.Error)
 	{
@@ -4078,6 +4135,9 @@ void UPubnubClient::UnsubscribeWithSubscriptionAsync(UPubnubSubscription* Subscr
 
 FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscription(UPubnubSubscription* Subscription)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Subscription)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription, TEXT("Subscription is invalid."));
@@ -4087,12 +4147,16 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscription(UPubnubSubscri
 	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
 	if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscription(&Subscription->CCoreSubscription))
 	{
-		PubnubError("[UnsubscribeWithSubscription]: Failed to unsubscribe with subscription.");
-		return FPubnubOperationResult({0, true, "Failed to unsubscribe with Subscription."});
+		PUBNUB_LOG_FUNCTION_ERROR(TEXT("failed to unsubscribe with subscription."));
+		FPubnubOperationResult Result({0, true, "Failed to unsubscribe with Subscription."});
+		PUBNUB_LOG_OPERATION_RESULT(Result);
+		return Result;
 	}
 
 	Subscription->bIsSubscribed = false;
-	return FPubnubOperationResult({200, false, ""});
+	FPubnubOperationResult Result({200, false, ""});
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 void UPubnubClient::UnsubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* SubscriptionSet, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse)
@@ -4115,6 +4179,9 @@ void UPubnubClient::UnsubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* 
 
 FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(SubscriptionSet)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet, TEXT("SubscriptionSet is invalid."));
@@ -4124,12 +4191,16 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscriptionSet(UPubnubSubs
 	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
 	if(!UPubnubInternalUtilities::EEUnsubscribeWithSubscriptionSet(&SubscriptionSet->CCoreSubscriptionSet))
 	{
-		PubnubError("[UnsubscribeWithSubscriptionSet]: Failed to unsubscribe with subscription set.");
-		return FPubnubOperationResult({0, true, "Failed to unsubscribe with SubscriptionSet."});
+		PUBNUB_LOG_FUNCTION_ERROR(TEXT("failed to unsubscribe with subscription set."));
+		FPubnubOperationResult Result({0, true, "Failed to unsubscribe with SubscriptionSet."});
+		PUBNUB_LOG_OPERATION_RESULT(Result);
+		return Result;
 	}
 
 	SubscriptionSet->bIsSubscribed = false;
-	return FPubnubOperationResult({200, false, ""});
+	FPubnubOperationResult Result({200, false, ""});
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 void UPubnubClient::CleanUpAllSubscriptions()
