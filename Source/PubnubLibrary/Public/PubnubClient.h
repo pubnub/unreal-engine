@@ -8,6 +8,7 @@
 #include "PubnubEnumLibrary.h"
 #include "PubnubSubsystem.h"
 #include "Crypto/PubnubCryptorInterface.h"
+#include "Interfaces/PubnubLoggerInterface.h"
 #include <atomic>
 #include "PubnubClient.generated.h"
 
@@ -21,10 +22,14 @@ class UPubnubChannelEntity;
 class UPubnubChannelGroupEntity;
 class UPubnubChannelMetadataEntity;
 class UPubnubUserMetadataEntity;
+class UPubnubDefaultLogger;
+class UPubnubLogManager;
 struct CCoreSubscriptionCallback;
 
 struct pubnub_;
 typedef struct pubnub_ pubnub_t;
+struct pubnub_logger;
+typedef struct pubnub_logger pubnub_logger_t;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubClientDeinitialized);
@@ -2448,6 +2453,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto")
 	TScriptInterface<IPubnubCryptoProviderInterface> GetCryptoModule();
 
+	/** Registers a custom logger instance for this client. */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Logger")
+	void AddLogger(TScriptInterface<IPubnubLoggerInterface> Logger);
+
+	/** Unregisters a custom logger instance from this client. */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Logger")
+	void RemoveLogger(TScriptInterface<IPubnubLoggerInterface> Logger);
+
+	/** Removes all registered loggers from this client. */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Logger")
+	void ClearLoggers();
+
+	/** Returns all currently registered loggers for this client. */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Logger")
+	TArray<TScriptInterface<IPubnubLoggerInterface>> GetLoggers();
+
+	void LogSDK(EPubnubLogLevel Level, const FString& Message, const FString& Location = "");
+
 #pragma endregion
 
 #pragma region ENTITIES
@@ -2679,6 +2702,9 @@ private:
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
 	void PubnubResponseError(int PubnubResponse, FString ErrorMessage);
 
+	void AttachCCoreLogger();
+	void DetachCCoreLogger();
+
 	
 	void InitPubnub_priv(const FPubnubConfig& Config);
 	void SetUserID_priv(FString UserID);
@@ -2738,6 +2764,14 @@ private:
 	
 	void CleanUpAllSubscriptions();
 	void UnsubscribeAllForDeinit();
+
+	UPROPERTY()
+	TObjectPtr<UPubnubLogManager> LoggerManager = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UPubnubDefaultLogger> DefaultLogger = nullptr;
+
+	pubnub_logger_t* CCoreLogger = nullptr;
 };
 
 

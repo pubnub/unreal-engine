@@ -8,6 +8,31 @@
 
 
 USTRUCT(BlueprintType)
+struct FPubnubLoggerConfig
+{
+	GENERATED_BODY()
+
+	/** If true, the built-in default logger is registered during client initialization. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	bool bEnableDefaultLogger = true;
+
+	/** Minimum level for the built-in default logger for UE SDK log source. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	EPubnubLogLevel DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Warning;
+
+	/** Minimum level for the built-in default logger for C-Core log source. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	EPubnubLogLevel DefaultLoggerMinCCoreLevel = EPubnubLogLevel::PLL_Warning;
+
+	/**
+	 * Additional custom loggers to register during client initialization.
+	 * Each object must implement IPubnubLoggerInterface.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	TArray<UObject*> InitialLoggers;
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubConfig
 {
 	GENERATED_BODY()
@@ -27,6 +52,8 @@ struct FPubnubConfig
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
 	/** If true SecretKey will be set during Initialization phase. Secret key gives user root permissions for Access Manager */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool SetSecretKeyAutomatically = false;
+	/** Logger setup used during client initialization. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger") FPubnubLoggerConfig LoggerConfig;
 	
 };
 
@@ -926,6 +953,33 @@ struct FPubnubOperationResult
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Error = false;
 	/**In case of error should contain useful information about the error */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ErrorMessage = "";
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubLogMessage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	EPubnubLogLevel LogLevel = EPubnubLogLevel::PLL_Info;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	EPubnubLogSource Source = EPubnubLogSource::PLS_UE;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	FString Message = "";
+
+	/** UTC timestamp of the log message. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	FDateTime TimestampUtc = FDateTime::UtcNow();
+
+	/** Optional callsite from which log message was sent. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	FString Callsite = "";
+
+	/** Client ID together with Debug name if specified. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	FString PubnubInstanceID = "";
 };
 
 USTRUCT(BlueprintType)

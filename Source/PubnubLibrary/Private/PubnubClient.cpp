@@ -10,12 +10,15 @@
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "FunctionLibraries/PubnubInternalUtilities.h"
 #include "FunctionLibraries/PubnubTokenUtilities.h"
+#include "PubnubDefaultLogger.h"
+#include "Logging/PubnubLogManager.h"
 #include "Entities/PubnubBaseEntity.h"
 #include "Entities/PubnubChannelEntity.h"
 #include "Entities/PubnubChannelGroupEntity.h"
 #include "Entities/PubnubChannelMetadataEntity.h"
 #include "Entities/PubnubUserMetadataEntity.h"
 #include "Entities/PubnubSubscription.h"
+#include "core/pubnub_logger.h"
 
 
 struct CCoreSubscriptionCallback
@@ -25,64 +28,9 @@ struct CCoreSubscriptionCallback
 };
 
 //TODO:: Move this to logger
-//Logs from C-Core that are false warnings as they are sent during normal C-Core operations flow
-static TArray<FString> FalseCCoreLogPhrases =
-	{
-	"errno=0('No error')",
-	"errno=9('Bad file descriptor')",
-	"errno=2('No such file or directory')",
-	"errno=35('Resource temporarily unavailable')"
-};
-
-//TODO:: Move this to logger
-static bool ShouldCCoreLogBeSkipped(FString Message)
-{
-	for(FString& LogSkipPhrases : FalseCCoreLogPhrases)
-	{
-		if(Message.Contains(LogSkipPhrases))
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-//TODO:: Move this to logger
-static void PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message)
-{
-	//This is temporal solution to skip false warnings from C-Core.
-	//It should be fixed on C-Core level, but until it's done we filter them out here
-	if(ShouldCCoreLogBeSkipped(FString(message)))
-	{
-		return;
-	}
-	
-	switch (log_level)
-	{
-	case pubnub_log_level::PUBNUB_LOG_LEVEL_WARNING:
-		UE_LOG(PubnubLog, Warning, TEXT("%s"), UTF8_TO_TCHAR(message));
-		break;
-	case pubnub_log_level::PUBNUB_LOG_LEVEL_ERROR:
-		UE_LOG(PubnubLog, Error, TEXT("%s"), UTF8_TO_TCHAR(message));
-		break;
-	default:
-		UE_LOG(PubnubLog, Log, TEXT("%s"), UTF8_TO_TCHAR(message));
-		break;
-	};
-}
-
-//TODO:: Move this to logger
 void UPubnubClient::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType)
 {
-	//Log and broadcast error message
-	if(ErrorType == EPubnubErrorType::PET_Error)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("%s"), *ErrorMessage);
-	}
-	else
-	{
-		UE_LOG(PubnubLog, Warning, TEXT("%s"), *ErrorMessage);
-	}
+	LogSDK(ErrorType == EPubnubErrorType::PET_Error ? EPubnubLogLevel::PLL_Error : EPubnubLogLevel::PLL_Warning, ErrorMessage);
 
 	TWeakObjectPtr<UPubnubClient> WeakThis = MakeWeakObjectPtr<UPubnubClient>(this);
 
@@ -105,7 +53,7 @@ void UPubnubClient::PubnubResponseError(int PubnubResponse, FString ErrorMessage
 	FString ResponseString(pubnub_res_2_string(static_cast<pubnub_res>(PubnubResponse)));
 	FString FinalErrorMessage = FString::Printf(TEXT("%s Error: %s."), *ErrorMessage, *ResponseString);
 
-	PubnubError(FinalErrorMessage,EPubnubErrorType::PET_Error);
+	PubnubError(FinalErrorMessage, EPubnubErrorType::PET_Error);
 }
 
 void UPubnubClient::DestroyClient()
@@ -139,6 +87,22 @@ void UPubnubClient::SetSecretKey()
 
 FPubnubPublishMessageResult UPubnubClient::PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
 {
+	LogSDK(
+		EPubnubLogLevel::PLL_Trace,
+		FString::Printf(
+			TEXT("PublishMessage called. Channel='%s', MessageLength=%d, StoreInHistory=%s, Replicate=%s, PublishMethod=%d, Ttl=%d, CustomMessageType='%s', MetaLength=%d"),
+			*Channel,
+			Message.Len(),
+			PublishSettings.StoreInHistory ? TEXT("true") : TEXT("false"),
+			PublishSettings.Replicate ? TEXT("true") : TEXT("false"),
+			static_cast<int32>(PublishSettings.PublishMethod),
+			PublishSettings.Ttl,
+			*PublishSettings.CustomMessageType,
+			PublishSettings.MetaData.Len()
+		),
+		TEXT("PublishMessage")
+	);
+
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubPublishMessageResult());
 	
 	return PublishMessage_priv(Channel, Message, PublishSettings);
@@ -1908,6 +1872,109 @@ TScriptInterface<IPubnubCryptoProviderInterface> UPubnubClient::GetCryptoModule(
 	return nullptr;
 }
 
+void UPubnubClient::AddLogger(TScriptInterface<IPubnubLoggerInterface> Logger)
+{
+	if (!LoggerManager)
+	{
+		return;
+	}
+	LoggerManager->AddLogger(Logger);
+}
+
+void UPubnubClient::RemoveLogger(TScriptInterface<IPubnubLoggerInterface> Logger)
+{
+	if (!LoggerManager)
+	{
+		return;
+	}
+	LoggerManager->RemoveLogger(Logger);
+}
+
+void UPubnubClient::ClearLoggers()
+{
+	if (!LoggerManager)
+	{
+		return;
+	}
+	LoggerManager->ClearLoggers();
+}
+
+TArray<TScriptInterface<IPubnubLoggerInterface>> UPubnubClient::GetLoggers()
+{
+	if (!LoggerManager)
+	{
+		return {};
+	}
+	return LoggerManager->GetLoggers();
+}
+
+void UPubnubClient::LogSDK(EPubnubLogLevel Level, const FString& Message, const FString& Location)
+{
+	if (LoggerManager)
+	{
+		LoggerManager->Log(Level, EPubnubLogSource::PLS_UE, Message, Location);
+		return;
+	}
+
+	if (Level == EPubnubLogLevel::PLL_Error)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("%s"), *Message);
+	}
+	else if (Level == EPubnubLogLevel::PLL_Warning)
+	{
+		UE_LOG(PubnubLog, Warning, TEXT("%s"), *Message);
+	}
+	else
+	{
+		UE_LOG(PubnubLog, Log, TEXT("%s"), *Message);
+	}
+}
+
+void UPubnubClient::AttachCCoreLogger()
+{
+	if (!ctx_pub || !ctx_ee || CCoreLogger || !LoggerManager)
+	{
+		return;
+	}
+
+	CCoreLogger = pubnub_logger_alloc(&UPubnubLogManager::GetCCoreLoggerInterface(), LoggerManager);
+	if (!CCoreLogger)
+	{
+		LogSDK(EPubnubLogLevel::PLL_Error, TEXT("Failed to allocate C-Core logger interface."));
+		return;
+	}
+
+	const int AddResultPub = pubnub_logger_add(ctx_pub, CCoreLogger);
+	const int AddResultEe = pubnub_logger_add(ctx_ee, CCoreLogger);
+	if (AddResultPub != 0 || AddResultEe != 0)
+	{
+		LogSDK(EPubnubLogLevel::PLL_Warning, TEXT("Failed to attach C-Core logger to one or more contexts."));
+	}
+
+	// Capture full C-Core logs and apply per-logger C-Core filtering in LoggerManager.
+	pubnub_logger_set_log_level(ctx_pub, PUBNUB_LOG_LEVEL_TRACE);
+	pubnub_logger_set_log_level(ctx_ee, PUBNUB_LOG_LEVEL_TRACE);
+}
+
+void UPubnubClient::DetachCCoreLogger()
+{
+	if (!CCoreLogger)
+	{
+		return;
+	}
+
+	if (ctx_pub)
+	{
+		pubnub_logger_remove(ctx_pub, CCoreLogger);
+	}
+	if (ctx_ee)
+	{
+		pubnub_logger_remove(ctx_ee, CCoreLogger);
+	}
+
+	pubnub_logger_free(&CCoreLogger);
+}
+
 UPubnubChannelEntity* UPubnubClient::CreateChannelEntity(FString Channel)
 {
 	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
@@ -2047,6 +2114,50 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 	ClientID = InClientID;
 	DebugName = InDebugName;
 
+	LoggerManager = NewObject<UPubnubLogManager>(this);
+	if (LoggerManager)
+	{
+		const FString EmitterID = DebugName.IsEmpty()
+			? FString::Printf(TEXT("PubNub-%d"), ClientID)
+			: FString::Printf(TEXT("PubNub-%d(\"%s\")"), ClientID, *DebugName);
+		LoggerManager->SetUESdkEmitterID(EmitterID);
+
+		if (InConfig.LoggerConfig.bEnableDefaultLogger)
+		{
+			DefaultLogger = NewObject<UPubnubDefaultLogger>(this);
+			if (DefaultLogger)
+			{
+				IPubnubLoggerInterface::Execute_SetMinimumLogLevel(DefaultLogger, InConfig.LoggerConfig.DefaultLoggerMinLevel);
+				IPubnubLoggerInterface::Execute_SetMinimumCCoreLogLevel(DefaultLogger, InConfig.LoggerConfig.DefaultLoggerMinCCoreLevel);
+
+				TScriptInterface<IPubnubLoggerInterface> DefaultLoggerInterface;
+				DefaultLoggerInterface.SetObject(DefaultLogger);
+				DefaultLoggerInterface.SetInterface(Cast<IPubnubLoggerInterface>(DefaultLogger));
+				LoggerManager->AddLogger(DefaultLoggerInterface);
+			}
+		}
+
+		for (UObject* LoggerObject : InConfig.LoggerConfig.InitialLoggers)
+		{
+			if (!LoggerObject)
+			{
+				continue;
+			}
+
+			if (!LoggerObject->GetClass()->ImplementsInterface(UPubnubLoggerInterface::StaticClass()))
+			{
+				LogSDK(EPubnubLogLevel::PLL_Warning, TEXT("Skipping logger registration because object does not implement IPubnubLoggerInterface."), TEXT("InitWithConfig"));
+				continue;
+			}
+
+			TScriptInterface<IPubnubLoggerInterface> LoggerInterface;
+			LoggerInterface.SetObject(LoggerObject);
+			LoggerInterface.SetInterface(Cast<IPubnubLoggerInterface>(LoggerObject));
+			LoggerManager->AddLogger(LoggerInterface);
+		}
+	}
+
+	LogSDK(EPubnubLogLevel::PLL_Debug, TEXT("Initializing Pubnub client."), TEXT("InitWithConfig"));
 	SavePubnubConfig(InConfig);
 	
 	InitPubnub_priv(InConfig);
@@ -2073,6 +2184,8 @@ void UPubnubClient::DeinitializeClient()
 {
 	if(!IsInitialized.load(std::memory_order_acquire))
 	{return;}
+
+	LogSDK(EPubnubLogLevel::PLL_Debug, TEXT("Deinitializing Pubnub client."), TEXT("DeinitializeClient"));
 
 	CancelPendingSubscriptionOperation(TEXT("Subscription operation cancelled because PubnubClient is being deinitialized."));
 
@@ -2101,10 +2214,16 @@ void UPubnubClient::DeinitializeClient()
 		{
 			CryptoBridge->CleanUpCryptoBridge();
 		}
-
-		//Clean up C-core pubnub contexts
+		
+		//Clean up and free C-Core contexts
+		pubnub_cancel(ctx_ee);
+		pubnub_cancel(ctx_pub);
+		pubnub_await(ctx_pub);
 		pubnub_free(ctx_pub);
-		pubnub_free(ctx_ee);
+		pubnub_free_with_timeout(ctx_ee, 2000);
+		
+		pubnub_logger_free(&CCoreLogger);
+		
 		ctx_pub = nullptr;
 		ctx_ee = nullptr;
 	}
@@ -2121,6 +2240,9 @@ void UPubnubClient::DeinitializeClient()
 
 	//Notify that Deinitialization is finished
 	OnClientDeinitialized.Broadcast();
+
+	DefaultLogger = nullptr;
+	LoggerManager = nullptr;
 }
 
 void UPubnubClient::DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages)
@@ -2340,15 +2462,13 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	
 	ctx_pub = pubnub_alloc();
 	ctx_ee = pubnub_alloc();
-
-	//Send logging callback to Pubnub sdk, so we can pass all logs to UE
-	//pubnub_set_log_callback(PubnubSDKLogConverter);
 	
 	pubnub_enforce_api(ctx_pub, PNA_SYNC);
 	pubnub_enforce_api(ctx_ee, PNA_CALLBACK);
 
 	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
 	pubnub_init(ctx_ee, PublishKey, SubscribeKey);
+	AttachCCoreLogger();
 
 	pubnub_subscribe_status_callback_t Callback = +[](const pubnub_t *pb, const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data, void* _data)
 	{
@@ -2413,6 +2533,17 @@ void UPubnubClient::SetSecretKey_priv()
 
 FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
 {
+	LogSDK(
+		EPubnubLogLevel::PLL_Debug,
+		FString::Printf(
+			TEXT("PublishMessage_priv started. Channel='%s', RawMessageLength=%d, MetaLength=%d"),
+			*Channel,
+			Message.Len(),
+			PublishSettings.MetaData.Len()
+		),
+		TEXT("PublishMessage_priv")
+	);
+
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubPublishMessageResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubPublishMessageResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Message, FPubnubPublishMessageResult());
@@ -2425,6 +2556,7 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
 	{
 		FinalMessage = UPubnubJsonUtilities::SerializeString(FinalMessage);
+		LogSDK(EPubnubLogLevel::PLL_Trace, TEXT("PublishMessage_priv serialized non-JSON message payload."), TEXT("PublishMessage_priv"));
 	}
 
 	FUTF8StringHolder MessageHolder(FinalMessage);
@@ -2454,6 +2586,18 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 	PublishResult.Status = pubnub_last_http_code(ctx_pub);
 	PublishResult.ErrorMessage = pubnub_last_publish_result(ctx_pub);
 	PublishResult.Error = PublishResultStatus != PNR_OK;
+
+	LogSDK(
+		EPubnubLogLevel::PLL_Debug,
+		FString::Printf(
+			TEXT("PublishMessage_priv completed. Channel='%s', HttpStatus=%d, ResultCode=%s, Error=%s"),
+			*Channel,
+			PublishResult.Status,
+			UTF8_TO_TCHAR(pubnub_res_2_string(PublishResultStatus)),
+			PublishResult.Error ? TEXT("true") : TEXT("false")
+		),
+		TEXT("PublishMessage_priv")
+	);
 
 	//In case error message is empty, we just put status there, it might be more useful than nothing
 	if(PublishResult.ErrorMessage.IsEmpty())

@@ -33,6 +33,24 @@ enum class EPubnubErrorType : uint8
 };
 
 UENUM(BlueprintType)
+enum class EPubnubLogLevel : uint8
+{
+	PLL_Trace		UMETA(DisplayName="Trace"),
+	PLL_Debug		UMETA(DisplayName="Debug"),
+	PLL_Info		UMETA(DisplayName="Info"),
+	PLL_Warning		UMETA(DisplayName="Warning"),
+	PLL_Error		UMETA(DisplayName="Error"),
+	PLL_None		UMETA(DisplayName="None")
+};
+
+UENUM(BlueprintType)
+enum class EPubnubLogSource : uint8
+{
+	PLS_UE			UMETA(DisplayName="UE"),
+	PLS_CCore		UMETA(DisplayName="CCore")
+};
+
+UENUM(BlueprintType)
 enum class EPubnubMessageType : uint8
 {
 	/* Indicates that message was received as a signal */ 
