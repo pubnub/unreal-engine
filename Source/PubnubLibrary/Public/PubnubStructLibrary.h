@@ -22,7 +22,7 @@ struct FPubnubLoggerConfig
 
 	/** Minimum level for the built-in default logger for C-Core log source. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
-	EPubnubLogLevel DefaultLoggerMinCCoreLevel = EPubnubLogLevel::PLL_Warning;
+	EPubnubLogLevel DefaultLoggerMinCCoreLevel = EPubnubLogLevel::PLL_None;
 
 	/**
 	 * Additional custom loggers to register during client initialization.

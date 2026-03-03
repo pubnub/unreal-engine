@@ -1886,10 +1886,12 @@ FPubnubOperationResult UPubnubClient::DisconnectSubscriptions()
 
 void UPubnubClient::SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	// Clean up previous crypto bridge if it was already set.
 	if(CryptoBridge)
 	{
 		CryptoBridge->CleanUpCryptoBridge();
+		PUBNUB_LOG_FUNCTION_TRACE(TEXT("previous crypto bridge cleaned up."));
 	}
 
 	// If empty object is given, just clean up the module
@@ -1899,6 +1901,7 @@ void UPubnubClient::SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterf
 		pubnub_set_crypto_module(ctx_pub, nullptr);
 		pubnub_set_crypto_module(ctx_ee, nullptr);
 		CryptoBridge = nullptr;
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("crypto module cleared from contexts."));
 	}
 	else
 	{
@@ -1907,16 +1910,20 @@ void UPubnubClient::SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterf
 
 		pubnub_set_crypto_module(ctx_pub, CryptoBridge->GetProvider());
 		pubnub_set_crypto_module(ctx_ee, CryptoBridge->GetProvider());
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("crypto module applied to pub and ee contexts."));
 	}
 }
 
 TScriptInterface<IPubnubCryptoProviderInterface> UPubnubClient::GetCryptoModule()
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	if(CryptoBridge)
 	{
+		PUBNUB_LOG_FUNCTION_TRACE(TEXT("crypto module is available."));
 		return CryptoBridge->GetUECryptoModule();
 	}
 
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("crypto module is not set."));
 	return nullptr;
 }
 
@@ -1980,15 +1987,17 @@ void UPubnubClient::LogSDK(EPubnubLogLevel Level, const FString& Message, const 
 
 void UPubnubClient::AttachCCoreLogger()
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	if (!ctx_pub || !ctx_ee || CCoreLogger || !LoggerManager)
 	{
+		PUBNUB_LOG_FUNCTION_TRACE(TEXT("skipping C-Core logger attach due to missing context/manager or already attached logger."));
 		return;
 	}
 
 	CCoreLogger = pubnub_logger_alloc(&UPubnubLogManager::GetCCoreLoggerInterface(), LoggerManager);
 	if (!CCoreLogger)
 	{
-		LogSDK(EPubnubLogLevel::PLL_Error, TEXT("Failed to allocate C-Core logger interface."));
+		PUBNUB_LOG_FUNCTION_ERROR(TEXT("failed to allocate C-Core logger interface."));
 		return;
 	}
 
@@ -1996,18 +2005,21 @@ void UPubnubClient::AttachCCoreLogger()
 	const int AddResultEe = pubnub_logger_add(ctx_ee, CCoreLogger);
 	if (AddResultPub != 0 || AddResultEe != 0)
 	{
-		LogSDK(EPubnubLogLevel::PLL_Warning, TEXT("Failed to attach C-Core logger to one or more contexts."));
+		PUBNUB_LOG_FUNCTION_WARNING(TEXT("failed to attach C-Core logger to one or more contexts."));
 	}
 
 	// Capture full C-Core logs and apply per-logger C-Core filtering in LoggerManager.
 	pubnub_logger_set_log_level(ctx_pub, PUBNUB_LOG_LEVEL_TRACE);
 	pubnub_logger_set_log_level(ctx_ee, PUBNUB_LOG_LEVEL_TRACE);
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core logger attached and set to TRACE level."));
 }
 
 void UPubnubClient::DetachCCoreLogger()
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	if (!CCoreLogger)
 	{
+		PUBNUB_LOG_FUNCTION_TRACE(TEXT("no C-Core logger to detach."));
 		return;
 	}
 
@@ -2021,61 +2033,75 @@ void UPubnubClient::DetachCCoreLogger()
 	}
 
 	pubnub_logger_free(&CCoreLogger);
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core logger detached and freed."));
 }
 
 UPubnubChannelEntity* UPubnubClient::CreateChannelEntity(FString Channel)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
 	
 	UPubnubChannelEntity* ChannelEntity = NewObject<UPubnubChannelEntity>(this);
 	ChannelEntity->InitEntity(this);
 	ChannelEntity->EntityID = Channel;
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channel entity created for '%s'."), *Channel));
 	return ChannelEntity;
 }
 
 UPubnubChannelGroupEntity* UPubnubClient::CreateChannelGroupEntity(FString ChannelGroup)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelGroup, nullptr);
 	
 	UPubnubChannelGroupEntity* ChannelGroupEntity = NewObject<UPubnubChannelGroupEntity>(this);
 	ChannelGroupEntity->InitEntity(this);
 	ChannelGroupEntity->EntityID = ChannelGroup;
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channel group entity created for '%s'."), *ChannelGroup));
 	return ChannelGroupEntity;
 }
 
 UPubnubChannelMetadataEntity* UPubnubClient::CreateChannelMetadataEntity(FString Channel)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
 	
 	UPubnubChannelMetadataEntity* ChannelMetadataEntity = NewObject<UPubnubChannelMetadataEntity>(this);
 	ChannelMetadataEntity->InitEntity(this);
 	ChannelMetadataEntity->EntityID = Channel;
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channel metadata entity created for '%s'."), *Channel));
 	return ChannelMetadataEntity;
 }
 
 UPubnubUserMetadataEntity* UPubnubClient::CreateUserMetadataEntity(FString User)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_IF_FIELD_EMPTY(User, nullptr);
 	
 	UPubnubUserMetadataEntity* UserMetadataEntity = NewObject<UPubnubUserMetadataEntity>(this);
 	UserMetadataEntity->InitEntity(this);
 	UserMetadataEntity->EntityID = User;
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("user metadata entity created for '%s'."), *User));
 	return UserMetadataEntity;
 }
 
 UPubnubSubscriptionSet* UPubnubClient::CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("CreateSubscriptionSet inputs: ChannelsCount=%d, ChannelGroupsCount=%d"), Channels.Num(), ChannelGroups.Num()));
 	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
 	{
 		PubnubError("[CreateSubscriptionSet]: at least one Channel or ChannelGroup is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
 	}
 	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
 	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("subscription set created."));
 	return SubscriptionSet;
 }
 
 UPubnubSubscriptionSet* UPubnubClient::CreateSubscriptionSetFromEntities(TArray<UPubnubBaseEntity*> Entities, FPubnubSubscribeSettings SubscriptionSettings)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("CreateSubscriptionSetFromEntities inputs: EntitiesCount=%d"), Entities.Num()));
 	if(Entities.IsEmpty())
 	{
 		PubnubError("[CreateSubscriptionSetFromEntities]: at least one Entity is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
@@ -2090,6 +2116,7 @@ UPubnubSubscriptionSet* UPubnubClient::CreateSubscriptionSetFromEntities(TArray<
 	
 	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
 	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("subscription set created from entities. ChannelsCount=%d, ChannelGroupsCount=%d"), Channels.Num(), ChannelGroups.Num()));
 	return SubscriptionSet;
 }
 
@@ -2194,7 +2221,7 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 
 			if (!LoggerObject->GetClass()->ImplementsInterface(UPubnubLoggerInterface::StaticClass()))
 			{
-				LogSDK(EPubnubLogLevel::PLL_Warning, TEXT("Skipping logger registration because object does not implement IPubnubLoggerInterface."), TEXT("InitWithConfig"));
+				PUBNUB_LOG_FUNCTION_WARNING(TEXT("Skipping logger registration because object does not implement IPubnubLoggerInterface."));
 				continue;
 			}
 
@@ -2204,8 +2231,9 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 			LoggerManager->AddLogger(LoggerInterface);
 		}
 	}
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("loggers initialized. ClientID=%d, DebugName=%s, Config=%s"), ClientID, *DebugName, *UPubnubLogUtilities::LogToString(InConfig)));
 
-	LogSDK(EPubnubLogLevel::PLL_Debug, TEXT("Initializing Pubnub client."), TEXT("InitWithConfig"));
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("initializing pubnub client."));
 	SavePubnubConfig(InConfig);
 	
 	InitPubnub_priv(InConfig);
@@ -2215,6 +2243,7 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 	{
 		//Create new thread to queue all pubnub operations
 		PubnubCallsThread = new FPubnubFunctionThread;
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("pubnub calls thread created."));
 	}
 }
 
@@ -2230,16 +2259,18 @@ void UPubnubClient::BeginDestroy()
 
 void UPubnubClient::DeinitializeClient()
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	if(!IsInitialized.load(std::memory_order_acquire))
 	{return;}
 
-	LogSDK(EPubnubLogLevel::PLL_Debug, TEXT("Deinitializing Pubnub client."), TEXT("DeinitializeClient"));
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("deinitializing pubnub client."));
 
 	CancelPendingSubscriptionOperation(TEXT("Subscription operation cancelled because PubnubClient is being deinitialized."));
 
 	if(PubnubCallsThread)
 	{
 		PubnubCallsThread->Stop();
+		PUBNUB_LOG_FUNCTION_TRACE(TEXT("pubnub calls thread stopped."));
 	}
 
 	{
@@ -2267,6 +2298,7 @@ void UPubnubClient::DeinitializeClient()
 		pubnub_cancel(ctx_ee);
 		pubnub_cancel(ctx_pub);
 		pubnub_await(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(TEXT("C-Core contexts cancelled and await completed."));
 		pubnub_free(ctx_pub);
 		pubnub_free_with_timeout(ctx_ee, 2000);
 		
@@ -2274,6 +2306,7 @@ void UPubnubClient::DeinitializeClient()
 		
 		ctx_pub = nullptr;
 		ctx_ee = nullptr;
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core contexts freed."));
 	}
 	
 	IsUserIDSet = false;
@@ -2288,6 +2321,7 @@ void UPubnubClient::DeinitializeClient()
 
 	//Notify that Deinitialization is finished
 	OnClientDeinitialized.Broadcast();
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("client deinitialization finished."));
 
 	DefaultLogger = nullptr;
 	LoggerManager = nullptr;
@@ -2330,12 +2364,15 @@ FPubnubOperationResult UPubnubClient::ExecuteSerializedSubscriptionOperation(con
 	FEvent* CompletionEvent = FPlatformProcess::GetSynchEventFromPool(false);
 	const int32 OperationId = NextSubscriptionOperationId++;
 	ActivatePendingSubscriptionOperation(CompletionEvent, OperationId);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("subscription operation started. OperationId=%d"), OperationId));
 
 	if(!StartOperation())
 	{
 		ClearPendingSubscriptionOperation();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult({0, true, StartFailureMessage});
+		FPubnubOperationResult Result({0, true, StartFailureMessage});
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("subscription operation start failed. OperationId=%d, Error=%s"), OperationId, *StartFailureMessage));
+		return Result;
 	}
 
 	const bool bCompleted = CompletionEvent->Wait(SubscriptionOperationTimeout);
@@ -2343,7 +2380,9 @@ FPubnubOperationResult UPubnubClient::ExecuteSerializedSubscriptionOperation(con
 	{
 		ClearPendingSubscriptionOperation();
 		FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
-		return FPubnubOperationResult({408, true, TimeoutMessage});
+		FPubnubOperationResult Result({408, true, TimeoutMessage});
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("subscription operation timed out. OperationId=%d, Error=%s"), OperationId, *TimeoutMessage));
+		return Result;
 	}
 
 	FPubnubOperationResult OperationResult;
@@ -2354,6 +2393,8 @@ FPubnubOperationResult UPubnubClient::ExecuteSerializedSubscriptionOperation(con
 
 	ClearPendingSubscriptionOperation();
 	FPlatformProcess::ReturnSynchEventToPool(CompletionEvent);
+	PUBNUB_LOG_OPERATION_RESULT(OperationResult);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("subscription operation completed. OperationId=%d"), OperationId));
 	return OperationResult;
 }
 
@@ -2402,6 +2443,7 @@ void UPubnubClient::CancelPendingSubscriptionOperation(const FString& CancelReas
 
 void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData)
 {
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("called. StatusEnum=%d"), StatusEnum));
 	//Cast data back to C-Core types
 	pubnub_subscription_status status = static_cast<pubnub_subscription_status>(StatusEnum);
 	const pubnub_subscription_status_data_t* status_data = static_cast<const pubnub_subscription_status_data_t*>(StatusData);
@@ -2411,6 +2453,14 @@ void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void
 	Result.Status = Result.Error ? 503 : 200;
 	Result.ErrorMessage = status_data ? FString(pubnub_res_2_string(status_data->reason)) : TEXT("No status data.");
 	CompletePendingSubscriptionOperation(Result);
+	if (Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("subscription status processed. Status=%d, Reason=%s"), StatusEnum, *Result.ErrorMessage));
+	}
+	else
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("subscription status processed. Status=%d, Reason=%s"), StatusEnum, *Result.ErrorMessage));
+	}
 	
 	//Don't waste resources to translate data if there is no delegate bound to it
 	if(!OnSubscriptionStatusChanged.IsBound() && !OnSubscriptionStatusChangedNative.IsBound())
@@ -2436,6 +2486,7 @@ void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void
 			ChannelGroups.ParseIntoArray(SubscriptionStatusData.ChannelGroups, TEXT(","));
 		}
 	}
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("subscription status payload parsed. ChannelsCount=%d, ChannelGroupsCount=%d"), SubscriptionStatusData.Channels.Num(), SubscriptionStatusData.ChannelGroups.Num()));
 
 	//Call SubscriptionStatusChanged delegates 
 	OnSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
@@ -2490,6 +2541,7 @@ FString UPubnubClient::GetLastChannelResponse(pubnub_t* context)
 
 void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	if(IsInitialized)
 	{return;}
 	
@@ -2510,12 +2562,14 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	
 	ctx_pub = pubnub_alloc();
 	ctx_ee = pubnub_alloc();
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("C-Core contexts allocated."));
 	
 	pubnub_enforce_api(ctx_pub, PNA_SYNC);
 	pubnub_enforce_api(ctx_ee, PNA_CALLBACK);
 
 	pubnub_init(ctx_pub, PublishKey, SubscribeKey);
 	pubnub_init(ctx_ee, PublishKey, SubscribeKey);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("C-Core contexts initialized."));
 	AttachCCoreLogger();
 
 	pubnub_subscribe_status_callback_t Callback = +[](const pubnub_t *pb, const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data, void* _data)
@@ -2528,6 +2582,7 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	};
 	//Register subscription status listener with callback created above
 	pubnub_subscribe_add_status_listener(ctx_ee, Callback, this);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("subscription status listener registered."));
 	
 	IsInitialized = true;
 
@@ -2542,6 +2597,7 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	}
 	
 	PubnubOperationMutex.Unlock();
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("InitPubnub_priv finished successfully."));
 }
 
 void UPubnubClient::SetUserID_priv(FString UserID)
