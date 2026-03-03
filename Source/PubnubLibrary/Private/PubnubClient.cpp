@@ -67,6 +67,7 @@ void UPubnubClient::DestroyClient()
 void UPubnubClient::SetUserID(FString UserID)
 {
 	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 
 	SetUserID_priv(UserID);
 }
@@ -74,6 +75,7 @@ void UPubnubClient::SetUserID(FString UserID)
 FString UPubnubClient::GetUserID()
 {
 	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED("");
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 
 	return GetUserID_priv();
 }
@@ -81,6 +83,7 @@ FString UPubnubClient::GetUserID()
 void UPubnubClient::SetSecretKey()
 {
 	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 
 	SetSecretKey_priv();
 }
@@ -140,6 +143,7 @@ void UPubnubClient::PublishMessageAsync(FString Channel, FString Message, FPubnu
 FPubnubSignalResult UPubnubClient::Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubSignalResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return Signal_priv(Channel, Message, SignalSettings);
 }
@@ -386,6 +390,7 @@ void UPubnubClient::UnsubscribeFromAllAsync(FOnPubnubSubscribeOperationResponseN
 FPubnubOperationResult UPubnubClient::AddChannelToGroup(FString Channel, FString ChannelGroup)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return AddChannelToGroup_priv(Channel, ChannelGroup);
 }
@@ -421,6 +426,7 @@ void UPubnubClient::AddChannelToGroupAsync(FString Channel, FString ChannelGroup
 FPubnubOperationResult UPubnubClient::RemoveChannelFromGroup(FString Channel, FString ChannelGroup)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveChannelFromGroup_priv(Channel, ChannelGroup);
 }
@@ -456,6 +462,7 @@ void UPubnubClient::RemoveChannelFromGroupAsync(FString Channel, FString Channel
 FPubnubListChannelsFromGroupResult UPubnubClient::ListChannelsFromGroup(FString ChannelGroup)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubListChannelsFromGroupResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return ListChannelsFromGroup_priv(ChannelGroup);
 }
@@ -492,6 +499,7 @@ void UPubnubClient::ListChannelsFromGroupAsync(FString ChannelGroup, FOnPubnubLi
 FPubnubOperationResult UPubnubClient::RemoveChannelGroup(FString ChannelGroup)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveChannelGroup_priv(ChannelGroup);
 }
@@ -527,6 +535,7 @@ void UPubnubClient::RemoveChannelGroupAsync(FString ChannelGroup, FOnPubnubRemov
 FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubListUsersFromChannelResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return ListUsersFromChannel_priv(Channel, ListUsersFromChannelSettings);
 }
@@ -563,6 +572,7 @@ void UPubnubClient::ListUsersFromChannelAsync(FString Channel, FOnPubnubListUser
 FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChannels(FString UserID)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubListUsersSubscribedChannelsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return ListUserSubscribedChannels_priv(UserID);
 }
@@ -599,6 +609,7 @@ void UPubnubClient::ListUserSubscribedChannelsAsync(FString UserID, FOnPubnubLis
 FPubnubOperationResult UPubnubClient::SetState(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetState_priv(Channel, StateJson, SetStateSettings);
 }
@@ -649,6 +660,7 @@ void UPubnubClient::SetStateAsync(FString Channel, FString StateJson, FPubnubSet
 FPubnubGetStateResult UPubnubClient::GetState(FString Channel, FString ChannelGroup, FString UserID)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetStateResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetState_priv(Channel, ChannelGroup, UserID);
 }
@@ -685,6 +697,7 @@ void UPubnubClient::GetStateAsync(FString Channel, FString ChannelGroup, FString
 FPubnubOperationResult UPubnubClient::Heartbeat(FString Channel, FString ChannelGroup)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return Heartbeat_priv(Channel, ChannelGroup);
 }
@@ -707,6 +720,7 @@ void UPubnubClient::HeartbeatAsync(FString Channel, FString ChannelGroup)
 FPubnubGrantTokenResult UPubnubClient::GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGrantTokenResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GrantToken_priv(UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(Ttl, AuthorizedUser, Permissions, Meta));
 }
@@ -743,6 +757,7 @@ void UPubnubClient::GrantTokenAsync(int Ttl, FString AuthorizedUser, const FPubn
 FPubnubOperationResult UPubnubClient::RevokeToken(FString Token)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RevokeToken_priv(Token);
 }
@@ -778,6 +793,7 @@ void UPubnubClient::RevokeTokenAsync(FString Token, FOnPubnubRevokeTokenResponse
 FString UPubnubClient::ParseToken(FString Token)
 {
 	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED("");
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 
 	return ParseToken_priv(Token);
 }
@@ -785,6 +801,7 @@ FString UPubnubClient::ParseToken(FString Token)
 void UPubnubClient::SetAuthToken(FString Token)
 {
 	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 
 	SetAuthToken_priv(Token);
 }
@@ -792,6 +809,7 @@ void UPubnubClient::SetAuthToken(FString Token)
 int UPubnubClient::SetOrigin(FString Origin)
 {
 	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED(-1);
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 
 	return SetOrigin_priv(Origin);
 }
@@ -804,6 +822,7 @@ FString UPubnubClient::GetOrigin() const
 FPubnubFetchHistoryResult UPubnubClient::FetchHistory(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubFetchHistoryResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return FetchHistory_priv(Channel, FetchHistorySettings);
 }
@@ -840,6 +859,7 @@ void UPubnubClient::FetchHistoryAsync(FString Channel, FOnPubnubFetchHistoryResp
 FPubnubOperationResult UPubnubClient::DeleteMessages(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return DeleteMessages_priv(Channel, DeleteMessagesSettings);
 }
@@ -891,6 +911,7 @@ void UPubnubClient::DeleteMessagesAsync(FString Channel, FPubnubDeleteMessagesSe
 FPubnubMessageCountsResult UPubnubClient::MessageCounts(FString Channel, FString Timetoken)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMessageCountsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return MessageCounts_priv(Channel, Timetoken);
 }
@@ -927,6 +948,7 @@ void UPubnubClient::MessageCountsAsync(FString Channel, FString Timetoken, FOnPu
 FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple(TArray<FString> Channels, TArray<FString> Timetokens)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMessageCountsMultipleResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return MessageCountsMultiple_priv(Channels, Timetokens);
 }
@@ -986,6 +1008,7 @@ void UPubnubClient::MessageCountsMultipleAsync(TArray<FString> Channels, TArray<
 FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadataRaw(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllUserMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetAllUserMetadata_priv(Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
@@ -1021,6 +1044,7 @@ void UPubnubClient::GetAllUserMetadataRawAsync(FOnPubnubGetAllUserMetadataRespon
 FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata(FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FPubnubPage Page)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllUserMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetAllUserMetadata_priv(UPubnubUtilities::GetAllIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::GetAllSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
@@ -1038,6 +1062,7 @@ void UPubnubClient::GetAllUserMetadataAsync(FOnPubnubGetAllUserMetadataResponseN
 FPubnubUserMetadataResult UPubnubClient::SetUserMetadataRaw(FString User, FString UserMetadataObj, FString Include)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetUserMetadata_priv(User, UserMetadataObj, Include);
 }
@@ -1073,6 +1098,7 @@ void UPubnubClient::SetUserMetadataRawAsync(FString User, FString UserMetadataOb
 FPubnubUserMetadataResult UPubnubClient::SetUserMetadata(FString User, FPubnubUserInputData UserMetadata, FPubnubGetMetadataInclude Include)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetUserMetadata_priv(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserMetadata), UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
@@ -1090,6 +1116,7 @@ void UPubnubClient::SetUserMetadataAsync(FString User, FPubnubUserInputData User
 FPubnubUserMetadataResult UPubnubClient::GetUserMetadataRaw(FString User, FString Include)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetUserMetadata_priv(User, Include);
 }
@@ -1125,6 +1152,7 @@ void UPubnubClient::GetUserMetadataRawAsync(FString User, FOnPubnubGetUserMetada
 FPubnubUserMetadataResult UPubnubClient::GetUserMetadata(FString User, FPubnubGetMetadataInclude Include)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetUserMetadata_priv(User, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
@@ -1143,6 +1171,7 @@ void UPubnubClient::GetUserMetadataAsync(FString User, FOnPubnubGetUserMetadataR
 FPubnubOperationResult UPubnubClient::RemoveUserMetadata(FString User)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveUserMetadata_priv(User);
 }
@@ -1178,6 +1207,7 @@ void UPubnubClient::RemoveUserMetadataAsync(FString User, FOnPubnubRemoveUserMet
 FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadataRaw(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllChannelMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetAllChannelMetadata_priv(Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
@@ -1213,6 +1243,7 @@ void UPubnubClient::GetAllChannelMetadataRawAsync(FOnPubnubGetAllChannelMetadata
 FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata(FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FPubnubPage Page)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllChannelMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetAllChannelMetadata_priv(UPubnubUtilities::GetAllIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::GetAllSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
@@ -1230,6 +1261,7 @@ void UPubnubClient::GetAllChannelMetadataAsync(FOnPubnubGetAllChannelMetadataRes
 FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FString Include)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetChannelMetadata_priv(Channel, ChannelMetadataObj, Include);
 }
@@ -1265,6 +1297,7 @@ void UPubnubClient::SetChannelMetadataRawAsync(FString Channel, FString ChannelM
 FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata(FString Channel, FPubnubChannelInputData ChannelMetadata, FPubnubGetMetadataInclude Include)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetChannelMetadata_priv(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelMetadata), UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
@@ -1282,6 +1315,7 @@ void UPubnubClient::SetChannelMetadataAsync(FString Channel, FPubnubChannelInput
 FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadataRaw(FString Channel, FString Include)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetChannelMetadata_priv(Channel, Include);
 }
@@ -1317,6 +1351,7 @@ void UPubnubClient::GetChannelMetadataRawAsync(FString Channel, FOnPubnubGetChan
 FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata(FString Channel, FPubnubGetMetadataInclude Include)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetChannelMetadata_priv(Channel, UPubnubUtilities::GetMetadataIncludeToString(Include));
 }
@@ -1334,6 +1369,7 @@ void UPubnubClient::GetChannelMetadataAsync(FString Channel, FOnPubnubGetChannel
 FPubnubOperationResult UPubnubClient::RemoveChannelMetadata(FString Channel)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveChannelMetadata_priv(Channel);
 }
@@ -1369,6 +1405,7 @@ void UPubnubClient::RemoveChannelMetadataAsync(FString Channel, FOnPubnubRemoveC
 FPubnubMembershipsResult UPubnubClient::GetMembershipsRaw(FString User, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return GetMemberships_priv(User, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1404,6 +1441,7 @@ void UPubnubClient::GetMembershipsRawAsync(FString User, FOnPubnubGetMemberships
 FPubnubMembershipsResult UPubnubClient::GetMemberships(FString User, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FPubnubPage Page)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return GetMemberships_priv(User, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
 
@@ -1420,6 +1458,7 @@ void UPubnubClient::GetMembershipsAsync(FString User, FOnPubnubGetMembershipsRes
 FPubnubMembershipsResult UPubnubClient::SetMembershipsRaw(FString User, FString SetObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return SetMemberships_priv(User, SetObj, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1455,6 +1494,7 @@ void UPubnubClient::SetMembershipsRawAsync(FString User, FString SetObj, FOnPubn
 FPubnubMembershipsResult UPubnubClient::SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FPubnubPage Page)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return SetMemberships_priv(User, UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(Channels), UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
 
@@ -1471,6 +1511,7 @@ void UPubnubClient::SetMembershipsAsync(FString User, TArray<FPubnubMembershipIn
 FPubnubMembershipsResult UPubnubClient::RemoveMembershipsRaw(FString User, FString RemoveObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return RemoveMemberships_priv(User, RemoveObj, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
 
@@ -1506,6 +1547,7 @@ void UPubnubClient::RemoveMembershipsRawAsync(FString User, FString RemoveObj, F
 FPubnubMembershipsResult UPubnubClient::RemoveMemberships(FString User, TArray<FString> Channels, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FPubnubPage Page)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveMemberships_priv(User, UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(Channels), UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
@@ -1523,6 +1565,7 @@ void UPubnubClient::RemoveMembershipsAsync(FString User, TArray<FString> Channel
 FPubnubChannelMembersResult UPubnubClient::GetChannelMembersRaw(FString Channel, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetChannelMembers_priv(Channel, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
@@ -1558,6 +1601,7 @@ void UPubnubClient::GetChannelMembersRawAsync(FString Channel, FOnPubnubGetChann
 FPubnubChannelMembersResult UPubnubClient::GetChannelMembers(FString Channel, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FPubnubPage Page)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetChannelMembers_priv(Channel, UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
@@ -1575,6 +1619,7 @@ void UPubnubClient::GetChannelMembersAsync(FString Channel, FOnPubnubGetChannelM
 FPubnubChannelMembersResult UPubnubClient::SetChannelMembersRaw(FString Channel, FString SetObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetChannelMembers_priv(Channel, SetObj, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
@@ -1610,6 +1655,7 @@ void UPubnubClient::SetChannelMembersRawAsync(FString Channel, FString SetObj, F
 FPubnubChannelMembersResult UPubnubClient::SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FPubnubPage Page)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetChannelMembers_priv(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(Users), UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
@@ -1627,6 +1673,7 @@ void UPubnubClient::SetChannelMembersAsync(FString Channel, TArray<FPubnubChanne
 FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveChannelMembers_priv(Channel, RemoveObj, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
@@ -1662,6 +1709,7 @@ void UPubnubClient::RemoveChannelMembersRawAsync(FString Channel, FString Remove
 FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers(FString Channel, TArray<FString> Users, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FPubnubPage Page)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveChannelMembers_priv(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(Users), UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
@@ -1679,6 +1727,7 @@ void UPubnubClient::RemoveChannelMembersAsync(FString Channel, TArray<FString> U
 FPubnubAddMessageActionResult UPubnubClient::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType, FString Value)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubAddMessageActionResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return AddMessageAction_priv(Channel, MessageTimetoken, ActionType, Value);
 }
 
@@ -1713,6 +1762,7 @@ void UPubnubClient::AddMessageActionAsync(FString Channel, FString MessageTimeto
 FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions(FString Channel, FString Start, FString End, int Limit)
 {
 	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetMessageActionsResult());
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return GetMessageActions_priv(Channel, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit));
 }
 
@@ -1747,6 +1797,7 @@ void UPubnubClient::GetMessageActionsAsync(FString Channel, FOnPubnubGetMessageA
 FPubnubOperationResult UPubnubClient::RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken)
 {
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return RemoveMessageAction_priv(Channel, MessageTimetoken, ActionTimetoken);
 }
 
@@ -1780,6 +1831,8 @@ void UPubnubClient::RemoveMessageActionAsync(FString Channel, FString MessageTim
 
 FPubnubOperationResult UPubnubClient::ReconnectSubscriptions(FString Timetoken)
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("reconnect subscriptions called. TimetokenLength=%d"), Timetoken.Len()));
 	enum pubnub_res ReconnectResult;
 	if (Timetoken.IsEmpty())
 	{
@@ -1791,6 +1844,7 @@ FPubnubOperationResult UPubnubClient::ReconnectSubscriptions(FString Timetoken)
 		pubnub_subscribe_cursor_t cursor = pubnub_subscribe_cursor(ChannelHolder.Get());
 		ReconnectResult = pubnub_reconnect(ctx_ee, &cursor);
 	}
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("reconnect call finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(ReconnectResult))));
 
 	FPubnubOperationResult FinalResult;
 	
@@ -1803,13 +1857,16 @@ FPubnubOperationResult UPubnubClient::ReconnectSubscriptions(FString Timetoken)
 	{
 		FinalResult.Status = 200;
 	}
+	PUBNUB_LOG_OPERATION_RESULT(FinalResult);
 	
 	return FinalResult;
 }
 
 FPubnubOperationResult UPubnubClient::DisconnectSubscriptions()
 {
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	enum pubnub_res DisconnectResult = pubnub_disconnect(ctx_ee);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("disconnect call finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(DisconnectResult))));
 	
 	FPubnubOperationResult FinalResult;
 	
@@ -1822,6 +1879,7 @@ FPubnubOperationResult UPubnubClient::DisconnectSubscriptions()
 	{
 		FinalResult.Status = 200;
 	}
+	PUBNUB_LOG_OPERATION_RESULT(FinalResult);
 	
 	return FinalResult;
 }
@@ -2892,6 +2950,10 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
 
 FPubnubOperationResult UPubnubClient::AddChannelToGroup_priv(FString Channel, FString ChannelGroup)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(ChannelGroup)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
@@ -2902,19 +2964,26 @@ FPubnubOperationResult UPubnubClient::AddChannelToGroup_priv(FString Channel, FS
 	FUTF8StringHolder ChannelHolder(Channel);
 	
 	pubnub_add_channel_to_group(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("add channel to group request sent."));
 
 	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 
 	PubnubOperationMutex.Unlock();
-
-	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubOperationResult UPubnubClient::RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(ChannelGroup)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
@@ -2925,19 +2994,25 @@ FPubnubOperationResult UPubnubClient::RemoveChannelFromGroup_priv(FString Channe
 	FUTF8StringHolder ChannelHolder(Channel);
 
 	pubnub_remove_channel_from_group(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("remove channel from group request sent."));
 
 	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 
 	PubnubOperationMutex.Unlock();
-
-	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubListChannelsFromGroupResult UPubnubClient::ListChannelsFromGroup_priv(FString ChannelGroup)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(ChannelGroup)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubListChannelsFromGroupResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ChannelGroup, FPubnubListChannelsFromGroupResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -2946,20 +3021,30 @@ FPubnubListChannelsFromGroupResult UPubnubClient::ListChannelsFromGroup_priv(FSt
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 	
 	pubnub_list_channel_group(ctx_pub, ChannelGroupHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("list channels from group request sent."));
 	
 	FString JsonResponse = GetLastChannelResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 
 	PubnubOperationMutex.Unlock();
 
 	FPubnubOperationResult Result;
 	TArray<FString> Channels;
 	UPubnubJsonUtilities::ListChannelsFromGroupJsonToData(JsonResponse, Result, Channels);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	if (!Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channels list parsed. Count=%d"), Channels.Num()));
+	}
 	
 	return FPubnubListChannelsFromGroupResult({Result, Channels});
 }
 
 FPubnubOperationResult UPubnubClient::RemoveChannelGroup_priv(FString ChannelGroup)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(ChannelGroup)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -2968,19 +3053,27 @@ FPubnubOperationResult UPubnubClient::RemoveChannelGroup_priv(FString ChannelGro
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 
 	pubnub_remove_channel_group(ctx_pub, ChannelGroupHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("remove channel group request sent."));
 	
 	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	
 	PubnubOperationMutex.Unlock();
-	
-	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(ListUsersFromChannelSettings)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubListUsersFromChannelResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubListUsersFromChannelResult());
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((ListUsersFromChannelSettings.Limit >= 0), TEXT("Limit can't be below 0."), FPubnubListUsersFromChannelResult());
@@ -2999,8 +3092,10 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FStri
 	UPubnubInternalUtilities::HereNowUESettingsToPubnubHereNowOptions(ListUsersFromChannelSettings, HereNowOptions);
 	
 	pubnub_here_now_ex(ctx_pub, ChannelHolder.Get(), HereNowOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("list users from channel request sent."));
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 
 	PubnubOperationMutex.Unlock();
 	
@@ -3010,18 +3105,30 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FStri
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 		//Presence api doesn't provide status code in the response, so we need to get it manually
 		Result.Status = pubnub_last_http_code(ctx_pub);
 	}
 	
 	FPubnubListUsersFromChannelWrapper Data;
 	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(JsonResponse, Result, Data);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	if (!Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG(
+			TEXT("list users from channel parsed."),
+			PUBNUB_LOG_VALUE(Data)
+		);
+	}
 	
 	return FPubnubListUsersFromChannelResult({Result, Data});
 }
 
 FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChannels_priv(FString UserID)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(UserID)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubListUsersSubscribedChannelsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(UserID, FPubnubListUsersSubscribedChannelsResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3029,20 +3136,32 @@ FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChanne
 
 	FUTF8StringHolder UserIDHolder(UserID);
 	pubnub_where_now(ctx_pub, UserIDHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("list user subscribed channels request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	
 	PubnubOperationMutex.Unlock();
 	
 	FPubnubOperationResult Result;
 	TArray<FString> Channels;
 	UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(JsonResponse, Result, Channels);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	if (!Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("list user subscribed channels parsed. Count=%d"), Channels.Num()));
+	}
 	
 	return FPubnubListUsersSubscribedChannelsResult({Result, Channels});
 }
 
 FPubnubOperationResult UPubnubClient::SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(StateJson),
+		PUBNUB_LOG_VALUE(SetStateSettings)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(StateJson);
@@ -3073,19 +3192,28 @@ FPubnubOperationResult UPubnubClient::SetState_priv(FString Channel, FString Sta
 	FUTF8StringHolder ChannelHolder(Channel);
 	
 	pubnub_set_state_ex(ctx_pub, ChannelHolder.Get(), StateJsonHolder.Get(), SetStateOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("set state request sent."));
 	
 	//This is just to clear the C-Core response buffer, but it doesn't return the server response
 	GetLastResponse(ctx_pub);
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 
 	PubnubOperationMutex.Unlock();
 
-	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubGetStateResult UPubnubClient::GetState_priv(FString Channel, FString ChannelGroup, FString UserID)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(ChannelGroup),
+		PUBNUB_LOG_VALUE(UserID)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetStateResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubGetStateResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3096,21 +3224,29 @@ FPubnubGetStateResult UPubnubClient::GetState_priv(FString Channel, FString Chan
 	FUTF8StringHolder UserIDHolder(UserID);
 
 	pubnub_state_get(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get(), UserIDHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get state request sent."));
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
 	PubnubOperationMutex.Unlock();
-
-	return FPubnubGetStateResult({UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), JsonResponse});
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return FPubnubGetStateResult({Result, JsonResponse});
 }
 
 FPubnubOperationResult UPubnubClient::Heartbeat_priv(FString Channel, FString ChannelGroup)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(ChannelGroup)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	// Try to acquire lock - fail fast if another operation is in progress
 	PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED();
@@ -3119,18 +3255,24 @@ FPubnubOperationResult UPubnubClient::Heartbeat_priv(FString Channel, FString Ch
 	FUTF8StringHolder ChannelHolder(Channel);
 
 	pubnub_heartbeat(ctx_pub, ChannelHolder.Get(), ChannelGroupHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("heartbeat request sent."));
 
-	GetLastResponse(ctx_pub);
+	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	
 	PubnubOperationMutex.Unlock();
 	
 	FPubnubOperationResult Result;
 	Result.Error = false;
+	PUBNUB_LOG_OPERATION_RESULT(Result);
 	return Result;
 }
 
 FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(FString PermissionObject)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(PermissionObject)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGrantTokenResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(PermissionObject, FPubnubGrantTokenResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3139,20 +3281,25 @@ FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(FString PermissionObject)
 	FUTF8StringHolder PermissionObjectHolder(PermissionObject);
 	
 	pubnub_grant_token(ctx_pub, PermissionObjectHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("grant token request sent."));
 
-	pubnub_await(ctx_pub);
+	const pubnub_res AwaitResult = pubnub_await(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("grant token await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(AwaitResult))));
 	
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	
 	PubnubOperationMutex.Unlock();
 	
 	//Access Manager has similar result structure to AppContext, so we use the same getter
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
 	FString Token = "";
 	if(Result.Status == 200)
 	{
 		pubnub_chamebl_t grant_token_resp = pubnub_get_grant_token(ctx_pub);
 		Token = UPubnubUtilities::PubnubCharMemBlockToString(grant_token_resp);
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("grant token response parsed. TokenLength=%d"), Token.Len()));
 	}
 	
 	return FPubnubGrantTokenResult({Result, Token});
@@ -3160,6 +3307,7 @@ FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(FString PermissionObject)
 
 FPubnubOperationResult UPubnubClient::RevokeToken_priv(FString Token)
 {
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("revoke token called. TokenLength=%d"), Token.Len()));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Token);
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3168,23 +3316,29 @@ FPubnubOperationResult UPubnubClient::RevokeToken_priv(FString Token)
 	FUTF8StringHolder TokenHolder(Token);
 	
 	pubnub_revoke_token(ctx_pub, TokenHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("revoke token request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 
 	//If response is empty, there was server error. 
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
 	
 	//Access Manager has similar result structure to AppContext, so we use the same getter
-	return UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FString UPubnubClient::ParseToken_priv(FString Token)
 {
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("parse token called. TokenLength=%d"), Token.Len()));
 	PUBNUB_RETURN_IF_USER_ID_NOT_SET("");
 	PUBNUB_RETURN_IF_FIELD_EMPTY(Token, "");
 
@@ -3198,11 +3352,14 @@ FString UPubnubClient::ParseToken_priv(FString Token)
 	free(TokenResponse);
 
 	//Rework parsed token into more human readable form
-	return UPubnubTokenUtilities::ReworkParsedToken(ParsedToken);
+	const FString ReworkedToken = UPubnubTokenUtilities::ReworkParsedToken(ParsedToken);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("token parsed successfully: %s"), *ReworkedToken));
+	return ReworkedToken;
 }
 
 void UPubnubClient::SetAuthToken_priv(FString Token)
 {
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("set auth token called. TokenLength=%d"), Token.Len()));
 	PUBNUB_RETURN_IF_USER_ID_NOT_SET();
 
 	//Auth token has to be kept alive for the lifetime of the sdk, so we copy it into AuthTokenBuffer
@@ -3216,6 +3373,7 @@ void UPubnubClient::SetAuthToken_priv(FString Token)
 	//This is just a setter, so no need to call it on a separate thread
 	pubnub_set_auth_token(ctx_pub, AuthTokenBuffer);
 	pubnub_set_auth_token(ctx_ee, AuthTokenBuffer);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("auth token applied to pub and ee contexts."));
 }
 
 int UPubnubClient::SetOrigin_priv(FString Origin)
@@ -3250,6 +3408,10 @@ int UPubnubClient::SetOrigin_priv(FString Origin)
 
 FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(FetchHistorySettings)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubFetchHistoryResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubFetchHistoryResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3269,10 +3431,12 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 	FUTF8StringHolder ChannelHolder(Channel);
 	
 	pubnub_fetch_history(ctx_pub, ChannelHolder.Get(), FetchHistoryOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("fetch history request sent."));
 
 	FString HistoryResponse = "";
 	
 	pubnub_res PubnubResponse = pubnub_await(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fetch history await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(PubnubResponse))));
 	if (PNR_OK == PubnubResponse) {
 
 		//Convert it keeping UTF8 characters valid
@@ -3288,6 +3452,11 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 	if(HistoryResponse.IsEmpty())
 	{
 		HistoryResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *HistoryResponse));
+	}
+	else
+	{
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *HistoryResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3297,12 +3466,21 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 	TArray<FPubnubHistoryMessageData> Messages;
 	UPubnubJsonUtilities::FetchHistoryJsonToData(HistoryResponse, Result, Messages);
 	DecryptHistoryMessages(Messages);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	if (!Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("history parsed. MessagesCount=%d"), Messages.Num()));
+	}
 			
 	return FPubnubFetchHistoryResult({Result, Messages});
 }
 
 FPubnubOperationResult UPubnubClient::DeleteMessages_priv(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(DeleteMessagesSettings)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3317,22 +3495,31 @@ FPubnubOperationResult UPubnubClient::DeleteMessages_priv(FString Channel, FPubn
 	FUTF8StringHolder ChannelHolder(Channel);
 
 	pubnub_delete_messages(ctx_pub, ChannelHolder.Get(), DeleteMessagesOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("delete messages request sent."));
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 
 	//If response is empty, there was server error. 
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
 	PubnubOperationMutex.Unlock();
 
-	return UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FString Timetoken)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(Timetoken)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMessageCountsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubMessageCountsResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3342,21 +3529,31 @@ FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FS
 	FUTF8StringHolder ChannelHolder(Channel);
 	
 	pubnub_message_counts(ctx_pub, ChannelHolder.Get(), TimetokenHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("message counts request sent."));
 
-	pubnub_await(ctx_pub);
+	const pubnub_res AwaitResult = pubnub_await(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("message counts await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(AwaitResult))));
 
 	int MessageCountsNumber = 0;
 	pubnub_get_message_counts(ctx_pub, ChannelHolder.Get(), &MessageCountsNumber);
 
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	
 	PubnubOperationMutex.Unlock();
-	
-	return FPubnubMessageCountsResult({UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse), MessageCountsNumber});
+
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	if (!Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("message counts parsed. Count=%d"), MessageCountsNumber));
+	}
+	return FPubnubMessageCountsResult({Result, MessageCountsNumber});
 }
 
 FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple_priv(TArray<FString> Channels, TArray<FString> Timetokens)
 {
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("message counts multiple called. ChannelsCount=%d, TimetokensCount=%d"), Channels.Num(), Timetokens.Num()));
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMessageCountsMultipleResult());
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((!Channels.IsEmpty()), TEXT("Channels array cannot be empty."), FPubnubMessageCountsMultipleResult());
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((Channels.Num() == Timetokens.Num()), TEXT("Number of channels must match number of timetokens."), FPubnubMessageCountsMultipleResult());
@@ -3367,8 +3564,10 @@ FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple_priv(TAr
 	FUTF8StringHolder ChannelHolder(UPubnubUtilities::ArrayOfStringsToCommaSeparatedString(Channels));
 	
 	pubnub_message_counts(ctx_pub, ChannelHolder.Get(), TimetokensHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("message counts multiple request sent."));
 
-	pubnub_await(ctx_pub);
+	const pubnub_res AwaitResult = pubnub_await(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("message counts multiple await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(AwaitResult))));
 	
 	int Size = Channels.Num();
 	TArray<int> MessageCountsReturn;
@@ -3383,17 +3582,31 @@ FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple_priv(TAr
 	}
 
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	
 	PubnubOperationMutex.Unlock();
 	
 	FPubnubMessageCountsMultipleResult Result;
 	Result.Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 	Result.MessageCountsPerChannel = MessageCountsPerChannel;
+	PUBNUB_LOG_OPERATION_RESULT(Result.Result);
+	if (!Result.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("message counts multiple parsed. ChannelsCount=%d"), Result.MessageCountsPerChannel.Num()));
+	}
 	return Result;
 }
 
 FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata_priv(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Include),
+		PUBNUB_LOG_VALUE(Limit),
+		PUBNUB_LOG_VALUE(Filter),
+		PUBNUB_LOG_VALUE(Sort),
+		PUBNUB_LOG_VALUE(Page),
+		PUBNUB_LOG_VALUE(Count)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetAllUserMetadataResult());
 	// Try to acquire lock - fail fast if another operation is in progress
 	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetAllUserMetadataResult());
@@ -3414,12 +3627,15 @@ FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata_priv(FString I
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
 	pubnub_getall_uuidmetadata_ex(ctx_pub, PubnubOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get all user metadata request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3427,12 +3643,22 @@ FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata_priv(FString I
 	//Parse Json response into data
 	FPubnubGetAllUserMetadataResult GetAllUserMetadataResult;
 	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(JsonResponse, GetAllUserMetadataResult.Result, GetAllUserMetadataResult.UsersData, GetAllUserMetadataResult.Page, GetAllUserMetadataResult.TotalCount);
+	PUBNUB_LOG_OPERATION_RESULT(GetAllUserMetadataResult.Result);
+	if (!GetAllUserMetadataResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("user metadata parsed. UsersCount=%d, TotalCount=%d"), GetAllUserMetadataResult.UsersData.Num(), GetAllUserMetadataResult.TotalCount));
+	}
 	
 	return GetAllUserMetadataResult;
 }
 
 FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FString UserMetadataObj, FString Include)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(User),
+		PUBNUB_LOG_VALUE(UserMetadataObj),
+		PUBNUB_LOG_VALUE(Include)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubUserMetadataResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubUserMetadataResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(UserMetadataObj, FPubnubUserMetadataResult());
@@ -3446,12 +3672,15 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 	FUTF8StringHolder IncludeHolder(Include);
 	
 	pubnub_set_uuidmetadata(ctx_pub, UserHolder.Get(), IncludeHolder.Get(), UserMetadataObjHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("set user metadata request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3459,12 +3688,24 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 	//Parse Json response into data
 	FPubnubUserMetadataResult SetUserMetadataResult;
 	UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, SetUserMetadataResult.Result, SetUserMetadataResult.UserData);
+	PUBNUB_LOG_OPERATION_RESULT(SetUserMetadataResult.Result);
+	if (!SetUserMetadataResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG(
+			TEXT("set user metadata parsed."),
+			PUBNUB_LOG_VALUE(SetUserMetadataResult.UserData)
+		);
+	}
 							
 	return SetUserMetadataResult;
 }
 
 FPubnubUserMetadataResult UPubnubClient::GetUserMetadata_priv(FString User, FString Include)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(User),
+		PUBNUB_LOG_VALUE(Include)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubUserMetadataResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubUserMetadataResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3473,12 +3714,15 @@ FPubnubUserMetadataResult UPubnubClient::GetUserMetadata_priv(FString User, FStr
 	FUTF8StringHolder UserHolder(User);
 	FUTF8StringHolder IncludeHolder(Include);
 	pubnub_get_uuidmetadata(ctx_pub, IncludeHolder.Get(), UserHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get user metadata request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
 	PubnubOperationMutex.Unlock();
@@ -3486,12 +3730,23 @@ FPubnubUserMetadataResult UPubnubClient::GetUserMetadata_priv(FString User, FStr
 	//Parse Json response into data
 	FPubnubUserMetadataResult GetUserMetadataResult;
 	UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, GetUserMetadataResult.Result, GetUserMetadataResult.UserData);
+	PUBNUB_LOG_OPERATION_RESULT(GetUserMetadataResult.Result);
+	if (!GetUserMetadataResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG(
+			TEXT("get user metadata parsed."),
+			PUBNUB_LOG_VALUE(GetUserMetadataResult.UserData)
+		);
+	}
 							
 	return GetUserMetadataResult;
 }
 
 FPubnubOperationResult UPubnubClient::RemoveUserMetadata_priv(FString User)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(User)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(User);
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3500,21 +3755,34 @@ FPubnubOperationResult UPubnubClient::RemoveUserMetadata_priv(FString User)
 	FUTF8StringHolder UserHolder(User);
 	
 	pubnub_remove_uuidmetadata(ctx_pub, UserHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("remove user metadata request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
-	
-	return UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata_priv(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Include),
+		PUBNUB_LOG_VALUE(Limit),
+		PUBNUB_LOG_VALUE(Filter),
+		PUBNUB_LOG_VALUE(Sort),
+		PUBNUB_LOG_VALUE(Page),
+		PUBNUB_LOG_VALUE(Count)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetAllChannelMetadataResult());
 	// Try to acquire lock - fail fast if another operation is in progress
 	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetAllChannelMetadataResult());
@@ -3535,12 +3803,15 @@ FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata_priv(FSt
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
 	pubnub_getall_channelmetadata_ex(ctx_pub, PubnubOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get all channel metadata request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	//Parse Json response into data
@@ -3548,12 +3819,22 @@ FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata_priv(FSt
 	
 	FPubnubGetAllChannelMetadataResult GetAllChannelMetadataResult;
 	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(JsonResponse, GetAllChannelMetadataResult.Result, GetAllChannelMetadataResult.ChannelsData, GetAllChannelMetadataResult.Page, GetAllChannelMetadataResult.TotalCount);
+	PUBNUB_LOG_OPERATION_RESULT(GetAllChannelMetadataResult.Result);
+	if (!GetAllChannelMetadataResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channel metadata parsed. ChannelsCount=%d, TotalCount=%d"), GetAllChannelMetadataResult.ChannelsData.Num(), GetAllChannelMetadataResult.TotalCount));
+	}
 	
 	return GetAllChannelMetadataResult;
 }
 
 FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FString Include)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(ChannelMetadataObj),
+		PUBNUB_LOG_VALUE(Include)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMetadataResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMetadataResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ChannelMetadataObj, FPubnubChannelMetadataResult());
@@ -3567,12 +3848,15 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 	FUTF8StringHolder IncludeHolder(Include);
 	
 	pubnub_set_channelmetadata(ctx_pub, ChannelHolder.Get(), IncludeHolder.Get(), ChannelMetadataObjHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("set channel metadata request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3580,12 +3864,24 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 	//Parse Json response into data
 	FPubnubChannelMetadataResult SetChannelMetadataResult;
 	UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, SetChannelMetadataResult.Result, SetChannelMetadataResult.ChannelData);
+	PUBNUB_LOG_OPERATION_RESULT(SetChannelMetadataResult.Result);
+	if (!SetChannelMetadataResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG(
+			TEXT("set channel metadata parsed."),
+			PUBNUB_LOG_VALUE(SetChannelMetadataResult.ChannelData)
+		);
+	}
 							
 	return SetChannelMetadataResult;
 }
 
 FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata_priv(FString Channel, FString Include)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(Include)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMetadataResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMetadataResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3595,12 +3891,15 @@ FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata_priv(FString Chan
 	FUTF8StringHolder IncludeHolder(Include);
 	
 	pubnub_get_channelmetadata(ctx_pub, IncludeHolder.Get(), ChannelHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get channel metadata request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
 	PubnubOperationMutex.Unlock();
@@ -3608,12 +3907,23 @@ FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata_priv(FString Chan
 	//Parse Json response into data
 	FPubnubChannelMetadataResult GetChannelMetadataResult;
 	UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, GetChannelMetadataResult.Result, GetChannelMetadataResult.ChannelData);
+	PUBNUB_LOG_OPERATION_RESULT(GetChannelMetadataResult.Result);
+	if (!GetChannelMetadataResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG(
+			TEXT("get channel metadata parsed."),
+			PUBNUB_LOG_VALUE(GetChannelMetadataResult.ChannelData)
+		);
+	}
 							
 	return GetChannelMetadataResult;
 }
 
 FPubnubOperationResult UPubnubClient::RemoveChannelMetadata_priv(FString Channel)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3622,21 +3932,35 @@ FPubnubOperationResult UPubnubClient::RemoveChannelMetadata_priv(FString Channel
 	FUTF8StringHolder ChannelHolder(Channel);
 
 	pubnub_remove_channelmetadata(ctx_pub, ChannelHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("remove channel metadata request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
-	
-	return UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubMembershipsResult UPubnubClient::GetMemberships_priv(FString User, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(User),
+		PUBNUB_LOG_VALUE(Include),
+		PUBNUB_LOG_VALUE(Limit),
+		PUBNUB_LOG_VALUE(Filter),
+		PUBNUB_LOG_VALUE(Sort),
+		PUBNUB_LOG_VALUE(Page),
+		PUBNUB_LOG_VALUE(Count)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMembershipsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubMembershipsResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3659,12 +3983,15 @@ FPubnubMembershipsResult UPubnubClient::GetMemberships_priv(FString User, FStrin
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
 	
 	pubnub_get_memberships_ex(ctx_pub, PubnubOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get memberships request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3672,12 +3999,27 @@ FPubnubMembershipsResult UPubnubClient::GetMemberships_priv(FString User, FStrin
 	//Parse Json response into data
 	FPubnubMembershipsResult GetMembershipsResult;
 	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, GetMembershipsResult.Result, GetMembershipsResult.MembershipsData, GetMembershipsResult.Page, GetMembershipsResult.TotalCount);
+	PUBNUB_LOG_OPERATION_RESULT(GetMembershipsResult.Result);
+	if (!GetMembershipsResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("memberships parsed. MembershipsCount=%d, TotalCount=%d"), GetMembershipsResult.MembershipsData.Num(), GetMembershipsResult.TotalCount));
+	}
 	
 	return GetMembershipsResult;
 }
 
 FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FString SetObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(User),
+		PUBNUB_LOG_VALUE(SetObj),
+		PUBNUB_LOG_VALUE(Include),
+		PUBNUB_LOG_VALUE(Limit),
+		PUBNUB_LOG_VALUE(Filter),
+		PUBNUB_LOG_VALUE(Sort),
+		PUBNUB_LOG_VALUE(Page),
+		PUBNUB_LOG_VALUE(Count)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMembershipsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubMembershipsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(SetObj, FPubnubMembershipsResult());
@@ -3704,12 +4046,15 @@ FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FStrin
 
 	FUTF8StringHolder SetObjHolder(SetObj);
 	pubnub_set_memberships_ex(ctx_pub, SetObjHolder.Get(), PubnubOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("set memberships request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3717,12 +4062,27 @@ FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FStrin
 	//Parse Json response into data
 	FPubnubMembershipsResult SetMembershipsResult;
 	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, SetMembershipsResult.Result, SetMembershipsResult.MembershipsData, SetMembershipsResult.Page, SetMembershipsResult.TotalCount);
+	PUBNUB_LOG_OPERATION_RESULT(SetMembershipsResult.Result);
+	if (!SetMembershipsResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("set memberships parsed. MembershipsCount=%d, TotalCount=%d"), SetMembershipsResult.MembershipsData.Num(), SetMembershipsResult.TotalCount));
+	}
 	
 	return SetMembershipsResult;
 }
 
 FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FString RemoveObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(User),
+		PUBNUB_LOG_VALUE(RemoveObj),
+		PUBNUB_LOG_VALUE(Include),
+		PUBNUB_LOG_VALUE(Limit),
+		PUBNUB_LOG_VALUE(Filter),
+		PUBNUB_LOG_VALUE(Sort),
+		PUBNUB_LOG_VALUE(Page),
+		PUBNUB_LOG_VALUE(Count)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMembershipsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubMembershipsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(RemoveObj, FPubnubMembershipsResult());
@@ -3749,12 +4109,15 @@ FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FSt
 
 	FUTF8StringHolder RemoveObjHolder(RemoveObj);
 	pubnub_remove_memberships_ex(ctx_pub, RemoveObjHolder.Get(), PubnubOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("remove memberships request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3762,6 +4125,11 @@ FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FSt
 	//Parse Json response into data
 	FPubnubMembershipsResult RemoveMembershipsResult;
 	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, RemoveMembershipsResult.Result, RemoveMembershipsResult.MembershipsData, RemoveMembershipsResult.Page, RemoveMembershipsResult.TotalCount);
+	PUBNUB_LOG_OPERATION_RESULT(RemoveMembershipsResult.Result);
+	if (!RemoveMembershipsResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("remove memberships parsed. MembershipsCount=%d, TotalCount=%d"), RemoveMembershipsResult.MembershipsData.Num(), RemoveMembershipsResult.TotalCount));
+	}
 	
 	return RemoveMembershipsResult;
 }
@@ -3769,6 +4137,15 @@ FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FSt
 FPubnubChannelMembersResult UPubnubClient::GetChannelMembers_priv(FString Channel, FString Include, int Limit,
 	FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(Include),
+		PUBNUB_LOG_VALUE(Limit),
+		PUBNUB_LOG_VALUE(Filter),
+		PUBNUB_LOG_VALUE(Sort),
+		PUBNUB_LOG_VALUE(Page),
+		PUBNUB_LOG_VALUE(Count)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMembersResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMembersResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3790,12 +4167,15 @@ FPubnubChannelMembersResult UPubnubClient::GetChannelMembers_priv(FString Channe
 
 	FUTF8StringHolder ChannelHolder(Channel);
 	pubnub_get_members_ex(ctx_pub, ChannelHolder.Get(), PubnubOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get channel members request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
 	PubnubOperationMutex.Unlock();
@@ -3803,12 +4183,27 @@ FPubnubChannelMembersResult UPubnubClient::GetChannelMembers_priv(FString Channe
 	//Parse Json response into data
 	FPubnubChannelMembersResult GetChannelMembersResult;
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, GetChannelMembersResult.Result, GetChannelMembersResult.MembersData, GetChannelMembersResult.Page, GetChannelMembersResult.TotalCount);
+	PUBNUB_LOG_OPERATION_RESULT(GetChannelMembersResult.Result);
+	if (!GetChannelMembersResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channel members parsed. MembersCount=%d, TotalCount=%d"), GetChannelMembersResult.MembersData.Num(), GetChannelMembersResult.TotalCount));
+	}
 	
 	return GetChannelMembersResult;
 }
 
 FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channel, FString SetObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(SetObj),
+		PUBNUB_LOG_VALUE(Include),
+		PUBNUB_LOG_VALUE(Limit),
+		PUBNUB_LOG_VALUE(Filter),
+		PUBNUB_LOG_VALUE(Sort),
+		PUBNUB_LOG_VALUE(Page),
+		PUBNUB_LOG_VALUE(Count)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMembersResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMembersResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(SetObj, FPubnubChannelMembersResult());
@@ -3834,12 +4229,15 @@ FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channe
 	FUTF8StringHolder ChannelHolder(Channel);
 	FUTF8StringHolder SetObjHolder(SetObj);
 	pubnub_set_members_ex(ctx_pub, ChannelHolder.Get(), SetObjHolder.Get(), PubnubOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("set channel members request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3847,12 +4245,27 @@ FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channe
 	//Parse Json response into data
 	FPubnubChannelMembersResult SetChannelMembersResult;
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, SetChannelMembersResult.Result, SetChannelMembersResult.MembersData, SetChannelMembersResult.Page, SetChannelMembersResult.TotalCount);
+	PUBNUB_LOG_OPERATION_RESULT(SetChannelMembersResult.Result);
+	if (!SetChannelMembersResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("set channel members parsed. MembersCount=%d, TotalCount=%d"), SetChannelMembersResult.MembersData.Num(), SetChannelMembersResult.TotalCount));
+	}
 
 	return SetChannelMembersResult;
 }
 
 FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers_priv(FString Channel, FString RemoveObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(RemoveObj),
+		PUBNUB_LOG_VALUE(Include),
+		PUBNUB_LOG_VALUE(Limit),
+		PUBNUB_LOG_VALUE(Filter),
+		PUBNUB_LOG_VALUE(Sort),
+		PUBNUB_LOG_VALUE(Page),
+		PUBNUB_LOG_VALUE(Count)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMembersResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMembersResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(RemoveObj, FPubnubChannelMembersResult());
@@ -3878,12 +4291,15 @@ FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers_priv(FString Cha
 	FUTF8StringHolder ChannelHolder(Channel);
 	FUTF8StringHolder RemoveObjHolder(RemoveObj);
 	pubnub_remove_members_ex(ctx_pub, ChannelHolder.Get(), RemoveObjHolder.Get(), PubnubOptions);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("remove channel members request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3891,12 +4307,23 @@ FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers_priv(FString Cha
 	//Parse Json response into data
 	FPubnubChannelMembersResult RemoveChannelMembersResult;
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, RemoveChannelMembersResult.Result, RemoveChannelMembersResult.MembersData, RemoveChannelMembersResult.Page, RemoveChannelMembersResult.TotalCount);
+	PUBNUB_LOG_OPERATION_RESULT(RemoveChannelMembersResult.Result);
+	if (!RemoveChannelMembersResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("remove channel members parsed. MembersCount=%d, TotalCount=%d"), RemoveChannelMembersResult.MembersData.Num(), RemoveChannelMembersResult.TotalCount));
+	}
 
 	return RemoveChannelMembersResult;
 }
 
 FPubnubAddMessageActionResult UPubnubClient::AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(MessageTimetoken),
+		PUBNUB_LOG_VALUE(ActionType),
+		PUBNUB_LOG_VALUE(Value)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubAddMessageActionResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubAddMessageActionResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(MessageTimetoken, FPubnubAddMessageActionResult());
@@ -3915,12 +4342,15 @@ FPubnubAddMessageActionResult UPubnubClient::AddMessageAction_priv(FString Chann
 	FUTF8StringHolder FinalValueHolder(FinalValue);
 	
 	pubnub_add_message_action_str(ctx_pub, ChannelHolder.Get(), MessageTimetokenHolder.Get(), FinalActionTypeHolder.Get(),  FinalValueHolder.Get());
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("add message action request sent."));
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
 	PubnubOperationMutex.Unlock();
@@ -3928,12 +4358,25 @@ FPubnubAddMessageActionResult UPubnubClient::AddMessageAction_priv(FString Chann
 	//Parse Json response into data
 	FPubnubAddMessageActionResult AddMessageActionResult;
 	UPubnubJsonUtilities::AddMessageActionJsonToData(JsonResponse, AddMessageActionResult.Result, AddMessageActionResult.MessageActionData);
+	PUBNUB_LOG_OPERATION_RESULT(AddMessageActionResult.Result);
+	if (!AddMessageActionResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG(
+			TEXT("message action parsed."),
+			PUBNUB_LOG_VALUE(AddMessageActionResult.MessageActionData)
+		);
+	}
 	
 	return AddMessageActionResult;
 }
 
 FPubnubOperationResult UPubnubClient::RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(MessageTimetoken),
+		PUBNUB_LOG_VALUE(ActionTimetoken)
+	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(MessageTimetoken);
@@ -3965,21 +4408,32 @@ FPubnubOperationResult UPubnubClient::RemoveMessageAction_priv(FString Channel, 
 	FUTF8StringHolder ChannelHolder(Channel);
 	
 	pubnub_remove_message_action(ctx_pub, ChannelHolder.Get(), message_timetoken_chamebl, action_timetoken_chamebl);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("remove message action request sent."));
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
 	PubnubOperationMutex.Unlock();
 
-	return UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
+	PUBNUB_LOG_OPERATION_RESULT(Result);
+	return Result;
 }
 
 FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions_priv(FString Channel, FString Start, FString End, int Limit)
 {
+	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
+		PUBNUB_LOG_VALUE(Channel),
+		PUBNUB_LOG_VALUE(Start),
+		PUBNUB_LOG_VALUE(End),
+		PUBNUB_LOG_VALUE(Limit)
+	);
 	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetMessageActionsResult());
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubGetMessageActionsResult());
 	// Try to acquire lock - fail fast if another operation is in progress
@@ -3989,12 +4443,15 @@ FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions_priv(FString Cha
 	FUTF8StringHolder StartHolder(Start);
 	FUTF8StringHolder EndHolder(End);
 	pubnub_get_message_actions(ctx_pub, ChannelHolder.Get(), StartHolder.Get(), EndHolder.Get(), Limit);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get message actions request sent."));
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 	//If last response is empty, it means that there was an error, so return server response instead
 	if(JsonResponse.IsEmpty())
 	{
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
 	PubnubOperationMutex.Unlock();
@@ -4002,6 +4459,11 @@ FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions_priv(FString Cha
 	//Parse Json response into data
 	FPubnubGetMessageActionsResult GetMessageActionsResult;
 	UPubnubJsonUtilities::GetMessageActionsJsonToData(JsonResponse, GetMessageActionsResult.Result, GetMessageActionsResult.MessageActions);
+	PUBNUB_LOG_OPERATION_RESULT(GetMessageActionsResult.Result);
+	if (!GetMessageActionsResult.Result.Error)
+	{
+		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("message actions parsed. Count=%d"), GetMessageActionsResult.MessageActions.Num()));
+	}
 										
 	return GetMessageActionsResult;
 }
