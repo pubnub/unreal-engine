@@ -2,6 +2,8 @@
 
 
 #include "Samples/Sample_Configuration.h"
+#include "PubnubDefaultLogger.h"
+#include "Interfaces/PubnubLoggerInterface.h"
 
 
 /**
@@ -28,6 +30,12 @@ void ASample_Configuration::RunSamples()
 	SubscriptionStatusListenerSample();
 	SubscriptionStatusListenerLambdaSample();
 	ListUsersFromChannelLambdaSample();
+	AddLoggerSample();
+	SetLogLevelAtRuntimeSample();
+	SetLogLevelInConfigurationSample();
+	GetLoggersSample();
+	RemoveLoggerSample();
+	ClearLoggersSample();
 	
 }
 //Internal function, don't copy it with the samples
@@ -286,6 +294,116 @@ void ASample_Configuration::DestroyPubnubClient()
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	
 	PubnubSubsystem->DestroyPubnubClient(PubnubClient);
+}
+
+// snippet.add_logger
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::AddLoggerSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+
+	//Assumes PubnubClient is created and UserID is set
+
+	//Create logger object and register it in PubnubClient
+	UPubnubDefaultLogger* CustomLogger = NewObject<UPubnubDefaultLogger>(this);
+	if (!CustomLogger)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create custom logger."));
+		return;
+	}
+
+	TScriptInterface<IPubnubLoggerInterface> LoggerInterface;
+	LoggerInterface.SetObject(CustomLogger);
+	LoggerInterface.SetInterface(Cast<IPubnubLoggerInterface>(CustomLogger));
+
+	PubnubClient->AddLogger(LoggerInterface);
+}
+
+// snippet.set_log_level_runtime
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::SetLogLevelAtRuntimeSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+
+	//Assumes PubnubClient is created and UserID is set
+
+	//Get all registered loggers
+	TArray<TScriptInterface<IPubnubLoggerInterface>> Loggers = PubnubClient->GetLoggers();
+	if (!Loggers.IsEmpty())
+	{
+		//Set new log levels for the first logger
+		IPubnubLoggerInterface::Execute_SetMinimumLogLevel(Loggers[0].GetObject(), EPubnubLogLevel::PLL_Debug);
+		IPubnubLoggerInterface::Execute_SetMinimumCCoreLogLevel(Loggers[0].GetObject(), EPubnubLogLevel::PLL_Warning);
+	}
+}
+
+// snippet.set_log_level_configuration
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::SetLogLevelInConfigurationSample()
+{
+	//Get PubnubSubsystem from GameInstance
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+
+	//Set logger levels directly in client configuration before creating PubnubClient
+	FPubnubConfig PubnubConfig;
+	PubnubConfig.PublishKey = TEXT("demo");   //replace with your Publish Key from Admin Portal
+	PubnubConfig.SubscribeKey = TEXT("demo"); //replace with your Subscribe Key from Admin Portal
+	PubnubConfig.UserID = TEXT("Player_001");
+	PubnubConfig.LoggerConfig.DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Debug;
+	PubnubConfig.LoggerConfig.DefaultLoggerMinCCoreLevel = EPubnubLogLevel::PLL_Warning;
+
+	UPubnubClient* PubnubClient = PubnubSubsystem->CreatePubnubClient(PubnubConfig);
+
+	//Use PubnubClient as needed
+	PubnubClient->PublishMessageAsync(TEXT("test-channel"), TEXT("Hello, world!"));
+}
+
+// snippet.get_loggers
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::GetLoggersSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+
+	//Assumes PubnubClient is created and UserID is set
+
+	TArray<TScriptInterface<IPubnubLoggerInterface>> Loggers = PubnubClient->GetLoggers();
+}
+
+// snippet.remove_logger
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::RemoveLoggerSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+
+	//Assumes PubnubClient is created and UserID is set
+
+	TArray<TScriptInterface<IPubnubLoggerInterface>> Loggers = PubnubClient->GetLoggers();
+
+	//Remove the first registered logger
+	PubnubClient->RemoveLogger(Loggers[0]);
+}
+
+// snippet.clear_loggers
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::ClearLoggersSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+
+	//Assumes PubnubClient is created and UserID is set
+
+	//Clear all registered loggers
+	PubnubClient->ClearLoggers();
 }
 
 // snippet.end

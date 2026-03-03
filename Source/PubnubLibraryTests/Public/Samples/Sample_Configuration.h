@@ -89,6 +89,30 @@ public:
 	// blueprint.256-9zfg
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void DestroyPubnubClient();
+
+	// snippet.add_logger
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void AddLoggerSample();
+
+	// snippet.set_log_level_runtime
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void SetLogLevelAtRuntimeSample();
+
+	// snippet.set_log_level_configuration
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void SetLogLevelInConfigurationSample();
+
+	// snippet.get_loggers
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void GetLoggersSample();
+
+	// snippet.remove_logger
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void RemoveLoggerSample();
+
+	// snippet.clear_loggers
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void ClearLoggersSample();
 	
 	// snippet.end
 	
