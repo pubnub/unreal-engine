@@ -63,6 +63,7 @@ extern "C" {
 #include "core/pubnub_revoke_token_api.h"
 #endif
 #include "core/pubnub_auto_heartbeat.h"
+#include "core/pubnub_logger.h"
 	
 }
 

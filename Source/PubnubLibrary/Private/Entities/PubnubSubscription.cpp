@@ -340,8 +340,8 @@ void UPubnubSubscription::InternalInit()
 	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackObjects, EPubnubListenerType::PLT_Objects, this);
 	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, this);
 
-	//Bind to OnPubnubClientDeinitialized so subscription is properly Cleaned up, when it's not needed
-	PubnubClient->OnClientDeinitialized.AddDynamic(this, &UPubnubSubscription::CleanUpSubscription);
+	// Bind to deinitialize start so subscription C-Core resources are released
+	PubnubClient->OnClientDeinitializeStart.AddDynamic(this, &UPubnubSubscription::CleanUpSubscription);
 
 	//Now we are fully initialized
 	IsInitialized = true;
@@ -369,14 +369,15 @@ void UPubnubSubscription::CleanUpSubscription()
 	FOnPubnubAnyMessageType.Clear();
 	FOnPubnubAnyMessageTypeNative.Clear();
 
-	if(CCoreSubscription)
+	if(CCoreSubscription && IsValid(PubnubClient))
 	{
 		pubnub_subscription_free(&CCoreSubscription);
 	}
+	CCoreSubscription = nullptr;
 
 	if(PubnubClient)
 	{
-		PubnubClient->OnClientDeinitialized.RemoveDynamic(this, &UPubnubSubscription::CleanUpSubscription);
+		PubnubClient->OnClientDeinitializeStart.RemoveDynamic(this, &UPubnubSubscription::CleanUpSubscription);
 	}
 }
 
@@ -805,8 +806,8 @@ void UPubnubSubscriptionSet::InternalInit()
 	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackObjects, EPubnubListenerType::PLT_Objects, this);
 	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, this);
 
-	//Bind to OnPubnubClientDeinitialized so subscription is properly Cleaned up, when it's not needed
-	PubnubClient->OnClientDeinitialized.AddDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
+	// Bind to deinitialize start so subscription C-Core resources are released
+	PubnubClient->OnClientDeinitializeStart.AddDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
 
 	//Now we are fully initialized
 	IsInitialized = true;
@@ -835,13 +836,14 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 	FOnPubnubAnyMessageType.Clear();
 	FOnPubnubAnyMessageTypeNative.Clear();
 
-	if(CCoreSubscriptionSet)
+	if(CCoreSubscriptionSet && IsValid(PubnubClient))
 	{
 		pubnub_subscription_set_free(&CCoreSubscriptionSet);
 	}
+	CCoreSubscriptionSet = nullptr;
 
 	if(PubnubClient)
 	{
-		PubnubClient->OnClientDeinitialized.RemoveDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
+		PubnubClient->OnClientDeinitializeStart.RemoveDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
 	}
 }

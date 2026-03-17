@@ -33,6 +33,7 @@ typedef struct pubnub_logger pubnub_logger_t;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubClientDeinitialized);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubClientDeinitializeStart);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPubnubMessageReceived, FPubnubMessageData, Message);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnPubnubMessageReceivedNative, const FPubnubMessageData& Message);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
@@ -138,6 +139,10 @@ public:
 	/**Delegate that is called when PubnubClient is deinitialized*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
 	FOnPubnubClientDeinitialized OnClientDeinitialized;
+
+	/**Delegate that is called when PubnubClient deinitialization starts*/
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	FOnPubnubClientDeinitializeStart OnClientDeinitializeStart;
 	
 	/**Listener to react for subscription status changed*/
 	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
@@ -2703,8 +2708,6 @@ private:
 	void PubnubResponseError(int PubnubResponse, FString ErrorMessage);
 
 	void AttachCCoreLogger();
-	void DetachCCoreLogger();
-
 	
 	void InitPubnub_priv(const FPubnubConfig& Config);
 	void SetUserID_priv(FString UserID);

@@ -2014,28 +2014,6 @@ void UPubnubClient::AttachCCoreLogger()
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core logger attached and set to TRACE level."));
 }
 
-void UPubnubClient::DetachCCoreLogger()
-{
-	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
-	if (!CCoreLogger)
-	{
-		PUBNUB_LOG_FUNCTION_TRACE(TEXT("no C-Core logger to detach."));
-		return;
-	}
-
-	if (ctx_pub)
-	{
-		pubnub_logger_remove(ctx_pub, CCoreLogger);
-	}
-	if (ctx_ee)
-	{
-		pubnub_logger_remove(ctx_ee, CCoreLogger);
-	}
-
-	pubnub_logger_free(&CCoreLogger);
-	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core logger detached and freed."));
-}
-
 UPubnubChannelEntity* UPubnubClient::CreateChannelEntity(FString Channel)
 {
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
@@ -2263,6 +2241,7 @@ void UPubnubClient::DeinitializeClient()
 	{return;}
 
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("deinitializing pubnub client."));
+	OnClientDeinitializeStart.Broadcast();
 
 	CancelPendingSubscriptionOperation(TEXT("Subscription operation cancelled because PubnubClient is being deinitialized."));
 
@@ -2293,15 +2272,19 @@ void UPubnubClient::DeinitializeClient()
 			CryptoBridge->CleanUpCryptoBridge();
 		}
 		
+		PUBNUB_LOG_FUNCTION_TRACE(TEXT("Start freeing C-Core contexts."));
+		
 		//Clean up and free C-Core contexts
 		pubnub_cancel(ctx_ee);
 		pubnub_cancel(ctx_pub);
 		pubnub_await(ctx_pub);
-		PUBNUB_LOG_FUNCTION_TRACE(TEXT("C-Core contexts cancelled and await completed."));
+		
+		pubnub_logger_remove_all(ctx_pub);
+		pubnub_logger_remove_all(ctx_ee);
+		pubnub_logger_free(&CCoreLogger);
+		
 		pubnub_free(ctx_pub);
 		pubnub_free_with_timeout(ctx_ee, 2000);
-		
-		pubnub_logger_free(&CCoreLogger);
 		
 		ctx_pub = nullptr;
 		ctx_ee = nullptr;
