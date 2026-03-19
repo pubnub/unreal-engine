@@ -61,7 +61,8 @@ void UPubnubClient::SetSecretKey()
 
 FPubnubPublishMessageResult UPubnubClient::PublishMessage(FString Channel, FString Message, FPubnubPublishSettings PublishSettings)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubPublishMessageResult());
+	FPubnubPublishMessageResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return PublishMessage_priv(Channel, Message, PublishSettings);
@@ -113,7 +114,8 @@ void UPubnubClient::PublishMessageAsync(FString Channel, FString Message, FPubnu
 
 FPubnubSignalResult UPubnubClient::Signal(FString Channel, FString Message, FPubnubSignalSettings SignalSettings)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubSignalResult());
+	FPubnubSignalResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return Signal_priv(Channel, Message, SignalSettings);
@@ -432,7 +434,8 @@ void UPubnubClient::RemoveChannelFromGroupAsync(FString Channel, FString Channel
 
 FPubnubListChannelsFromGroupResult UPubnubClient::ListChannelsFromGroup(FString ChannelGroup)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubListChannelsFromGroupResult());
+	FPubnubListChannelsFromGroupResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return ListChannelsFromGroup_priv(ChannelGroup);
@@ -505,7 +508,8 @@ void UPubnubClient::RemoveChannelGroupAsync(FString ChannelGroup, FOnPubnubRemov
 
 FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubListUsersFromChannelResult());
+	FPubnubListUsersFromChannelResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return ListUsersFromChannel_priv(Channel, ListUsersFromChannelSettings);
@@ -542,7 +546,8 @@ void UPubnubClient::ListUsersFromChannelAsync(FString Channel, FOnPubnubListUser
 
 FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChannels(FString UserID)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubListUsersSubscribedChannelsResult());
+	FPubnubListUsersSubscribedChannelsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return ListUserSubscribedChannels_priv(UserID);
@@ -630,7 +635,8 @@ void UPubnubClient::SetStateAsync(FString Channel, FString StateJson, FPubnubSet
 
 FPubnubGetStateResult UPubnubClient::GetState(FString Channel, FString ChannelGroup, FString UserID)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetStateResult());
+	FPubnubGetStateResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetState_priv(Channel, ChannelGroup, UserID);
@@ -690,7 +696,8 @@ void UPubnubClient::HeartbeatAsync(FString Channel, FString ChannelGroup)
 
 FPubnubGrantTokenResult UPubnubClient::GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGrantTokenResult());
+	FPubnubGrantTokenResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GrantToken_priv(UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(Ttl, AuthorizedUser, Permissions, Meta));
@@ -792,7 +799,8 @@ FString UPubnubClient::GetOrigin() const
 
 FPubnubFetchHistoryResult UPubnubClient::FetchHistory(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubFetchHistoryResult());
+	FPubnubFetchHistoryResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return FetchHistory_priv(Channel, FetchHistorySettings);
@@ -881,7 +889,8 @@ void UPubnubClient::DeleteMessagesAsync(FString Channel, FPubnubDeleteMessagesSe
 
 FPubnubMessageCountsResult UPubnubClient::MessageCounts(FString Channel, FString Timetoken)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMessageCountsResult());
+	FPubnubMessageCountsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return MessageCounts_priv(Channel, Timetoken);
@@ -918,7 +927,8 @@ void UPubnubClient::MessageCountsAsync(FString Channel, FString Timetoken, FOnPu
 
 FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple(TArray<FString> Channels, TArray<FString> Timetokens)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMessageCountsMultipleResult());
+	FPubnubMessageCountsMultipleResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return MessageCountsMultiple_priv(Channels, Timetokens);
@@ -978,7 +988,8 @@ void UPubnubClient::MessageCountsMultipleAsync(TArray<FString> Channels, TArray<
 
 FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadataRaw(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllUserMetadataResult());
+	FPubnubGetAllUserMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetAllUserMetadata_priv(Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
@@ -1014,7 +1025,8 @@ void UPubnubClient::GetAllUserMetadataRawAsync(FOnPubnubGetAllUserMetadataRespon
 
 FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata(FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FPubnubPage Page)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllUserMetadataResult());
+	FPubnubGetAllUserMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetAllUserMetadata_priv(UPubnubUtilities::GetAllIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::GetAllSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
@@ -1032,7 +1044,8 @@ void UPubnubClient::GetAllUserMetadataAsync(FOnPubnubGetAllUserMetadataResponseN
 
 FPubnubUserMetadataResult UPubnubClient::SetUserMetadataRaw(FString User, FString UserMetadataObj, FString Include)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
+	FPubnubUserMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetUserMetadata_priv(User, UserMetadataObj, Include);
@@ -1068,7 +1081,8 @@ void UPubnubClient::SetUserMetadataRawAsync(FString User, FString UserMetadataOb
 
 FPubnubUserMetadataResult UPubnubClient::SetUserMetadata(FString User, FPubnubUserInputData UserMetadata, FPubnubGetMetadataInclude Include)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
+	FPubnubUserMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetUserMetadata_priv(User, UPubnubJsonUtilities::GetJsonFromUserData(User, UserMetadata), UPubnubUtilities::GetMetadataIncludeToString(Include));
@@ -1086,7 +1100,8 @@ void UPubnubClient::SetUserMetadataAsync(FString User, FPubnubUserInputData User
 
 FPubnubUserMetadataResult UPubnubClient::GetUserMetadataRaw(FString User, FString Include)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
+	FPubnubUserMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetUserMetadata_priv(User, Include);
@@ -1122,7 +1137,8 @@ void UPubnubClient::GetUserMetadataRawAsync(FString User, FOnPubnubGetUserMetada
 
 FPubnubUserMetadataResult UPubnubClient::GetUserMetadata(FString User, FPubnubGetMetadataInclude Include)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubUserMetadataResult());
+	FPubnubUserMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetUserMetadata_priv(User, UPubnubUtilities::GetMetadataIncludeToString(Include));
@@ -1177,7 +1193,8 @@ void UPubnubClient::RemoveUserMetadataAsync(FString User, FOnPubnubRemoveUserMet
 
 FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadataRaw(FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllChannelMetadataResult());
+	FPubnubGetAllChannelMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetAllChannelMetadata_priv(Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
@@ -1213,7 +1230,8 @@ void UPubnubClient::GetAllChannelMetadataRawAsync(FOnPubnubGetAllChannelMetadata
 
 FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata(FPubnubGetAllInclude Include, int Limit, FString Filter, FPubnubGetAllSort Sort, FPubnubPage Page)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetAllChannelMetadataResult());
+	FPubnubGetAllChannelMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetAllChannelMetadata_priv(UPubnubUtilities::GetAllIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::GetAllSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
@@ -1231,7 +1249,8 @@ void UPubnubClient::GetAllChannelMetadataAsync(FOnPubnubGetAllChannelMetadataRes
 
 FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FString Include)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
+	FPubnubChannelMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetChannelMetadata_priv(Channel, ChannelMetadataObj, Include);
@@ -1267,7 +1286,8 @@ void UPubnubClient::SetChannelMetadataRawAsync(FString Channel, FString ChannelM
 
 FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata(FString Channel, FPubnubChannelInputData ChannelMetadata, FPubnubGetMetadataInclude Include)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
+	FPubnubChannelMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetChannelMetadata_priv(Channel, UPubnubJsonUtilities::GetJsonFromChannelData(Channel, ChannelMetadata), UPubnubUtilities::GetMetadataIncludeToString(Include));
@@ -1285,7 +1305,8 @@ void UPubnubClient::SetChannelMetadataAsync(FString Channel, FPubnubChannelInput
 
 FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadataRaw(FString Channel, FString Include)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
+	FPubnubChannelMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetChannelMetadata_priv(Channel, Include);
@@ -1321,7 +1342,8 @@ void UPubnubClient::GetChannelMetadataRawAsync(FString Channel, FOnPubnubGetChan
 
 FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata(FString Channel, FPubnubGetMetadataInclude Include)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMetadataResult());
+	FPubnubChannelMetadataResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetChannelMetadata_priv(Channel, UPubnubUtilities::GetMetadataIncludeToString(Include));
@@ -1375,7 +1397,8 @@ void UPubnubClient::RemoveChannelMetadataAsync(FString Channel, FOnPubnubRemoveC
 
 FPubnubMembershipsResult UPubnubClient::GetMembershipsRaw(FString User, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return GetMemberships_priv(User, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
@@ -1411,7 +1434,8 @@ void UPubnubClient::GetMembershipsRawAsync(FString User, FOnPubnubGetMemberships
 
 FPubnubMembershipsResult UPubnubClient::GetMemberships(FString User, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FPubnubPage Page)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return GetMemberships_priv(User, UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
@@ -1428,7 +1452,8 @@ void UPubnubClient::GetMembershipsAsync(FString User, FOnPubnubGetMembershipsRes
 
 FPubnubMembershipsResult UPubnubClient::SetMembershipsRaw(FString User, FString SetObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return SetMemberships_priv(User, SetObj, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
@@ -1464,7 +1489,8 @@ void UPubnubClient::SetMembershipsRawAsync(FString User, FString SetObj, FOnPubn
 
 FPubnubMembershipsResult UPubnubClient::SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FPubnubPage Page)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return SetMemberships_priv(User, UPubnubJsonUtilities::GetJsonFromMembershipsDataArray(Channels), UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
 }
@@ -1481,7 +1507,8 @@ void UPubnubClient::SetMembershipsAsync(FString User, TArray<FPubnubMembershipIn
 
 FPubnubMembershipsResult UPubnubClient::RemoveMembershipsRaw(FString User, FString RemoveObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return RemoveMemberships_priv(User, RemoveObj, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
 }
@@ -1517,7 +1544,8 @@ void UPubnubClient::RemoveMembershipsRawAsync(FString User, FString RemoveObj, F
 
 FPubnubMembershipsResult UPubnubClient::RemoveMemberships(FString User, TArray<FString> Channels, FPubnubMembershipInclude Include, int Limit, FString Filter, FPubnubMembershipSort Sort, FPubnubPage Page)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveMemberships_priv(User, UPubnubJsonUtilities::GetJsonFromMembershipsToRemove(Channels), UPubnubUtilities::MembershipIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MembershipSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
@@ -1535,7 +1563,8 @@ void UPubnubClient::RemoveMembershipsAsync(FString User, TArray<FString> Channel
 
 FPubnubChannelMembersResult UPubnubClient::GetChannelMembersRaw(FString Channel, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetChannelMembers_priv(Channel, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
@@ -1571,7 +1600,8 @@ void UPubnubClient::GetChannelMembersRawAsync(FString Channel, FOnPubnubGetChann
 
 FPubnubChannelMembersResult UPubnubClient::GetChannelMembers(FString Channel, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FPubnubPage Page)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return GetChannelMembers_priv(Channel, UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
@@ -1589,7 +1619,8 @@ void UPubnubClient::GetChannelMembersAsync(FString Channel, FOnPubnubGetChannelM
 
 FPubnubChannelMembersResult UPubnubClient::SetChannelMembersRaw(FString Channel, FString SetObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetChannelMembers_priv(Channel, SetObj, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
@@ -1625,7 +1656,8 @@ void UPubnubClient::SetChannelMembersRawAsync(FString Channel, FString SetObj, F
 
 FPubnubChannelMembersResult UPubnubClient::SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FPubnubPage Page)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return SetChannelMembers_priv(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersDataArray(Users), UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
@@ -1643,7 +1675,8 @@ void UPubnubClient::SetChannelMembersAsync(FString Channel, TArray<FPubnubChanne
 
 FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FString Include, int Limit, FString Filter, FString Sort, FPubnubPage Page, EPubnubTribool Count)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveChannelMembers_priv(Channel, RemoveObj, Include, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, Sort, Page, Count);
@@ -1679,7 +1712,8 @@ void UPubnubClient::RemoveChannelMembersRawAsync(FString Channel, FString Remove
 
 FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers(FString Channel, TArray<FString> Users, FPubnubMemberInclude Include, int Limit, FString Filter, FPubnubMemberSort Sort, FPubnubPage Page)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	
 	return RemoveChannelMembers_priv(Channel, UPubnubJsonUtilities::GetJsonFromChannelMembersToRemove(Users), UPubnubUtilities::MemberIncludeToString(Include), UPubnubUtilities::RoundLimitForPubnubFunctions(Limit), Filter, UPubnubUtilities::MemberSortToString(Sort), Page, (EPubnubTribool)Include.IncludeTotalCount);
@@ -1697,7 +1731,8 @@ void UPubnubClient::RemoveChannelMembersAsync(FString Channel, TArray<FString> U
 
 FPubnubAddMessageActionResult UPubnubClient::AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType, FString Value)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubAddMessageActionResult());
+	FPubnubAddMessageActionResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return AddMessageAction_priv(Channel, MessageTimetoken, ActionType, Value);
 }
@@ -1732,7 +1767,8 @@ void UPubnubClient::AddMessageActionAsync(FString Channel, FString MessageTimeto
 
 FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions(FString Channel, FString Start, FString End, int Limit)
 {
-	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FPubnubGetMessageActionsResult());
+	FPubnubGetMessageActionsResult FinalResult;
+	PUBNUB_RETURN_WRAPPER_IF_NOT_INITIALIZED(FinalResult);
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	return GetMessageActions_priv(Channel, Start, End, UPubnubUtilities::RoundLimitForPubnubFunctions(Limit));
 }
@@ -2576,12 +2612,14 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 		PUBNUB_LOG_INPUT(Message),
 		PUBNUB_LOG_INPUT(PublishSettings)
 	);
+	
+	FPubnubPublishMessageResult FinalResult;
 
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubPublishMessageResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubPublishMessageResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Message, FPubnubPublishMessageResult());
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Message, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubPublishMessageResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	FString FinalMessage = Message;
 
@@ -2656,12 +2694,14 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 		PUBNUB_LOG_INPUT(SignalSettings)
 	);
 
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubSignalResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubSignalResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Message, FPubnubSignalResult());
+	FPubnubSignalResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Message, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubSignalResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	FString FinalMessage = Message;
 	//If provided string is not a valid Json object or array, we treat it as literal string and serialize it
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(Message, false))
@@ -3003,11 +3043,13 @@ FPubnubListChannelsFromGroupResult UPubnubClient::ListChannelsFromGroup_priv(FSt
 	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
 		PUBNUB_LOG_VALUE(ChannelGroup)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubListChannelsFromGroupResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ChannelGroup, FPubnubListChannelsFromGroupResult());
+	FPubnubListChannelsFromGroupResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ChannelGroup, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubListChannelsFromGroupResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 	
 	pubnub_list_channel_group(ctx_pub, ChannelGroupHolder.Get());
@@ -3064,12 +3106,14 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FStri
 		PUBNUB_LOG_VALUE(Channel),
 		PUBNUB_LOG_VALUE(ListUsersFromChannelSettings)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubListUsersFromChannelResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubListUsersFromChannelResult());
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((ListUsersFromChannelSettings.Limit >= 0), TEXT("Limit can't be below 0."), FPubnubListUsersFromChannelResult());
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((ListUsersFromChannelSettings.Offset >= 0), TEXT("Offset can't be below 0."), FPubnubListUsersFromChannelResult());
+	FPubnubListUsersFromChannelResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((ListUsersFromChannelSettings.Limit >= 0), TEXT("Limit can't be below 0."), FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((ListUsersFromChannelSettings.Offset >= 0), TEXT("Offset can't be below 0."), FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubListUsersFromChannelResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	//Set all options from ListUsersFromChannelSettings
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -3119,10 +3163,12 @@ FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChanne
 	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
 		PUBNUB_LOG_VALUE(UserID)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubListUsersSubscribedChannelsResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(UserID, FPubnubListUsersSubscribedChannelsResult());
+	FPubnubListUsersSubscribedChannelsResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(UserID, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubListUsersSubscribedChannelsResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	FUTF8StringHolder UserIDHolder(UserID);
 	pubnub_where_now(ctx_pub, UserIDHolder.Get());
@@ -3204,10 +3250,12 @@ FPubnubGetStateResult UPubnubClient::GetState_priv(FString Channel, FString Chan
 		PUBNUB_LOG_VALUE(ChannelGroup),
 		PUBNUB_LOG_VALUE(UserID)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetStateResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubGetStateResult());
+	FPubnubGetStateResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetStateResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	FUTF8StringHolder ChannelGroupHolder(ChannelGroup);
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -3263,10 +3311,12 @@ FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(FString PermissionObject)
 	PUBNUB_LOG_FUNCTION_INPUTS_DEBUG(
 		PUBNUB_LOG_VALUE(PermissionObject)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGrantTokenResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(PermissionObject, FPubnubGrantTokenResult());
+	FPubnubGrantTokenResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(PermissionObject, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGrantTokenResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	FUTF8StringHolder PermissionObjectHolder(PermissionObject);
 	
@@ -3402,11 +3452,13 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 		PUBNUB_LOG_VALUE(Channel),
 		PUBNUB_LOG_VALUE(FetchHistorySettings)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubFetchHistoryResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubFetchHistoryResult());
+	FPubnubFetchHistoryResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubFetchHistoryResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	//Set all options from HistorySettings
 
 	//Converted char needs to live in function scope, so we need to create it here
@@ -3510,10 +3562,12 @@ FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FS
 		PUBNUB_LOG_VALUE(Channel),
 		PUBNUB_LOG_VALUE(Timetoken)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMessageCountsResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubMessageCountsResult());
+	FPubnubMessageCountsResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMessageCountsResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	FUTF8StringHolder TimetokenHolder(Timetoken);
 	FUTF8StringHolder ChannelHolder(Channel);
@@ -3544,11 +3598,13 @@ FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FS
 FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple_priv(TArray<FString> Channels, TArray<FString> Timetokens)
 {
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("message counts multiple called. ChannelsCount=%d, TimetokensCount=%d"), Channels.Num(), Timetokens.Num()));
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMessageCountsMultipleResult());
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((!Channels.IsEmpty()), TEXT("Channels array cannot be empty."), FPubnubMessageCountsMultipleResult());
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((Channels.Num() == Timetokens.Num()), TEXT("Number of channels must match number of timetokens."), FPubnubMessageCountsMultipleResult());
+	FPubnubMessageCountsMultipleResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((!Channels.IsEmpty()), TEXT("Channels array cannot be empty."), FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((Channels.Num() == Timetokens.Num()), TEXT("Number of channels must match number of timetokens."), FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMessageCountsMultipleResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	FUTF8StringHolder TimetokensHolder(UPubnubUtilities::ArrayOfStringsToCommaSeparatedString(Timetokens));
 	FUTF8StringHolder ChannelHolder(UPubnubUtilities::ArrayOfStringsToCommaSeparatedString(Channels));
@@ -3597,9 +3653,11 @@ FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata_priv(FString I
 		PUBNUB_LOG_VALUE(Page),
 		PUBNUB_LOG_VALUE(Count)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetAllUserMetadataResult());
+	FPubnubGetAllUserMetadataResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetAllUserMetadataResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3649,14 +3707,16 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 		PUBNUB_LOG_VALUE(UserMetadataObj),
 		PUBNUB_LOG_VALUE(Include)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubUserMetadataResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubUserMetadataResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(UserMetadataObj, FPubnubUserMetadataResult());
+	FPubnubUserMetadataResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(UserMetadataObj, FinalResult);
 	//Make sure that provided UserMetadataObj is a correct Json string
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(UserMetadataObj, false), TEXT("UserMetadataObj has to be a correct Json Object. Operation aborted."),  FPubnubUserMetadataResult());
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(UserMetadataObj, false), TEXT("UserMetadataObj has to be a correct Json Object. Operation aborted."), FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubUserMetadataResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	FUTF8StringHolder UserHolder(User);
 	FUTF8StringHolder UserMetadataObjHolder(UserMetadataObj);
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3696,10 +3756,12 @@ FPubnubUserMetadataResult UPubnubClient::GetUserMetadata_priv(FString User, FStr
 		PUBNUB_LOG_VALUE(User),
 		PUBNUB_LOG_VALUE(Include)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubUserMetadataResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubUserMetadataResult());
+	FPubnubUserMetadataResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubUserMetadataResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	FUTF8StringHolder UserHolder(User);
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3773,10 +3835,12 @@ FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata_priv(FSt
 		PUBNUB_LOG_VALUE(Page),
 		PUBNUB_LOG_VALUE(Count)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetAllChannelMetadataResult());
+	FPubnubGetAllChannelMetadataResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetAllChannelMetadataResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	pubnub_getall_metadata_opts PubnubOptions = pubnub_getall_metadata_defopts();
 	FUTF8StringHolder IncludeHolder(Include);
 	FUTF8StringHolder FilterHolder(Filter);
@@ -3791,7 +3855,7 @@ FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata_priv(FSt
 	PubnubOptions.page.prev = (Page.Next.IsEmpty() && !Page.Prev.IsEmpty()) ? PagePrevHolder.Get() : NULL;
 	PubnubOptions.limit = Limit;
 	PubnubOptions.count = (pubnub_tribool)(uint8)Count;
-	
+
 	pubnub_getall_channelmetadata_ex(ctx_pub, PubnubOptions);
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get all channel metadata request sent."));
 
@@ -3825,14 +3889,16 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 		PUBNUB_LOG_VALUE(ChannelMetadataObj),
 		PUBNUB_LOG_VALUE(Include)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMetadataResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMetadataResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ChannelMetadataObj, FPubnubChannelMetadataResult());
+	FPubnubChannelMetadataResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ChannelMetadataObj, FinalResult);
 	//Make sure that provided ChannelMetadataObj is a correct Json string
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(ChannelMetadataObj, false), TEXT("ChannelMetadataObj has to be a correct Json Object. Operation aborted."),  FPubnubChannelMetadataResult());
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(ChannelMetadataObj, false), TEXT("ChannelMetadataObj has to be a correct Json Object. Operation aborted."), FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMetadataResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	FUTF8StringHolder ChannelMetadataObjHolder(ChannelMetadataObj);
 	FUTF8StringHolder ChannelHolder(Channel);
 	FUTF8StringHolder IncludeHolder(Include);
@@ -3872,14 +3938,16 @@ FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata_priv(FString Chan
 		PUBNUB_LOG_VALUE(Channel),
 		PUBNUB_LOG_VALUE(Include)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMetadataResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMetadataResult());
+	FPubnubChannelMetadataResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMetadataResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	FUTF8StringHolder ChannelHolder(Channel);
 	FUTF8StringHolder IncludeHolder(Include);
-	
+
 	pubnub_get_channelmetadata(ctx_pub, IncludeHolder.Get(), ChannelHolder.Get());
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get channel metadata request sent."));
 
@@ -3951,11 +4019,13 @@ FPubnubMembershipsResult UPubnubClient::GetMemberships_priv(FString User, FStrin
 		PUBNUB_LOG_VALUE(Page),
 		PUBNUB_LOG_VALUE(Count)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMembershipsResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMembershipsResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
 	FUTF8StringHolder UserHolder(User);
 	FUTF8StringHolder IncludeHolder(Include);
@@ -4010,13 +4080,15 @@ FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FStrin
 		PUBNUB_LOG_VALUE(Page),
 		PUBNUB_LOG_VALUE(Count)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMembershipsResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubMembershipsResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(SetObj, FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(SetObj, FinalResult);
 	//Make sure that provided SetObj is a correct Json string
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false), TEXT("SetObj has to be a correct Json Object. Operation aborted."),  FPubnubMembershipsResult());
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false), TEXT("SetObj has to be a correct Json Object. Operation aborted."), FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMembershipsResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
 	FUTF8StringHolder UserHolder(User);
@@ -4073,13 +4145,15 @@ FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FSt
 		PUBNUB_LOG_VALUE(Page),
 		PUBNUB_LOG_VALUE(Count)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubMembershipsResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FPubnubMembershipsResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(RemoveObj, FPubnubMembershipsResult());
+	FPubnubMembershipsResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(User, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(RemoveObj, FinalResult);
 	//Make sure that provided RemoveObj is a correct Json string
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false), TEXT("RemoveObj has to be a correct Json Object. Operation aborted."),  FPubnubMembershipsResult());
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false), TEXT("RemoveObj has to be a correct Json Object. Operation aborted."), FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubMembershipsResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	pubnub_membership_opts PubnubOptions = pubnub_membership_opts();
 	FUTF8StringHolder UserHolder(User);
@@ -4136,11 +4210,13 @@ FPubnubChannelMembersResult UPubnubClient::GetChannelMembers_priv(FString Channe
 		PUBNUB_LOG_VALUE(Page),
 		PUBNUB_LOG_VALUE(Count)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMembersResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMembersResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
 	FUTF8StringHolder IncludeHolder(Include);
 	FUTF8StringHolder FilterHolder(Filter);
@@ -4194,13 +4270,15 @@ FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channe
 		PUBNUB_LOG_VALUE(Page),
 		PUBNUB_LOG_VALUE(Count)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMembersResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMembersResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(SetObj, FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(SetObj, FinalResult);
 	//Make sure that provided SetObj is a correct Json string
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false), TEXT("SetObj has to be a correct Json Object. Operation aborted."),  FPubnubChannelMembersResult());
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(SetObj, false), TEXT("SetObj has to be a correct Json Object. Operation aborted."), FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMembersResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
 	FUTF8StringHolder IncludeHolder(Include);
@@ -4256,13 +4334,15 @@ FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers_priv(FString Cha
 		PUBNUB_LOG_VALUE(Page),
 		PUBNUB_LOG_VALUE(Count)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubChannelMembersResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubChannelMembersResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(RemoveObj, FPubnubChannelMembersResult());
+	FPubnubChannelMembersResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(RemoveObj, FinalResult);
 	//Make sure that provided RemoveObj is a correct Json string
-	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false), TEXT("RemoveObj has to be a correct Json Object. Operation aborted."),  FPubnubChannelMembersResult());
+	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(UPubnubJsonUtilities::IsCorrectJsonString(RemoveObj, false), TEXT("RemoveObj has to be a correct Json Object. Operation aborted."), FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubChannelMembersResult());
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
 	pubnub_members_opts PubnubOptions = pubnub_members_opts();
 	FUTF8StringHolder IncludeHolder(Include);
@@ -4314,14 +4394,16 @@ FPubnubAddMessageActionResult UPubnubClient::AddMessageAction_priv(FString Chann
 		PUBNUB_LOG_VALUE(ActionType),
 		PUBNUB_LOG_VALUE(Value)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubAddMessageActionResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubAddMessageActionResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(MessageTimetoken, FPubnubAddMessageActionResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ActionType, FPubnubAddMessageActionResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Value, FPubnubAddMessageActionResult());
+	FPubnubAddMessageActionResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(MessageTimetoken, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(ActionType, FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Value, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubAddMessageActionResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	//Add quotes to these fields as they are required by C-Core
 	FString FinalActionType = UPubnubUtilities::AddQuotesToString(ActionType);
 	FString FinalValue = UPubnubUtilities::AddQuotesToString(Value);
@@ -4424,11 +4506,13 @@ FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions_priv(FString Cha
 		PUBNUB_LOG_VALUE(End),
 		PUBNUB_LOG_VALUE(Limit)
 	);
-	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FPubnubGetMessageActionsResult());
-	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FPubnubGetMessageActionsResult());
+	FPubnubGetMessageActionsResult FinalResult;
+
+	PUBNUB_RETURN_WRAPPER_IF_USER_ID_NOT_SET(FinalResult);
+	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(Channel, FinalResult);
 	// Try to acquire lock - fail fast if another operation is in progress
-	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FPubnubGetMessageActionsResult());
-	
+	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
+
 	FUTF8StringHolder ChannelHolder(Channel);
 	FUTF8StringHolder StartHolder(Start);
 	FUTF8StringHolder EndHolder(End);

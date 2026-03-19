@@ -9,6 +9,39 @@
 #include "UnrealEngine.h"
 
 
+FString PubnubTests::GetTestPublishKey()
+{
+	FString PublishKey = FPlatformMisc::GetEnvironmentVariable(TEXT("PN_PUB_KEY"));
+	if(!PublishKey.IsEmpty())
+	{
+		return PublishKey;
+	}
+	// Fallback to demo key if environment variable is not set
+	return TEXT("demo");
+}
+
+FString PubnubTests::GetTestSubscribeKey()
+{
+	FString SubscribeKey = FPlatformMisc::GetEnvironmentVariable(TEXT("PN_SUB_KEY"));
+	if(!SubscribeKey.IsEmpty())
+	{
+		return SubscribeKey;
+	}
+	// Fallback to demo key if environment variable is not set
+	return TEXT("demo");
+}
+
+FString PubnubTests::GetTestSecretKey()
+{
+	FString SubscribeKey = FPlatformMisc::GetEnvironmentVariable(TEXT("PN_SEC_KEY"));
+	if(!SubscribeKey.IsEmpty())
+	{
+		return SubscribeKey;
+	}
+	// Fallback to demo key if environment variable is not set
+	return TEXT("demo");
+}
+
 bool FPubnubAutomationTestBase::InitTest()
 {
 	//Initialize GameInstance and PubnubSubsystem
@@ -21,6 +54,19 @@ bool FPubnubAutomationTestBase::InitTest()
 	PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	if (!TestNotNull(" Pubnub Subsystem exists", PubnubSubsystem))
 	{return false;}
+	
+	FPubnubConfig Config;
+	Config.LoggerConfig.DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Debug;
+	Config.UserID = "UE_SDK_Test_User";
+	Config.PublishKey = PubnubTests::GetTestPublishKey();
+	Config.SubscribeKey = PubnubTests::GetTestSubscribeKey();
+	Config.SecretKey = PubnubTests::GetTestSecretKey();
+	
+	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
+	
+	// We need to disable logs, because they would make tests fail during intentional errors
+	bSuppressLogErrors = true;
+	bSuppressLogWarnings = true;
 
 	return true;
 }

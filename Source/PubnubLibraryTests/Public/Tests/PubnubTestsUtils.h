@@ -18,6 +18,22 @@ namespace PubnubTests
 {
 	constexpr float MAX_WAIT_TIME = 10.0f;
 	const FString SDK_PREFIX = "UE_SDK_";
+	/**
+	 * Gets the Publish Key from environment variable PUBNUB_PUBLISH_KEY
+	 * Falls back to "demo" if not set
+	 */
+	FString GetTestPublishKey();
+	
+	/**
+	 * Gets the Subscribe Key from environment variable PUBNUB_SUBSCRIBE_KEY
+	 * Falls back to "demo" if not set
+	 */
+	FString GetTestSubscribeKey();
+	/**
+	 * Gets the Subscribe Key from environment variable PUBNUB_SUBSCRIBE_KEY
+	 * Falls back to "demo" if not set
+	 */
+	FString GetTestSecretKey();
 }
 
 
@@ -66,6 +82,7 @@ public:
 
 	UPubnubSubsystem* PubnubSubsystem = nullptr;
 	UGameInstance* GameInstance = nullptr;
+	UPubnubClient* PubnubClient = nullptr;
 };
 
 
