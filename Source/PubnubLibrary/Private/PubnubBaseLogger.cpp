@@ -1,3 +1,5 @@
+// Copyright 2026 PubNub Inc. All Rights Reserved.
+
 #include "PubnubBaseLogger.h"
 
 void UPubnubBaseLogger::Log_Implementation(const FPubnubLogMessage& LogMessage)

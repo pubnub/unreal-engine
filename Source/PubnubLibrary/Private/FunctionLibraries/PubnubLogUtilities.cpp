@@ -1,3 +1,5 @@
+// Copyright 2026 PubNub Inc. All Rights Reserved.
+
 #include "FunctionLibraries/PubnubLogUtilities.h"
 
 #include "UObject/UnrealType.h"

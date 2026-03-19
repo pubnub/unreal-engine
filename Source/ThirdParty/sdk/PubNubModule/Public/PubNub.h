@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 THIRD_PARTY_INCLUDES_START
 #include "pubnub_core.hpp"

@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #include "Samples/Entities/Sample_ChannelEntity.h"
 #include "Kismet/GameplayStatics.h"
