@@ -1835,6 +1835,7 @@ private:
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
 	
 	//Plugin settings from ProjectSettings
+	UPROPERTY()
 	TObjectPtr<UPubnubSettings> PubnubPluginSettings = nullptr;
 	
 	void LoadPluginSettings();

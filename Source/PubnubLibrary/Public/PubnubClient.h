@@ -158,13 +158,6 @@ public:
 	/**Global listener for all messages received on subscribed channels, equivalent that accepts lambdas*/
 	FOnPubnubMessageReceivedNative OnMessageReceivedNative;
 
-	/**Listener to react for all Errors in Pubnub functions */
-	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
-	FOnPubnubError OnPubnubError;
-	
-	/**Listener to react for all Errors in Pubnub functions, equivalent that accepts lambdas*/
-	FOnPubnubErrorNative OnPubnubErrorNative;
-
 	
 	/* GENERAL FUNCTIONS */
 
@@ -2474,8 +2467,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Logger")
 	TArray<TScriptInterface<IPubnubLoggerInterface>> GetLoggers();
 
-	void LogSDK(EPubnubLogLevel Level, const FString& Message, const FString& Location = "");
-
 #pragma endregion
 
 #pragma region ENTITIES
@@ -2653,7 +2644,6 @@ private:
 #pragma region PUBNUB CONFIG
 
 	//Container for all configuration settings
-	//TODO:: DO we even need to save config??
 	UPROPERTY()
 	FPubnubConfig PubnubConfig;
 
@@ -2702,10 +2692,6 @@ private:
 	
 	//Returns FString from the pubnub_get_channel response
 	FString GetLastChannelResponse(pubnub_t* context);
-
-	//TODO:: Move these functions to the logger
-	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
-	void PubnubResponseError(int PubnubResponse, FString ErrorMessage);
 
 	void AttachCCoreLogger();
 	

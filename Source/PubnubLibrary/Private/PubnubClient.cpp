@@ -27,35 +27,6 @@ struct CCoreSubscriptionCallback
 	pubnub_subscription_t* Subscription;
 };
 
-//TODO:: Move this to logger
-void UPubnubClient::PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType)
-{
-	LogSDK(ErrorType == EPubnubErrorType::PET_Error ? EPubnubLogLevel::PLL_Error : EPubnubLogLevel::PLL_Warning, ErrorMessage);
-
-	TWeakObjectPtr<UPubnubClient> WeakThis = MakeWeakObjectPtr<UPubnubClient>(this);
-
-	//Errors has to be broadcasted on GameThread, otherwise engine will crash if someone uses them for example with widgets
-	AsyncTask(ENamedThreads::GameThread, [WeakThis, ErrorMessage, ErrorType]()
-	{
-		if(!WeakThis.IsValid())
-		{return;}
-		
-		//Broadcast bound delegate with JsonResponse
-		WeakThis.Get()->OnPubnubError.Broadcast(ErrorMessage, ErrorType);
-		WeakThis.Get()->OnPubnubErrorNative.Broadcast(ErrorMessage, ErrorType);
-	});
-}
-
-//TODO:: Move this to logger
-void UPubnubClient::PubnubResponseError(int PubnubResponse, FString ErrorMessage)
-{
-	//Convert all error data into single string
-	FString ResponseString(pubnub_res_2_string(static_cast<pubnub_res>(PubnubResponse)));
-	FString FinalErrorMessage = FString::Printf(TEXT("%s Error: %s."), *ErrorMessage, *ResponseString);
-
-	PubnubError(FinalErrorMessage, EPubnubErrorType::PET_Error);
-}
-
 void UPubnubClient::DestroyClient()
 {
 	if(!PubnubSubsystem)
@@ -968,7 +939,7 @@ void UPubnubClient::MessageCountsMultipleAsync(TArray<FString> Channels, TArray<
 {
 	if (!IsInitialized)
 	{
-		PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
 		FPubnubMessageCountsMultipleResult ErrorResult;
 		ErrorResult.Result.Error = true;
 		ErrorResult.Result.ErrorMessage = TEXT("PubnubClient is not initialized.");
@@ -980,7 +951,7 @@ void UPubnubClient::MessageCountsMultipleAsync(TArray<FString> Channels, TArray<
 	}
 	if (!PubnubCallsThread)
 	{
-		PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
 		FPubnubMessageCountsMultipleResult ErrorResult;
 		ErrorResult.Result.Error = true;
 		ErrorResult.Result.ErrorMessage = TEXT("PubnubCallsThread is invalid.");
@@ -1856,6 +1827,7 @@ FPubnubOperationResult UPubnubClient::ReconnectSubscriptions(FString Timetoken)
 	else
 	{
 		FinalResult.Status = 200;
+		PUBNUB_LOG_FUNCTION_INFO(TEXT("reconnect completed successfully."));
 	}
 	PUBNUB_LOG_OPERATION_RESULT(FinalResult);
 	
@@ -1878,6 +1850,7 @@ FPubnubOperationResult UPubnubClient::DisconnectSubscriptions()
 	else
 	{
 		FinalResult.Status = 200;
+		PUBNUB_LOG_FUNCTION_INFO(TEXT("disconnect completed successfully."));
 	}
 	PUBNUB_LOG_OPERATION_RESULT(FinalResult);
 	
@@ -1963,28 +1936,6 @@ TArray<TScriptInterface<IPubnubLoggerInterface>> UPubnubClient::GetLoggers()
 	return LoggerManager->GetLoggers();
 }
 
-void UPubnubClient::LogSDK(EPubnubLogLevel Level, const FString& Message, const FString& Location)
-{
-	if (LoggerManager)
-	{
-		LoggerManager->Log(Level, EPubnubLogSource::PLS_UE, Message, Location);
-		return;
-	}
-
-	if (Level == EPubnubLogLevel::PLL_Error)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("%s"), *Message);
-	}
-	else if (Level == EPubnubLogLevel::PLL_Warning)
-	{
-		UE_LOG(PubnubLog, Warning, TEXT("%s"), *Message);
-	}
-	else
-	{
-		UE_LOG(PubnubLog, Log, TEXT("%s"), *Message);
-	}
-}
-
 void UPubnubClient::AttachCCoreLogger()
 {
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
@@ -2068,7 +2019,7 @@ UPubnubSubscriptionSet* UPubnubClient::CreateSubscriptionSet(TArray<FString> Cha
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("CreateSubscriptionSet inputs: ChannelsCount=%d, ChannelGroupsCount=%d"), Channels.Num(), ChannelGroups.Num()));
 	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
 	{
-		PubnubError("[CreateSubscriptionSet]: at least one Channel or ChannelGroup is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
+		PUBNUB_LOG_FUNCTION_WARNING(TEXT("[CreateSubscriptionSet]: at least one Channel or ChannelGroup is needed to create SubscriptionSet."));
 	}
 	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
 	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
@@ -2082,7 +2033,7 @@ UPubnubSubscriptionSet* UPubnubClient::CreateSubscriptionSetFromEntities(TArray<
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("CreateSubscriptionSetFromEntities inputs: EntitiesCount=%d"), Entities.Num()));
 	if(Entities.IsEmpty())
 	{
-		PubnubError("[CreateSubscriptionSetFromEntities]: at least one Entity is needed to create SubscriptionSet.", EPubnubErrorType::PET_Warning);
+		PUBNUB_LOG_FUNCTION_WARNING(TEXT("[CreateSubscriptionSetFromEntities]: at least one Entity is needed to create SubscriptionSet."));
 	}
 	TArray<FString> Channels, ChannelGroups;
 
@@ -2221,6 +2172,7 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 		//Create new thread to queue all pubnub operations
 		PubnubCallsThread = new FPubnubFunctionThread;
 		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("pubnub calls thread created."));
+		PUBNUB_LOG_FUNCTION_INFO(FString::Printf(TEXT("client ready. ClientID=%d, DebugName=%s"), ClientID, *DebugName));
 	}
 }
 
@@ -2240,7 +2192,7 @@ void UPubnubClient::DeinitializeClient()
 	if(!IsInitialized.load(std::memory_order_acquire))
 	{return;}
 
-	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("deinitializing pubnub client."));
+	PUBNUB_LOG_FUNCTION_INFO(TEXT("deinitializing pubnub client."));
 	OnClientDeinitializeStart.Broadcast();
 
 	CancelPendingSubscriptionOperation(TEXT("Subscription operation cancelled because PubnubClient is being deinitialized."));
@@ -2303,7 +2255,7 @@ void UPubnubClient::DeinitializeClient()
 
 	//Notify that Deinitialization is finished
 	OnClientDeinitialized.Broadcast();
-	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("client deinitialization finished."));
+	PUBNUB_LOG_FUNCTION_INFO(TEXT("client deinitialization finished."));
 
 	DefaultLogger = nullptr;
 	LoggerManager = nullptr;
@@ -2493,7 +2445,7 @@ FString UPubnubClient::GetLastResponse(pubnub_t* context)
 	}
 	else
 	{
-		PubnubResponseError(PubnubResponse, "Failed to get last response.");
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to get last response. Error: %s."), UTF8_TO_TCHAR(pubnub_res_2_string(static_cast<pubnub_res>(PubnubResponse)))));
 	}
 	return Response;
 }
@@ -2516,7 +2468,7 @@ FString UPubnubClient::GetLastChannelResponse(pubnub_t* context)
 	}
 	else
 	{
-		PubnubResponseError(PubnubResponse, "Failed to get last channel response.");
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to get last channel response. Error: %s."), UTF8_TO_TCHAR(pubnub_res_2_string(static_cast<pubnub_res>(PubnubResponse)))));
 	}
 	return Response;
 }
@@ -2530,13 +2482,13 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	//Make sure that keys are filled
 	if(PublishKey[0] == '\0')
 	{
-		PubnubError("Publish key is empty, can't initialize Pubnub");
+		PUBNUB_LOG_FUNCTION_ERROR(TEXT("Publish key is empty, can't initialize Pubnub"));
 		return;
 	}
 
 	if(SubscribeKey[0] == '\0')
 	{
-		PubnubError("Subscribe key is empty, can't initialize Pubnub");
+		PUBNUB_LOG_FUNCTION_ERROR(TEXT("Subscribe key is empty, can't initialize Pubnub"));
 		return;
 	}
 
@@ -2608,7 +2560,7 @@ void UPubnubClient::SetSecretKey_priv()
 {
 	if(SecretKey[0] == '\0')
 	{
-		PubnubError("Can't set Secret Key. Secret Key is empty.");
+		PUBNUB_LOG_FUNCTION_ERROR(TEXT("Can't set Secret Key. Secret Key is empty."));
 		return;
 	}
 	
@@ -3208,7 +3160,7 @@ FPubnubOperationResult UPubnubClient::SetState_priv(FString Channel, FString Sta
 
 	if(!UPubnubJsonUtilities::IsCorrectJsonString(StateJson, false))
 	{
-		PubnubError("[SetState]: StateJson has to be a correct Json Object. Aborting operation.", EPubnubErrorType::PET_Warning);
+		PUBNUB_LOG_FUNCTION_WARNING(TEXT("[SetState]: StateJson has to be a correct Json Object. Aborting operation."));
 		FPubnubOperationResult Result;
 		Result.Error = true;
 		Result.ErrorMessage = "[SetState]: StateJson has to be a correct Json Object. Operation aborted.";
@@ -3483,7 +3435,7 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 	}
 	else
 	{
-		PubnubResponseError(PubnubResponse, "Failed to get last response.");
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to get last response. Error: %s."), UTF8_TO_TCHAR(pubnub_res_2_string(static_cast<pubnub_res>(PubnubResponse)))));
 	}
 
 	//If response is empty, there was server error. 

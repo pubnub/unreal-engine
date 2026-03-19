@@ -89,16 +89,6 @@ void UPubnubSubsystem::InitPubnubWithConfig(FPubnubConfig Config)
 
 	});
 
-	DefaultClient->OnPubnubErrorNative.AddLambda([WeakThis](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		if(WeakThis.IsValid())
-		{
-			WeakThis.Get()->OnPubnubError.Broadcast(ErrorMessage, ErrorType);
-			WeakThis.Get()->OnPubnubErrorNative.Broadcast(ErrorMessage, ErrorType);
-		}
-
-	});
-
 	DefaultClient->OnSubscriptionStatusChangedNative.AddLambda([WeakThis](EPubnubSubscriptionStatus Status, FPubnubSubscriptionStatusData StatusData)
 	{
 		if(WeakThis.IsValid())

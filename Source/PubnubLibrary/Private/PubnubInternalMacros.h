@@ -99,6 +99,13 @@
 	PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Debug, MessageText)
 
 /**
+ * Logs custom text at Info level for current function.
+ * Use for important lifecycle/operational events (e.g. client ready, reconnect completed).
+ */
+#define PUBNUB_LOG_FUNCTION_INFO(MessageText) \
+	PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Info, MessageText)
+
+/**
  * Logs custom text at Warning level for current function.
  */
 #define PUBNUB_LOG_FUNCTION_WARNING(MessageText) \
@@ -165,13 +172,13 @@
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("Pubnub subsystem is not initialized."), ##__VA_ARGS__); \
 			return; \
 		} \
 		if (!DefaultClient) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: DefaultClient is invalid. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: DefaultClient is invalid. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("DefaultClient is invalid."), ##__VA_ARGS__); \
 			return; \
 		} \
@@ -193,13 +200,13 @@
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("PubnubClient is not initialized."), ##__VA_ARGS__); \
 			return; \
 		} \
 		if (!PubnubCallsThread) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("PubnubCallsThread is invalid."), ##__VA_ARGS__); \
 			return; \
 		} \
@@ -219,12 +226,12 @@
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: Pubnub is not initialized. Aborting operation. Ensure InitPubnub is called or InitializeAutomatically is enabled."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return __VA_ARGS__; \
 		} \
 		if (!DefaultClient) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: DefaultClient is invalid. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: DefaultClient is invalid. Internal systems were not initialized correctly. Try reinitializing Pubnub or contact support."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return __VA_ARGS__; \
 		} \
 	} while (false)
@@ -243,12 +250,12 @@
 	do { \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return __VA_ARGS__; \
 		} \
 		if (!PubnubCallsThread) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			return __VA_ARGS__; \
 		} \
 	} while (false)
@@ -349,7 +356,7 @@
 		FPubnubOperationResult Result; \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			Result.Error = true; \
 			Result.ErrorMessage = TEXT("PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."); \
 			ReturnWrapper.Result = Result; \
@@ -357,7 +364,7 @@
 		} \
 		if (!PubnubCallsThread) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			Result.Error = true; \
 			Result.ErrorMessage = TEXT("PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."); \
 			ReturnWrapper.Result = Result; \
@@ -380,14 +387,14 @@
 		FPubnubOperationResult Result; \
 		if (!IsInitialized) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			Result.Error = true; \
 			Result.ErrorMessage = TEXT("PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."); \
 			return Result; \
 		} \
 		if (!PubnubCallsThread) \
 		{ \
-			PubnubError(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
+			UE_LOG(PubnubLog, Error, TEXT("%s"), *FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__)))); \
 			Result.Error = true; \
 			Result.ErrorMessage = TEXT("PubnubCallsThread is invalid. Aborting operation. This client was already destroyed or was not initialized correctly."); \
 			return Result; \

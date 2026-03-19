@@ -25,8 +25,6 @@ void ASample_Configuration::RunSamples()
 
 	MessageListenerSample();
 	MessageListenerLambdaSample();
-	ErrorListenerSample();
-	ErrorListenerLambdaSample();
 	SubscriptionStatusListenerSample();
 	SubscriptionStatusListenerLambdaSample();
 	ListUsersFromChannelLambdaSample();
@@ -84,46 +82,6 @@ void ASample_Configuration::MessageListenerLambdaSample()
 	{
 		//Do something with the message, for example print it
 		UE_LOG(LogTemp, Log, TEXT("Message received on channel: %s. Message: %s"), *MessageData.Channel, *MessageData.Message);
-	});
-}
-
-// snippet.error_listener
-// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-void ASample_Configuration::ErrorListenerSample()
-{
-	// snippet.hide
-	UPubnubClient* PubnubClient = GetPubnubClient();
-	// snippet.show
-	
-	//Assumes PubnubClient is created and UserID is set
-
-	//Bind delegate to the error listener
-	// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-	PubnubClient->OnPubnubError.AddDynamic(this, &ASample_Configuration::OnPubnubErrorReceived);
-}
-
-// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-void ASample_Configuration::OnPubnubErrorReceived(FString ErrorMessage, EPubnubErrorType ErrorType)
-{
-	//Do something with the error, for example print it
-	UE_LOG(LogTemp, Warning, TEXT("Pubnub error: %s"), *ErrorMessage);
-}
-
-// snippet.error_listener_lambda
-// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-void ASample_Configuration::ErrorListenerLambdaSample()
-{
-	// snippet.hide
-	UPubnubClient* PubnubClient = GetPubnubClient();
-	// snippet.show
-	
-	//Assumes PubnubClient is created and UserID is set
-
-	//Bind lambda delegate to the error listener
-	PubnubClient->OnPubnubErrorNative.AddLambda([](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		//Do something with the error, for example print it
-		UE_LOG(LogTemp, Warning, TEXT("Pubnub error: %s"), *ErrorMessage);
 	});
 }
 

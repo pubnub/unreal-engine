@@ -38,19 +38,7 @@ public:
 	// snippet.message_listener_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void MessageListenerLambdaSample();
-
-	// snippet.error_listener
-	// blueprint.fb_9oopg
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
-	void ErrorListenerSample();
-
-	UFUNCTION()
-	void OnPubnubErrorReceived(FString ErrorMessage, EPubnubErrorType ErrorType);
-
-	// snippet.error_listener_lambda
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
-	void ErrorListenerLambdaSample();
-
+	
 	// snippet.subscription_status_listener
 	// blueprint.ld_4o3t8
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
