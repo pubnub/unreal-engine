@@ -220,6 +220,26 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromGroup_UnsubscribeT
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // ---------------------------------------------------------------------------
+// UPubnubClient::UnsubscribeFromAll - Automated tests (sync only)
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAll_ClientNotInitialized_ReturnsError, FPubnubAutomationTestBase,
+	"Pubnub.Integration.PubSub.UnsubscribeFromAll.1Validation.NotInitialized",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAll_NoSubscriptions_ReturnsSuccess, FPubnubAutomationTestBase,
+	"Pubnub.Integration.PubSub.UnsubscribeFromAll.2HappyPath.NoSubscriptions",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAll_SubscribedThenUnsubscribeAll_MessageNotReceived, FPubnubAutomationTestBase,
+	"Pubnub.Integration.PubSub.UnsubscribeFromAll.2HappyPath.SubscribedThenUnsubscribeAll_MessageNotReceived",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAll_ChannelsAndGroup_UnsubscribeFromAll_NoneReceive, FPubnubAutomationTestBase,
+	"Pubnub.Integration.PubSub.UnsubscribeFromAll.4Advanced.ChannelsAndGroup_NoneReceiveAfter",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+// ---------------------------------------------------------------------------
 // Input validation (fast-fail) - PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY
 // UserID is set in all tests per requirement; we do not test UserID-not-set.
 // ---------------------------------------------------------------------------
@@ -1606,6 +1626,10 @@ bool FPubnubSubscribeToGroup_HappyPath_RequiredParamsOnly::RunTest(const FString
 	{
 		TestTrue("Subscription to group confirmed by receiving published message", *bMessageReceived);
 	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubClient->RemoveChannelGroup(TestGroup);
+	}, 0.1f));
 
 	CleanUp();
 	return true;
@@ -1656,6 +1680,10 @@ bool FPubnubSubscribeToGroup_FullSubscribeSettings_ReceivePresenceEvents::RunTes
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bMessageReceived]()
 	{
 		TestTrue("Subscription to group confirmed by receiving message", *bMessageReceived);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubClient->RemoveChannelGroup(TestGroup);
 	}, 0.1f));
 
 	CleanUp();
@@ -1714,6 +1742,10 @@ bool FPubnubSubscribeToGroup_AlreadySubscribed_ReturnsError::RunTest(const FStri
 		TestTrue("ErrorMessage should mention already subscribed",
 			SecondResult.ErrorMessage.Contains(TEXT("Already subscribed")) || SecondResult.ErrorMessage.Contains(TEXT("already exists")));
 	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubClient->RemoveChannelGroup(TestGroup);
+	}, 0.1f));
 
 	CleanUp();
 	return true;
@@ -1770,6 +1802,10 @@ bool FPubnubSubscribeToGroup_UnsubscribeThenSubscribeAgain_ReceivesMessage::RunT
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bMessageReceived]()
 	{
 		TestTrue("Message should be received after unsubscribe-then-subscribe-again to group", *bMessageReceived);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubClient->RemoveChannelGroup(TestGroup);
 	}, 0.1f));
 
 	CleanUp();
@@ -1841,6 +1877,10 @@ bool FPubnubSubscribeToGroup_AddChannelThenPublish_ReceivesMessage::RunTest(cons
 		TestEqual("Received UserID", TestUser, ReceivedMessage->UserID);
 		TestEqual("Received MessageType", EPubnubMessageType::PMT_Published, ReceivedMessage->MessageType);
 		TestFalse("Received Timetoken non-empty", ReceivedMessage->Timetoken.IsEmpty());
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubClient->RemoveChannelGroup(TestGroup);
 	}, 0.1f));
 
 	CleanUp();
@@ -1966,6 +2006,10 @@ bool FPubnubUnsubscribeFromGroup_HappyPath_ThenMessageNotReceived::RunTest(const
 	{
 		TestFalse("UnsubscribeFromGroup confirmed: message was not received within MAX_WAIT_TIME/5", *bMessageReceived);
 	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubClient->RemoveChannelGroup(TestGroup);
+	}, 0.1f));
 
 	CleanUp();
 	return true;
@@ -2004,6 +2048,182 @@ bool FPubnubUnsubscribeFromGroup_UnsubscribeTwice_SecondReturnsNoSuchSubscriptio
 	TestTrue("Second UnsubscribeFromGroup should fail", Unsub2.Error);
 	TestTrue("ErrorMessage should mention no such subscription",
 		Unsub2.ErrorMessage.Contains(TEXT("no such subscription")));
+
+	FPubnubOperationResult RemoveResult = PubnubClient->RemoveChannelGroup(TestGroup);
+	TestFalse("RemoveChannelGroup should succeed", RemoveResult.Error);
+
+	CleanUp();
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// UPubnubClient::UnsubscribeFromAll - Validation and behaviour
+// ---------------------------------------------------------------------------
+
+// PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED: call UnsubscribeFromAll after client is destroyed.
+bool FPubnubUnsubscribeFromAll_ClientNotInitialized_ReturnsError::RunTest(const FString& Parameters)
+{
+	if (!InitTest())
+	{
+		AddError("InitTest failed");
+		return false;
+	}
+
+	UPubnubClient* Client = PubnubClient;
+	Client->DestroyClient();
+
+	FPubnubOperationResult Result = Client->UnsubscribeFromAll();
+
+	TestTrue("Result should indicate error", Result.Error);
+	TestTrue("ErrorMessage should mention not initialized or invalid",
+		Result.ErrorMessage.Contains(TEXT("not initialized")) || Result.ErrorMessage.Contains(TEXT("invalid")));
+
+	CleanUp();
+	return true;
+}
+
+// When there are no active subscriptions, UnsubscribeFromAll returns success (200) and does not error.
+bool FPubnubUnsubscribeFromAll_NoSubscriptions_ReturnsSuccess::RunTest(const FString& Parameters)
+{
+	if (!InitTest())
+	{
+		AddError("InitTest failed");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(ErrorMessage);
+	});
+	PubnubClient->SetUserID(SDK_PREFIX + "unsub_all_no_sub_user");
+
+	FPubnubOperationResult Result = PubnubClient->UnsubscribeFromAll();
+
+	TestFalse("UnsubscribeFromAll with no subscriptions should succeed", Result.Error);
+	TestEqual("Status should be 200", Result.Status, 200);
+
+	CleanUp();
+	return true;
+}
+
+// Happy path: Subscribe to channel, UnsubscribeFromAll; publish to channel, wait MAX_WAIT_TIME/5 — message must not be received.
+bool FPubnubUnsubscribeFromAll_SubscribedThenUnsubscribeAll_MessageNotReceived::RunTest(const FString& Parameters)
+{
+	const FString TestChannel = SDK_PREFIX + "unsub_all_happy_ch";
+	const FString TestUser = SDK_PREFIX + "unsub_all_happy_user";
+	const FString TestMessage = TEXT("\"After unsubscribe all\"");
+	TSharedPtr<bool> bMessageReceived = MakeShared<bool>(false);
+
+	if (!InitTest())
+	{
+		AddError("InitTest failed");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(ErrorMessage);
+	});
+	PubnubClient->SetUserID(TestUser);
+
+	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
+	TestFalse("Subscribe should succeed", SubResult.Error);
+	TestEqual("Subscribe status", SubResult.Status, 200);
+
+	FPubnubOperationResult UnsubResult = PubnubClient->UnsubscribeFromAll();
+	TestFalse("UnsubscribeFromAll should succeed", UnsubResult.Error);
+	TestEqual("UnsubscribeFromAll status", UnsubResult.Status, 200);
+
+	PubnubClient->OnMessageReceivedNative.AddLambda(
+		[TestChannel, TestMessage, bMessageReceived](const FPubnubMessageData& Msg)
+		{
+			if (Msg.Channel == TestChannel && Msg.Message == TestMessage) { *bMessageReceived = true; }
+		});
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	{
+		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
+		TestFalse("Publish should succeed", PubResult.Result.Error);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(MAX_WAIT_TIME / 5.0f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bMessageReceived]()
+	{
+		TestFalse("UnsubscribeFromAll confirmed: message was not received within MAX_WAIT_TIME/5", *bMessageReceived);
+	}, 0.1f));
+
+	CleanUp();
+	return true;
+}
+
+// Subscribe to two channels and one group (with channel); UnsubscribeFromAll; publish to all three, wait MAX_WAIT_TIME/5 — none received.
+bool FPubnubUnsubscribeFromAll_ChannelsAndGroup_UnsubscribeFromAll_NoneReceive::RunTest(const FString& Parameters)
+{
+	const FString ChannelA = SDK_PREFIX + "unsub_all_multi_a";
+	const FString ChannelB = SDK_PREFIX + "unsub_all_multi_b";
+	const FString TestGroup = SDK_PREFIX + "unsub_all_multi_grp";
+	const FString ChannelC = SDK_PREFIX + "unsub_all_multi_c";
+	const FString MessageA = TEXT("\"msg_a\"");
+	const FString MessageB = TEXT("\"msg_b\"");
+	const FString MessageC = TEXT("\"msg_c\"");
+	const FString TestUser = SDK_PREFIX + "unsub_all_multi_user";
+	TSharedPtr<bool> bReceivedA = MakeShared<bool>(false);
+	TSharedPtr<bool> bReceivedB = MakeShared<bool>(false);
+	TSharedPtr<bool> bReceivedC = MakeShared<bool>(false);
+
+	if (!InitTest())
+	{
+		AddError("InitTest failed");
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(ErrorMessage);
+	});
+	PubnubClient->SetUserID(TestUser);
+
+	FPubnubOperationResult SubA = PubnubClient->SubscribeToChannel(ChannelA);
+	TestFalse("Subscribe to A should succeed", SubA.Error);
+	FPubnubOperationResult SubB = PubnubClient->SubscribeToChannel(ChannelB);
+	TestFalse("Subscribe to B should succeed", SubB.Error);
+
+	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(ChannelC, TestGroup);
+	TestFalse("AddChannelToGroup should succeed", AddResult.Error);
+	FPubnubOperationResult SubG = PubnubClient->SubscribeToGroup(TestGroup);
+	TestFalse("SubscribeToGroup should succeed", SubG.Error);
+
+	FPubnubOperationResult UnsubResult = PubnubClient->UnsubscribeFromAll();
+	TestFalse("UnsubscribeFromAll should succeed", UnsubResult.Error);
+	TestEqual("UnsubscribeFromAll status", UnsubResult.Status, 200);
+
+	PubnubClient->OnMessageReceivedNative.AddLambda(
+		[ChannelA, ChannelB, ChannelC, MessageA, MessageB, MessageC, bReceivedA, bReceivedB, bReceivedC](const FPubnubMessageData& Msg)
+		{
+			if (Msg.Channel == ChannelA && Msg.Message == MessageA) { *bReceivedA = true; }
+			if (Msg.Channel == ChannelB && Msg.Message == MessageB) { *bReceivedB = true; }
+			if (Msg.Channel == ChannelC && Msg.Message == MessageC) { *bReceivedC = true; }
+		});
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelA, ChannelB, ChannelC, MessageA, MessageB, MessageC]()
+	{
+		FPubnubPublishMessageResult PubA = PubnubClient->PublishMessage(ChannelA, MessageA);
+		FPubnubPublishMessageResult PubB = PubnubClient->PublishMessage(ChannelB, MessageB);
+		FPubnubPublishMessageResult PubC = PubnubClient->PublishMessage(ChannelC, MessageC);
+		TestFalse("Publish to A should succeed", PubA.Result.Error);
+		TestFalse("Publish to B should succeed", PubB.Result.Error);
+		TestFalse("Publish to C should succeed", PubC.Result.Error);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(MAX_WAIT_TIME / 5.0f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bReceivedA, bReceivedB, bReceivedC]()
+	{
+		TestFalse("Channel A must not have received after UnsubscribeFromAll", *bReceivedA);
+		TestFalse("Channel B must not have received after UnsubscribeFromAll", *bReceivedB);
+		TestFalse("Channel C (via group) must not have received after UnsubscribeFromAll", *bReceivedC);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
+	{
+		PubnubClient->RemoveChannelGroup(TestGroup);
+	}, 0.1f));
 
 	CleanUp();
 	return true;

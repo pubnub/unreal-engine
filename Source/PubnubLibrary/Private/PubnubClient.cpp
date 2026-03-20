@@ -3385,6 +3385,12 @@ FString UPubnubClient::ParseToken_priv(FString Token)
 	FUTF8StringHolder TokenHolder(Token);
 	
 	char* TokenResponse = pubnub_parse_token(ctx_pub, TokenHolder.Get());
+	if (TokenResponse == nullptr)
+	{
+		PUBNUB_LOG_FUNCTION_ERROR(TEXT("pubnub_parse_token returned NULL (invalid token or decode failure)."));
+		return FString();
+	}
+
 	FUTF8ToTCHAR Converter(TokenResponse);
 	FString ParsedToken(Converter.Length(), Converter.Get());
 	

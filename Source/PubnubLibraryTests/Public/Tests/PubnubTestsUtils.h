@@ -1,4 +1,4 @@
-﻿// Copyright 2026 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -19,21 +19,39 @@ namespace PubnubTests
 	constexpr float MAX_WAIT_TIME = 10.0f;
 	const FString SDK_PREFIX = "UE_SDK_";
 	/**
-	 * Gets the Publish Key from environment variable PUBNUB_PUBLISH_KEY
+	 * Gets the Publish Key from environment variable PN_PUB_KEY
 	 * Falls back to "demo" if not set
 	 */
 	FString GetTestPublishKey();
 	
 	/**
-	 * Gets the Subscribe Key from environment variable PUBNUB_SUBSCRIBE_KEY
+	 * Gets the Subscribe Key from environment variable PN_SUB_KEY
 	 * Falls back to "demo" if not set
 	 */
 	FString GetTestSubscribeKey();
 	/**
-	 * Gets the Subscribe Key from environment variable PUBNUB_SUBSCRIBE_KEY
+	 * Gets the Secret Key from environment variable PN_SEC_KEY
 	 * Falls back to "demo" if not set
 	 */
 	FString GetTestSecretKey();
+
+	/**
+	 * Gets the Publish Key for PAM-enabled tests from environment variable PN_PUB_KEY_PAM
+	 * Falls back to "demo" if not set
+	 */
+	FString GetTestPublishKeyWithPAM();
+
+	/**
+	 * Gets the Subscribe Key for PAM-enabled tests from environment variable PN_SUB_KEY_PAM
+	 * Falls back to "demo" if not set
+	 */
+	FString GetTestSubscribeKeyWithPAM();
+
+	/**
+	 * Gets the Secret Key for PAM-enabled tests from environment variable PN_SEC_KEY_PAM
+	 * Falls back to "demo" if not set
+	 */
+	FString GetTestSecretKeyWithPAM();
 }
 
 
@@ -77,6 +95,9 @@ public:
 
 	//Initializes systems required by the test. This has to be called at the beginning of every test.
 	bool InitTest();
+	
+	//Initializes systems required by the test using PAM keysets. This (or InitTest) has to be called at the beginning of every test.
+	bool InitTestWithPAM();
 	//Cleans up test systems. Call this at the end of every test
 	void CleanUp();
 

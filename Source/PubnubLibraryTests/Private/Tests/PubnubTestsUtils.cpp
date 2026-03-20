@@ -1,4 +1,4 @@
-﻿// Copyright 2026 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -33,12 +33,42 @@ FString PubnubTests::GetTestSubscribeKey()
 
 FString PubnubTests::GetTestSecretKey()
 {
-	FString SubscribeKey = FPlatformMisc::GetEnvironmentVariable(TEXT("PN_SEC_KEY"));
-	if(!SubscribeKey.IsEmpty())
+	FString SecretKey = FPlatformMisc::GetEnvironmentVariable(TEXT("PN_SEC_KEY"));
+	if (!SecretKey.IsEmpty())
+	{
+		return SecretKey;
+	}
+	// Fallback to demo key if environment variable is not set
+	return TEXT("demo");
+}
+
+FString PubnubTests::GetTestPublishKeyWithPAM()
+{
+	FString PublishKey = FPlatformMisc::GetEnvironmentVariable(TEXT("PN_PUB_KEY_PAM"));
+	if (!PublishKey.IsEmpty())
+	{
+		return PublishKey;
+	}
+	return TEXT("demo");
+}
+
+FString PubnubTests::GetTestSubscribeKeyWithPAM()
+{
+	FString SubscribeKey = FPlatformMisc::GetEnvironmentVariable(TEXT("PN_SUB_KEY_PAM"));
+	if (!SubscribeKey.IsEmpty())
 	{
 		return SubscribeKey;
 	}
-	// Fallback to demo key if environment variable is not set
+	return TEXT("demo");
+}
+
+FString PubnubTests::GetTestSecretKeyWithPAM()
+{
+	FString SecretKey = FPlatformMisc::GetEnvironmentVariable(TEXT("PN_SEC_KEY_PAM"));
+	if (!SecretKey.IsEmpty())
+	{
+		return SecretKey;
+	}
 	return TEXT("demo");
 }
 
@@ -61,6 +91,35 @@ bool FPubnubAutomationTestBase::InitTest()
 	Config.PublishKey = PubnubTests::GetTestPublishKey();
 	Config.SubscribeKey = PubnubTests::GetTestSubscribeKey();
 	Config.SecretKey = PubnubTests::GetTestSecretKey();
+	
+	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
+	
+	// We need to disable logs, because they would make tests fail during intentional errors
+	bSuppressLogErrors = true;
+	bSuppressLogWarnings = true;
+
+	return true;
+}
+
+bool FPubnubAutomationTestBase::InitTestWithPAM()
+{
+	//Initialize GameInstance and PubnubSubsystem
+	GameInstance = NewObject<UGameInstance>(GEngine);
+	GameInstance->InitializeStandalone();
+	
+	if (!TestNotNull("GameInstance exists", GameInstance))
+	{return false;}
+
+	PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	if (!TestNotNull(" Pubnub Subsystem exists", PubnubSubsystem))
+	{return false;}
+	
+	FPubnubConfig Config;
+	Config.LoggerConfig.DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Debug;
+	Config.UserID = "UE_SDK_Test_User";
+	Config.PublishKey = PubnubTests::GetTestPublishKeyWithPAM();
+	Config.SubscribeKey = PubnubTests::GetTestSubscribeKeyWithPAM();
+	Config.SecretKey = PubnubTests::GetTestSecretKeyWithPAM();
 	
 	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
 	

@@ -290,24 +290,93 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 	Result.Status = Result.Status == 0 ? ResultFromJson.Status : Result.Status;
 	Result.Error = Result.Status != 200;
 	
-	JsonObject->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), Data.Occupancy);
+	// Single-target Here Now: occupancy + uuids at the root (one channel or one group only).
+	if (JsonObject->HasField(ANSI_TO_TCHAR("occupancy")))
+	{
+		double OccupancyDouble = 0;
+		if (JsonObject->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), OccupancyDouble))
+		{
+			Data.Occupancy = static_cast<int>(OccupancyDouble);
+		}
+	}
 
-	if(JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
+	if (JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
 	{
 		TArray<TSharedPtr<FJsonValue>> UuidsJsonValue = JsonObject->GetArrayField(ANSI_TO_TCHAR("uuids"));
 		
-		for(auto UuidJsonValue : UuidsJsonValue)
+		for (auto UuidJsonValue : UuidsJsonValue)
 		{
 			FString Uuid;
 			FString State;
 			//Depending on if response was set to include uuids state this will be a string field or an object field
-			if(!UuidJsonValue->TryGetString(Uuid))
+			if (!UuidJsonValue->TryGetString(Uuid))
 			{
 				Uuid = UuidJsonValue->AsObject()->GetStringField(ANSI_TO_TCHAR("uuid"));
 				State = UuidJsonValue->AsObject()->HasField(ANSI_TO_TCHAR("state")) ?
 					JsonObjectToString(UuidJsonValue->AsObject()->GetObjectField(ANSI_TO_TCHAR("state"))) : "";
 			}
 			Data.UsersState.Add(Uuid, State);
+		}
+	}
+	// Multi-target Here Now (e.g. channel + channel_group in one request, or global here_now): response uses
+	// payload.total_occupancy and payload.channels.{channelName}.{occupancy,uuids} — not root occupancy/uuids.
+	// Must not be "else" after root uuids: some responses include an empty uuids array while still using payload.channels.
+	if (JsonObject->HasField(ANSI_TO_TCHAR("payload")))
+	{
+		const TSharedPtr<FJsonObject>* PayloadPtr = nullptr;
+		if (JsonObject->TryGetObjectField(ANSI_TO_TCHAR("payload"), PayloadPtr) && PayloadPtr && PayloadPtr->IsValid())
+		{
+			const TSharedPtr<FJsonObject>* ChannelsMapPtr = nullptr;
+			if ((*PayloadPtr)->TryGetObjectField(ANSI_TO_TCHAR("channels"), ChannelsMapPtr) && ChannelsMapPtr && ChannelsMapPtr->IsValid())
+			{
+				double TotalOcc = 0;
+				if ((*PayloadPtr)->TryGetNumberField(ANSI_TO_TCHAR("total_occupancy"), TotalOcc))
+				{
+					Data.Occupancy = static_cast<int>(TotalOcc);
+				}
+
+				int32 SummedOccupancy = 0;
+				for (const auto& ChannelKvp : (*ChannelsMapPtr)->Values)
+				{
+					if (!ChannelKvp.Value.IsValid() || ChannelKvp.Value->Type != EJson::Object)
+					{
+						continue;
+					}
+					const TSharedPtr<FJsonObject> ChannelEntry = ChannelKvp.Value->AsObject();
+					if (!ChannelEntry.IsValid())
+					{
+						continue;
+					}
+					double ChOcc = 0;
+					if (ChannelEntry->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), ChOcc))
+					{
+						SummedOccupancy += static_cast<int>(ChOcc);
+					}
+					if (ChannelEntry->HasField(ANSI_TO_TCHAR("uuids")))
+					{
+						TArray<TSharedPtr<FJsonValue>> UuidsJsonValue = ChannelEntry->GetArrayField(ANSI_TO_TCHAR("uuids"));
+						for (auto UuidJsonValue : UuidsJsonValue)
+						{
+							FString Uuid;
+							FString State;
+							if (!UuidJsonValue->TryGetString(Uuid))
+							{
+								Uuid = UuidJsonValue->AsObject()->GetStringField(ANSI_TO_TCHAR("uuid"));
+								State = UuidJsonValue->AsObject()->HasField(ANSI_TO_TCHAR("state")) ?
+									JsonObjectToString(UuidJsonValue->AsObject()->GetObjectField(ANSI_TO_TCHAR("state"))) : "";
+							}
+							if (!Uuid.IsEmpty() && !Data.UsersState.Contains(Uuid))
+							{
+								Data.UsersState.Add(Uuid, State);
+							}
+						}
+					}
+				}
+				if (Data.Occupancy == 0 && SummedOccupancy > 0)
+				{
+					Data.Occupancy = SummedOccupancy;
+				}
+			}
 		}
 	}
 }
