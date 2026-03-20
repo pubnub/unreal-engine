@@ -103,7 +103,9 @@ void ASample_MessageActionsFull::GetAllMessageActions()
 	UE_LOG(LogTemp, Log, TEXT("Message Actions example: getting all actions..."));
 	FOnPubnubGetMessageActionsResponse OnGetMessageActionsResponse;
 	OnGetMessageActionsResponse.BindDynamic(this, &ASample_MessageActionsFull::OnGetMessageActionsResponse);
-	PubnubClient->GetMessageActionsAsync(TestChannel, OnGetMessageActionsResponse);
+	FString StartTimetoken = TEXT("18000000000000000"); // Newer timetoken
+	FString EndTimetoken = TEXT("17000000000000000");   // Older timetoken
+	PubnubClient->GetMessageActionsAsync(TestChannel, OnGetMessageActionsResponse, StartTimetoken, EndTimetoken);
 }
 
 void ASample_MessageActionsFull::OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions)

@@ -2366,7 +2366,7 @@ public:
 	 * @return FPubnubGetMessageActionsResult containing the operation result and retrieved message actions.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
-	FPubnubGetMessageActionsResult GetMessageActions(FString Channel, FString Start = "", FString End = "", int Limit = 0);
+	FPubnubGetMessageActionsResult GetMessageActions(FString Channel, FString Start, FString End, int Limit = 0);
 	
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
@@ -2378,7 +2378,7 @@ public:
 	 * @param Limit The maximum number of actions to retrieve.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
-	void GetMessageActionsAsync(FString Channel, FOnPubnubGetMessageActionsResponse OnGetMessageActionsResponse, FString Start = "", FString End = "", int Limit = 0);
+	void GetMessageActionsAsync(FString Channel, FOnPubnubGetMessageActionsResponse OnGetMessageActionsResponse, FString Start, FString End, int Limit = 0);
 
 	/**
 	 * Retrieves message actions for a specified channel within a given time range.
@@ -2389,7 +2389,7 @@ public:
 	 * @param End The ending timetoken for the range.
 	 * @param Limit The maximum number of actions to retrieve.
 	 */
-	void GetMessageActionsAsync(FString Channel, FOnPubnubGetMessageActionsResponseNative NativeCallback, FString Start = "", FString End = "", int Limit = 0);
+	void GetMessageActionsAsync(FString Channel, FOnPubnubGetMessageActionsResponseNative NativeCallback, FString Start, FString End, int Limit = 0);
 
 	/**
 	 * Removes a specific message action from a message in a channel synchronously.

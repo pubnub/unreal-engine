@@ -149,10 +149,13 @@ void ASample_MessageActions::GetMessageActionsSample()
 	// ACTION REQUIRED: Replace ASample_MessageActions with name of your Actor class
 	FOnPubnubGetMessageActionsResponse OnGetMessageActionsResponse;
 	OnGetMessageActionsResponse.BindDynamic(this, &ASample_MessageActions::OnGetMessageActionsResponse);
+	
+	FString StartTimetoken = TEXT("17298418380000000"); // Newer timetoken
+	FString EndTimetoken = TEXT("17298418360000000");   // Older timetoken
 
 	//Get message actions from a channel
 	FString Channel = TEXT("message-actions-channel");
-	PubnubClient->GetMessageActionsAsync(Channel, OnGetMessageActionsResponse);
+	PubnubClient->GetMessageActionsAsync(Channel, OnGetMessageActionsResponse, StartTimetoken, EndTimetoken);
 }
 
 // ACTION REQUIRED: Replace ASample_MessageActions with name of your Actor class
@@ -243,9 +246,12 @@ void ASample_MessageActions::GetMessageActionsWithLambdaSample()
 		}
 	});
 	
+	FString StartTimetoken = TEXT("18000000000000000"); // Newer timetoken
+	FString EndTimetoken = TEXT("17000000000000000");   // Older timetoken
+	
 	//Get message actions from a channel
 	FString Channel = TEXT("message-actions-channel");
-	PubnubClient->GetMessageActionsAsync(Channel, OnGetMessageActionsResponse);
+	PubnubClient->GetMessageActionsAsync(Channel, OnGetMessageActionsResponse, StartTimetoken, EndTimetoken);
 }
 
 // snippet.remove_message_action
