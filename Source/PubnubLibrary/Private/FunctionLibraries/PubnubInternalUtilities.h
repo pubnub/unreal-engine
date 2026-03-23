@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Pubnub.h"
+#include "PubNub.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PubnubStructLibrary.h"
 #include "PubnubInternalUtilities.generated.h"
