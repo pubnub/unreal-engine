@@ -2689,6 +2689,9 @@ private:
 	
 	//Returns FString from the pubnub_get response
 	FString GetLastResponse(pubnub_t* context);
+
+	//Special GetLastResponse for app context getters. It doesn't print 404 code as error, but debug.
+	FString GetResponseForGetObject(pubnub_t* context);
 	
 	//Returns FString from the pubnub_get_channel response
 	FString GetLastChannelResponse(pubnub_t* context);

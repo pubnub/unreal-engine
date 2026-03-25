@@ -2486,6 +2486,53 @@ FString UPubnubClient::GetLastResponse(pubnub_t* context)
 	return Response;
 }
 
+FString UPubnubClient::GetResponseForGetObject(pubnub_t* context)
+{
+	FString Response;
+
+	if (!context)
+	{ return Response; }
+
+	const pubnub_res AwaitResult = pubnub_await(context);
+	const bool bAwaitOk = (PNR_OK == AwaitResult);
+
+	if (bAwaitOk)
+	{
+		const char* CharResponse = pubnub_get(context);
+		FUTF8ToTCHAR Converter(CharResponse);
+		Response = FString(Converter.Length(), Converter.Get());
+	}
+
+	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *Response));
+
+	if (Response.IsEmpty())
+	{
+		Response = UPubnubUtilities::PubnubGetLastServerHttpResponse(context);
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *Response));
+	}
+
+	const FPubnubOperationResult HttpResult = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(Response);
+
+	if (HttpResult.Error)
+	{
+		if (HttpResult.Status == 404)
+		{
+			PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Debug, FString::Printf(TEXT("Objects get returned HTTP 404 (not found). Server response: %s"), *Response));
+		}
+		else
+		{
+			PUBNUB_LOG_FUNCTION(EPubnubLogLevel::PLL_Error, FString::Printf(TEXT("Objects get failed (HTTP %d). Server response: %s"), HttpResult.Status, *Response));
+		}
+	}
+	else if (!bAwaitOk)
+	{
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to get last response. Error: %s. Server response: %s"),
+			UTF8_TO_TCHAR(pubnub_res_2_string(static_cast<pubnub_res>(AwaitResult))), *Response));
+	}
+
+	return Response;
+}
+
 FString UPubnubClient::GetLastChannelResponse(pubnub_t* context)
 {
 	FString Response;
@@ -3774,27 +3821,24 @@ FPubnubUserMetadataResult UPubnubClient::GetUserMetadata_priv(FString User, FStr
 	pubnub_get_uuidmetadata(ctx_pub, IncludeHolder.Get(), UserHolder.Get());
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get user metadata request sent."));
 
-	FString JsonResponse = GetLastResponse(ctx_pub);
-	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-	//If last response is empty, it means that there was an error, so return server response instead
-	if(JsonResponse.IsEmpty())
-	{
-		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
-		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
-	}
+	const FString JsonResponse = GetResponseForGetObject(ctx_pub);
 
 	PubnubOperationMutex.Unlock();
 	
 	//Parse Json response into data
 	FPubnubUserMetadataResult GetUserMetadataResult;
 	UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, GetUserMetadataResult.Result, GetUserMetadataResult.UserData);
-	PUBNUB_LOG_OPERATION_RESULT(GetUserMetadataResult.Result);
 	if (!GetUserMetadataResult.Result.Error)
 	{
 		PUBNUB_LOG_FUNCTION_DEBUG(
 			TEXT("get user metadata parsed."),
 			PUBNUB_LOG_VALUE(GetUserMetadataResult.UserData)
 		);
+	}
+	else if (GetUserMetadataResult.Result.Status == 0)
+	{
+		// Malformed JSON or non-App-Context body: not covered by GetResponseForGetObject HTTP logging
+		PUBNUB_LOG_OPERATION_RESULT(GetUserMetadataResult.Result);
 	}
 							
 	return GetUserMetadataResult;
@@ -3957,27 +4001,24 @@ FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata_priv(FString Chan
 	pubnub_get_channelmetadata(ctx_pub, IncludeHolder.Get(), ChannelHolder.Get());
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get channel metadata request sent."));
 
-	FString JsonResponse = GetLastResponse(ctx_pub);
-	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-	//If last response is empty, it means that there was an error, so return server response instead
-	if(JsonResponse.IsEmpty())
-	{
-		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
-		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
-	}
+	const FString JsonResponse = GetResponseForGetObject(ctx_pub);
 
 	PubnubOperationMutex.Unlock();
 	
 	//Parse Json response into data
 	FPubnubChannelMetadataResult GetChannelMetadataResult;
 	UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, GetChannelMetadataResult.Result, GetChannelMetadataResult.ChannelData);
-	PUBNUB_LOG_OPERATION_RESULT(GetChannelMetadataResult.Result);
 	if (!GetChannelMetadataResult.Result.Error)
 	{
 		PUBNUB_LOG_FUNCTION_DEBUG(
 			TEXT("get channel metadata parsed."),
 			PUBNUB_LOG_VALUE(GetChannelMetadataResult.ChannelData)
 		);
+	}
+	else if (GetChannelMetadataResult.Result.Status == 0)
+	{
+		// Malformed JSON or non-App-Context body: not covered by GetResponseForGetObject HTTP logging
+		PUBNUB_LOG_OPERATION_RESULT(GetChannelMetadataResult.Result);
 	}
 							
 	return GetChannelMetadataResult;
