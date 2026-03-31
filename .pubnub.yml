@@ -3,6 +3,25 @@ schema: 1
 version: 1.2.1
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2026-03-31
+    version: 2.0.0
+    changes:
+      - type: feature
+        text: "`UPubnubSubsystem` is now only for creating or resolving clients. All real work goes through `UPubnubClient`, so you can run several independent PubNub contexts (keys, user id, subscriptions) side by side."
+      - type: feature
+        text: "Subsystem-level methods and delegates are deprecated in favor of the same behavior on UPubnubClient. Call sites should move to the client; async entry points on the client use the Async suffix."
+      - type: feature
+        text: "Logging is no longer limited to default engine logging. Configure levels and sources with `FPubnubLoggerConfig` and `IPubnubLoggerInterface`, and optionally plug in custom loggers."
+      - type: feature
+        text: "Names without Async denote synchronous (blocking) APIs. …Async methods are non-blocking and take a callback. Use sync when you need a direct return on the same flow; use async when the game thread must not block."
+      - type: feature
+        text: "Outcomes use `FPubnubOperationResult` (status, error flag, message) inside dedicated FPubnub…Result structs for both synchronous returns and async callbacks. **BREAKING CHANGE**."
+      - type: feature
+        text: "Pagination uses `FPubnubPage` (Next / Prev) instead of ad hoc page strings. Where the backend supports it, set `IncludeTotalCount` on the relevant include struct and read `TotalCount` on the result."
+      - type: feature
+        text: "Set operations use FPubnub…InputData types with ForceSet* flags so individual fields can be cleared on the server, not only replaced with other values. **BREAKING CHANGE**."
+      - type: improvement
+        text: "Public types are grouped under a consistent FPubnub… scheme so delegates, results, and inputs read as one family and clash less with other code. **BREAKING CHANGE**."
   - date: 2026-03-17
     version: 1.2.1
     changes:
