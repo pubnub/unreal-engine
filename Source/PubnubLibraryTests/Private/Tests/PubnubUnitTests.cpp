@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #include "PubnubEnumLibrary.h"
 #include "PubnubStructLibrary.h"
@@ -48,6 +48,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelDataUnitTest, "Pubnub.aUnit.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipDataFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipDataFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipInputDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipInputData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipsDataArrayFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipsDataArrayFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelUpdateDataFromMessageContentUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelUpdateDataFromMessageContent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetUserUpdateDataFromMessageContentUnitTest, "Pubnub.aUnit.JsonUtilities.GetUserUpdateDataFromMessageContent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMembershipUpdateDataFromMessageContentUnitTest, "Pubnub.aUnit.JsonUtilities.GetMembershipUpdateDataFromMessageContent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipsDataArrayUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipsDataArray", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetChannelMemberDataFromJsonUnitTest, "Pubnub.aUnit.JsonUtilities.GetChannelMemberDataFromJson", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMemberDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromChannelMemberData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
@@ -56,6 +59,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMembersDataArrayUnitTest, "P
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromMembershipsToRemoveUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromMembershipsToRemove", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetJsonFromChannelMembersToRemoveUnitTest, "Pubnub.aUnit.JsonUtilities.GetJsonFromChannelMembersToRemove", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetOperationResultFromJsonAppContextUnitTest, "Pubnub.aUnit.JsonUtilities.GetOperationResultFromJsonAppContext", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMessageActionFromMessageDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMessageActionFromMessageData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 
 
 
@@ -651,6 +655,7 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 	
 	// Verify messages array
 	TestEqual("Messages array should have 1 element", Messages.Num(), 1);
+	TestEqual("Channel should be 'my_channel'", Messages[0].Channel, "my_channel");
 	TestEqual("Message should be 'This is my message'", Messages[0].Message, "{\"text\":\"This is my message\"}");
 	TestEqual("UserID should be 'android_user'", Messages[0].UserID, "android_user");
 	TestEqual("Timetoken should be '17302160534651740'", Messages[0].Timetoken, "17302160534651740");
@@ -679,6 +684,7 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 	
 	// Verify messages array
 	TestEqual("Messages array should have 1 element for actions response", Messages.Num(), 1);
+	TestEqual("Channel should be 'my_channel' for actions response", Messages[0].Channel, "my_channel");
 	TestEqual("Message should be 'message from unreal to history'", Messages[0].Message, "message from unreal to history");
 	TestEqual("UserID should be 'User1'", Messages[0].UserID, "User1");
 	TestEqual("Timetoken should be '17302756128241865'", Messages[0].Timetoken, "17302756128241865");
@@ -706,6 +712,27 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Third action value should be 'bla bla'", Messages[0].MessageActions[2].Value, "bla bla");
 	TestEqual("Third action userID should be 'User1'", Messages[0].MessageActions[2].UserID, "User1");
 	TestEqual("Third action timetoken should be '17302763502280660'", Messages[0].MessageActions[2].ActionTimetoken, "17302763502280660");
+
+	// Test response with different channel name
+	FString TestDifferentChannelJson = "{\"status\": 200, \"channels\": {\"test_channel_123\": [{\"message\": \"Hello World\", \"timetoken\": \"17303000000000000\", \"uuid\": \"test_user\"}]}, \"error_message\": \"\", \"error\": false}";
+	Result.Error = true;
+	Result.Status = 0;
+	Result.ErrorMessage = "";
+	Messages.Empty();
+	
+	UPubnubJsonUtilities::FetchHistoryJsonToData(TestDifferentChannelJson, Result, Messages);
+	
+	// Verify error flag
+	TestTrue("Error flag should be false for different channel response", !Result.Error);
+	
+	// Verify status code
+	TestEqual("Status code should be 200 for different channel response", Result.Status, 200);
+	
+	// Verify messages array
+	TestEqual("Messages array should have 1 element for different channel response", Messages.Num(), 1);
+	TestEqual("Channel should be 'test_channel_123'", Messages[0].Channel, "test_channel_123");
+	TestEqual("Message should be 'Hello World'", Messages[0].Message, "Hello World");
+	TestEqual("UserID should be 'test_user'", Messages[0].UserID, "test_user");
 
 	// Test error response
 	FString TestErrorJson = "{\"status\": 400, \"channels\": {}, \"error_message\": \"Invalid channel\", \"error\": true}";
@@ -746,20 +773,23 @@ bool FFetchHistoryJsonToDataUnitTest::RunTest(const FString& Parameters)
 bool FGetAllUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with user data
-	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"user1\",\"name\":\"User One\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"custom\":{\"age\":30,\"location\":\"New York\"},\"status\":\"active\",\"type\":\"premium\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"},{\"id\":\"user2\",\"name\":\"User Two\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"custom\":{\"age\":25,\"location\":\"London\"},\"status\":\"inactive\",\"type\":\"basic\",\"updated\":\"2024-10-29T10:15:45.123456Z\",\"eTag\":\"BdzU2Prvrf41Eh\"}],\"next\":\"MQ\",\"prev\":\"LQ\"}";
+	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"user1\",\"name\":\"User One\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"custom\":{\"age\":30,\"location\":\"New York\"},\"status\":\"active\",\"type\":\"premium\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"},{\"id\":\"user2\",\"name\":\"User Two\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"custom\":{\"age\":25,\"location\":\"London\"},\"status\":\"inactive\",\"type\":\"basic\",\"updated\":\"2024-10-29T10:15:45.123456Z\",\"eTag\":\"BdzU2Prvrf41Eh\"}],\"next\":\"MQ\",\"prev\":\"LQ\",\"totalCount\":42}";
 	FPubnubOperationResult Result;
 	TArray<FPubnubUserData> UsersData;
-	FString PageNext;
-	FString PagePrev;
+	FPubnubPage Page;
+	int TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestJson, Result, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestJson, Result, UsersData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'MQ'", PageNext, "MQ");
-	TestEqual("Previous page token should be 'LQ'", PagePrev, "LQ");
+	TestEqual("Next page token should be 'MQ'", Page.Next, "MQ");
+	TestEqual("Previous page token should be 'LQ'", Page.Prev, "LQ");
+	
+	// Verify total count
+	TestEqual("Total count should be 42", TotalCount, 42);
 	
 	// Verify number of users
 	TestEqual("Should have 2 users", UsersData.Num(), 2);
@@ -789,41 +819,44 @@ bool FGetAllUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Second user eTag should be correct", UsersData[1].ETag, "BdzU2Prvrf41Eh");
 
 	// Test empty data array
-	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
+	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\",\"totalCount\":0}";
 	Result.Status = 0;
 	UsersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestEmptyJson, Result, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestEmptyJson, Result, UsersData, Page, TotalCount);
 	
 	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 users for empty data", UsersData.Num(), 0);
-	TestEqual("Next page token should be empty", PageNext, "");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be empty", Page.Next, "");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	TestEqual("Total count should be 0 for empty data", TotalCount, 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
 	Result.Status = 0;
 	UsersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestErrorJson, Result, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestErrorJson, Result, UsersData, Page, TotalCount);
 	
 	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 users for error", UsersData.Num(), 0);
+	TestEqual("Total count should be 0 when missing from error response", TotalCount, 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
 	Result.Status = 0;
 	UsersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestInvalidJson, Result, UsersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(TestInvalidJson, Result, UsersData, Page, TotalCount);
 	
 	TestEqual("Should have 0 users for invalid JSON", UsersData.Num(), 0);
+	TestEqual("Total count should be 0 for invalid JSON", TotalCount, 0);
 
 	return true;
 }
@@ -887,20 +920,23 @@ bool FGetUserMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 bool FGetAllChannelMetadataJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with multiple channels
-	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":null,\"updated\":\"2024-10-25T13:00:19.963635Z\",\"eTag\":\"31b6f9075656544560fabdd8db0d444b\"},{\"id\":\"my_test_channel2\",\"name\":null,\"description\":null,\"updated\":\"2024-10-11T09:41:48.926019Z\",\"eTag\":\"483589bc29065816d2ff4b32b64abc6a\"},{\"id\":\"test_channel\",\"name\":null,\"description\":null,\"updated\":\"2024-09-30T07:48:48.503855Z\",\"eTag\":\"e5672a948a68853b2b3a47de043d2b56\"}],\"next\":\"Mw\"}";
+	FString TestJson = "{\"status\":200,\"data\":[{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":null,\"updated\":\"2024-10-25T13:00:19.963635Z\",\"eTag\":\"31b6f9075656544560fabdd8db0d444b\"},{\"id\":\"my_test_channel2\",\"name\":null,\"description\":null,\"updated\":\"2024-10-11T09:41:48.926019Z\",\"eTag\":\"483589bc29065816d2ff4b32b64abc6a\"},{\"id\":\"test_channel\",\"name\":null,\"description\":null,\"updated\":\"2024-09-30T07:48:48.503855Z\",\"eTag\":\"e5672a948a68853b2b3a47de043d2b56\"}],\"next\":\"Mw\",\"totalCount\":15}";
 	FPubnubOperationResult Result;
 	TArray<FPubnubChannelData> ChannelsData;
-	FString PageNext;
-	FString PagePrev;
+	FPubnubPage Page;
+	int TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestJson, Result, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestJson, Result, ChannelsData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'Mw'", PageNext, "Mw");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be 'Mw'", Page.Next, "Mw");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	
+	// Verify total count
+	TestEqual("Total count should be 15", TotalCount, 15);
 	
 	// Verify number of channels
 	TestEqual("Should have 3 channels", ChannelsData.Num(), 3);
@@ -927,41 +963,44 @@ bool FGetAllChannelMetadataJsonToDataUnitTest::RunTest(const FString& Parameters
 	TestEqual("Third channel eTag should be correct", ChannelsData[2].ETag, "e5672a948a68853b2b3a47de043d2b56");
 
 	// Test empty data array
-	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
+	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\",\"totalCount\":0}";
 	Result.Status = 0;
 	ChannelsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestEmptyJson, Result, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestEmptyJson, Result, ChannelsData, Page, TotalCount);
 	
 	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 channels for empty data", ChannelsData.Num(), 0);
-	TestEqual("Next page token should be empty", PageNext, "");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be empty", Page.Next, "");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	TestEqual("Total count should be 0 for empty data", TotalCount, 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
 	Result.Status = 0;
 	ChannelsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestErrorJson, Result, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestErrorJson, Result, ChannelsData, Page, TotalCount);
 	
 	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 channels for error", ChannelsData.Num(), 0);
+	TestEqual("Total count should be 0 when missing from error response", TotalCount, 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
 	Result.Status = 0;
 	ChannelsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestInvalidJson, Result, ChannelsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(TestInvalidJson, Result, ChannelsData, Page, TotalCount);
 	
 	TestEqual("Should have 0 channels for invalid JSON", ChannelsData.Num(), 0);
+	TestEqual("Total count should be 0 for invalid JSON", TotalCount, 0);
 
 	return true;
 }
@@ -1246,20 +1285,23 @@ bool FAddMessageActionJsonToDataUnitTest::RunTest(const FString& Parameters)
 bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with minimal channel data
-	FString TestJson1 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"custom\":{\"channel_custom\":\"value\"},\"status\":\"active\",\"type\":\"public\"},\"custom\":{\"hot\":\"warm\"},\"status\":\"active\",\"type\":\"member\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"}],\"next\":\"MQ\"}";
+	FString TestJson1 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"custom\":{\"channel_custom\":\"value\"},\"status\":\"active\",\"type\":\"public\"},\"custom\":{\"hot\":\"warm\"},\"status\":\"active\",\"type\":\"member\",\"updated\":\"2024-10-28T09:03:32.977029Z\",\"eTag\":\"AdyU1Obvqe30Dg\"}],\"next\":\"MQ\",\"totalCount\":10}";
 	FPubnubOperationResult Result;
 	TArray<FPubnubMembershipData> MembershipsData;
-	FString PageNext;
-	FString PagePrev;
+	FPubnubPage Page;
+	int TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson1, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson1, Result, MembershipsData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'MQ'", PageNext, "MQ");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be 'MQ'", Page.Next, "MQ");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	
+	// Verify total count
+	TestEqual("Total count should be 10", TotalCount, 10);
 	
 	// Verify number of memberships
 	TestEqual("Should have 1 membership", MembershipsData.Num(), 1);
@@ -1278,20 +1320,23 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("First membership eTag should be correct", MembershipsData[0].ETag, "AdyU1Obvqe30Dg");
 
 	// Test successful response with full channel data and multiple memberships
-	FString TestJson2 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":\"Test Channel\",\"custom\":{\"channel_custom\":\"value1\"},\"status\":\"active\",\"type\":\"public\",\"updated\":\"2024-10-28T09:34:20.604564Z\",\"eTag\":\"cf9ba9ae8401fd369718d4f178bda4b7\"},\"type\":\"member\",\"status\":\"active\",\"custom\":{\"hotMembership\":\"warm\"},\"updated\":\"2024-10-28T09:35:26.660721Z\",\"eTag\":\"AdycwpOS7bWOKg\"},{\"channel\":{\"id\":\"my_channel2\",\"custom\":{\"channel_custom\":\"value2\"},\"status\":\"inactive\",\"type\":\"private\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"hot2Membership\":\"cold\"},\"updated\":\"2024-11-04T09:03:07.341822Z\",\"eTag\":\"AYfIn/PQoIPxlwE\"}],\"next\":\"Mg\"}";
+	FString TestJson2 = "{\"status\":200,\"data\":[{\"channel\":{\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":\"Test Channel\",\"custom\":{\"channel_custom\":\"value1\"},\"status\":\"active\",\"type\":\"public\",\"updated\":\"2024-10-28T09:34:20.604564Z\",\"eTag\":\"cf9ba9ae8401fd369718d4f178bda4b7\"},\"type\":\"member\",\"status\":\"active\",\"custom\":{\"hotMembership\":\"warm\"},\"updated\":\"2024-10-28T09:35:26.660721Z\",\"eTag\":\"AdycwpOS7bWOKg\"},{\"channel\":{\"id\":\"my_channel2\",\"custom\":{\"channel_custom\":\"value2\"},\"status\":\"inactive\",\"type\":\"private\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"hot2Membership\":\"cold\"},\"updated\":\"2024-11-04T09:03:07.341822Z\",\"eTag\":\"AYfIn/PQoIPxlwE\"}],\"next\":\"Mg\",\"totalCount\":25}";
 	Result.Status = 0;
 	MembershipsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson2, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestJson2, Result, MembershipsData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200 for second test", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'Mg'", PageNext, "Mg");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be 'Mg'", Page.Next, "Mg");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	
+	// Verify total count
+	TestEqual("Total count should be 25", TotalCount, 25);
 	
 	// Verify number of memberships
 	TestEqual("Should have 2 memberships", MembershipsData.Num(), 2);
@@ -1323,41 +1368,44 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Second membership eTag should be correct", MembershipsData[1].ETag, "AYfIn/PQoIPxlwE");
 
 	// Test empty data array
-	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
+	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\",\"totalCount\":0}";
 	Result.Status = 0;
 	MembershipsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestEmptyJson, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestEmptyJson, Result, MembershipsData, Page, TotalCount);
 	
 	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 memberships for empty data", MembershipsData.Num(), 0);
-	TestEqual("Next page token should be empty", PageNext, "");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be empty", Page.Next, "");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	TestEqual("Total count should be 0 for empty data", TotalCount, 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
 	Result.Status = 0;
 	MembershipsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestErrorJson, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestErrorJson, Result, MembershipsData, Page, TotalCount);
 	
 	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 memberships for error", MembershipsData.Num(), 0);
+	TestEqual("Total count should be 0 when missing from error response", TotalCount, 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
 	Result.Status = 0;
 	MembershipsData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetMembershipsJsonToData(TestInvalidJson, Result, MembershipsData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetMembershipsJsonToData(TestInvalidJson, Result, MembershipsData, Page, TotalCount);
 	
 	TestEqual("Should have 0 memberships for invalid JSON", MembershipsData.Num(), 0);
+	TestEqual("Total count should be 0 for invalid JSON", TotalCount, 0);
 
 	return true;
 }
@@ -1365,20 +1413,23 @@ bool FGetMembershipsJsonToDataUnitTest::RunTest(const FString& Parameters)
 bool FGetChannelMembersJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
 	// Test successful response with channel members
-	FString TestJson = "{\"status\":200,\"data\":[{\"uuid\":{\"id\":\"cpp_chat_user\",\"name\":\"Chat User\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"type\":\"premium\",\"status\":\"active\",\"custom\":{\"age\":25,\"location\":\"New York\"},\"updated\":\"2025-03-14T13:23:50.608735Z\",\"eTag\":\"669571c9e7371edba566c9371bfd4aec\"},\"type\":\"user\",\"status\":\"active\",\"custom\":{\"lastReadMessageTimetoken\":\"17453138062518466\",\"platform\":\"desktop\"},\"updated\":\"2025-04-22T09:23:26.406843Z\",\"eTag\":\"AYWhgd7euNT0xgE\"},{\"uuid\":{\"id\":\"CppChatUser\",\"name\":\"Chat User 2\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"type\":\"standard\",\"status\":\"inactive\",\"custom\":{\"age\":30,\"location\":\"London\"},\"updated\":\"2025-03-19T09:08:14.60887Z\",\"eTag\":\"3bbbd36590c68b080b0f258843144afe\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"lastReadMessageTimetoken\":\"17447186377255230\",\"platform\":\"mobile\"},\"updated\":\"2025-04-15T12:04:00.151122Z\",\"eTag\":\"AfGZmbv/i4Hi2gE\"}],\"next\":\"Mw\"}";
+	FString TestJson = "{\"status\":200,\"data\":[{\"uuid\":{\"id\":\"cpp_chat_user\",\"name\":\"Chat User\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile1\",\"email\":\"user1@example.com\",\"type\":\"premium\",\"status\":\"active\",\"custom\":{\"age\":25,\"location\":\"New York\"},\"updated\":\"2025-03-14T13:23:50.608735Z\",\"eTag\":\"669571c9e7371edba566c9371bfd4aec\"},\"type\":\"user\",\"status\":\"active\",\"custom\":{\"lastReadMessageTimetoken\":\"17453138062518466\",\"platform\":\"desktop\"},\"updated\":\"2025-04-22T09:23:26.406843Z\",\"eTag\":\"AYWhgd7euNT0xgE\"},{\"uuid\":{\"id\":\"CppChatUser\",\"name\":\"Chat User 2\",\"externalId\":\"ext456\",\"profileUrl\":\"https://example.com/profile2\",\"email\":\"user2@example.com\",\"type\":\"standard\",\"status\":\"inactive\",\"custom\":{\"age\":30,\"location\":\"London\"},\"updated\":\"2025-03-19T09:08:14.60887Z\",\"eTag\":\"3bbbd36590c68b080b0f258843144afe\"},\"type\":\"admin\",\"status\":\"pending\",\"custom\":{\"lastReadMessageTimetoken\":\"17447186377255230\",\"platform\":\"mobile\"},\"updated\":\"2025-04-15T12:04:00.151122Z\",\"eTag\":\"AfGZmbv/i4Hi2gE\"}],\"next\":\"Mw\",\"totalCount\":8}";
 	FPubnubOperationResult Result;
 	TArray<FPubnubChannelMemberData> MembersData;
-	FString PageNext;
-	FString PagePrev;
+	FPubnubPage Page;
+	int TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestJson, Result, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestJson, Result, MembersData, Page, TotalCount);
 	
 	// Verify status code
 	TestEqual("Status code should be 200", Result.Status, 200);
 	
 	// Verify pagination tokens
-	TestEqual("Next page token should be 'Mw'", PageNext, "Mw");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be 'Mw'", Page.Next, "Mw");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	
+	// Verify total count
+	TestEqual("Total count should be 8", TotalCount, 8);
 	
 	// Verify number of members
 	TestEqual("Should have 2 members", MembersData.Num(), 2);
@@ -1418,41 +1469,44 @@ bool FGetChannelMembersJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Second member eTag should be correct", MembersData[1].ETag, "AfGZmbv/i4Hi2gE");
 
 	// Test empty data array
-	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
+	FString TestEmptyJson = "{\"status\":200,\"data\":[],\"next\":\"\",\"prev\":\"\",\"totalCount\":0}";
 	Result.Status = 0;
 	MembersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestEmptyJson, Result, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestEmptyJson, Result, MembersData, Page, TotalCount);
 	
 	TestEqual("Status code should be 200 for empty data", Result.Status, 200);
 	TestEqual("Should have 0 members for empty data", MembersData.Num(), 0);
-	TestEqual("Next page token should be empty", PageNext, "");
-	TestEqual("Previous page token should be empty", PagePrev, "");
+	TestEqual("Next page token should be empty", Page.Next, "");
+	TestEqual("Previous page token should be empty", Page.Prev, "");
+	TestEqual("Total count should be 0 for empty data", TotalCount, 0);
 
 	// Test error response
 	FString TestErrorJson = "{\"status\":400,\"data\":[],\"next\":\"\",\"prev\":\"\"}";
 	Result.Status = 0;
 	MembersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestErrorJson, Result, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestErrorJson, Result, MembersData, Page, TotalCount);
 	
 	TestEqual("Status code should be 400 for error", Result.Status, 400);
 	TestEqual("Should have 0 members for error", MembersData.Num(), 0);
+	TestEqual("Total count should be 0 when missing from error response", TotalCount, 0);
 
 	// Test invalid JSON
 	FString TestInvalidJson = "invalid json";
 	Result.Status = 0;
 	MembersData.Empty();
-	PageNext = "";
-	PagePrev = "";
+	Page = FPubnubPage();
+	TotalCount = 0;
 	
-	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestInvalidJson, Result, MembersData, PageNext, PagePrev);
+	UPubnubJsonUtilities::GetChannelMembersJsonToData(TestInvalidJson, Result, MembersData, Page, TotalCount);
 	
 	TestEqual("Should have 0 members for invalid JSON", MembersData.Num(), 0);
+	TestEqual("Total count should be 0 for invalid JSON", TotalCount, 0);
 
 	return true;
 }
@@ -1772,39 +1826,160 @@ bool FGetUserDataFromJsonUnitTest::RunTest(const FString& Parameters)
 
 bool FGetJsonFromUserDataUnitTest::RunTest(const FString& Parameters)
 {
-	// Test with complete user data
-	FPubnubUserData UserData;
-	UserData.UserID = "user123";
-	UserData.UserName = "Test User";
-	UserData.ExternalID = "ext456";
-	UserData.ProfileUrl = "https://example.com/profile";
-	UserData.Email = "test@example.com";
-	UserData.Custom = "{\"age\":25,\"location\":\"New York\"}";
-	UserData.Status = "active";
-	UserData.Type = "premium";
-	UserData.Updated = "2024-10-28T09:03:32.977029Z";
-	UserData.ETag = "test-etag";
+	// Test 1: Complete user input data with all fields set
+	FPubnubUserInputData CompleteUserData;
+	CompleteUserData.UserName = "Test User";
+	CompleteUserData.ExternalID = "ext456";
+	CompleteUserData.ProfileUrl = "https://example.com/profile";
+	CompleteUserData.Email = "test@example.com";
+	CompleteUserData.Custom = "{\"age\":25,\"location\":\"New York\"}";
+	CompleteUserData.Status = "active";
+	CompleteUserData.Type = "premium";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromUserData(UserData);
+	FString CompleteJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user123", CompleteUserData);
 	
-	TestTrue("Should contain user ID", JsonString.Contains("\"id\":\"user123\""));
-	TestTrue("Should contain user name", JsonString.Contains("\"name\":\"Test User\""));
-	TestTrue("Should contain external ID", JsonString.Contains("\"externalId\":\"ext456\""));
-	TestTrue("Should contain profile URL", JsonString.Contains("\"profileUrl\":\"https://example.com/profile\""));
-	TestTrue("Should contain email", JsonString.Contains("\"email\":\"test@example.com\""));
-	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
-	TestTrue("Should contain type", JsonString.Contains("\"type\":\"premium\""));
-	TestTrue("Should contain updated", JsonString.Contains("\"updated\":\"2024-10-28T09:03:32.977029Z\""));
-	TestTrue("Should contain eTag", JsonString.Contains("\"eTag\":\"test-etag\""));
+	TestTrue("Complete data should contain user ID", CompleteJsonString.Contains("\"id\":\"user123\""));
+	TestTrue("Complete data should contain user name", CompleteJsonString.Contains("\"name\":\"Test User\""));
+	TestTrue("Complete data should contain external ID", CompleteJsonString.Contains("\"externalId\":\"ext456\""));
+	TestTrue("Complete data should contain profile URL", CompleteJsonString.Contains("\"profileUrl\":\"https://example.com/profile\""));
+	TestTrue("Complete data should contain email", CompleteJsonString.Contains("\"email\":\"test@example.com\""));
+	TestTrue("Complete data should contain status", CompleteJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Complete data should contain type", CompleteJsonString.Contains("\"type\":\"premium\""));
+	TestTrue("Complete data should contain custom field", CompleteJsonString.Contains("\"custom\":"));
 
-	// Test with minimal user data (only required fields)
-	FPubnubUserData MinimalUserData;
-	MinimalUserData.UserID = "user456";
+	// Test 2: Minimal user input data (only UserID set)
+	FPubnubUserInputData MinimalUserData;
 	
-	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromUserData(MinimalUserData);
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user456", MinimalUserData);
 	
-	TestTrue("Should contain user ID for minimal data", MinimalJsonString.Contains("\"id\":\"user456\""));
-	TestFalse("Should not contain empty name field", MinimalJsonString.Contains("\"name\":\"\""));
+	TestTrue("Minimal data should contain user ID", MinimalJsonString.Contains("\"id\":\"user456\""));
+	TestFalse("Minimal data should not contain empty name field", MinimalJsonString.Contains("\"name\":"));
+	TestFalse("Minimal data should not contain empty email field", MinimalJsonString.Contains("\"email\":"));
+	TestFalse("Minimal data should not contain empty status field", MinimalJsonString.Contains("\"status\":"));
+
+	// Test 3: Empty fields with ForceSet flags set to true (should include as null)
+	FPubnubUserInputData ForceSetEmptyData;
+	ForceSetEmptyData.UserName = "";
+	ForceSetEmptyData.ExternalID = "";
+	ForceSetEmptyData.ProfileUrl = "";
+	ForceSetEmptyData.Email = "";
+	ForceSetEmptyData.Custom = "";
+	ForceSetEmptyData.Status = "";
+	ForceSetEmptyData.Type = "";
+	ForceSetEmptyData.ForceSetUserName = true;
+	ForceSetEmptyData.ForceSetExternalID = true;
+	ForceSetEmptyData.ForceSetProfileUrl = true;
+	ForceSetEmptyData.ForceSetEmail = true;
+	ForceSetEmptyData.ForceSetCustom = true;
+	ForceSetEmptyData.ForceSetStatus = true;
+	ForceSetEmptyData.ForceSetType = true;
+	
+	FString ForceSetJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user789", ForceSetEmptyData);
+	
+	TestTrue("ForceSet data should contain user ID", ForceSetJsonString.Contains("\"id\":\"user789\""));
+	TestTrue("ForceSet data should contain name field as null", ForceSetJsonString.Contains("\"name\":null"));
+	TestTrue("ForceSet data should contain externalId field as null", ForceSetJsonString.Contains("\"externalId\":null"));
+	TestTrue("ForceSet data should contain profileUrl field as null", ForceSetJsonString.Contains("\"profileUrl\":null"));
+	TestTrue("ForceSet data should contain email field as null", ForceSetJsonString.Contains("\"email\":null"));
+	TestTrue("ForceSet data should contain custom field as null", ForceSetJsonString.Contains("\"custom\":null"));
+	TestTrue("ForceSet data should contain status field as null", ForceSetJsonString.Contains("\"status\":null"));
+	TestTrue("ForceSet data should contain type field as null", ForceSetJsonString.Contains("\"type\":null"));
+
+	// Test 4: Mixed scenario - some fields with values, some empty with ForceSet
+	FPubnubUserInputData MixedData;
+	MixedData.UserName = "John Doe";
+	MixedData.ExternalID = "";  // Empty
+	MixedData.ProfileUrl = "https://example.com/john";
+	MixedData.Email = "";  // Empty
+	MixedData.Custom = "{\"role\":\"admin\"}";
+	MixedData.Status = "";  // Empty
+	MixedData.Type = "premium";
+	MixedData.ForceSetUserName = false;  // Has value, flag doesn't matter
+	MixedData.ForceSetExternalID = true;   // Empty but force add
+	MixedData.ForceSetProfileUrl = false; // Has value, flag doesn't matter
+	MixedData.ForceSetEmail = true;        // Empty but force add
+	MixedData.ForceSetCustom = false;      // Has value, flag doesn't matter
+	MixedData.ForceSetStatus = true;       // Empty but force add
+	MixedData.ForceSetType = false;        // Has value, flag doesn't matter
+	
+	FString MixedJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user999", MixedData);
+	
+	TestTrue("Mixed data should contain user ID", MixedJsonString.Contains("\"id\":\"user999\""));
+	TestTrue("Mixed data should contain name with value", MixedJsonString.Contains("\"name\":\"John Doe\""));
+	TestTrue("Mixed data should contain externalId as null", MixedJsonString.Contains("\"externalId\":null"));
+	TestTrue("Mixed data should contain profileUrl with value", MixedJsonString.Contains("\"profileUrl\":\"https://example.com/john\""));
+	TestTrue("Mixed data should contain email as null", MixedJsonString.Contains("\"email\":null"));
+	TestTrue("Mixed data should contain custom with value", MixedJsonString.Contains("\"custom\":"));
+	TestTrue("Mixed data should contain status as null", MixedJsonString.Contains("\"status\":null"));
+	TestTrue("Mixed data should contain type with value", MixedJsonString.Contains("\"type\":\"premium\""));
+	TestFalse("Mixed data should not contain empty name as null", MixedJsonString.Contains("\"name\":null"));
+
+	// Test 5: Fields with values should always be included regardless of ForceSet flag
+	FPubnubUserInputData ValuesWithForceSetFalse;
+	ValuesWithForceSetFalse.UserName = "Jane";
+	ValuesWithForceSetFalse.ExternalID = "ext123";
+	ValuesWithForceSetFalse.ProfileUrl = "https://example.com/jane";
+	ValuesWithForceSetFalse.Email = "jane@example.com";
+	ValuesWithForceSetFalse.Custom = "{\"role\":\"user\"}";
+	ValuesWithForceSetFalse.Status = "active";
+	ValuesWithForceSetFalse.Type = "standard";
+	ValuesWithForceSetFalse.ForceSetUserName = false;
+	ValuesWithForceSetFalse.ForceSetExternalID = false;
+	ValuesWithForceSetFalse.ForceSetProfileUrl = false;
+	ValuesWithForceSetFalse.ForceSetEmail = false;
+	ValuesWithForceSetFalse.ForceSetCustom = false;
+	ValuesWithForceSetFalse.ForceSetStatus = false;
+	ValuesWithForceSetFalse.ForceSetType = false;
+	
+	FString ValuesJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user111", ValuesWithForceSetFalse);
+	
+	TestTrue("Values with ForceSet false should contain name", ValuesJsonString.Contains("\"name\":\"Jane\""));
+	TestTrue("Values with ForceSet false should contain externalId", ValuesJsonString.Contains("\"externalId\":\"ext123\""));
+	TestTrue("Values with ForceSet false should contain profileUrl", ValuesJsonString.Contains("\"profileUrl\":\"https://example.com/jane\""));
+	TestTrue("Values with ForceSet false should contain email", ValuesJsonString.Contains("\"email\":\"jane@example.com\""));
+	TestTrue("Values with ForceSet false should contain custom", ValuesJsonString.Contains("\"custom\":"));
+	TestTrue("Values with ForceSet false should contain status", ValuesJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Values with ForceSet false should contain type", ValuesJsonString.Contains("\"type\":\"standard\""));
+
+	// Test 6: Empty UserID should return empty string
+	FPubnubUserInputData EmptyUserIDData;
+	EmptyUserIDData.UserName = "Test";
+	EmptyUserIDData.Status = "active";
+	
+	FString EmptyUserIDJsonString = UPubnubJsonUtilities::GetJsonFromUserData("", EmptyUserIDData);
+	
+	TestEqual("Empty UserID should return empty string", EmptyUserIDJsonString, "");
+
+	// Test 7: Empty custom with ForceSet true should be null, not empty object
+	FPubnubUserInputData EmptyCustomForceSet;
+	EmptyCustomForceSet.UserName = "User";
+	EmptyCustomForceSet.Custom = "";
+	EmptyCustomForceSet.ForceSetCustom = true;
+	
+	FString EmptyCustomJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user222", EmptyCustomForceSet);
+	
+	TestTrue("Empty custom with ForceSet should contain null", EmptyCustomJsonString.Contains("\"custom\":null"));
+	TestFalse("Empty custom with ForceSet should not contain empty string", EmptyCustomJsonString.Contains("\"custom\":\"\""));
+
+	// Test 8: Using ForceSetAllFields helper method
+	FPubnubUserInputData ForceSetAllData;
+	ForceSetAllData.UserName = "";
+	ForceSetAllData.ExternalID = "";
+	ForceSetAllData.ProfileUrl = "";
+	ForceSetAllData.Email = "";
+	ForceSetAllData.Custom = "";
+	ForceSetAllData.Status = "";
+	ForceSetAllData.Type = "";
+	ForceSetAllData.ForceSetAllFields();
+	
+	FString ForceSetAllJsonString = UPubnubJsonUtilities::GetJsonFromUserData("user333", ForceSetAllData);
+	
+	TestTrue("ForceSetAllFields should set all flags", ForceSetAllData.ForceSetUserName && ForceSetAllData.ForceSetExternalID && 
+		ForceSetAllData.ForceSetProfileUrl && ForceSetAllData.ForceSetEmail && ForceSetAllData.ForceSetCustom && 
+		ForceSetAllData.ForceSetStatus && ForceSetAllData.ForceSetType);
+	TestTrue("ForceSetAllFields data should contain name as null", ForceSetAllJsonString.Contains("\"name\":null"));
+	TestTrue("ForceSetAllFields data should contain email as null", ForceSetAllJsonString.Contains("\"email\":null"));
+	TestTrue("ForceSetAllFields data should contain status as null", ForceSetAllJsonString.Contains("\"status\":null"));
 
 	return true;
 }
@@ -1842,35 +2017,134 @@ bool FGetChannelDataFromJsonUnitTest::RunTest(const FString& Parameters)
 
 bool FGetJsonFromChannelDataUnitTest::RunTest(const FString& Parameters)
 {
-	// Test with complete channel data
-	FPubnubChannelData ChannelData;
-	ChannelData.ChannelID = "channel123";
-	ChannelData.ChannelName = "Test Channel";
-	ChannelData.Description = "A test channel";
-	ChannelData.Custom = "{\"category\":\"test\",\"priority\":1}";
-	ChannelData.Status = "active";
-	ChannelData.Type = "public";
-	ChannelData.Updated = "2024-10-28T09:03:32.977029Z";
-	ChannelData.ETag = "test-etag";
+	// Test 1: Complete channel input data with all fields set
+	FPubnubChannelInputData CompleteChannelData;
+	CompleteChannelData.ChannelName = "Test Channel";
+	CompleteChannelData.Description = "A test channel";
+	CompleteChannelData.Custom = "{\"category\":\"test\",\"priority\":1}";
+	CompleteChannelData.Status = "active";
+	CompleteChannelData.Type = "public";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelData(ChannelData);
+	FString CompleteJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel123", CompleteChannelData);
 	
-	TestTrue("Should contain channel ID", JsonString.Contains("\"id\":\"channel123\""));
-	TestTrue("Should contain channel name", JsonString.Contains("\"name\":\"Test Channel\""));
-	TestTrue("Should contain description", JsonString.Contains("\"description\":\"A test channel\""));
-	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
-	TestTrue("Should contain type", JsonString.Contains("\"type\":\"public\""));
-	TestTrue("Should contain updated", JsonString.Contains("\"updated\":\"2024-10-28T09:03:32.977029Z\""));
-	TestTrue("Should contain eTag", JsonString.Contains("\"eTag\":\"test-etag\""));
+	TestTrue("Complete data should contain channel ID", CompleteJsonString.Contains("\"id\":\"channel123\""));
+	TestTrue("Complete data should contain channel name", CompleteJsonString.Contains("\"name\":\"Test Channel\""));
+	TestTrue("Complete data should contain description", CompleteJsonString.Contains("\"description\":\"A test channel\""));
+	TestTrue("Complete data should contain status", CompleteJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Complete data should contain type", CompleteJsonString.Contains("\"type\":\"public\""));
+	TestTrue("Complete data should contain custom field", CompleteJsonString.Contains("\"custom\":"));
 
-	// Test with minimal channel data
-	FPubnubChannelData MinimalChannelData;
-	MinimalChannelData.ChannelID = "channel456";
+	// Test 2: Minimal channel input data (only ChannelID set)
+	FPubnubChannelInputData MinimalChannelData;
 	
-	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelData(MinimalChannelData);
+	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel456", MinimalChannelData);
 	
-	TestTrue("Should contain channel ID for minimal data", MinimalJsonString.Contains("\"id\":\"channel456\""));
-	TestFalse("Should not contain empty name field", MinimalJsonString.Contains("\"name\":\"\""));
+	TestTrue("Minimal data should contain channel ID", MinimalJsonString.Contains("\"id\":\"channel456\""));
+	TestFalse("Minimal data should not contain empty name field", MinimalJsonString.Contains("\"name\":"));
+	TestFalse("Minimal data should not contain empty description field", MinimalJsonString.Contains("\"description\":"));
+	TestFalse("Minimal data should not contain empty status field", MinimalJsonString.Contains("\"status\":"));
+
+	// Test 3: Empty fields with ForceSet flags set to true (should include as null)
+	FPubnubChannelInputData ForceSetEmptyData;
+	ForceSetEmptyData.ChannelName = "";
+	ForceSetEmptyData.Description = "";
+	ForceSetEmptyData.Custom = "";
+	ForceSetEmptyData.Status = "";
+	ForceSetEmptyData.Type = "";
+	ForceSetEmptyData.ForceSetChannelName = true;
+	ForceSetEmptyData.ForceSetDescription = true;
+	ForceSetEmptyData.ForceSetCustom = true;
+	ForceSetEmptyData.ForceSetStatus = true;
+	ForceSetEmptyData.ForceSetType = true;
+	
+	FString ForceSetJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel789", ForceSetEmptyData);
+	
+	TestTrue("ForceSet data should contain channel ID", ForceSetJsonString.Contains("\"id\":\"channel789\""));
+	TestTrue("ForceSet data should contain name field as null", ForceSetJsonString.Contains("\"name\":null"));
+	TestTrue("ForceSet data should contain description field as null", ForceSetJsonString.Contains("\"description\":null"));
+	TestTrue("ForceSet data should contain status field as null", ForceSetJsonString.Contains("\"status\":null"));
+	TestTrue("ForceSet data should contain type field as null", ForceSetJsonString.Contains("\"type\":null"));
+
+	// Test 4: Mixed scenario - some fields with values, some empty with ForceSet
+	FPubnubChannelInputData MixedData;
+	MixedData.ChannelName = "Mixed Channel";
+	MixedData.Description = "";  // Empty
+	MixedData.Custom = "{\"category\":\"test\"}";
+	MixedData.Status = "";  // Empty
+	MixedData.Type = "private";
+	MixedData.ForceSetChannelName = false;  // Has value, flag doesn't matter
+	MixedData.ForceSetDescription = true;   // Empty but force add
+	MixedData.ForceSetCustom = false;      // Has value, flag doesn't matter
+	MixedData.ForceSetStatus = true;       // Empty but force add
+	MixedData.ForceSetType = false;        // Has value, flag doesn't matter
+	
+	FString MixedJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel999", MixedData);
+	
+	TestTrue("Mixed data should contain channel ID", MixedJsonString.Contains("\"id\":\"channel999\""));
+	TestTrue("Mixed data should contain name with value", MixedJsonString.Contains("\"name\":\"Mixed Channel\""));
+	TestTrue("Mixed data should contain description as null", MixedJsonString.Contains("\"description\":null"));
+	TestTrue("Mixed data should contain custom with value", MixedJsonString.Contains("\"custom\":"));
+	TestTrue("Mixed data should contain status as null", MixedJsonString.Contains("\"status\":null"));
+	TestTrue("Mixed data should contain type with value", MixedJsonString.Contains("\"type\":\"private\""));
+	TestFalse("Mixed data should not contain empty name as null", MixedJsonString.Contains("\"name\":null"));
+
+	// Test 5: Fields with values should always be included regardless of ForceSet flag
+	FPubnubChannelInputData ValuesWithForceSetFalse;
+	ValuesWithForceSetFalse.ChannelName = "Test Channel";
+	ValuesWithForceSetFalse.Description = "Test Description";
+	ValuesWithForceSetFalse.Custom = "{\"category\":\"test\"}";
+	ValuesWithForceSetFalse.Status = "active";
+	ValuesWithForceSetFalse.Type = "public";
+	ValuesWithForceSetFalse.ForceSetChannelName = false;
+	ValuesWithForceSetFalse.ForceSetDescription = false;
+	ValuesWithForceSetFalse.ForceSetCustom = false;
+	ValuesWithForceSetFalse.ForceSetStatus = false;
+	ValuesWithForceSetFalse.ForceSetType = false;
+	
+	FString ValuesJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel111", ValuesWithForceSetFalse);
+	
+	TestTrue("Values with ForceSet false should contain name", ValuesJsonString.Contains("\"name\":\"Test Channel\""));
+	TestTrue("Values with ForceSet false should contain description", ValuesJsonString.Contains("\"description\":\"Test Description\""));
+	TestTrue("Values with ForceSet false should contain custom", ValuesJsonString.Contains("\"custom\":"));
+	TestTrue("Values with ForceSet false should contain status", ValuesJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Values with ForceSet false should contain type", ValuesJsonString.Contains("\"type\":\"public\""));
+
+	// Test 6: Empty ChannelID should return empty string
+	FPubnubChannelInputData EmptyChannelIDData;
+	EmptyChannelIDData.ChannelName = "Test";
+	EmptyChannelIDData.Status = "active";
+	
+	FString EmptyChannelIDJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("", EmptyChannelIDData);
+	
+	TestEqual("Empty ChannelID should return empty string", EmptyChannelIDJsonString, "");
+
+	// Test 7: Empty custom with ForceSet true should be null, not empty object
+	FPubnubChannelInputData EmptyCustomForceSet;
+	EmptyCustomForceSet.ChannelName = "Test";
+	EmptyCustomForceSet.Custom = "";
+	EmptyCustomForceSet.ForceSetCustom = true;
+	
+	FString EmptyCustomJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel222", EmptyCustomForceSet);
+	
+	TestTrue("Empty custom with ForceSet should contain null", EmptyCustomJsonString.Contains("\"custom\":null"));
+	TestFalse("Empty custom with ForceSet should not contain empty string", EmptyCustomJsonString.Contains("\"custom\":\"\""));
+
+	// Test 8: Using ForceSetAllFields helper method
+	FPubnubChannelInputData ForceSetAllData;
+	ForceSetAllData.ChannelName = "";
+	ForceSetAllData.Description = "";
+	ForceSetAllData.Custom = "";
+	ForceSetAllData.Status = "";
+	ForceSetAllData.Type = "";
+	ForceSetAllData.ForceSetAllFields();
+	
+	FString ForceSetAllJsonString = UPubnubJsonUtilities::GetJsonFromChannelData("channel333", ForceSetAllData);
+	
+	TestTrue("ForceSetAllFields should set all flags", ForceSetAllData.ForceSetChannelName && ForceSetAllData.ForceSetDescription && 
+		ForceSetAllData.ForceSetCustom && ForceSetAllData.ForceSetStatus && ForceSetAllData.ForceSetType);
+	TestTrue("ForceSetAllFields data should contain name as null", ForceSetAllJsonString.Contains("\"name\":null"));
+	TestTrue("ForceSetAllFields data should contain description as null", ForceSetAllJsonString.Contains("\"description\":null"));
+	TestTrue("ForceSetAllFields data should contain status as null", ForceSetAllJsonString.Contains("\"status\":null"));
 
 	return true;
 }
@@ -1908,27 +2182,117 @@ bool FGetMembershipDataFromJsonUnitTest::RunTest(const FString& Parameters)
 
 bool FGetJsonFromMembershipInputDataUnitTest::RunTest(const FString& Parameters)
 {
-	// Test with complete membership input data
-	FPubnubMembershipInputData MembershipInputData;
-	MembershipInputData.Channel = "channel123";
-	MembershipInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
-	MembershipInputData.Status = "active";
-	MembershipInputData.Type = "member";
+	// Test 1: Complete membership input data with all fields set
+	FPubnubMembershipInputData CompleteMembershipInputData;
+	CompleteMembershipInputData.Channel = "channel123";
+	CompleteMembershipInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
+	CompleteMembershipInputData.Status = "active";
+	CompleteMembershipInputData.Type = "member";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(MembershipInputData);
+	FString CompleteJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(CompleteMembershipInputData);
 	
-	TestTrue("Should contain channel ID", JsonString.Contains("\"channel\":{\"id\":\"channel123\"}"));
-	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
-	TestTrue("Should contain type", JsonString.Contains("\"type\":\"member\""));
+	TestTrue("Complete data should contain channel ID", CompleteJsonString.Contains("\"channel\":{\"id\":\"channel123\"}"));
+	TestTrue("Complete data should contain custom field", CompleteJsonString.Contains("\"custom\":"));
+	TestTrue("Complete data should contain status", CompleteJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Complete data should contain type", CompleteJsonString.Contains("\"type\":\"member\""));
 
-	// Test with minimal membership input data
+	// Test 2: Minimal membership input data (only Channel set)
 	FPubnubMembershipInputData MinimalMembershipInputData;
 	MinimalMembershipInputData.Channel = "channel456";
 	
 	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(MinimalMembershipInputData);
 	
-	TestTrue("Should contain channel ID for minimal data", MinimalJsonString.Contains("\"channel\":{\"id\":\"channel456\"}"));
-	TestFalse("Should not contain empty status field", MinimalJsonString.Contains("\"status\":\"\""));
+	TestTrue("Minimal data should contain channel ID", MinimalJsonString.Contains("\"channel\":{\"id\":\"channel456\"}"));
+	TestFalse("Minimal data should not contain empty status field", MinimalJsonString.Contains("\"status\":"));
+	TestFalse("Minimal data should not contain empty type field", MinimalJsonString.Contains("\"type\":"));
+	TestFalse("Minimal data should not contain empty custom field", MinimalJsonString.Contains("\"custom\":"));
+
+	// Test 3: Empty fields with ForceSet flags set to true (should include as null)
+	FPubnubMembershipInputData ForceSetEmptyData;
+	ForceSetEmptyData.Channel = "channel789";
+	ForceSetEmptyData.Custom = "";
+	ForceSetEmptyData.Status = "";
+	ForceSetEmptyData.Type = "";
+	ForceSetEmptyData.ForceSetCustom = true;
+	ForceSetEmptyData.ForceSetStatus = true;
+	ForceSetEmptyData.ForceSetType = true;
+	
+	FString ForceSetJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(ForceSetEmptyData);
+	
+	TestTrue("ForceSet data should contain channel ID", ForceSetJsonString.Contains("\"channel\":{\"id\":\"channel789\"}"));
+	TestTrue("ForceSet data should contain custom field as null", ForceSetJsonString.Contains("\"custom\":null"));
+	TestTrue("ForceSet data should contain status field as null", ForceSetJsonString.Contains("\"status\":null"));
+	TestTrue("ForceSet data should contain type field as null", ForceSetJsonString.Contains("\"type\":null"));
+
+	// Test 4: Mixed scenario - some fields with values, some empty with ForceSet
+	FPubnubMembershipInputData MixedData;
+	MixedData.Channel = "channel999";
+	MixedData.Custom = "{\"role\":\"moderator\"}";
+	MixedData.Status = "";  // Empty
+	MixedData.Type = "premium";  // Has value
+	MixedData.ForceSetCustom = false;  // Has value, flag doesn't matter
+	MixedData.ForceSetStatus = true;   // Empty but force add
+	MixedData.ForceSetType = false;    // Has value, flag doesn't matter
+	
+	FString MixedJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(MixedData);
+	
+	TestTrue("Mixed data should contain channel ID", MixedJsonString.Contains("\"channel\":{\"id\":\"channel999\"}"));
+	TestTrue("Mixed data should contain custom field with value", MixedJsonString.Contains("\"custom\":"));
+	TestTrue("Mixed data should contain status as null", MixedJsonString.Contains("\"status\":null"));
+	TestTrue("Mixed data should contain type with value", MixedJsonString.Contains("\"type\":\"premium\""));
+	TestFalse("Mixed data should not contain empty type as null", MixedJsonString.Contains("\"type\":null"));
+
+	// Test 5: Fields with values should always be included regardless of ForceSet flag
+	FPubnubMembershipInputData ValuesWithForceSetFalse;
+	ValuesWithForceSetFalse.Channel = "channel111";
+	ValuesWithForceSetFalse.Custom = "{\"role\":\"admin\"}";
+	ValuesWithForceSetFalse.Status = "active";
+	ValuesWithForceSetFalse.Type = "member";
+	ValuesWithForceSetFalse.ForceSetCustom = false;
+	ValuesWithForceSetFalse.ForceSetStatus = false;
+	ValuesWithForceSetFalse.ForceSetType = false;
+	
+	FString ValuesJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(ValuesWithForceSetFalse);
+	
+	TestTrue("Values with ForceSet false should contain custom", ValuesJsonString.Contains("\"custom\":"));
+	TestTrue("Values with ForceSet false should contain status", ValuesJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Values with ForceSet false should contain type", ValuesJsonString.Contains("\"type\":\"member\""));
+
+	// Test 6: Empty Channel should return empty string
+	FPubnubMembershipInputData EmptyChannelData;
+	EmptyChannelData.Channel = "";
+	EmptyChannelData.Status = "active";
+	EmptyChannelData.Type = "member";
+	
+	FString EmptyChannelJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(EmptyChannelData);
+	
+	TestEqual("Empty channel should return empty string", EmptyChannelJsonString, "");
+
+	// Test 7: Empty custom with ForceSet true should be null, not empty object
+	FPubnubMembershipInputData EmptyCustomForceSet;
+	EmptyCustomForceSet.Channel = "channel333";
+	EmptyCustomForceSet.Custom = "";
+	EmptyCustomForceSet.ForceSetCustom = true;
+	
+	FString EmptyCustomJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(EmptyCustomForceSet);
+	
+	TestTrue("Empty custom with ForceSet should contain null", EmptyCustomJsonString.Contains("\"custom\":null"));
+	TestFalse("Empty custom with ForceSet should not contain empty string", EmptyCustomJsonString.Contains("\"custom\":\"\""));
+
+	// Test 8: Using ForceSetAllFields helper method
+	FPubnubMembershipInputData ForceSetAllData;
+	ForceSetAllData.Channel = "channel444";
+	ForceSetAllData.Custom = "";
+	ForceSetAllData.Status = "";
+	ForceSetAllData.Type = "";
+	ForceSetAllData.ForceSetAllFields();
+	
+	FString ForceSetAllJsonString = UPubnubJsonUtilities::GetJsonFromMembershipInputData(ForceSetAllData);
+	
+	TestTrue("ForceSetAllFields should set all flags", ForceSetAllData.ForceSetCustom && ForceSetAllData.ForceSetStatus && ForceSetAllData.ForceSetType);
+	TestTrue("ForceSetAllFields data should contain custom as null", ForceSetAllJsonString.Contains("\"custom\":null"));
+	TestTrue("ForceSetAllFields data should contain status as null", ForceSetAllJsonString.Contains("\"status\":null"));
+	TestTrue("ForceSetAllFields data should contain type as null", ForceSetAllJsonString.Contains("\"type\":null"));
 
 	return true;
 }
@@ -2026,27 +2390,113 @@ bool FGetChannelMemberDataFromJsonUnitTest::RunTest(const FString& Parameters)
 
 bool FGetJsonFromChannelMemberDataUnitTest::RunTest(const FString& Parameters)
 {
-	// Test with complete channel member input data
-	FPubnubChannelMemberInputData MemberInputData;
-	MemberInputData.User = "user123";
-	MemberInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
-	MemberInputData.Status = "active";
-	MemberInputData.Type = "member";
+	// Test 1: Complete channel member input data with all fields set
+	FPubnubChannelMemberInputData CompleteMemberInputData;
+	CompleteMemberInputData.User = "user123";
+	CompleteMemberInputData.Custom = "{\"role\":\"admin\",\"joinDate\":\"2024-01-01\"}";
+	CompleteMemberInputData.Status = "active";
+	CompleteMemberInputData.Type = "member";
 	
-	FString JsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(MemberInputData);
+	FString CompleteJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(CompleteMemberInputData);
 	
-	TestTrue("Should contain user ID", JsonString.Contains("\"uuid\":{\"id\":\"user123\"}"));
-	TestTrue("Should contain status", JsonString.Contains("\"status\":\"active\""));
-	TestTrue("Should contain type", JsonString.Contains("\"type\":\"member\""));
+	TestTrue("Complete data should contain user ID", CompleteJsonString.Contains("\"uuid\":{\"id\":\"user123\"}"));
+	TestTrue("Complete data should contain custom field", CompleteJsonString.Contains("\"custom\":"));
+	TestTrue("Complete data should contain status", CompleteJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Complete data should contain type", CompleteJsonString.Contains("\"type\":\"member\""));
 
-	// Test with minimal channel member input data
+	// Test 2: Minimal channel member input data (only User set)
 	FPubnubChannelMemberInputData MinimalMemberInputData;
 	MinimalMemberInputData.User = "user456";
 	
 	FString MinimalJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(MinimalMemberInputData);
 	
-	TestTrue("Should contain user ID for minimal data", MinimalJsonString.Contains("\"uuid\":{\"id\":\"user456\"}"));
-	TestFalse("Should not contain empty status field", MinimalJsonString.Contains("\"status\":\"\""));
+	TestTrue("Minimal data should contain user ID", MinimalJsonString.Contains("\"uuid\":{\"id\":\"user456\"}"));
+	TestFalse("Minimal data should not contain empty status field", MinimalJsonString.Contains("\"status\":"));
+	TestFalse("Minimal data should not contain empty type field", MinimalJsonString.Contains("\"type\":"));
+	TestFalse("Minimal data should not contain empty custom field", MinimalJsonString.Contains("\"custom\":"));
+
+	// Test 3: Empty fields with ForceSet flags set to true (should include as null)
+	FPubnubChannelMemberInputData ForceSetEmptyData;
+	ForceSetEmptyData.User = "user789";
+	ForceSetEmptyData.Custom = "";
+	ForceSetEmptyData.Status = "";
+	ForceSetEmptyData.Type = "";
+	ForceSetEmptyData.ForceSetCustom = true;
+	ForceSetEmptyData.ForceSetStatus = true;
+	ForceSetEmptyData.ForceSetType = true;
+	
+	FString ForceSetJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(ForceSetEmptyData);
+	
+	TestTrue("ForceSet data should contain user ID", ForceSetJsonString.Contains("\"uuid\":{\"id\":\"user789\"}"));
+	TestTrue("ForceSet data should contain custom field as null", ForceSetJsonString.Contains("\"custom\":null"));
+	TestTrue("ForceSet data should contain status field as null", ForceSetJsonString.Contains("\"status\":null"));
+	TestTrue("ForceSet data should contain type field as null", ForceSetJsonString.Contains("\"type\":null"));
+
+	// Test 4: Mixed scenario - some fields with values, some empty with ForceSet
+	FPubnubChannelMemberInputData MixedData;
+	MixedData.User = "user999";
+	MixedData.Custom = "{\"role\":\"moderator\"}";
+	MixedData.Status = "";  // Empty
+	MixedData.Type = "premium";  // Has value
+	MixedData.ForceSetCustom = false;  // Has value, flag doesn't matter
+	MixedData.ForceSetStatus = true;   // Empty but force add
+	MixedData.ForceSetType = false;    // Has value, flag doesn't matter
+	
+	FString MixedJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(MixedData);
+	
+	TestTrue("Mixed data should contain user ID", MixedJsonString.Contains("\"uuid\":{\"id\":\"user999\"}"));
+	TestTrue("Mixed data should contain custom field with value", MixedJsonString.Contains("\"custom\":"));
+	TestTrue("Mixed data should contain status as null", MixedJsonString.Contains("\"status\":null"));
+	TestTrue("Mixed data should contain type with value", MixedJsonString.Contains("\"type\":\"premium\""));
+	TestFalse("Mixed data should not contain empty type as null", MixedJsonString.Contains("\"type\":null"));
+
+	// Test 5: Fields with values should always be included regardless of ForceSet flag
+	FPubnubChannelMemberInputData ValuesWithForceSetFalse;
+	ValuesWithForceSetFalse.User = "user111";
+	ValuesWithForceSetFalse.Custom = "{\"role\":\"admin\"}";
+	ValuesWithForceSetFalse.Status = "active";
+	ValuesWithForceSetFalse.Type = "member";
+	ValuesWithForceSetFalse.ForceSetCustom = false;
+	ValuesWithForceSetFalse.ForceSetStatus = false;
+	ValuesWithForceSetFalse.ForceSetType = false;
+	
+	FString ValuesJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(ValuesWithForceSetFalse);
+	
+	TestTrue("Values with ForceSet false should contain custom", ValuesJsonString.Contains("\"custom\":"));
+	TestTrue("Values with ForceSet false should contain status", ValuesJsonString.Contains("\"status\":\"active\""));
+	TestTrue("Values with ForceSet false should contain type", ValuesJsonString.Contains("\"type\":\"member\""));
+
+	// Test 6: Empty User should return empty string
+	FPubnubChannelMemberInputData EmptyUserData;
+	EmptyUserData.User = "";
+	EmptyUserData.Status = "active";
+	EmptyUserData.Type = "member";
+	
+	FString EmptyUserJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(EmptyUserData);
+	
+	TestEqual("Empty user should return empty string", EmptyUserJsonString, "");
+
+	// Test 7: Custom field with invalid JSON but ForceSet true should still add as null
+	FPubnubChannelMemberInputData InvalidCustomData;
+	InvalidCustomData.User = "user222";
+	InvalidCustomData.Custom = "invalid json";
+	InvalidCustomData.ForceSetCustom = true;
+	
+	FString InvalidCustomJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(InvalidCustomData);
+	
+	TestTrue("Invalid custom with ForceSet should contain user ID", InvalidCustomJsonString.Contains("\"uuid\":{\"id\":\"user222\"}"));
+	// Note: Invalid JSON won't be added as object, but if empty with ForceSet it would be null
+
+	// Test 8: Empty custom with ForceSet true should be null, not empty object
+	FPubnubChannelMemberInputData EmptyCustomForceSet;
+	EmptyCustomForceSet.User = "user333";
+	EmptyCustomForceSet.Custom = "";
+	EmptyCustomForceSet.ForceSetCustom = true;
+	
+	FString EmptyCustomJsonString = UPubnubJsonUtilities::GetJsonFromChannelMemberData(EmptyCustomForceSet);
+	
+	TestTrue("Empty custom with ForceSet should contain null", EmptyCustomJsonString.Contains("\"custom\":null"));
+	TestFalse("Empty custom with ForceSet should not contain empty string", EmptyCustomJsonString.Contains("\"custom\":\"\""));
 
 	return true;
 }
@@ -2207,6 +2657,315 @@ bool FGetOperationResultFromJsonAppContextUnitTest::RunTest(const FString& Param
 	TestFalse("Invalid JSON: Error should be false (default)", ResultInvalid.Error);
 	TestEqual("Invalid JSON: ErrorMessage should be empty (default)", ResultInvalid.ErrorMessage, "");
 
+	return true;
+}
+
+bool FGetChannelUpdateDataFromMessageContentUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete channel data (all fields present with values)
+	FString TestJsonComplete = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"channel\",\"data\":{\"custom\":{\"premium\":\"ForSure\"},\"eTag\":\"37a48c8d040cb386a51e33f4492acc2c\",\"id\":\"my_channel\",\"name\":\"UE_Channel\",\"description\":\"Test Description\",\"status\":\"active\",\"type\":\"public\",\"updated\":\"2026-01-08T14:40:08.305937Z\"}}";
+	FPubnubChannelUpdateData ResultComplete = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonComplete);
+	
+	TestEqual("Complete: ChannelName should be 'UE_Channel'", ResultComplete.ChannelName, "UE_Channel");
+	TestTrue("Complete: ChannelNameUpdated should be true", ResultComplete.ChannelNameUpdated);
+	TestEqual("Complete: Description should be 'Test Description'", ResultComplete.Description, "Test Description");
+	TestTrue("Complete: DescriptionUpdated should be true", ResultComplete.DescriptionUpdated);
+	TestEqual("Complete: Status should be 'active'", ResultComplete.Status, "active");
+	TestTrue("Complete: StatusUpdated should be true", ResultComplete.StatusUpdated);
+	TestEqual("Complete: Type should be 'public'", ResultComplete.Type, "public");
+	TestTrue("Complete: TypeUpdated should be true", ResultComplete.TypeUpdated);
+	TestTrue("Complete: Custom should contain premium", ResultComplete.Custom.Contains("\"premium\":\"ForSure\""));
+	TestTrue("Complete: CustomUpdated should be true", ResultComplete.CustomUpdated);
+	
+	// Test with null fields (fields present but null)
+	FString TestJsonNullFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"channel\",\"data\":{\"name\":null,\"description\":null,\"status\":null,\"type\":null,\"custom\":null}}";
+	FPubnubChannelUpdateData ResultNullFields = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonNullFields);
+	
+	TestEqual("Null fields: ChannelName should be empty", ResultNullFields.ChannelName, "");
+	TestTrue("Null fields: ChannelNameUpdated should be true", ResultNullFields.ChannelNameUpdated);
+	TestEqual("Null fields: Description should be empty", ResultNullFields.Description, "");
+	TestTrue("Null fields: DescriptionUpdated should be true", ResultNullFields.DescriptionUpdated);
+	TestEqual("Null fields: Status should be empty", ResultNullFields.Status, "");
+	TestTrue("Null fields: StatusUpdated should be true", ResultNullFields.StatusUpdated);
+	TestEqual("Null fields: Type should be empty", ResultNullFields.Type, "");
+	TestTrue("Null fields: TypeUpdated should be true", ResultNullFields.TypeUpdated);
+	TestEqual("Null fields: Custom should be empty", ResultNullFields.Custom, "");
+	TestTrue("Null fields: CustomUpdated should be true", ResultNullFields.CustomUpdated);
+	
+	// Test with missing fields (fields not present in JSON)
+	FString TestJsonMissingFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"channel\",\"data\":{\"id\":\"my_channel\"}}";
+	FPubnubChannelUpdateData ResultMissingFields = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonMissingFields);
+	
+	TestEqual("Missing fields: ChannelName should be empty", ResultMissingFields.ChannelName, "");
+	TestFalse("Missing fields: ChannelNameUpdated should be false", ResultMissingFields.ChannelNameUpdated);
+	TestEqual("Missing fields: Description should be empty", ResultMissingFields.Description, "");
+	TestFalse("Missing fields: DescriptionUpdated should be false", ResultMissingFields.DescriptionUpdated);
+	TestEqual("Missing fields: Status should be empty", ResultMissingFields.Status, "");
+	TestFalse("Missing fields: StatusUpdated should be false", ResultMissingFields.StatusUpdated);
+	TestEqual("Missing fields: Type should be empty", ResultMissingFields.Type, "");
+	TestFalse("Missing fields: TypeUpdated should be false", ResultMissingFields.TypeUpdated);
+	TestEqual("Missing fields: Custom should be empty", ResultMissingFields.Custom, "");
+	TestFalse("Missing fields: CustomUpdated should be false", ResultMissingFields.CustomUpdated);
+	
+	// Test with empty message content
+	FString TestJsonEmpty = "";
+	FPubnubChannelUpdateData ResultEmpty = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonEmpty);
+	
+	TestEqual("Empty: ChannelName should be empty", ResultEmpty.ChannelName, "");
+	TestFalse("Empty: ChannelNameUpdated should be false", ResultEmpty.ChannelNameUpdated);
+	
+	// Test with missing data field
+	FString TestJsonNoData = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"channel\"}";
+	FPubnubChannelUpdateData ResultNoData = UPubnubJsonUtilities::GetChannelUpdateDataFromMessageContent(TestJsonNoData);
+	
+	TestEqual("No data: ChannelName should be empty", ResultNoData.ChannelName, "");
+	TestFalse("No data: ChannelNameUpdated should be false", ResultNoData.ChannelNameUpdated);
+	
+	return true;
+}
+
+bool FGetUserUpdateDataFromMessageContentUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete user data (all fields present with values)
+	FString TestJsonComplete = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"user\",\"data\":{\"id\":\"User1\",\"name\":\"John Doe\",\"externalId\":\"ext123\",\"profileUrl\":\"https://example.com/profile.jpg\",\"email\":\"john@example.com\",\"custom\":{\"department\":\"Engineering\"},\"status\":\"active\",\"type\":\"premium\",\"updated\":\"2026-01-08T14:40:08.305937Z\"}}";
+	FPubnubUserUpdateData ResultComplete = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonComplete);
+	
+	TestEqual("Complete: UserName should be 'John Doe'", ResultComplete.UserName, "John Doe");
+	TestTrue("Complete: UserNameUpdated should be true", ResultComplete.UserNameUpdated);
+	TestEqual("Complete: ExternalID should be 'ext123'", ResultComplete.ExternalID, "ext123");
+	TestTrue("Complete: ExternalIDUpdated should be true", ResultComplete.ExternalIDUpdated);
+	TestEqual("Complete: ProfileUrl should be 'https://example.com/profile.jpg'", ResultComplete.ProfileUrl, "https://example.com/profile.jpg");
+	TestTrue("Complete: ProfileUrlUpdated should be true", ResultComplete.ProfileUrlUpdated);
+	TestEqual("Complete: Email should be 'john@example.com'", ResultComplete.Email, "john@example.com");
+	TestTrue("Complete: EmailUpdated should be true", ResultComplete.EmailUpdated);
+	TestEqual("Complete: Status should be 'active'", ResultComplete.Status, "active");
+	TestTrue("Complete: StatusUpdated should be true", ResultComplete.StatusUpdated);
+	TestEqual("Complete: Type should be 'premium'", ResultComplete.Type, "premium");
+	TestTrue("Complete: TypeUpdated should be true", ResultComplete.TypeUpdated);
+	TestTrue("Complete: Custom should contain department", ResultComplete.Custom.Contains("\"department\":\"Engineering\""));
+	TestTrue("Complete: CustomUpdated should be true", ResultComplete.CustomUpdated);
+	
+	// Test with null fields (fields present but null)
+	FString TestJsonNullFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"user\",\"data\":{\"name\":null,\"externalId\":null,\"profileUrl\":null,\"email\":null,\"status\":null,\"type\":null,\"custom\":null}}";
+	FPubnubUserUpdateData ResultNullFields = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonNullFields);
+	
+	TestEqual("Null fields: UserName should be empty", ResultNullFields.UserName, "");
+	TestTrue("Null fields: UserNameUpdated should be true", ResultNullFields.UserNameUpdated);
+	TestEqual("Null fields: ExternalID should be empty", ResultNullFields.ExternalID, "");
+	TestTrue("Null fields: ExternalIDUpdated should be true", ResultNullFields.ExternalIDUpdated);
+	TestEqual("Null fields: ProfileUrl should be empty", ResultNullFields.ProfileUrl, "");
+	TestTrue("Null fields: ProfileUrlUpdated should be true", ResultNullFields.ProfileUrlUpdated);
+	TestEqual("Null fields: Email should be empty", ResultNullFields.Email, "");
+	TestTrue("Null fields: EmailUpdated should be true", ResultNullFields.EmailUpdated);
+	TestEqual("Null fields: Status should be empty", ResultNullFields.Status, "");
+	TestTrue("Null fields: StatusUpdated should be true", ResultNullFields.StatusUpdated);
+	TestEqual("Null fields: Type should be empty", ResultNullFields.Type, "");
+	TestTrue("Null fields: TypeUpdated should be true", ResultNullFields.TypeUpdated);
+	TestEqual("Null fields: Custom should be empty", ResultNullFields.Custom, "");
+	TestTrue("Null fields: CustomUpdated should be true", ResultNullFields.CustomUpdated);
+	
+	// Test with missing fields (fields not present in JSON)
+	FString TestJsonMissingFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"user\",\"data\":{\"id\":\"User1\"}}";
+	FPubnubUserUpdateData ResultMissingFields = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonMissingFields);
+	
+	TestEqual("Missing fields: UserName should be empty", ResultMissingFields.UserName, "");
+	TestFalse("Missing fields: UserNameUpdated should be false", ResultMissingFields.UserNameUpdated);
+	TestEqual("Missing fields: ExternalID should be empty", ResultMissingFields.ExternalID, "");
+	TestFalse("Missing fields: ExternalIDUpdated should be false", ResultMissingFields.ExternalIDUpdated);
+	TestEqual("Missing fields: ProfileUrl should be empty", ResultMissingFields.ProfileUrl, "");
+	TestFalse("Missing fields: ProfileUrlUpdated should be false", ResultMissingFields.ProfileUrlUpdated);
+	TestEqual("Missing fields: Email should be empty", ResultMissingFields.Email, "");
+	TestFalse("Missing fields: EmailUpdated should be false", ResultMissingFields.EmailUpdated);
+	TestEqual("Missing fields: Status should be empty", ResultMissingFields.Status, "");
+	TestFalse("Missing fields: StatusUpdated should be false", ResultMissingFields.StatusUpdated);
+	TestEqual("Missing fields: Type should be empty", ResultMissingFields.Type, "");
+	TestFalse("Missing fields: TypeUpdated should be false", ResultMissingFields.TypeUpdated);
+	TestEqual("Missing fields: Custom should be empty", ResultMissingFields.Custom, "");
+	TestFalse("Missing fields: CustomUpdated should be false", ResultMissingFields.CustomUpdated);
+	
+	// Test with partial fields (some present, some missing)
+	FString TestJsonPartial = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"user\",\"data\":{\"name\":\"Jane Doe\",\"email\":\"jane@example.com\"}}";
+	FPubnubUserUpdateData ResultPartial = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonPartial);
+	
+	TestEqual("Partial: UserName should be 'Jane Doe'", ResultPartial.UserName, "Jane Doe");
+	TestTrue("Partial: UserNameUpdated should be true", ResultPartial.UserNameUpdated);
+	TestEqual("Partial: Email should be 'jane@example.com'", ResultPartial.Email, "jane@example.com");
+	TestTrue("Partial: EmailUpdated should be true", ResultPartial.EmailUpdated);
+	TestEqual("Partial: ExternalID should be empty", ResultPartial.ExternalID, "");
+	TestFalse("Partial: ExternalIDUpdated should be false", ResultPartial.ExternalIDUpdated);
+	TestEqual("Partial: Status should be empty", ResultPartial.Status, "");
+	TestFalse("Partial: StatusUpdated should be false", ResultPartial.StatusUpdated);
+	
+	// Test with empty message content
+	FString TestJsonEmpty = "";
+	FPubnubUserUpdateData ResultEmpty = UPubnubJsonUtilities::GetUserUpdateDataFromMessageContent(TestJsonEmpty);
+	
+	TestEqual("Empty: UserName should be empty", ResultEmpty.UserName, "");
+	TestFalse("Empty: UserNameUpdated should be false", ResultEmpty.UserNameUpdated);
+	
+	return true;
+}
+
+bool FGetMembershipUpdateDataFromMessageContentUnitTest::RunTest(const FString& Parameters)
+{
+	// Test with complete membership data (all fields present with values)
+	FString TestJsonComplete = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\",\"data\":{\"channel\":{\"id\":\"my_channel\"},\"custom\":{\"hotMembership\":\"warm\"},\"status\":\"active\",\"type\":\"premium\",\"eTag\":\"AdycwpOS7bWOKg\",\"updated\":\"2026-01-08T14:41:26.09144009Z\",\"uuid\":{\"id\":\"User1\"}}}";
+	FPubnubMembershipUpdateData ResultComplete = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonComplete);
+	
+	TestEqual("Complete: Status should be 'active'", ResultComplete.Status, "active");
+	TestTrue("Complete: StatusUpdated should be true", ResultComplete.StatusUpdated);
+	TestEqual("Complete: Type should be 'premium'", ResultComplete.Type, "premium");
+	TestTrue("Complete: TypeUpdated should be true", ResultComplete.TypeUpdated);
+	TestTrue("Complete: Custom should contain hotMembership", ResultComplete.Custom.Contains("\"hotMembership\":\"warm\""));
+	TestTrue("Complete: CustomUpdated should be true", ResultComplete.CustomUpdated);
+	
+	// Test with null fields (fields present but null)
+	FString TestJsonNullFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\",\"data\":{\"channel\":{\"id\":\"my_channel\"},\"custom\":null,\"status\":null,\"type\":null,\"uuid\":{\"id\":\"User1\"}}}";
+	FPubnubMembershipUpdateData ResultNullFields = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonNullFields);
+	
+	TestEqual("Null fields: Status should be empty", ResultNullFields.Status, "");
+	TestTrue("Null fields: StatusUpdated should be true", ResultNullFields.StatusUpdated);
+	TestEqual("Null fields: Type should be empty", ResultNullFields.Type, "");
+	TestTrue("Null fields: TypeUpdated should be true", ResultNullFields.TypeUpdated);
+	TestEqual("Null fields: Custom should be empty", ResultNullFields.Custom, "");
+	TestTrue("Null fields: CustomUpdated should be true", ResultNullFields.CustomUpdated);
+	
+	// Test with missing fields (fields not present in JSON)
+	FString TestJsonMissingFields = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\",\"data\":{\"channel\":{\"id\":\"my_channel\"},\"uuid\":{\"id\":\"User1\"}}}";
+	FPubnubMembershipUpdateData ResultMissingFields = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonMissingFields);
+	
+	TestEqual("Missing fields: Status should be empty", ResultMissingFields.Status, "");
+	TestFalse("Missing fields: StatusUpdated should be false", ResultMissingFields.StatusUpdated);
+	TestEqual("Missing fields: Type should be empty", ResultMissingFields.Type, "");
+	TestFalse("Missing fields: TypeUpdated should be false", ResultMissingFields.TypeUpdated);
+	TestEqual("Missing fields: Custom should be empty", ResultMissingFields.Custom, "");
+	TestFalse("Missing fields: CustomUpdated should be false", ResultMissingFields.CustomUpdated);
+	
+	// Test with partial fields (some present, some missing)
+	FString TestJsonPartial = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\",\"data\":{\"channel\":{\"id\":\"my_channel\"},\"status\":\"pending\",\"uuid\":{\"id\":\"User1\"}}}";
+	FPubnubMembershipUpdateData ResultPartial = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonPartial);
+	
+	TestEqual("Partial: Status should be 'pending'", ResultPartial.Status, "pending");
+	TestTrue("Partial: StatusUpdated should be true", ResultPartial.StatusUpdated);
+	TestEqual("Partial: Type should be empty", ResultPartial.Type, "");
+	TestFalse("Partial: TypeUpdated should be false", ResultPartial.TypeUpdated);
+	TestEqual("Partial: Custom should be empty", ResultPartial.Custom, "");
+	TestFalse("Partial: CustomUpdated should be false", ResultPartial.CustomUpdated);
+	
+	// Test with empty message content
+	FString TestJsonEmpty = "";
+	FPubnubMembershipUpdateData ResultEmpty = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonEmpty);
+	
+	TestEqual("Empty: Status should be empty", ResultEmpty.Status, "");
+	TestFalse("Empty: StatusUpdated should be false", ResultEmpty.StatusUpdated);
+	
+	// Test with missing data field
+	FString TestJsonNoData = "{\"source\":\"objects\",\"version\":\"2.0\",\"event\":\"set\",\"type\":\"membership\"}";
+	FPubnubMembershipUpdateData ResultNoData = UPubnubJsonUtilities::GetMembershipUpdateDataFromMessageContent(TestJsonNoData);
+	
+	TestEqual("No data: Status should be empty", ResultNoData.Status, "");
+	TestFalse("No data: StatusUpdated should be false", ResultNoData.StatusUpdated);
+	
+	return true;
+}
+
+bool FGetMessageActionFromMessageDataUnitTest::RunTest(const FString& Parameters)
+{
+	// Test 1: AddMessageAction - Complete message action data with "added" event
+	FPubnubMessageData MessageDataAdd;
+	MessageDataAdd.Message = "{\"data\":{\"actionTimetoken\":\"17682219108127920\",\"messageTimetoken\":\"17682218927268428\",\"type\":\"edit\",\"value\":\"edited action\"},\"event\":\"added\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataAdd.UserID = "User123";
+	MessageDataAdd.Channel = "test-channel";
+	MessageDataAdd.Timetoken = "17682218927268428";
+	
+	FPubnubMessageActionData ResultAdd = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataAdd);
+	
+	TestEqual("AddMessageAction: ActionTimetoken should be correct", ResultAdd.ActionTimetoken, "17682219108127920");
+	TestEqual("AddMessageAction: MessageTimetoken should be correct", ResultAdd.MessageTimetoken, "17682218927268428");
+	TestEqual("AddMessageAction: Type should be 'edit'", ResultAdd.Type, "edit");
+	TestEqual("AddMessageAction: Value should be 'edited action'", ResultAdd.Value, "edited action");
+	TestEqual("AddMessageAction: UserID should be from MessageData", ResultAdd.UserID, "User123");
+	
+	// Test 2: RemoveMessageAction - Complete message action data with "removed" event
+	FPubnubMessageData MessageDataRemove;
+	MessageDataRemove.Message = "{\"data\":{\"actionTimetoken\":\"17682219108127920\",\"messageTimetoken\":\"17682218927268428\",\"type\":\"edit\",\"value\":\"edited action\"},\"event\":\"removed\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataRemove.UserID = "User456";
+	MessageDataRemove.Channel = "test-channel-2";
+	MessageDataRemove.Timetoken = "17682218927268428";
+	
+	FPubnubMessageActionData ResultRemove = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataRemove);
+	
+	TestEqual("RemoveMessageAction: ActionTimetoken should be correct", ResultRemove.ActionTimetoken, "17682219108127920");
+	TestEqual("RemoveMessageAction: MessageTimetoken should be correct", ResultRemove.MessageTimetoken, "17682218927268428");
+	TestEqual("RemoveMessageAction: Type should be 'edit'", ResultRemove.Type, "edit");
+	TestEqual("RemoveMessageAction: Value should be 'edited action'", ResultRemove.Value, "edited action");
+	TestEqual("RemoveMessageAction: UserID should be from MessageData", ResultRemove.UserID, "User456");
+	
+	// Test 3: Empty message - should return empty MessageActionData
+	FPubnubMessageData MessageDataEmpty;
+	MessageDataEmpty.Message = "";
+	MessageDataEmpty.UserID = "User789";
+	
+	FPubnubMessageActionData ResultEmpty = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataEmpty);
+	
+	TestEqual("Empty message: ActionTimetoken should be empty", ResultEmpty.ActionTimetoken, "");
+	TestEqual("Empty message: MessageTimetoken should be empty", ResultEmpty.MessageTimetoken, "");
+	TestEqual("Empty message: Type should be empty", ResultEmpty.Type, "");
+	TestEqual("Empty message: Value should be empty", ResultEmpty.Value, "");
+	TestEqual("Empty message: UserID should be empty", ResultEmpty.UserID, "");
+	
+	// Test 4: Message without "data" field - should return empty MessageActionData
+	FPubnubMessageData MessageDataNoData;
+	MessageDataNoData.Message = "{\"event\":\"added\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataNoData.UserID = "User999";
+	
+	FPubnubMessageActionData ResultNoData = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataNoData);
+	
+	TestEqual("No data field: ActionTimetoken should be empty", ResultNoData.ActionTimetoken, "");
+	TestEqual("No data field: MessageTimetoken should be empty", ResultNoData.MessageTimetoken, "");
+	TestEqual("No data field: Type should be empty", ResultNoData.Type, "");
+	TestEqual("No data field: Value should be empty", ResultNoData.Value, "");
+	TestEqual("No data field: UserID should be empty", ResultNoData.UserID, "");
+	
+	// Test 5: Invalid JSON - should return empty MessageActionData
+	FPubnubMessageData MessageDataInvalid;
+	MessageDataInvalid.Message = "this is not valid json";
+	MessageDataInvalid.UserID = "UserInvalid";
+	
+	FPubnubMessageActionData ResultInvalid = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataInvalid);
+	
+	TestEqual("Invalid JSON: ActionTimetoken should be empty", ResultInvalid.ActionTimetoken, "");
+	TestEqual("Invalid JSON: MessageTimetoken should be empty", ResultInvalid.MessageTimetoken, "");
+	TestEqual("Invalid JSON: Type should be empty", ResultInvalid.Type, "");
+	TestEqual("Invalid JSON: Value should be empty", ResultInvalid.Value, "");
+	TestEqual("Invalid JSON: UserID should be empty", ResultInvalid.UserID, "");
+	
+	// Test 6: Partial data - some fields missing from data object
+	FPubnubMessageData MessageDataPartial;
+	MessageDataPartial.Message = "{\"data\":{\"actionTimetoken\":\"17682219108127920\",\"type\":\"reaction\"},\"event\":\"added\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataPartial.UserID = "UserPartial";
+	
+	FPubnubMessageActionData ResultPartial = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataPartial);
+	
+	TestEqual("Partial data: ActionTimetoken should be correct", ResultPartial.ActionTimetoken, "17682219108127920");
+	TestEqual("Partial data: MessageTimetoken should be empty", ResultPartial.MessageTimetoken, "");
+	TestEqual("Partial data: Type should be 'reaction'", ResultPartial.Type, "reaction");
+	TestEqual("Partial data: Value should be empty", ResultPartial.Value, "");
+	TestEqual("Partial data: UserID should be from MessageData", ResultPartial.UserID, "UserPartial");
+	
+	// Test 7: Different action type (reaction)
+	FPubnubMessageData MessageDataReaction;
+	MessageDataReaction.Message = "{\"data\":{\"actionTimetoken\":\"17682219108127921\",\"messageTimetoken\":\"17682218927268429\",\"type\":\"reaction\",\"value\":\"thumbs_up\"},\"event\":\"added\",\"source\":\"actions\",\"version\":\"1.0\"}";
+	MessageDataReaction.UserID = "UserReaction";
+	
+	FPubnubMessageActionData ResultReaction = UPubnubJsonUtilities::GetMessageActionFromMessageData(MessageDataReaction);
+	
+	TestEqual("Reaction: ActionTimetoken should be correct", ResultReaction.ActionTimetoken, "17682219108127921");
+	TestEqual("Reaction: MessageTimetoken should be correct", ResultReaction.MessageTimetoken, "17682218927268429");
+	TestEqual("Reaction: Type should be 'reaction'", ResultReaction.Type, "reaction");
+	TestEqual("Reaction: Value should be 'thumbs_up'", ResultReaction.Value, "thumbs_up");
+	TestEqual("Reaction: UserID should be from MessageData", ResultReaction.UserID, "UserReaction");
+	
 	return true;
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -36,18 +36,11 @@ public:
 	//Add function to the queue buffer, it will be added to the queue after current queue is finished
 	void AddFunctionToQueue(TFunction<void()> InFunction);
 
-	void LockForSubscribeOperation();
-	void UnlockAfterSubscriptionOperationFinished();
-
 private:
 	TArray<TFunction<void()>> PubnubAsyncFunctionsBuffer;
 	TArray<TFunction<void()>> PubnubAsyncFunctionsQueue;
+	FCriticalSection QueueMutex;
 	
-	void WaitForSubscriptionOperationEnd();
-	
-	bool IsLockedForSubscription = false;
 	float QueueLoopDelay = 0.05f;
-	float WaitForSubscriptionDelay = 0.05f;
-	int WaitForSubscriptionDelayMaxCount = 6200; //310 seconds, 300 from c-core reconnection timeout and + additional few seconds
 };
 

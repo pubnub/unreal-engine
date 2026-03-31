@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 // snippet.full_crypto_example
 
@@ -8,6 +8,7 @@
 #include "Crypto/PubnubAesCryptor.h"
 #include "Crypto/PubnubCryptoModule.h"
 #include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 
 void ASample_CryptoFull::BeginPlay()
@@ -23,12 +24,15 @@ void ASample_CryptoFull::RunCryptoFullExample()
 	//Get PubnubSubsystem from GameInstance
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Create Pubnub Client using Pubnub Subsystem
+	FPubnubConfig Config;
+	Config.PublishKey = TEXT("demo");   //replace with your Publish Key from Admin Portal
+	Config.SubscribeKey = TEXT("demo"); //replace with your Subscribe Key from Admin Portal
+	Config.UserID = TEXT("Player_001");
+	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
 
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
-
-	UE_LOG(LogTemp, Log, TEXT("Crypto example, User ID is set"));
+	UE_LOG(LogTemp, Log, TEXT("Crypto example, Pubnub Client is created"));
 	
 	// Set Crypto Module With Aes Cryptor
 	// Setting crypto module automatically encrypts all published messages and decrypts received messages
@@ -37,16 +41,16 @@ void ASample_CryptoFull::RunCryptoFullExample()
 	AesCryptor->SetCipherKey("enigma");
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
 	CryptoModule->InitCryptoModule(AesCryptor, {});
-	PubnubSubsystem->SetCryptoModule(CryptoModule);
+	PubnubClient->SetCryptoModule(CryptoModule);
 
 	UE_LOG(LogTemp, Log, TEXT("Crypto example, Crypto Module is set"));
 
 	//Add Listener/Delegate that will broadcast whenever message is received on any subscribed channel or group
-	PubnubSubsystem->OnMessageReceived.AddDynamic(this, &ASample_CryptoFull::OnPubnubMessageReceived);
+	PubnubClient->OnMessageReceived.AddDynamic(this, &ASample_CryptoFull::OnPubnubMessageReceived);
 
 	//Subscribe to the Channel
 	FString Channel = TEXT("secret_guild_chat");
-	PubnubSubsystem->SubscribeToChannel(Channel);
+	PubnubClient->SubscribeToChannelAsync(Channel);
 
 	// NOTE: Subscribing to a group or channel may take a few seconds to complete.
 	// This sleep is used to simulate the waiting period in an actual application.
@@ -55,19 +59,19 @@ void ASample_CryptoFull::RunCryptoFullExample()
 	UE_LOG(LogTemp, Log, TEXT("Crypto example, subscribed to channel: %s"), *Channel);
 		
 	//Bind delegate to the publish result
-	FOnPublishMessageResponse OnPublishMessageResponse;
+	FOnPubnubPublishMessageResponse OnPublishMessageResponse;
 	OnPublishMessageResponse.BindDynamic(this, &ASample_CryptoFull::OnPublishResult);
 	
 	//Publish message to the subscribed channel - this message will be encrypted automatically because crypto module is set
 	FString Message = R"({"event": "PowerUpUsed", "powerup": "Invisibility Cloak", "duration": 10})";
-	PubnubSubsystem->PublishMessage(Channel, Message, OnPublishMessageResponse);
+	PubnubClient->PublishMessageAsync(Channel, Message, OnPublishMessageResponse);
 
 	// NOTE: Give some time to receive message before unsubscribing
 	// This sleep is used only to simulate the waiting period in an actual application.
 	FPlatformProcess::Sleep(3);
 	
 	//Unsubscribe from previously subscribed channel
-	PubnubSubsystem->UnsubscribeFromChannel(Channel);
+	PubnubClient->UnsubscribeFromChannelAsync(Channel);
 
 	UE_LOG(LogTemp, Log, TEXT("Crypto example, message published"));
 }

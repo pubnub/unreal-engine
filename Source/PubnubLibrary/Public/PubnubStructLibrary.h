@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -6,6 +6,31 @@
 #include "PubnubEnumLibrary.h"
 #include "PubnubStructLibrary.generated.h"
 
+
+USTRUCT(BlueprintType)
+struct FPubnubLoggerConfig
+{
+	GENERATED_BODY()
+
+	/** If true, the built-in default logger is registered during client initialization. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	bool bEnableDefaultLogger = true;
+
+	/** Minimum level for the built-in default logger for UE SDK log source. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	EPubnubLogLevel DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Warning;
+
+	/** Minimum level for the built-in default logger for C-Core log source. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	EPubnubLogLevel DefaultLoggerMinCCoreLevel = EPubnubLogLevel::PLL_None;
+
+	/**
+	 * Additional custom loggers to register during client initialization.
+	 * Each object must implement IPubnubLoggerInterface.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	TArray<UObject*> InitialLoggers;
+};
 
 USTRUCT(BlueprintType)
 struct FPubnubConfig
@@ -27,7 +52,23 @@ struct FPubnubConfig
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
 	/** If true SecretKey will be set during Initialization phase. Secret key gives user root permissions for Access Manager */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool SetSecretKeyAutomatically = false;
+	/** Logger setup used during client initialization. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger") FPubnubLoggerConfig LoggerConfig;
 	
+};
+
+/**
+ * Pages used for pagination result. Use Next to get further chunk of data or Prev to get previous chunk.
+ */
+USTRUCT(BlueprintType)
+struct FPubnubPage
+{
+	GENERATED_BODY()
+	
+	/** Use to get next chunk of data in paginated result */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Next = "";
+	/** Use to get previous chunk of data in paginated result */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Prev = "";
 };
 
 USTRUCT(BlueprintType)
@@ -385,6 +426,8 @@ struct FPubnubHistoryMessageData
 
 	//The message text.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Message = "";
+	/** Channel that message was published to */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Channel = "";
 	//User ID of the user who sent the message.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
 	//Timetoken indicating when the message was sent.
@@ -404,7 +447,7 @@ struct FPubnubUserData
 {
 	GENERATED_BODY()
 
-	//Unique user identifier.
+	//Unique user identifier. Ignored during set operations.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
 	//Display name for the user.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserName = "";
@@ -435,7 +478,7 @@ struct FPubnubChannelData
 {
 	GENERATED_BODY()
 
-	//Unique channel identifier.
+	//Unique channel identifier. Ignored during set operations.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelID = "";
 	//Display name for the channel.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelName = "";
@@ -504,6 +547,114 @@ struct FPubnubChannelMemberData
 };
 
 USTRUCT(BlueprintType)
+struct FPubnubUserInputData
+{
+	GENERATED_BODY()
+	
+	//Display name for the user.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserName = "";
+	//User's identifier in an external system.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ExternalID = "";
+	//The URL of the user's profile picture.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ProfileUrl = "";
+	//The user's email address.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Email = "";
+	//JSON object providing custom user data. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//User status. Max. 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//User type. Max. 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	
+	/** If true, the UserName field will be included in JSON even if empty (as null). If false, empty UserName field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetUserName = false;
+	/** If true, the ExternalID field will be included in JSON even if empty (as null). If false, empty ExternalID field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetExternalID = false;
+	/** If true, the ProfileUrl field will be included in JSON even if empty (as null). If false, empty ProfileUrl field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetProfileUrl = false;
+	/** If true, the Email field will be included in JSON even if empty (as null). If false, empty Email field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetEmail = false;
+	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetCustom = false;
+	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetStatus = false;
+	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetType = false;
+
+	/**
+	 * Sets all ForceSet flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * include all fields in the JSON (empty fields will be set to null).
+	 */
+	void ForceSetAllFields()
+	{
+		ForceSetUserName = true;
+		ForceSetExternalID = true;
+		ForceSetProfileUrl = true;
+		ForceSetEmail = true;
+		ForceSetCustom = true;
+		ForceSetStatus = true;
+		ForceSetType = true;
+	}
+
+	/**
+	 * Utility converter from FPubnubUserData. Copies all related fields from UserData to FPubnubUserInputData.
+	 */
+	static FPubnubUserInputData FromPubnubUserData(const FPubnubUserData& UserData)
+	{
+		return FPubnubUserInputData({.UserName = UserData.UserName, .ExternalID = UserData.ExternalID, .ProfileUrl = UserData.ProfileUrl, .Email = UserData.Email, .Custom = UserData.Custom, .Status = UserData.Status, .Type = UserData.Type});
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelInputData
+{
+	GENERATED_BODY()
+	
+	//Display name for the channel.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelName = "";
+	//Description of the channel.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Description = "";
+	//JSON object providing custom channel data. Only a single level of key-value pairs is allowed. Nested JSON objects or arrays are not supported.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	//Channel status. Max 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	//Channel type. Max 50 characters.
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	
+	/** If true, the ChannelName field will be included in JSON even if empty (as null). If false, empty ChannelName field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetChannelName = false;
+	/** If true, the Description field will be included in JSON even if empty (as null). If false, empty Description field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetDescription = false;
+	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetCustom = false;
+	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetStatus = false;
+	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetType = false;
+
+	/**
+	 * Sets all ForceSet flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * include all fields in the JSON (empty fields will be set to null).
+	 */
+	void ForceSetAllFields()
+	{
+		ForceSetChannelName = true;
+		ForceSetDescription = true;
+		ForceSetCustom = true;
+		ForceSetStatus = true;
+		ForceSetType = true;
+	}
+
+	/**
+	 * Utility converter from FPubnubChannelData. Copies all related fields from ChannelData to FPubnubChannelInputData.
+	 */
+	static FPubnubChannelInputData FromPubnubChannelData(const FPubnubChannelData& ChannelData)
+	{
+		return FPubnubChannelInputData({.ChannelName = ChannelData.ChannelName, .Description = ChannelData.Description, .Custom = ChannelData.Custom, .Status = ChannelData.Status, .Type = ChannelData.Type});
+	}
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubMembershipInputData
 {
 	GENERATED_BODY()
@@ -516,6 +667,32 @@ struct FPubnubMembershipInputData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
 	//Type of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	
+	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetCustom = false;
+	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetStatus = false;
+	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetType = false;
+
+	/**
+	 * Sets all ForceSet flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * include all fields in the JSON (empty fields will be set to null).
+	 */
+	void ForceSetAllFields()
+	{
+		ForceSetCustom = true;
+		ForceSetStatus = true;
+		ForceSetType = true;
+	}
+
+	/**
+	 * Utility converter from FPubnubMembershipData. Copies all related fields from MembershipData to FPubnubMembershipInputData.
+	 */
+	static FPubnubMembershipInputData FromPubnubMembershipData(const FPubnubMembershipData& MembershipData)
+	{
+		return FPubnubMembershipInputData({.Channel = MembershipData.Channel.ChannelID, .Custom = MembershipData.Custom, .Status = MembershipData.Status, .Type = MembershipData.Type});
+	}
 };
 
 USTRUCT(BlueprintType)
@@ -531,6 +708,32 @@ struct FPubnubChannelMemberInputData
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
 	//Type of the membership. Max 50 characters.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	
+	/** If true, the Custom field will be included in JSON even if empty (as null). If false, empty Custom field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetCustom = false;
+	/** If true, the Status field will be included in JSON even if empty (as null). If false, empty Status field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetStatus = false;
+	/** If true, the Type field will be included in JSON even if empty (as null). If false, empty Type field is omitted in the request. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, AdvancedDisplay, Category = "Pubnub") bool ForceSetType = false;
+
+	/**
+	 * Sets all ForceSet flags to true. Useful for full replacement scenarios where you want to explicitly
+	 * include all fields in the JSON (empty fields will be set to null).
+	 */
+	void ForceSetAllFields()
+	{
+		ForceSetCustom = true;
+		ForceSetStatus = true;
+		ForceSetType = true;
+	}
+	
+	/**
+	 * Utility converter from FPubnubChannelMemberData. Copies all related fields from ChannelMemberData to FPubnubChannelMemberInputData.
+	 */
+	static FPubnubChannelMemberInputData FromPubnubMembershipData(const FPubnubChannelMemberData& ChannelMemberData)
+	{
+		return FPubnubChannelMemberInputData({.User = ChannelMemberData.User.UserID, .Custom = ChannelMemberData.Custom, .Status = ChannelMemberData.Status, .Type = ChannelMemberData.Type});
+	}
 };
 
 USTRUCT(BlueprintType)
@@ -753,6 +956,33 @@ struct FPubnubOperationResult
 };
 
 USTRUCT(BlueprintType)
+struct FPubnubLogMessage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	EPubnubLogLevel LogLevel = EPubnubLogLevel::PLL_Info;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	EPubnubLogSource Source = EPubnubLogSource::PLS_UE;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	FString Message = "";
+
+	/** UTC timestamp of the log message. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	FDateTime TimestampUtc = FDateTime::UtcNow();
+
+	/** Optional callsite from which log message was sent. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	FString Callsite = "";
+
+	/** Client ID together with Debug name if specified. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
+	FString PubnubInstanceID = "";
+};
+
+USTRUCT(BlueprintType)
 struct FPubnubEncryptedData
 {
 	GENERATED_BODY()
@@ -770,4 +1000,278 @@ struct FPubnubSubscriptionCursor
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Timetoken = "";
 	/**Region of the messages */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Region = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubUserMetadataResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The user metadata (returned by Get/Set operations) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubUserData UserData;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubPublishMessageResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The published message data including timetoken and channel information */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubMessageData PublishedMessage;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubSignalResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The signal message data including timetoken and channel information */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubMessageData SignalMessage;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubListChannelsFromGroupResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of channel names that belong to the channel group */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubListUsersFromChannelResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Occupancy and user state information for the channel */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubListUsersFromChannelWrapper Data;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubListUsersSubscribedChannelsResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of channel names that the user is currently subscribed to */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetStateResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The state data as JSON string */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString StateResponse;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGrantTokenResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The generated access token string */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Token;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubFetchHistoryResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of historical messages retrieved from the channel */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubHistoryMessageData> Messages;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubMessageCountsResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The number of messages in the specified time range */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int MessageCounts;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubMessageCountsMultipleResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The number of messages in the specified time range on a given channel */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, int> MessageCountsPerChannel;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetAllUserMetadataResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of user metadata objects retrieved */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserData> UsersData;
+	/** Pagination information for navigating through results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubPage Page;
+	/** Total count of users matching the query (if requested) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalCount = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetAllChannelMetadataResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of channel metadata objects retrieved */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelData> ChannelsData;
+	/** Pagination information for navigating through results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubPage Page;
+	/** Total count of channels matching the query (if requested) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalCount = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelMetadataResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The channel metadata (returned by Get/Set operations) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubChannelData ChannelData;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubMembershipsResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of membership data (returned by Get/Set/Remove operations) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubMembershipData> MembershipsData;
+	/** Pagination information for navigating through results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubPage Page;
+	/** Total count of memberships matching the query (if requested) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalCount = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubChannelMembersResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of member data (returned by Get/Set/Remove operations) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubChannelMemberData> MembersData;
+	/** Pagination information for navigating through results */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubPage Page;
+	/** Total count of channel members matching the query (if requested) */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalCount = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubGetMessageActionsResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** Array of message actions retrieved */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubMessageActionData> MessageActions;
+};
+
+USTRUCT(BlueprintType)
+struct FPubnubAddMessageActionResult
+{
+	GENERATED_BODY()
+	
+	/** Status and error information for this operation */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
+	/** The added message action data including timetokens */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubMessageActionData MessageActionData;
+};
+
+/**
+ * Struct used to show which fields were changed in an "objects" event related to channel metadata
+ */
+USTRUCT(BlueprintType)
+struct FPubnubChannelUpdateData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelName = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Description = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool ChannelNameUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool DescriptionUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool CustomUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StatusUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool TypeUpdated = false;
+};
+
+/**
+ * Struct used to show which fields were changed in an "objects" event related to user metadata
+ */
+USTRUCT(BlueprintType)
+struct FPubnubUserUpdateData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserName = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ExternalID = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ProfileUrl = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Email = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool UserNameUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool ExternalIDUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool ProfileUrlUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool EmailUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool CustomUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StatusUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool TypeUpdated = false;
+};
+
+/**
+ * Struct used to show which fields were changed in an "objects" event related to memberships/channel members
+ */
+USTRUCT(BlueprintType)
+struct FPubnubMembershipUpdateData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Custom = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Status = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Type = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool CustomUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StatusUpdated = false;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool TypeUpdated = false;
 };

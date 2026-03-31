@@ -1,12 +1,13 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 // snippet.full_presence_example
+// blueprint.z1nf7p3w
 #pragma once
 
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
+#include "GameFramework/Actor.h"
 #include "CoreMinimal.h"
-#include "PubnubSampleBase.h"
 #include "Sample_PresenceFull.generated.h"
 
 // ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
@@ -32,6 +33,9 @@ public:
 	UFUNCTION()
 	void OnGetStateResponse(FPubnubOperationResult Result, FString StateResponse);
 	
+private:
+	UPROPERTY()
+	UPubnubClient* PubnubClient = nullptr;
 };
 
 // snippet.end

@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -54,6 +54,7 @@ public:
 	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
 	static FString RemoveOuterQuotesFromString(const FString InString);
 	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
+	static FString ArrayOfStringsToCommaSeparatedString(const TArray<FString> ArrayOfStrings);
 
 	/**
 	 * Safely copies an FString to a char buffer with proper bounds checking and null termination.
@@ -86,26 +87,6 @@ public:
 	static FString MemberSortToString(const FPubnubMemberSort& MemberInclude);
 	static FString GetAllSortToString(const FPubnubGetAllSort& GetAllInclude);
 	
-	/* C-CORE EVENT ENGINE HELPERS */
-
-	static pubnub_subscription_t* EEGetSubscriptionForEntity(pubnub_t* Context, FString EntityID, EPubnubEntityType EntityType, FPubnubSubscribeSettings Options);
-	static pubnub_subscription_set_t* EEGetSubscriptionSetForEntities(pubnub_t* Context, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings Options);
-	static bool EEAddListenerAndSubscribe(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem);
-	static bool EERemoveListenerAndUnsubscribe(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UPubnubSubsystem* PubnubSubsystem);
-	static bool EESubscribeWithSubscription(pubnub_subscription_t* Subscription, FPubnubSubscriptionCursor Cursor);
-	static bool EEUnsubscribeWithSubscription(pubnub_subscription_t** SubscriptionPtr);
-	static bool EESubscribeWithSubscriptionSet(pubnub_subscription_set_t* SubscriptionSet, FPubnubSubscriptionCursor Cursor);
-	static bool EEUnsubscribeWithSubscriptionSet(pubnub_subscription_set_t** SubscriptionSetPtr);
-	static bool EEAddSubscriptionListenerOfType(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller);
-	static void EEAddSubscriptionListenersOfAllTypes(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, UObject* Caller);
-	static bool EERemoveSubscriptionListenerOfType(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller);
-	static void EERemoveSubscriptionListenersOfAllTypes(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UObject* Caller);
-	static bool EEAddSubscriptionSetListenerOfType(pubnub_subscription_set_t* SubscriptionSet, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller);
-	static void EEAddSubscriptionSetListenersOfAllTypes(pubnub_subscription_set_t* SubscriptionSet, pubnub_subscribe_message_callback_t Callback, UObject* Caller);
-	static bool EERemoveSubscriptionSetListenerOfType(pubnub_subscription_set_t** SubscriptionSetPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller);
-	static void EERemoveSubscriptionSetListenersOfAllTypes(pubnub_subscription_set_t** SubscriptionSetPtr, pubnub_subscribe_message_callback_t Callback, UObject* Caller);
-
-	
 	/* TEMPLATES TO CALL PUBNUB DELEGATES */
 
 	//Template to call any Delegate in case of providing incorrect parameters. Provide error message and FPubnubOperationResult will be made out of it
@@ -123,7 +104,7 @@ public:
 		{
 			auto CopiedDelegate = Delegate;
 			auto ArgsTuple = std::make_tuple(std::forward<Args>(args)...);
-
+			
 			// Launch the async task, all such delegates should be called on GameThread to work well with widgets and other systems
 			AsyncTask(ENamedThreads::GameThread, [CopiedDelegate, ArgsTuple = std::move(ArgsTuple)]() mutable
 			{

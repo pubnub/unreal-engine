@@ -1,6 +1,7 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #include "Entities/PubnubChannelEntity.h"
+#include "PubnubSubsystem.h"
 
 
 UPubnubChannelEntity::UPubnubChannelEntity()
@@ -8,11 +9,26 @@ UPubnubChannelEntity::UPubnubChannelEntity()
 	EntityType = EPubnubEntityType::PEnT_Channel;
 }
 
-void UPubnubChannelEntity::PublishMessage(FString Message, FOnPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
+FPubnubPublishMessageResult UPubnubChannelEntity::PublishMessage(FString Message, FPubnubPublishSettings PublishSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - PubnubClient is null. Entity not properly initialized."));
+		return FPubnubPublishMessageResult();
+	}
+	if (EntityID.IsEmpty())
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - EntityID is empty."));
+		return FPubnubPublishMessageResult();
+	}
+	return PubnubClient->PublishMessage(EntityID, Message, PublishSettings);
+}
+
+void UPubnubChannelEntity::PublishMessageAsync(FString Message, FOnPubnubPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings)
+{
+	if (!PubnubClient)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
 	if (EntityID.IsEmpty())
@@ -20,75 +36,105 @@ void UPubnubChannelEntity::PublishMessage(FString Message, FOnPublishMessageResp
 		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - EntityID is empty."));
 		return;
 	}
-	PubnubSubsystem->PublishMessage(EntityID, Message, OnPublishMessageResponse, PublishSettings);
+	PubnubClient->PublishMessageAsync(EntityID, Message, OnPublishMessageResponse, PublishSettings);
 }
 
-void UPubnubChannelEntity::PublishMessage(FString Message, FOnPublishMessageResponseNative NativeCallback, FPubnubPublishSettings PublishSettings)
+void UPubnubChannelEntity::PublishMessageAsync(FString Message, FOnPubnubPublishMessageResponseNative NativeCallback, FPubnubPublishSettings PublishSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->PublishMessage(EntityID, Message, NativeCallback, PublishSettings);
+	PubnubClient->PublishMessageAsync(EntityID, Message, NativeCallback, PublishSettings);
 }
 
-void UPubnubChannelEntity::PublishMessage(FString Message, FPubnubPublishSettings PublishSettings)
+void UPubnubChannelEntity::PublishMessageAsync(FString Message, FPubnubPublishSettings PublishSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot publish message - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->PublishMessage(EntityID, Message, PublishSettings);
+	PubnubClient->PublishMessageAsync(EntityID, Message, PublishSettings);
 }
 
-void UPubnubChannelEntity::Signal(FString Message, FOnSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings)
+FPubnubSignalResult UPubnubChannelEntity::Signal(FString Message, FPubnubSignalSettings SignalSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot send signal - PubnubSubsystem is null. Entity not properly initialized."));
-		return;
+		UE_LOG(PubnubLog, Error, TEXT("Cannot send signal - PubnubClient is null. Entity not properly initialized."));
+		return FPubnubSignalResult();
 	}
-	PubnubSubsystem->Signal(EntityID, Message, OnSignalResponse, SignalSettings);
+	if (EntityID.IsEmpty())
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot send signal - EntityID is empty."));
+		return FPubnubSignalResult();
+	}
+	return PubnubClient->Signal(EntityID, Message, SignalSettings);
 }
 
-void UPubnubChannelEntity::Signal(FString Message, FOnSignalResponseNative NativeCallback, FPubnubSignalSettings SignalSettings)
+void UPubnubChannelEntity::SignalAsync(FString Message, FOnPubnubSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot send signal - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot send signal - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->Signal(EntityID, Message, NativeCallback, SignalSettings);
+	PubnubClient->SignalAsync(EntityID, Message, OnSignalResponse, SignalSettings);
 }
 
-void UPubnubChannelEntity::Signal(FString Message, FPubnubSignalSettings SignalSettings)
+void UPubnubChannelEntity::SignalAsync(FString Message, FOnPubnubSignalResponseNative NativeCallback, FPubnubSignalSettings SignalSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot send signal - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot send signal - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->Signal(EntityID, Message, SignalSettings);
+	PubnubClient->SignalAsync(EntityID, Message, NativeCallback, SignalSettings);
 }
 
-void UPubnubChannelEntity::ListUsersFromChannel(FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+void UPubnubChannelEntity::SignalAsync(FString Message, FPubnubSignalSettings SignalSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot list users from channel - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot send signal - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->ListUsersFromChannel(EntityID, ListUsersFromChannelResponse, ListUsersFromChannelSettings);
+	PubnubClient->SignalAsync(EntityID, Message, SignalSettings);
 }
 
-void UPubnubChannelEntity::ListUsersFromChannel(FOnListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+FPubnubListUsersFromChannelResult UPubnubChannelEntity::ListUsersFromChannel(FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot list users from channel - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot list users from channel - PubnubClient is null. Entity not properly initialized."));
+		return FPubnubListUsersFromChannelResult();
+	}
+	if (EntityID.IsEmpty())
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot list users from channel - EntityID is empty."));
+		return FPubnubListUsersFromChannelResult();
+	}
+	return PubnubClient->ListUsersFromChannel(EntityID, ListUsersFromChannelSettings);
+}
+
+void UPubnubChannelEntity::ListUsersFromChannelAsync(FOnPubnubListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+{
+	if (!PubnubClient)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot list users from channel - PubnubClient is null. Entity not properly initialized."));
 		return;
 	}
-	PubnubSubsystem->ListUsersFromChannel(EntityID, NativeCallback, ListUsersFromChannelSettings);
+	PubnubClient->ListUsersFromChannelAsync(EntityID, ListUsersFromChannelResponse, ListUsersFromChannelSettings);
+}
+
+void UPubnubChannelEntity::ListUsersFromChannelAsync(FOnPubnubListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
+{
+	if (!PubnubClient)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Cannot list users from channel - PubnubClient is null. Entity not properly initialized."));
+		return;
+	}
+	PubnubClient->ListUsersFromChannelAsync(EntityID, NativeCallback, ListUsersFromChannelSettings);
 }

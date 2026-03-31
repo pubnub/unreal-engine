@@ -1,31 +1,32 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #include "Entities/PubnubBaseEntity.h"
 #include "Entities/PubnubSubscription.h"
 #include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 UPubnubSubscription* UPubnubBaseEntity::CreateSubscription(FPubnubSubscribeSettings SubscribeSettings)
 {
-	if (!PubnubSubsystem)
+	if (!PubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Cannot create subscription - PubnubSubsystem is null. Entity not properly initialized."));
+		UE_LOG(PubnubLog, Error, TEXT("Cannot create subscription - PubnubClient is invalid. Entity not properly initialized."));
 		return nullptr;
 	}
 
 	UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
 
-	Subscription->InitSubscription(PubnubSubsystem, this, SubscribeSettings);
+	Subscription->InitSubscription(PubnubClient, this, SubscribeSettings);
 
 	return Subscription;
 }
 
-void UPubnubBaseEntity::InitEntity(UPubnubSubsystem* InPubnubSubsystem)
+void UPubnubBaseEntity::InitEntity(UPubnubClient* InPubnubClient)
 {
-	if(!InPubnubSubsystem)
+	if(!InPubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Init Entity failed, PubnubSubsystem is invalid"));
 		return;
 	}
 
-	PubnubSubsystem = InPubnubSubsystem;
+	PubnubClient = InPubnubClient;
 }

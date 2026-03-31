@@ -1,9 +1,9 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -28,6 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.add_message_action
+	// blueprint.5ws2hz84
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void AddMessageActionSample();
 
@@ -43,21 +44,26 @@ public:
 	void AddMessageActionWithResultLambdaSample();
 
 	// snippet.get_message_actions
+	// blueprint._bkkj7ln
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void GetMessageActionsSample();
+	
+	UFUNCTION()
+	void OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions);
 
 	// snippet.get_message_actions_with_settings
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void GetMessageActionsWithSettingsSample();
 
 	UFUNCTION()
-	void OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions);
+	void OnGetMessageActionsResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions);
 
 	// snippet.get_message_actions_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void GetMessageActionsWithLambdaSample();
 
 	// snippet.remove_message_action
+	// blueprint.7c_dos8t
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void RemoveMessageActionSample();
 
@@ -71,8 +77,11 @@ public:
 	// snippet.remove_message_action_with_result_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Message Actions")
 	void RemoveMessageActionWithResultLambdaSample();
-
+	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

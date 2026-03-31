@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -26,22 +26,8 @@ class UPubnubChannelGroupEntity;
 class UPubnubChannelMetadataEntity;
 class UPubnubUserMetadataEntity;
 class UPubnubSubscriptionSet;
+class UPubnubClient;
 
-struct CCoreSubscriptionData
-{
-	pubnub_subscribe_message_callback_t Callback;
-	pubnub_subscription_t* Subscription;
-};
-
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubSubsystemDeinitialized);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMessageReceivedNative, const FPubnubMessageData& Message);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorNative, FString ErrorMessage, EPubnubErrorType ErrorType);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, FPubnubSubscriptionStatusData, StatusData);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPublishMessageResponse, FPubnubOperationResult, Result, FPubnubMessageData, PublishedMessage);
 DECLARE_DELEGATE_TwoParams(FOnPublishMessageResponseNative, const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage);
@@ -114,6 +100,16 @@ DECLARE_DELEGATE_OneParam(FOnRemoveMessageActionResponseNative, const FPubnubOpe
 UCLASS()
 class PUBNUBLIBRARY_API UPubnubSubsystem : public UGameInstanceSubsystem
 {
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubSubsystemDeinitialized);
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMessageReceived, FPubnubMessageData, Message);
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnMessageReceivedNative, const FPubnubMessageData& Message);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPubnubError, FString, ErrorMessage, EPubnubErrorType, ErrorType);
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPubnubErrorNative, FString ErrorMessage, EPubnubErrorType ErrorType);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChanged, EPubnubSubscriptionStatus, Status, FPubnubSubscriptionStatusData, StatusData);
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSubscriptionStatusChangedNative, EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& StatusData);
+
+	
 	GENERATED_BODY()
 
 	friend class UPubnubSubscription;
@@ -129,24 +125,38 @@ public:
 	FOnPubnubSubsystemDeinitialized OnPubnubSubsystemDeinitialized;
 
 	/**Global listener for all messages received on subscribed channels*/
-	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates", meta=(DeprecatedProperty, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	FOnMessageReceived OnMessageReceived;
 
 	/**Global listener for all messages received on subscribed channels, equivalent that accepts lambdas*/
 	FOnMessageReceivedNative OnMessageReceivedNative;
 
 	/**Listener to react for all Errors in Pubnub functions */
-	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates", meta=(DeprecatedProperty, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	FOnPubnubError OnPubnubError;
 	/**Listener to react for all Errors in Pubnub functions, equivalent that accepts lambdas*/
 	FOnPubnubErrorNative OnPubnubErrorNative;
 
 	/**Listener to react for subscription status changed */
-	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates")
+	UPROPERTY(BlueprintAssignable, Category = "Pubnub|Delegates", meta=(DeprecatedProperty, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	FOnSubscriptionStatusChanged OnSubscriptionStatusChanged;
 
 	/**Listener to react for subscription status changed , equivalent that accepts lambdas*/
 	FOnSubscriptionStatusChangedNative OnSubscriptionStatusChangedNative;
+
+#pragma region PUBNUB CLIENT
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Client")
+	UPubnubClient* CreatePubnubClient(FPubnubConfig Config, FString DebugName = "");
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Client")
+	UPubnubClient* GetPubnubClient(int ClientID);
+
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Client")
+	bool DestroyPubnubClient(UPubnubClient* ClientToDestroy);
+
+
+#pragma endregion
 
 #pragma region BLUEPRINT EXPOSED
 
@@ -182,7 +192,7 @@ public:
 	 * 
 	 * @param UserID The user ID to set.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Users")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Users", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void SetUserID(FString UserID);
 
 	/**
@@ -190,14 +200,14 @@ public:
 	 * 
 	 * @return The current user ID.
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|Users")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|Users", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	FString GetUserID();
 
 	/**
 	 * Sets the secret key for the PubNub account. Uses SecretKey provided in plugin settings.
 	 * Don't call it manually if "SetSecretKeyAutomatically" in plugin settings is set to true.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void SetSecretKey();
 
 	/**
@@ -208,7 +218,7 @@ public:
 	 * @param OnPublishMessageResponse Optional delegate to listen for the publish result.
 	 * @param PublishSettings Optional settings for the publish operation. See FPubnubPublishSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish", meta = (AutoCreateRefTerm = "OnPublishMessageResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnPublishMessageResponse"))
 	void PublishMessage(FString Channel, FString Message, FOnPublishMessageResponse OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 
 	/**
@@ -239,7 +249,7 @@ public:
 	 * @param OnSignalResponse Optional delegate to listen for the signal result.
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish", meta = (AutoCreateRefTerm = "OnSignalResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Publish", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnSignalResponse"))
 	void Signal(FString Channel, FString Message, FOnSignalResponse OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 
 	/**
@@ -270,7 +280,7 @@ public:
 	 * @param OnSubscribeToChannelResponse Optional delegate to listen for the subscribe result.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnSubscribeToChannelResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnSubscribeToChannelResponse"))
 	void SubscribeToChannel(FString Channel, FOnSubscribeOperationResponse OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
 	/**
@@ -301,7 +311,7 @@ public:
 	 * @param OnSubscribeToGroupResponse Optional delegate to listen for the subscribe result.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnSubscribeToGroupResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnSubscribeToGroupResponse"))
 	void SubscribeToGroup(FString ChannelGroup, FOnSubscribeOperationResponse OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
 
 	/**
@@ -330,7 +340,7 @@ public:
 	 * @param Channel The ID of the channel to unsubscribe from.
      * @param OnUnsubscribeFromChannelResponse Optional delegate to listen for the unsubscribe result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromChannelResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnUnsubscribeFromChannelResponse"))
 	void UnsubscribeFromChannel(FString Channel, FOnSubscribeOperationResponse OnUnsubscribeFromChannelResponse);
 
 	/**
@@ -348,7 +358,7 @@ public:
 	 * @param ChannelGroup The name of the group to unsubscribe from.
 	 * @param OnUnsubscribeFromGroupResponse Optional delegate to listen for the unsubscribe result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromGroupResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnUnsubscribeFromGroupResponse"))
 	void UnsubscribeFromGroup(FString ChannelGroup, FOnSubscribeOperationResponse OnUnsubscribeFromGroupResponse);
 
 	/**
@@ -366,7 +376,7 @@ public:
 	 * 
 	 * @param OnUnsubscribeFromAllResponse Optional delegate to listen for the unsubscribe result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromAllResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnUnsubscribeFromAllResponse"))
 	void UnsubscribeFromAll(FOnSubscribeOperationResponse OnUnsubscribeFromAllResponse);
 
 	/**
@@ -386,7 +396,7 @@ public:
 	 * @param ChannelGroup The name of the channel group to add the channel to.
 	 * @param OnAddChannelToGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnAddChannelToGroupResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnAddChannelToGroupResponse"))
 	void AddChannelToGroup(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponse OnAddChannelToGroupResponse);
 
 	/**
@@ -410,7 +420,7 @@ public:
 	 * @param ChannelGroup The name of the channel group to remove the channel from.
 	 * @param OnRemoveChannelFromGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelFromGroupResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnRemoveChannelFromGroupResponse"))
 	void RemoveChannelFromGroup(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
 
 	/**
@@ -433,7 +443,7 @@ public:
 	 * @param ChannelGroup The name of the channel group to list channels from.
 	 * @param OnListChannelsResponse The callback function used to handle the result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void ListChannelsFromGroup(FString ChannelGroup, FOnListChannelsFromGroupResponse OnListChannelsResponse);
 
 	/**
@@ -456,7 +466,7 @@ public:
 	 * @param ChannelGroup The name of the channel group to remove.
 	 * @param OnRemoveChannelGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelGroupResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnRemoveChannelGroupResponse"))
 	void RemoveChannelGroup(FString ChannelGroup, FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
 
 	/**
@@ -479,7 +489,7 @@ public:
 	 * @param ListUsersFromChannelResponse The callback function used to handle the result.
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void ListUsersFromChannel(FString Channel, FOnListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
 	/**
@@ -501,7 +511,7 @@ public:
 	 * @param UserID The user ID to list subscribed channels for.
 	 * @param ListUserSubscribedChannelsResponse The callback function used to handle the result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void ListUserSubscribedChannels(FString UserID, FOnListUsersSubscribedChannelsResponse ListUserSubscribedChannelsResponse);
 	
 	/**
@@ -526,7 +536,7 @@ public:
 	 * @param OnSetStateResponse (Optional) Delegate to listen for the operation result.
 	 * @param SetStateSettings Optional settings for the set state operation. See FPubnubSetStateSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta = (AutoCreateRefTerm = "OnSetStateResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnSetStateResponse"))
 	void SetState(FString Channel, FString StateJson, FOnSetStateResponse OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 
 	/**
@@ -562,7 +572,7 @@ public:
 	 * @param UserID The user ID to get the state for.
 	 * @param OnGetStateResponse The callback function used to handle the result in JSON format.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void GetState(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponse OnGetStateResponse);
 
 	/**
@@ -586,7 +596,7 @@ public:
 	 * @param Channel The ID of the channel to send the heartbeat to.
 	 * @param ChannelGroup The name of the channel group to send the heartbeat to.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void Heartbeat(FString Channel, FString ChannelGroup);
 	
 	/**
@@ -601,7 +611,7 @@ public:
 	 * @param OnGrantTokenResponse The callback function used to handle the result.
 	 * @param Meta (Optional) metadata that will be embedded into the token.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnGrantTokenResponse OnGrantTokenResponse, FString Meta = "");
 
 	/**
@@ -626,7 +636,7 @@ public:
 	 * @param Token The access token to revoke.
 	 * @param OnRevokeTokenResponse (Optional) Delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta = (AutoCreateRefTerm = "OnRevokeTokenResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnRevokeTokenResponse"))
 	void RevokeToken(FString Token, FOnRevokeTokenResponse OnRevokeTokenResponse);
 
 	/**
@@ -646,7 +656,7 @@ public:
 	 * @param Token The access token to parse.
 	 * @return Parsed token
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	FString ParseToken(FString Token);
 
 	/**
@@ -655,7 +665,7 @@ public:
 	 * @param Token Existing token with embedded permissions.
 	 * 
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void SetAuthToken(FString Token);
 	
 	/**
@@ -667,7 +677,7 @@ public:
 	 * @param OnFetchHistoryResponse The callback function used to handle the result.
 	 * @param FetchHistorySettings Optional settings for the fetch history operation. See FPubnubFetchHistorySettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void FetchHistory(FString Channel, FOnFetchHistoryResponse OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 
 	/**
@@ -694,7 +704,7 @@ public:
 	 * @param DeleteMessagesSettings Optional settings for the delete messages operation - Start and End parameters to specify delete messages time range.
 	 *								 See FPubnubDeleteMessagesSettings for more details.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta = (AutoCreateRefTerm = "OnDeleteMessagesResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnDeleteMessagesResponse"))
 	void DeleteMessages(FString Channel, FOnDeleteMessagesResponse OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings = FPubnubDeleteMessagesSettings());
 
 	/**
@@ -734,7 +744,7 @@ public:
 	 * @param Timetoken The timetoken to start counting messages from. (Exclusive, messages with the same timetoken, won't be counted).
 	 * @param OnMessageCountsResponse The callback function used to handle the result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Persistence", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void MessageCounts(FString Channel, FString Timetoken, FOnMessageCountsResponse OnMessageCountsResponse);
 
 	/**
@@ -765,7 +775,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetAllUserMetadataRaw(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -798,7 +808,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetAllUserMetadata(FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
@@ -829,7 +839,7 @@ public:
 	 * @param OnSetUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnSetUserMetadataResponse"))
 	void SetUserMetadataRaw(FString User, FString UserMetadataObj, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FString Include = "");
 
 	/**
@@ -856,7 +866,7 @@ public:
 	 * @param OnSetUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnSetUserMetadataResponse"))
 	void SetUserMetadata(FString User, FPubnubUserData UserMetadata, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
@@ -882,7 +892,7 @@ public:
 	 * @param OnGetUserMetadataResponse The callback function used to handle the result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void GetUserMetadataRaw(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FString Include = "");
 
 	/**
@@ -905,7 +915,7 @@ public:
 	 * @param OnGetUserMetadataResponse The callback function used to handle the result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void GetUserMetadata(FString User, FOnGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
@@ -928,7 +938,7 @@ public:
 	 * @param User The user ID for whom to remove metadata.
 	 * @param OnRemoveUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveUserMetadataResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnRemoveUserMetadataResponse"))
 	void RemoveUserMetadata(FString User, FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse);
 
 	/**
@@ -957,7 +967,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetAllChannelMetadataRaw(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -990,7 +1000,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetAllChannelMetadata(FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
@@ -1021,7 +1031,7 @@ public:
 	 * @param OnSetChannelMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
 	void SetChannelMetadataRaw(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FString Include = "");
 
 	/**
@@ -1048,7 +1058,7 @@ public:
 	 * @param OnSetChannelMetadataResponse (Optional) Delegate to listen for the operation result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnSetChannelMetadataResponse"))
 	void SetChannelMetadata(FString Channel, FPubnubChannelData ChannelMetadata, FOnSetChannelMetadataResponse OnSetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
@@ -1073,7 +1083,7 @@ public:
 	 * @param OnGetChannelMetadataResponse The callback function used to handle the result.
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void GetChannelMetadataRaw(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FString Include = "");
 
 	/**
@@ -1096,7 +1106,7 @@ public:
 	 * @param OnGetChannelMetadataResponse The callback function used to handle the result.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void GetChannelMetadata(FString Channel, FOnGetChannelMetadataResponse OnGetChannelMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
@@ -1118,7 +1128,7 @@ public:
 	 * @param Channel The channel ID for which to remove metadata.
 	 * @param OnRemoveChannelMetadataResponse (Optional) Delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveChannelMetadataResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnRemoveChannelMetadataResponse"))
 	void RemoveChannelMetadata(FString Channel, FOnRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse);
 
 	/**
@@ -1149,7 +1159,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetMembershipsRaw(FString User, FOnGetMembershipsResponse OnGetMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -1185,7 +1195,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetMemberships(FString User, FOnGetMembershipsResponse OnGetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
@@ -1224,7 +1234,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnSetMembershipsResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnSetMembershipsResponse"))
 	void SetMembershipsRaw(FString User, FString SetObj, FOnSetMembershipsResponse OnSetMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -1266,7 +1276,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetMembershipsResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetMembershipsResponse"))
 	void SetMemberships(FString User, TArray<FPubnubMembershipInputData> Channels, FOnSetMembershipsResponse OnSetMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
@@ -1306,7 +1316,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnRemoveMembershipsResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnRemoveMembershipsResponse"))
 	void RemoveMembershipsRaw(FString User, FString RemoveObj, FOnRemoveMembershipsResponse OnRemoveMembershipsResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -1344,7 +1354,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveMembershipsResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveMembershipsResponse"))
 	void RemoveMemberships(FString User, TArray<FString> Channels, FOnRemoveMembershipsResponse OnRemoveMembershipsResponse, FPubnubMembershipInclude Include = FPubnubMembershipInclude(), int Limit = 100, FString Filter = "", FPubnubMembershipSort Sort = FPubnubMembershipSort(), FString PageNext = "", FString PagePrev = "");
 
 	/**
@@ -1382,7 +1392,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count"))
 	void GetChannelMembersRaw(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 	
 	/**
@@ -1419,7 +1429,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev"))
 	void GetChannelMembers(FString Channel, FOnGetChannelMembersResponse OnGetMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
@@ -1458,7 +1468,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
 	void SetChannelMembersRaw(FString Channel, FString SetObj, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -1500,7 +1510,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnSetChannelMembersResponse"))
 	void SetChannelMembers(FString Channel, TArray<FPubnubChannelMemberInputData> Users, FOnSetChannelMembersResponse OnSetChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
@@ -1540,7 +1550,7 @@ public:
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 * @param Count (Optional) Whether to include a total count of users in the response (default: not set).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev,Count", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
 	void RemoveChannelMembersRaw(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FString Include = "", int Limit = 100, FString Filter = "", FString Sort = "", FString PageNext = "", FString PagePrev = "", EPubnubTribool Count = EPubnubTribool::PT_NotSet);
 
 	/**
@@ -1578,7 +1588,7 @@ public:
 	 * @param PageNext (Optional) A string to retrieve the next page of results (if applicable).
 	 * @param PagePrev (Optional) A string to retrieve the previous page of results (if applicable). Ignored if PageNext is provided.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AdvancedDisplay="Filter,Sort,PageNext,PagePrev", AutoCreateRefTerm = "OnRemoveChannelMembersResponse"))
 	void RemoveChannelMembers(FString Channel, TArray<FString> Users, FOnRemoveChannelMembersResponse OnRemoveChannelMembersResponse, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FString PageNext = "", FString PagePrev = "");
 	
 	/**
@@ -1607,7 +1617,7 @@ public:
 	 * @param Value The value associated with the action.
 	 * @param OnAddMessageActionResponse (Optional) The callback function used to handle the result and added MessageAction timetoken.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta = (AutoCreateRefTerm = "OnAddMessageActionResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnAddMessageActionResponse"))
 	void AddMessageAction(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponse OnAddMessageActionResponse);
 
 	/**
@@ -1631,7 +1641,7 @@ public:
 	 * @param End The ending timetoken for the range.
 	 * @param Limit The maximum number of actions to retrieve.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void GetMessageActions(FString Channel, FOnGetMessageActionsResponse OnGetMessageActionsResponse, FString Start = "", FString End = "", int Limit = 0);
 
 	/**
@@ -1653,7 +1663,7 @@ public:
 	 * @param ActionTimetoken The timetoken of the action to remove.
 	 * @param OnRemoveMessageActionResponse (Optional) Delegate to listen for the operation result.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta = (AutoCreateRefTerm = "OnRemoveMessageActionResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Message Actions", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnRemoveMessageActionResponse"))
 	void RemoveMessageAction(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponse OnRemoveMessageActionResponse);
 	
 	/**
@@ -1670,13 +1680,13 @@ public:
 	 * Tries to reconnect all active subscriptions. Could be used in case of receiving PSS_DisconnectedUnexpectedly or PSS_ConnectionError
 	 * from OnSubscriptionStatusChanged listener. Or if DisconnectSubscriptions was called previously.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void ReconnectSubscriptions();
 
 	/**
 	 * Pauses all active subscriptions.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void DisconnectSubscriptions();
 
 	/** Sets the provider-level crypto module to use for PubNub.
@@ -1684,14 +1694,14 @@ public:
 	 * Expects an object implementing IPubnubCryptoProviderInterface.
 	 * Use UPubnubCryptoModule for default PubNub encryption implementation.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule);
 
 	/** Gets the currently configured provider-level crypto module.
 	 *
 	 * Returns the module previously set via SetCryptoModule.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	TScriptInterface<IPubnubCryptoProviderInterface> GetCryptoModule();
 
 #pragma endregion
@@ -1708,7 +1718,7 @@ public:
 	 * @param Channel The name of the channel to create an entity for.
 	 * @return A new channel entity configured for the specified channel.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities", meta=(DeprecatedFunction, DeprecationMessage="Function has been deprecated, Please use the new function"))
 	UPubnubChannelEntity* CreateChannelEntity(FString Channel);
 
 	/**
@@ -1722,7 +1732,7 @@ public:
 	 * @param ChannelGroup The name of the channel group to create an entity for.
 	 * @return A new channel group entity configured for the specified channel group.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	UPubnubChannelGroupEntity* CreateChannelGroupEntity(FString ChannelGroup);
 	
 	/**
@@ -1737,7 +1747,7 @@ public:
 	 * @param Channel The name of the channel to create a metadata entity for.
 	 * @return A new channel metadata entity configured for the specified channel.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	UPubnubChannelMetadataEntity* CreateChannelMetadataEntity(FString Channel);
 	
 	/**
@@ -1752,7 +1762,7 @@ public:
 	 * @param User The user identifier to create a metadata entity for.
 	 * @return A new user metadata entity configured for the specified user.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	UPubnubUserMetadataEntity* CreateUserMetadataEntity(FString User);
 
 	/**
@@ -1813,158 +1823,24 @@ public:
 #pragma endregion 
 	
 private:
-	
-	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
-	FPubnubFunctionThread* QuickActionThread = nullptr;
 
-	//Pubnub context for the most of the pubnub operations
-	pubnub_t *ctx_pub = nullptr;
-	//Pubnub context for the event engine - subscribe operations
-	pubnub_t *ctx_ee = nullptr;
+	UPROPERTY()
+	TMap<int, TObjectPtr<UPubnubClient>> PubnubClients;
+	int NextClientID = 0;
 
-	//Auth token has to be kept alive for the lifetime of the sdk, so this is the container for it
-	char* AuthTokenBuffer = nullptr;
-	size_t AuthTokenLength = 0;
-
-	//Storage for global subscriptions (not from Entities)
-	TMap<FString, CCoreSubscriptionData> ChannelSubscriptions;
-	TMap<FString, CCoreSubscriptionData> ChannelGroupSubscriptions;
-	
-	//Returns FString from the pubnub_get response
-	FString GetLastResponse(pubnub_t* context);
-	
-	//Returns FString from the pubnub_get_channel response
-	FString GetLastChannelResponse(pubnub_t* context);
-
-#pragma region ERROR FUNCTIONS
-
-public:
-	/* ERROR FUNCTIONS */
-	//Every Error function prints error to the Log and Broadcasts OnPubnubError delegate
+	UPROPERTY()
+	UPubnubClient* DefaultClient = nullptr;
 	
 	//Default error for most use cases. Internal usage only.
 	void PubnubError(FString ErrorMessage, EPubnubErrorType ErrorType = EPubnubErrorType::PET_Error);
-private:
-	//Error when the response was not OK
-	void PubnubResponseError(pubnub_res PubnubResponse, FString ErrorMessage);
-
-#pragma endregion
-
-#pragma region PUBNUB CONFIG
 	
-	/* PUBNUB CONFIG */
-
 	//Plugin settings from ProjectSettings
+	UPROPERTY()
 	TObjectPtr<UPubnubSettings> PubnubPluginSettings = nullptr;
-
-	//Container for all configuration settings
-	FPubnubConfig PubnubConfig;
-	
-	//Containers for keys stored from settings
-	static const int PublishKeySize = 42;
-	static const int SecretKeySize = 54;
-	char PublishKey[PublishKeySize + 1] = {};
-	char SubscribeKey[PublishKeySize + 1] = {};
-	char SecretKey[SecretKeySize + 1] = {};
 	
 	void LoadPluginSettings();
-	void SavePubnubConfig(const FPubnubConfig &Config);
-
-#pragma endregion
-
-	/* CRYPTO */
-
-	//CryptoBridge class that holds provided CryptoModule and inserts it into C-Core system - it keeps all required references alive
-	UPROPERTY()
-	TObjectPtr<UPubnubCryptoBridge> CryptoBridge;
-
-	/* INITIALIZATION CHECKS */
+	
 	
 	bool IsInitialized = false;
-	bool IsUserIDSet = false;
-	bool CheckIsPubnubInitialized();
-
-	FString GetUserIDInternal();
-
-#pragma region PRIVATE FUNCTIONS
-
-	/* PRIVATE FUNCTIONS */
-	//These functions are called from "BLUEPRINT EXPOSED" functions on PubNub threads. They shouldn't be called directly on Game Thread.
 	
-	void InitPubnub_priv(const FPubnubConfig& Config);
-	void SetUserID_priv(FString UserID);
-	void PublishMessage_priv(FString Channel, FString Message, FOnPublishMessageResponseNative OnPublishMessageResponse, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
-	void Signal_priv(FString Channel, FString Message, FOnSignalResponseNative OnSignalResponse, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
-	void SubscribeToChannel_priv(FString Channel, FOnSubscribeOperationResponseNative OnSubscribeToChannelResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
-	void SubscribeToGroup_priv(FString ChannelGroup, FOnSubscribeOperationResponseNative OnSubscribeToGroupResponse, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
-	void UnsubscribeFromChannel_priv(FString Channel, FOnSubscribeOperationResponseNative OnUnsubscribeFromChannelResponse);
-	void UnsubscribeFromGroup_priv(FString ChannelGroup, FOnSubscribeOperationResponseNative OnUnsubscribeFromGroupResponse);
-	void UnsubscribeFromAll_priv(FOnSubscribeOperationResponseNative OnUnsubscribeFromAllResponse = nullptr);
-	void AddChannelToGroup_priv(FString Channel, FString ChannelGroup, FOnAddChannelToGroupResponseNative OnAddChannelToGroupResponse);
-	void RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup, FOnRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse);
-	void ListChannelsFromGroup_priv(FString ChannelGroup, FOnListChannelsFromGroupResponseNative OnListChannelsResponse);
-	void RemoveChannelGroup_priv(FString ChannelGroup, FOnRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse);
-	void ListUsersFromChannel_priv(FString Channel, FOnListUsersFromChannelResponseNative ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
-	void ListUserSubscribedChannels_priv(FString UserID, FOnListUsersSubscribedChannelsResponseNative ListUserSubscribedChannelsResponse);
-	void SetState_priv(FString Channel, FString StateJson, FOnSetStateResponseNative OnSetStateResponse, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
-	void GetState_priv(FString Channel, FString ChannelGroup, FString UserID, FOnGetStateResponseNative OnGetStateResponse);
-	void Heartbeat_priv(FString Channel, FString ChannelGroup);
-	void GrantToken_priv(FString PermissionObject, FOnGrantTokenResponseNative OnGrantTokenResponse);
-	void RevokeToken_priv(FString Token, FOnRevokeTokenResponseNative OnRevokeTokenResponse);
-	FString ParseToken_priv(FString Token);
-	void FetchHistory_priv(FString Channel, FOnFetchHistoryResponseNative OnFetchHistoryResponse, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
-	void DeleteMessages_priv(FString Channel, FOnDeleteMessagesResponseNative OnDeleteMessagesResponse, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
-	void MessageCounts_priv(FString Channel, FString Timetoken, FOnMessageCountsResponseNative OnMessageCountsResponse);
-	void GetAllUserMetadata_priv(FOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetUserMetadata_priv(FString User, FString UserMetadataObj, FOnSetUserMetadataResponseNative OnSetUserMetadataResponse, FString Include);
-	void GetUserMetadata_priv(FString User, FOnGetUserMetadataResponseNative OnGetUserMetadataResponse, FString Include);
-	void RemoveUserMetadata_priv(FString User, FOnRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse);
-	void GetAllChannelMetadata_priv(FOnGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetChannelMetadata_priv(FString Channel, FString ChannelMetadataObj, FOnSetChannelMetadataResponseNative OnSetChannelMetadataResponse, FString Include);
-	void GetChannelMetadata_priv(FString Channel, FOnGetChannelMetadataResponseNative OnGetChannelMetadataResponse, FString Include);
-	void RemoveChannelMetadata_priv(FString Channel, FOnRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse);
-	void GetMemberships_priv(FString User, FOnGetMembershipsResponseNative OnGetMembershipsResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetMemberships_priv(FString User, FString SetObj, FOnSetMembershipsResponseNative OnSetMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void RemoveMemberships_priv(FString User, FString RemoveObj, FOnRemoveMembershipsResponseNative OnRemoveMembershipResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void GetChannelMembers_priv(FString Channel, FOnGetChannelMembersResponseNative OnGetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void SetChannelMembers_priv(FString Channel, FString SetObj, FOnSetChannelMembersResponseNative OnSetMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void RemoveChannelMembers_priv(FString Channel, FString RemoveObj, FOnRemoveChannelMembersResponseNative OnRemoveMembersResponse, FString Include, int Limit, FString Filter, FString Sort, FString PageNext, FString PagePrev, EPubnubTribool Count);
-	void AddMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionType,  FString Value, FOnAddMessageActionResponseNative AddMessageActionResponse);
-	void RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken, FOnRemoveMessageActionResponseNative OnRemoveMessageActionResponse);
-	void GetMessageActions_priv(FString Channel, FOnGetMessageActionsResponseNative OnGetMessageActionsResponse, FString Start, FString End, int Limit);
-
-
-	void SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse);
-	void SubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnSubscribeOperationResponseNative OnSubscribeResponse);
-	void UnsubscribeWithSubscription(UPubnubSubscription* Subscription, FOnSubscribeOperationResponseNative OnUnsubscribeResponse);
-	void UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet, FOnSubscribeOperationResponseNative OnUnsubscribeResponse);
-#pragma endregion
-	
-
-	/* STRUCT CONVERTERS */
-	
-	void PublishUESettingsToPubnubPublishOptions(FPubnubPublishSettings &PublishSettings, pubnub_publish_options &PubnubPublishOptions);
-	void HereNowUESettingsToPubnubHereNowOptions(FPubnubListUsersFromChannelSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
-	void SetStateUESettingsToPubnubSetStateOptions(FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
-	void FetchHistoryUESettingsToPbFetchHistoryOptions(FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
-
-	void DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages);
-	
-	/* GRANT TOKEN HELPERS */
-
-	TSharedPtr<FJsonObject> AddChannelPermissionsToJson(TArray<FString> Channels, TArray<FPubnubChannelPermissions> ChannelPermissions);
-	TSharedPtr<FJsonObject> AddChannelGroupPermissionsToJson(TArray<FString> ChannelGroups, TArray<FPubnubChannelGroupPermissions> ChannelGroupPermissions);
-	TSharedPtr<FJsonObject> AddUserPermissionsToJson(TArray<FString> Users, TArray<FPubnubUserPermissions> UserPermissions);
-
-	//C-Core logging
-	static TArray<FString> FalseCCoreLogPhrases;
-	static bool ShouldCCoreLogBeSkipped(FString Message);
-	
-	//Function that is sent to Pubnub sdk (c-core) to pass sdk logs to Unreal
-	static void PubnubSDKLogConverter(enum pubnub_log_level log_level, const char* message);
-
-	//Array storing delegates for all queued subscription operations
-	TArray<FOnSubscribeOperationResponseNative> SubscriptionResultDelegates;
-
-	void OnCCoreSubscriptionStatusReceived(const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data);
 };

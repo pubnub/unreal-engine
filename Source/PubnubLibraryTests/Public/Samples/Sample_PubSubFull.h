@@ -1,12 +1,11 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 // snippet.full_pubsub_example
+// blueprint.7s012a54
 #pragma once
 
-#include "PubnubSubsystem.h"
-
+#include "GameFramework/Actor.h"
 #include "CoreMinimal.h"
-#include "PubnubSampleBase.h"
 #include "Sample_PubSubFull.generated.h"
 
 // ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)

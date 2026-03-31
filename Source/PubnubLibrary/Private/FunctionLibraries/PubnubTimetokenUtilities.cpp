@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #include "FunctionLibraries/PubnubTimetokenUtilities.h"
 #include "Misc/DateTime.h"
@@ -18,4 +18,25 @@ FString UPubnubTimetokenUtilities::GetCurrentUnixTimetoken()
 	Timetoken += (Now.GetTicks() % ETimespan::TicksPerSecond) % 10000000LL;
 
 	return FString::Printf(TEXT("%lld"), Timetoken);
+}
+
+FString UPubnubTimetokenUtilities::AddIntToTimetoken(const FString Timetoken, const int64 ToAdd)
+{
+	if (Timetoken.IsEmpty())
+	{
+		return FString();
+	}
+
+	// Validate that the string is numeric before parsing
+	if (!Timetoken.IsNumeric())
+	{
+		return FString();
+	}
+
+	int64 TimetokenInt = 0;
+	LexFromString(TimetokenInt, *Timetoken);
+
+	TimetokenInt += ToAdd;
+
+	return FString::Printf(TEXT("%lld"), TimetokenInt);
 }

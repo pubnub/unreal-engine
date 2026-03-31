@@ -1,29 +1,20 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 
 #include "Samples/Sample_AccessManager.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 //Internal function, don't copy it with the samples
@@ -55,18 +46,16 @@ ASample_AccessManager::ASample_AccessManager()
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::GrantTokenSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set secret key to be able to grant token
 	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
 	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
-	PubnubSubsystem->SetSecretKey();
+	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
 	FPubnubGrantTokenPermissions Permissions;
@@ -80,13 +69,13 @@ void ASample_AccessManager::GrantTokenSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
-	FOnGrantTokenResponse OnGrantTokenResponse;
+	FOnPubnubGrantTokenResponse OnGrantTokenResponse;
 	OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_Simple);
 	
 	// Request the token from the server
 	int TTLMinutes = 60;
 	FString AuthorizedUser = TEXT("my-authorized-user-id");
-	PubnubSubsystem->GrantToken(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
+	PubnubClient->GrantTokenAsync(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
@@ -106,18 +95,16 @@ void ASample_AccessManager::OnGrantTokenResponse_Simple(FPubnubOperationResult R
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::GrantTokenWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 	
 	//Set secret key to be able to grant token
 	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
 	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
-	PubnubSubsystem->SetSecretKey();
+	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
 	FPubnubGrantTokenPermissions Permissions;
@@ -130,7 +117,7 @@ void ASample_AccessManager::GrantTokenWithLambdaSample()
 	Permissions.Channels.Add(ChannelGrant);
 
 	// Bind lambda to response delegate
-	FOnGrantTokenResponseNative OnGrantTokenResponse;
+	FOnPubnubGrantTokenResponseNative OnGrantTokenResponse;
 	OnGrantTokenResponse.BindLambda([](const FPubnubOperationResult& Result, FString Token)
 	{
 		if(Result.Error)
@@ -146,25 +133,23 @@ void ASample_AccessManager::GrantTokenWithLambdaSample()
 	// Request the token from the server
 	int TTLMinutes = 60;
 	FString AuthorizedUser = TEXT("my-authorized-user-id");
-	PubnubSubsystem->GrantToken(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
+	PubnubClient->GrantTokenAsync(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
 }
 
 // snippet.grant_token_various_resources
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::GrantTokenVariousResourcesSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set secret key to be able to grant token
 	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
 	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
-	PubnubSubsystem->SetSecretKey();
+	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
 	FPubnubGrantTokenPermissions Permissions;
@@ -207,13 +192,13 @@ void ASample_AccessManager::GrantTokenVariousResourcesSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
-	FOnGrantTokenResponse OnGrantTokenResponse;
+	FOnPubnubGrantTokenResponse OnGrantTokenResponse;
 	OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_VariousResources);
 	
 	// Request the token from the server
 	int TTLMinutes = 1440;
 	FString AuthorizedUser = TEXT("my-authorized-user-id");
-	PubnubSubsystem->GrantToken(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
+	PubnubClient->GrantTokenAsync(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
@@ -233,18 +218,16 @@ void ASample_AccessManager::OnGrantTokenResponse_VariousResources(FPubnubOperati
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::GrantTokenRegexSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set secret key to be able to grant token
 	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
 	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
-	PubnubSubsystem->SetSecretKey();
+	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
 	FPubnubGrantTokenPermissions Permissions;
@@ -257,13 +240,13 @@ void ASample_AccessManager::GrantTokenRegexSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
-	FOnGrantTokenResponse OnGrantTokenResponse;
+	FOnPubnubGrantTokenResponse OnGrantTokenResponse;
 	OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_Regex);
 	
 	// Request the token from the server
 	int TTLMinutes = 1440;
 	FString AuthorizedUser = TEXT("my-authorized-user-id");
-	PubnubSubsystem->GrantToken(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
+	PubnubClient->GrantTokenAsync(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
@@ -283,18 +266,16 @@ void ASample_AccessManager::OnGrantTokenResponse_Regex(FPubnubOperationResult Re
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::GrantTokenComplexSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set secret key to be able to grant token
 	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
 	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
-	PubnubSubsystem->SetSecretKey();
+	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
 	FPubnubGrantTokenPermissions Permissions;
@@ -343,13 +324,13 @@ void ASample_AccessManager::GrantTokenComplexSample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
-	FOnGrantTokenResponse OnGrantTokenResponse;
+	FOnPubnubGrantTokenResponse OnGrantTokenResponse;
 	OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_Complex);
 	
 	// Request the token from the server
 	int TTLMinutes = 1440;
 	FString AuthorizedUser = TEXT("my-authorized-user-id");
-	PubnubSubsystem->GrantToken(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
+	PubnubClient->GrantTokenAsync(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
@@ -369,51 +350,47 @@ void ASample_AccessManager::OnGrantTokenResponse_Complex(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::RevokeTokenSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set secret key to be able to revoke token
 	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
 	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
-	PubnubSubsystem->SetSecretKey();
+	PubnubClient->SetSecretKey();
 	
 	// Revoke the token
 	// ACTION REQUIRED: This is an old token, so revoking it will return an error. Replace with a valid token returned from GrantToken method, to get success response
 	FString TokenToRevoke = TEXT("p0F2AkF0GmheUpNDdHRsGDxDcmVzpURjaGFuoWtnbG9iYWxfY2hhdANDZ3JwoENzcGOgQ3VzcqBEdXVpZKBDcGF0pURjaGFuoENncnCgQ3NwY6BDdXNyoER1dWlkoERtZXRhoENzaWdYILa9OLrP_dhe31sW_seO2r9KhD6mp9Yi9vZxcX9QY04R");
-	PubnubSubsystem->RevokeToken(TokenToRevoke);
+	PubnubClient->RevokeTokenAsync(TokenToRevoke);
 }
 
 // snippet.revoke_token_with_result
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::RevokeTokenWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set secret key to be able to revoke token
 	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
 	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
-	PubnubSubsystem->SetSecretKey();
+	PubnubClient->SetSecretKey();
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
-	FOnRevokeTokenResponse OnRevokeTokenResponse;
+	FOnPubnubRevokeTokenResponse OnRevokeTokenResponse;
 	OnRevokeTokenResponse.BindDynamic(this, &ASample_AccessManager::OnRevokeTokenResponse);
 	
 	// Revoke the token
 	// ACTION REQUIRED: This is an old token, so revoking it will return an error. Replace with a valid token returned from GrantToken method, to get success response
 	FString TokenToRevoke = TEXT("p0F2AkF0GmheUpNDdHRsGDxDcmVzpURjaGFuoWtnbG9iYWxfY2hhdANDZ3JwoENzcGOgQ3VzcqBEdXVpZKBDcGF0pURjaGFuoENncnCgQ3NwY6BDdXNyoER1dWlkoERtZXRhoENzaWdYILa9OLrP_dhe31sW_seO2r9KhD6mp9Yi9vZxcX9QY04R");
-	PubnubSubsystem->RevokeToken(TokenToRevoke, OnRevokeTokenResponse);
+	PubnubClient->RevokeTokenAsync(TokenToRevoke, OnRevokeTokenResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
@@ -433,21 +410,19 @@ void ASample_AccessManager::OnRevokeTokenResponse(FPubnubOperationResult Result)
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::RevokeTokenWithResultLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set secret key to be able to revoke token
 	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
 	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
-	PubnubSubsystem->SetSecretKey();
+	PubnubClient->SetSecretKey();
 
 	// Bind lambda to response delegate
-	FOnRevokeTokenResponseNative OnRevokeTokenResponse;
+	FOnPubnubRevokeTokenResponseNative OnRevokeTokenResponse;
 	OnRevokeTokenResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -463,24 +438,22 @@ void ASample_AccessManager::RevokeTokenWithResultLambdaSample()
 	// Revoke the token
 	// ACTION REQUIRED: This is an old token, so revoking it will return an error. Replace with a valid token returned from GrantToken method, to get success response
 	FString TokenToRevoke = TEXT("p0F2AkF0GmheUpNDdHRsGDxDcmVzpURjaGFuoWtnbG9iYWxfY2hhdANDZ3JwoENzcGOgQ3VzcqBEdXVpZKBDcGF0pURjaGFuoENncnCgQ3NwY6BDdXNyoER1dWlkoERtZXRhoENzaWdYILa9OLrP_dhe31sW_seO2r9KhD6mp9Yi9vZxcX9QY04R");
-	PubnubSubsystem->RevokeToken(TokenToRevoke, OnRevokeTokenResponse);
+	PubnubClient->RevokeTokenAsync(TokenToRevoke, OnRevokeTokenResponse);
 }
 
 // snippet.parse_token
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::ParseTokenSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Parse the token
 	FString TokenToParse = TEXT("p0F2AkF0GmheUpNDdHRsGDxDcmVzpURjaGFuoWtnbG9iYWxfY2hhdANDZ3JwoENzcGOgQ3VzcqBEdXVpZKBDcGF0pURjaGFuoENncnCgQ3NwY6BDdXNyoER1dWlkoERtZXRhoENzaWdYILa9OLrP_dhe31sW_seO2r9KhD6mp9Yi9vZxcX9QY04R");
-	FString ParsedToken = PubnubSubsystem->ParseToken(TokenToParse);
+	FString ParsedToken = PubnubClient->ParseToken(TokenToParse);
 
 	//If parsed token is empty it means that something went wrong. Check Output Log for more details.
 	if(ParsedToken.IsEmpty())
@@ -497,17 +470,27 @@ void ASample_AccessManager::ParseTokenSample()
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::SetAuthTokenSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	//Set Auth Token
 	FString Token = TEXT("p0F2AkF0GmheUpNDdHRsGDxDcmVzpURjaGFuoWtnbG9iYWxfY2hhdANDZ3JwoENzcGOgQ3VzcqBEdXVpZKBDcGF0pURjaGFuoENncnCgQ3NwY6BDdXNyoER1dWlkoERtZXRhoENzaWdYILa9OLrP_dhe31sW_seO2r9KhD6mp9Yi9vZxcX9QY04R");
-	PubnubSubsystem->SetAuthToken(Token);
+	PubnubClient->SetAuthToken(Token);
 }
 
 // snippet.end
+
+UPubnubClient* ASample_AccessManager::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

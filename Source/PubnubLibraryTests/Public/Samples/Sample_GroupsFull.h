@@ -1,12 +1,12 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 // snippet.full_groups_example
 #pragma once
 
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
+#include "GameFramework/Actor.h"
 #include "CoreMinimal.h"
-#include "PubnubSampleBase.h"
 #include "Sample_GroupsFull.generated.h"
 
 // ACTION REQUIRED: Replace PUBNUBLIBRARYTESTS_API with your project's module API macro (usually ProjectName_API)
@@ -24,7 +24,8 @@ public:
 	void RunGroupsFullExample();
 
 private:
-	UPubnubSubsystem* PubnubSubsystem = nullptr;
+	UPROPERTY()
+	UPubnubClient* PubnubClient = nullptr;
 	
 	FString ChannelGroup = "all-chats";
 	FString Channel = "global_chat";

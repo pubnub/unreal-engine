@@ -1,9 +1,8 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 #include "PubnubEnumLibrary.h"
 #include "PubnubStructLibrary.h"
-#include "Kismet/GameplayStatics.h"
 #include "FunctionLibraries/PubnubTimetokenUtilities.h"
 #include "Crypto/PubnubCryptoModule.h"
 #include "Crypto/PubnubAesCryptor.h"
@@ -43,23 +42,18 @@ bool FPubnubCryptoAesDefaultTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
-
-	UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubSubsystem);
+	UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubClient);
 	Aes->SetCipherKey(AesKey);
 	TScriptInterface<IPubnubCryptorInterface> AesIntf; AesIntf.SetObject(Aes); AesIntf.SetInterface(Cast<IPubnubCryptorInterface>(Aes));
 
-	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubClient);
 	Module->InitCryptoModule(AesIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
 
 	TScriptInterface<IPubnubCryptoProviderInterface> ModuleIntf; ModuleIntf.SetObject(Module); ModuleIntf.SetInterface(Cast<IPubnubCryptoProviderInterface>(Module));
-	PubnubSubsystem->SetCryptoModule(ModuleIntf);
+	PubnubClient->SetCryptoModule(ModuleIntf);
 
-	PubnubSubsystem->SetUserID(TestUser);
-	PubnubSubsystem->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestUser, bReceived](FPubnubMessageData ReceivedMessage)
+	PubnubClient->SetUserID(TestUser);
+	PubnubClient->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestUser, bReceived](FPubnubMessageData ReceivedMessage)
 	{
 		if(ReceivedMessage.Channel == TestChannel)
 		{
@@ -71,7 +65,7 @@ bool FPubnubCryptoAesDefaultTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	FOnSubscribeOperationResponseNative SubscribeCb;
+	FOnPubnubSubscribeOperationResponseNative SubscribeCb;
 	SubscribeCb.BindLambda([this, bSubscribed](const FPubnubOperationResult& Result)
 	{
 		*bSubscribed = true;
@@ -81,14 +75,14 @@ bool FPubnubCryptoAesDefaultTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCb]()
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCb);
+		PubnubClient->SubscribeToChannelAsync(TestChannel, SubscribeCb);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribed]() { return *bSubscribed; }, MAX_WAIT_TIME));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
+		PubnubClient->PublishMessage(TestChannel, TestMessage);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bReceived]() { return *bReceived; }, MAX_WAIT_TIME));
@@ -111,38 +105,38 @@ bool FPubnubCryptoSetAndGetModuleTest::RunTest(const FString& Parameters)
     }
 
     // Module A: AES
-    UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubSubsystem);
+    UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubClient);
     Aes->SetCipherKey("k1");
     TScriptInterface<IPubnubCryptorInterface> AesIntf; AesIntf.SetObject(Aes); AesIntf.SetInterface(Cast<IPubnubCryptorInterface>(Aes));
-    UPubnubCryptoModule* ModuleA = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+    UPubnubCryptoModule* ModuleA = NewObject<UPubnubCryptoModule>(PubnubClient);
     ModuleA->InitCryptoModule(AesIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
     TScriptInterface<IPubnubCryptoProviderInterface> A; A.SetObject(ModuleA); A.SetInterface(Cast<IPubnubCryptoProviderInterface>(ModuleA));
 
     // Module B: Legacy fixed
-    UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubSubsystem);
+    UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubClient);
     Legacy->UseRandomIV = false;
     Legacy->SetCipherKey("k2");
     TScriptInterface<IPubnubCryptorInterface> LegacyIntf; LegacyIntf.SetObject(Legacy); LegacyIntf.SetInterface(Cast<IPubnubCryptorInterface>(Legacy));
-    UPubnubCryptoModule* ModuleB = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+    UPubnubCryptoModule* ModuleB = NewObject<UPubnubCryptoModule>(PubnubClient);
     ModuleB->InitCryptoModule(LegacyIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
     TScriptInterface<IPubnubCryptoProviderInterface> B; B.SetObject(ModuleB); B.SetInterface(Cast<IPubnubCryptoProviderInterface>(ModuleB));
 
     // Set A
-    PubnubSubsystem->SetCryptoModule(A);
-    auto RB1 = PubnubSubsystem->GetCryptoModule();
+    PubnubClient->SetCryptoModule(A);
+    auto RB1 = PubnubClient->GetCryptoModule();
     TestTrue(TEXT("Set A → Get A valid"), RB1 && RB1.GetObject());
     TestTrue(TEXT("Set A → Get A same object"), RB1.GetObject() == ModuleA);
 
     // Switch to B
-    PubnubSubsystem->SetCryptoModule(B);
-    auto RB2 = PubnubSubsystem->GetCryptoModule();
+    PubnubClient->SetCryptoModule(B);
+    auto RB2 = PubnubClient->GetCryptoModule();
     TestTrue(TEXT("Switch to B → Get B valid"), RB2 && RB2.GetObject());
     TestTrue(TEXT("Switch to B → Get B same object"), RB2.GetObject() == ModuleB);
 
     // Set null
     TScriptInterface<IPubnubCryptoProviderInterface> NullProv;
-    PubnubSubsystem->SetCryptoModule(NullProv);
-    auto RB3 = PubnubSubsystem->GetCryptoModule();
+    PubnubClient->SetCryptoModule(NullProv);
+    auto RB3 = PubnubClient->GetCryptoModule();
     TestFalse(TEXT("Set null → Get null"), RB3 && RB3.GetObject());
 
     CleanUp();
@@ -164,24 +158,19 @@ bool FPubnubCryptoLegacyRandomIvTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
-
-	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubSubsystem);
+	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubClient);
 	Legacy->UseRandomIV = true;
 	Legacy->SetCipherKey(LegacyKey);
 	TScriptInterface<IPubnubCryptorInterface> LegacyIntf; LegacyIntf.SetObject(Legacy); LegacyIntf.SetInterface(Cast<IPubnubCryptorInterface>(Legacy));
 
-	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubClient);
 	Module->InitCryptoModule(LegacyIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
 
 	TScriptInterface<IPubnubCryptoProviderInterface> ModuleIntf; ModuleIntf.SetObject(Module); ModuleIntf.SetInterface(Cast<IPubnubCryptoProviderInterface>(Module));
-	PubnubSubsystem->SetCryptoModule(ModuleIntf);
+	PubnubClient->SetCryptoModule(ModuleIntf);
 
-	PubnubSubsystem->SetUserID(TestUser);
-	PubnubSubsystem->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestUser, bReceived](FPubnubMessageData ReceivedMessage)
+	PubnubClient->SetUserID(TestUser);
+	PubnubClient->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestUser, bReceived](FPubnubMessageData ReceivedMessage)
 	{
 		if(ReceivedMessage.Channel == TestChannel)
 		{
@@ -193,7 +182,7 @@ bool FPubnubCryptoLegacyRandomIvTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	FOnSubscribeOperationResponseNative SubscribeCb;
+	FOnPubnubSubscribeOperationResponseNative SubscribeCb;
 	SubscribeCb.BindLambda([this, bSubscribed](const FPubnubOperationResult& Result)
 	{
 		*bSubscribed = true;
@@ -203,14 +192,14 @@ bool FPubnubCryptoLegacyRandomIvTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCb]()
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCb);
+		PubnubClient->SubscribeToChannelAsync(TestChannel, SubscribeCb);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribed]() { return *bSubscribed; }, MAX_WAIT_TIME));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
+		PubnubClient->PublishMessage(TestChannel, TestMessage);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bReceived]() { return *bReceived; }, MAX_WAIT_TIME));
@@ -239,24 +228,19 @@ bool FPubnubCryptoLegacyFixedIvTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
-
-	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubSubsystem);
+	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubClient);
 	Legacy->UseRandomIV = false;
 	Legacy->SetCipherKey(LegacyKey);
 	TScriptInterface<IPubnubCryptorInterface> LegacyIntf; LegacyIntf.SetObject(Legacy); LegacyIntf.SetInterface(Cast<IPubnubCryptorInterface>(Legacy));
 
-	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubClient);
 	Module->InitCryptoModule(LegacyIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
 
 	TScriptInterface<IPubnubCryptoProviderInterface> ModuleIntf; ModuleIntf.SetObject(Module); ModuleIntf.SetInterface(Cast<IPubnubCryptoProviderInterface>(Module));
-	PubnubSubsystem->SetCryptoModule(ModuleIntf);
+	PubnubClient->SetCryptoModule(ModuleIntf);
 
-	PubnubSubsystem->SetUserID(TestUser);
-	PubnubSubsystem->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestUser, bReceived](FPubnubMessageData ReceivedMessage)
+	PubnubClient->SetUserID(TestUser);
+	PubnubClient->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestUser, bReceived](FPubnubMessageData ReceivedMessage)
 	{
 		if(ReceivedMessage.Channel == TestChannel)
 		{
@@ -268,7 +252,7 @@ bool FPubnubCryptoLegacyFixedIvTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	FOnSubscribeOperationResponseNative SubscribeCb;
+	FOnPubnubSubscribeOperationResponseNative SubscribeCb;
 	SubscribeCb.BindLambda([this, bSubscribed](const FPubnubOperationResult& Result)
 	{
 		*bSubscribed = true;
@@ -278,14 +262,14 @@ bool FPubnubCryptoLegacyFixedIvTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCb]()
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCb);
+		PubnubClient->SubscribeToChannelAsync(TestChannel, SubscribeCb);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribed]() { return *bSubscribed; }, MAX_WAIT_TIME));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
+		PubnubClient->PublishMessage(TestChannel, TestMessage);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bReceived]() { return *bReceived; }, MAX_WAIT_TIME));
@@ -315,34 +299,29 @@ bool FPubnubCryptoMixedModuleTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
-
 	// Prepare cryptors and two modules:
 	// - Mixed module: AES default + Legacy additional (for inbound decryption)
 	// - Legacy-only module: Legacy default (for outbound encryption of a message we want to be decrypted by additional path)
-	UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubSubsystem); Aes->SetCipherKey(AesKey);
+	UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubClient); Aes->SetCipherKey(AesKey);
 	TScriptInterface<IPubnubCryptorInterface> AesIntf; AesIntf.SetObject(Aes); AesIntf.SetInterface(Cast<IPubnubCryptorInterface>(Aes));
 
-	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubSubsystem); Legacy->UseRandomIV = true; Legacy->SetCipherKey(LegacyKey);
+	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubClient); Legacy->UseRandomIV = true; Legacy->SetCipherKey(LegacyKey);
 	TScriptInterface<IPubnubCryptorInterface> LegacyIntf; LegacyIntf.SetObject(Legacy); LegacyIntf.SetInterface(Cast<IPubnubCryptorInterface>(Legacy));
 
-	UPubnubCryptoModule* MixedModule = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* MixedModule = NewObject<UPubnubCryptoModule>(PubnubClient);
 	TArray<TScriptInterface<IPubnubCryptorInterface>> Additional; Additional.Add(LegacyIntf);
 	MixedModule->InitCryptoModule(AesIntf, Additional);
 	TScriptInterface<IPubnubCryptoProviderInterface> MixedModuleIntf; MixedModuleIntf.SetObject(MixedModule); MixedModuleIntf.SetInterface(Cast<IPubnubCryptoProviderInterface>(MixedModule));
 
-	UPubnubCryptoModule* LegacyOnlyModule = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* LegacyOnlyModule = NewObject<UPubnubCryptoModule>(PubnubClient);
 	LegacyOnlyModule->InitCryptoModule(LegacyIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
 	TScriptInterface<IPubnubCryptoProviderInterface> LegacyOnlyModuleIntf; LegacyOnlyModuleIntf.SetObject(LegacyOnlyModule); LegacyOnlyModuleIntf.SetInterface(Cast<IPubnubCryptoProviderInterface>(LegacyOnlyModule));
 
 	// Start with mixed module for subscription/decryption
-	PubnubSubsystem->SetCryptoModule(MixedModuleIntf);
+	PubnubClient->SetCryptoModule(MixedModuleIntf);
 
-	PubnubSubsystem->SetUserID(TestUser);
-	PubnubSubsystem->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestUser, bReceived](FPubnubMessageData ReceivedMessage)
+	PubnubClient->SetUserID(TestUser);
+	PubnubClient->OnMessageReceivedNative.AddLambda([this, TestMessage, TestChannel, TestUser, bReceived](FPubnubMessageData ReceivedMessage)
 	{
 		if(ReceivedMessage.Channel == TestChannel)
 		{
@@ -354,7 +333,7 @@ bool FPubnubCryptoMixedModuleTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	FOnSubscribeOperationResponseNative SubscribeCb;
+	FOnPubnubSubscribeOperationResponseNative SubscribeCb;
 	SubscribeCb.BindLambda([this, bSubscribed](const FPubnubOperationResult& Result)
 	{
 		*bSubscribed = true;
@@ -364,7 +343,7 @@ bool FPubnubCryptoMixedModuleTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCb]()
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCb);
+		PubnubClient->SubscribeToChannelAsync(TestChannel, SubscribeCb);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribed]() { return *bSubscribed; }, MAX_WAIT_TIME));
@@ -372,18 +351,18 @@ bool FPubnubCryptoMixedModuleTest::RunTest(const FString& Parameters)
 	// Publish a message encrypted with Legacy-only module (to exercise additional-cryptor path on inbound)
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, LegacyOnlyModuleIntf]()
 	{
-		PubnubSubsystem->SetCryptoModule(LegacyOnlyModuleIntf);
+		PubnubClient->SetCryptoModule(LegacyOnlyModuleIntf);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, TestMessage);
+		PubnubClient->PublishMessage(TestChannel, TestMessage);
 	}, 0.1f));
 
 	// Switch back to mixed before the message arrives, so decryption uses additional cryptor
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, MixedModuleIntf]()
 	{
-		PubnubSubsystem->SetCryptoModule(MixedModuleIntf);
+		PubnubClient->SetCryptoModule(MixedModuleIntf);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bReceived]() { return *bReceived; }, MAX_WAIT_TIME));
@@ -413,23 +392,18 @@ bool FPubnubCryptoResetModuleTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
-
-	UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubSubsystem);
+	UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubClient);
 	Aes->SetCipherKey(AesKey);
 	TScriptInterface<IPubnubCryptorInterface> AesIntf; AesIntf.SetObject(Aes); AesIntf.SetInterface(Cast<IPubnubCryptorInterface>(Aes));
 
-	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubClient);
 	Module->InitCryptoModule(AesIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
 
 	TScriptInterface<IPubnubCryptoProviderInterface> ModuleIntf; ModuleIntf.SetObject(Module); ModuleIntf.SetInterface(Cast<IPubnubCryptoProviderInterface>(Module));
-	PubnubSubsystem->SetCryptoModule(ModuleIntf);
+	PubnubClient->SetCryptoModule(ModuleIntf);
 
-	PubnubSubsystem->SetUserID(TestUser);
-	PubnubSubsystem->OnMessageReceivedNative.AddLambda([this, Msg1, Msg2, TestChannel, ReceivedCount](FPubnubMessageData ReceivedMessage)
+	PubnubClient->SetUserID(TestUser);
+	PubnubClient->OnMessageReceivedNative.AddLambda([this, Msg1, Msg2, TestChannel, ReceivedCount](FPubnubMessageData ReceivedMessage)
 	{
 		if(ReceivedMessage.Channel == TestChannel)
 		{
@@ -445,7 +419,7 @@ bool FPubnubCryptoResetModuleTest::RunTest(const FString& Parameters)
 		}
 	});
 
-	FOnSubscribeOperationResponseNative SubscribeCb;
+	FOnPubnubSubscribeOperationResponseNative SubscribeCb;
 	SubscribeCb.BindLambda([this, bSubscribed](const FPubnubOperationResult& Result)
 	{
 		*bSubscribed = true;
@@ -455,14 +429,14 @@ bool FPubnubCryptoResetModuleTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, SubscribeCb]()
 	{
-		PubnubSubsystem->SubscribeToChannel(TestChannel, SubscribeCb);
+		PubnubClient->SubscribeToChannelAsync(TestChannel, SubscribeCb);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribed]() { return *bSubscribed; }, MAX_WAIT_TIME));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, Msg1]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, Msg1);
+		PubnubClient->PublishMessage(TestChannel, Msg1);
 	}, 0.1f));
 
 	// Wait until first (encrypted) message is received before resetting crypto
@@ -471,12 +445,12 @@ bool FPubnubCryptoResetModuleTest::RunTest(const FString& Parameters)
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
 	{
 		TScriptInterface<IPubnubCryptoProviderInterface> NullProv;
-		PubnubSubsystem->SetCryptoModule(NullProv);
+		PubnubClient->SetCryptoModule(NullProv);
 	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, Msg2]()
 	{
-		PubnubSubsystem->PublishMessage(TestChannel, Msg2);
+		PubnubClient->PublishMessage(TestChannel, Msg2);
 	}, 0.2f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([ReceivedCount]() { return *ReceivedCount >= 2; }, MAX_WAIT_TIME));
@@ -512,28 +486,23 @@ bool FPubnubFetchHistoryWithEncryptionTest::RunTest(const FString& Parameters)
         return false;
     }
 
-    PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-    {
-        AddError(ErrorMessage);
-    });
-
     // Configure AES module for encryption
-    UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubSubsystem);
+    UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubClient);
     Aes->SetCipherKey(AesKey);
     TScriptInterface<IPubnubCryptorInterface> AesIntf; AesIntf.SetObject(Aes); AesIntf.SetInterface(Cast<IPubnubCryptorInterface>(Aes));
 
-    UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+    UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubClient);
     Module->InitCryptoModule(AesIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
     TScriptInterface<IPubnubCryptoProviderInterface> ModuleIntf; ModuleIntf.SetObject(Module); ModuleIntf.SetInterface(Cast<IPubnubCryptoProviderInterface>(Module));
 
-    PubnubSubsystem->SetUserID(TestUser);
-    PubnubSubsystem->SetCryptoModule(ModuleIntf);
+    PubnubClient->SetUserID(TestUser);
+    PubnubClient->SetCryptoModule(ModuleIntf);
 
     // Timetoken window start
     TSharedPtr<FString> StartTT = MakeShared<FString>(UPubnubTimetokenUtilities::GetCurrentUnixTimetoken());
 
     // Publish 1
-    FOnPublishMessageResponseNative Pub1Cb;
+    FOnPubnubPublishMessageResponseNative Pub1Cb;
     Pub1Cb.BindLambda([this, bPub1Done, bPub1Ok](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
     {
         *bPub1Done = true; *bPub1Ok = (!Result.Error && Result.Status == 200);
@@ -541,13 +510,13 @@ bool FPubnubFetchHistoryWithEncryptionTest::RunTest(const FString& Parameters)
     });
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, MsgEnc1, Pub1Cb]()
     {
-        PubnubSubsystem->PublishMessage(TestChannel, MsgEnc1, Pub1Cb);
+        PubnubClient->PublishMessageAsync(TestChannel, MsgEnc1, Pub1Cb);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPub1Done]() { return *bPub1Done; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPub1Ok]() { TestTrue("Publish 1 ok", *bPub1Ok); }, 0.1f));
 
     // Publish 2
-    FOnPublishMessageResponseNative Pub2Cb;
+    FOnPubnubPublishMessageResponseNative Pub2Cb;
     Pub2Cb.BindLambda([this, bPub2Done, bPub2Ok](const FPubnubOperationResult& Result, const FPubnubMessageData& PublishedMessage)
     {
         *bPub2Done = true; *bPub2Ok = (!Result.Error && Result.Status == 200);
@@ -555,13 +524,13 @@ bool FPubnubFetchHistoryWithEncryptionTest::RunTest(const FString& Parameters)
     });
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, MsgEnc2, Pub2Cb]()
     {
-        PubnubSubsystem->PublishMessage(TestChannel, MsgEnc2, Pub2Cb);
+        PubnubClient->PublishMessageAsync(TestChannel, MsgEnc2, Pub2Cb);
     }, 0.1f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bPub2Done]() { return *bPub2Done; }, MAX_WAIT_TIME));
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bPub2Ok]() { TestTrue("Publish 2 ok", *bPub2Ok); }, 0.1f));
 
     // Fetch history in the time window
-    FOnFetchHistoryResponseNative FetchCb;
+    FOnPubnubFetchHistoryResponseNative FetchCb;
     FetchCb.BindLambda([this, bFetchDone, bFetchOk, History](const FPubnubOperationResult& Result, const TArray<FPubnubHistoryMessageData>& Messages)
     {
         *bFetchDone = true; *bFetchOk = (!Result.Error && Result.Status == 200);
@@ -571,7 +540,7 @@ bool FPubnubFetchHistoryWithEncryptionTest::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, FetchCb, StartTT]()
     {
         FPubnubFetchHistorySettings Settings; Settings.Start = UPubnubTimetokenUtilities::GetCurrentUnixTimetoken(); Settings.End = *StartTT; Settings.MaxPerChannel = 20;
-        PubnubSubsystem->FetchHistory(TestChannel, FetchCb, Settings);
+        PubnubClient->FetchHistoryAsync(TestChannel, FetchCb, Settings);
     }, 0.2f));
     ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bFetchDone]() { return *bFetchDone; }, MAX_WAIT_TIME));
 
@@ -604,11 +573,11 @@ bool FPubnubCryptoAesManualEncryptionTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubSubsystem);
+	UPubnubAesCryptor* Aes = NewObject<UPubnubAesCryptor>(PubnubClient);
 	Aes->SetCipherKey(AesKey);
 	TScriptInterface<IPubnubCryptorInterface> AesIntf; AesIntf.SetObject(Aes); AesIntf.SetInterface(Cast<IPubnubCryptorInterface>(Aes));
 
-	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubClient);
 	Module->InitCryptoModule(AesIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
 
 	const FString EncB64 = IPubnubCryptoProviderInterface::Execute_ProviderEncrypt(Module, Plain);
@@ -632,12 +601,12 @@ bool FPubnubCryptoLegacyRandomManualEncryptionTest::RunTest(const FString& Param
 		return false;
 	}
 
-	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubSubsystem);
+	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubClient);
 	Legacy->UseRandomIV = true;
 	Legacy->SetCipherKey(LegacyKey);
 	TScriptInterface<IPubnubCryptorInterface> LegacyIntf; LegacyIntf.SetObject(Legacy); LegacyIntf.SetInterface(Cast<IPubnubCryptorInterface>(Legacy));
 
-	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubClient);
 	Module->InitCryptoModule(LegacyIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
 
 	const FString EncB64 = IPubnubCryptoProviderInterface::Execute_ProviderEncrypt(Module, Plain);
@@ -661,12 +630,12 @@ bool FPubnubCryptoLegacyFixedManualEncryptionTest::RunTest(const FString& Parame
 		return false;
 	}
 
-	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubSubsystem);
+	UPubnubLegacyCryptor* Legacy = NewObject<UPubnubLegacyCryptor>(PubnubClient);
 	Legacy->UseRandomIV = false;
 	Legacy->SetCipherKey(LegacyKey);
 	TScriptInterface<IPubnubCryptorInterface> LegacyIntf; LegacyIntf.SetObject(Legacy); LegacyIntf.SetInterface(Cast<IPubnubCryptorInterface>(Legacy));
 
-	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubSubsystem);
+	UPubnubCryptoModule* Module = NewObject<UPubnubCryptoModule>(PubnubClient);
 	Module->InitCryptoModule(LegacyIntf, TArray<TScriptInterface<IPubnubCryptorInterface>>());
 
 	const FString EncB64 = IPubnubCryptoProviderInterface::Execute_ProviderEncrypt(Module, Plain);

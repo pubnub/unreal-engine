@@ -1,30 +1,22 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #include "Samples/Entities/Sample_ChannelGroupEntity.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  * 
  * CHANNEL GROUP ENTITY SAMPLES demonstrate working with PubNub channel groups through the entity-based approach.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 ASample_ChannelGroupEntity::ASample_ChannelGroupEntity()
 {
@@ -56,34 +48,30 @@ void ASample_ChannelGroupEntity::RunSamples()
 // snippet.create_channel_group_entity
 void ASample_ChannelGroupEntity::CreateChannelGroupEntitySample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("game_rooms");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 }
 
 // snippet.subscribe_with_channel_group_entity
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::SubscribeWithChannelGroupEntitySample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("game_rooms");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Create a subscription from the channel group entity
 	UPubnubSubscription* GroupSubscription = ChannelGroupEntity->CreateSubscription();
@@ -93,7 +81,7 @@ void ASample_ChannelGroupEntity::SubscribeWithChannelGroupEntitySample()
 	GroupSubscription->OnPubnubMessage.AddDynamic(this, &ASample_ChannelGroupEntity::OnMessageReceived_ChannelGroupEntitySample);
 
 	// Subscribe to start receiving messages from all channels in the group
-	GroupSubscription->Subscribe();
+	GroupSubscription->SubscribeAsync();
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -106,47 +94,43 @@ void ASample_ChannelGroupEntity::OnMessageReceived_ChannelGroupEntitySample(FPub
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::AddChannelToGroupSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Add channel to the channel group using the channel group entity
 	FString Channel = TEXT("global_chat");
-	ChannelGroupEntity->AddChannelToGroup(Channel);
+	ChannelGroupEntity->AddChannelToGroupAsync(Channel);
 }
 
 // snippet.add_channel_to_group_with_result_entity
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::AddChannelToGroupWithResultSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
-	FOnAddChannelToGroupResponse OnAddChannelToGroupResponse;
+	FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse;
 	OnAddChannelToGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnAddChannelToGroupResponse);
 
 	// Add channel to the channel group using the channel group entity
 	FString Channel = TEXT("trade_chat");
-	ChannelGroupEntity->AddChannelToGroup(Channel, OnAddChannelToGroupResponse);
+	ChannelGroupEntity->AddChannelToGroupAsync(Channel, OnAddChannelToGroupResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -166,20 +150,18 @@ void ASample_ChannelGroupEntity::OnAddChannelToGroupResponse(FPubnubOperationRes
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::AddChannelToGroupWithResultLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind lambda to response delegate
-	FOnAddChannelToGroupResponseNative OnAddChannelToGroupResponse;
+	FOnPubnubAddChannelToGroupResponseNative OnAddChannelToGroupResponse;
 	OnAddChannelToGroupResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -194,32 +176,30 @@ void ASample_ChannelGroupEntity::AddChannelToGroupWithResultLambdaSample()
 	
 	// Add channel to the channel group using the channel group entity
 	FString Channel = TEXT("guild_chat");
-	ChannelGroupEntity->AddChannelToGroup(Channel, OnAddChannelToGroupResponse);
+	ChannelGroupEntity->AddChannelToGroupAsync(Channel, OnAddChannelToGroupResponse);
 }
 
 // snippet.list_channels_from_group_entity
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::ListChannelsFromGroupSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
-	FOnListChannelsFromGroupResponse OnListChannelsFromGroupResponse;
+	FOnPubnubListChannelsFromGroupResponse OnListChannelsFromGroupResponse;
 	OnListChannelsFromGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnListChannelsFromGroupResponse);
 
 	// List channels from the channel group using the channel group entity
-	ChannelGroupEntity->ListChannelsFromGroup(OnListChannelsFromGroupResponse);
+	ChannelGroupEntity->ListChannelsFromGroupAsync(OnListChannelsFromGroupResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -243,20 +223,18 @@ void ASample_ChannelGroupEntity::OnListChannelsFromGroupResponse(FPubnubOperatio
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::ListChannelsFromGroupWithLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind lambda to response delegate
-	FOnListChannelsFromGroupResponseNative OnListChannelsFromGroupResponse;
+	FOnPubnubListChannelsFromGroupResponseNative OnListChannelsFromGroupResponse;
 	OnListChannelsFromGroupResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FString>& Channels)
 	{
 		if(Result.Error)
@@ -274,54 +252,50 @@ void ASample_ChannelGroupEntity::ListChannelsFromGroupWithLambdaSample()
 	});
 	
 	// List channels from the channel group using the channel group entity
-	ChannelGroupEntity->ListChannelsFromGroup(OnListChannelsFromGroupResponse);
+	ChannelGroupEntity->ListChannelsFromGroupAsync(OnListChannelsFromGroupResponse);
 }
 
 // snippet.remove_channel_from_group_entity
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::RemoveChannelFromGroupSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Remove channel from the channel group using the channel group entity
 	FString Channel = TEXT("global_chat");
-	ChannelGroupEntity->RemoveChannelFromGroup(Channel);
+	ChannelGroupEntity->RemoveChannelFromGroupAsync(Channel);
 }
 
 // snippet.remove_channel_from_group_with_result_entity
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::RemoveChannelFromGroupWithResultSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
-	FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse;
+	FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse;
 	OnRemoveChannelFromGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnRemoveChannelFromGroupResponse);
 
 	// Remove channel from the channel group using the channel group entity
 	FString Channel = TEXT("trade_chat");
-	ChannelGroupEntity->RemoveChannelFromGroup(Channel, OnRemoveChannelFromGroupResponse);
+	ChannelGroupEntity->RemoveChannelFromGroupAsync(Channel, OnRemoveChannelFromGroupResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -341,20 +315,18 @@ void ASample_ChannelGroupEntity::OnRemoveChannelFromGroupResponse(FPubnubOperati
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::RemoveChannelFromGroupWithResultLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind lambda to response delegate
-	FOnRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse;
+	FOnPubnubRemoveChannelFromGroupResponseNative OnRemoveChannelFromGroupResponse;
 	OnRemoveChannelFromGroupResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -369,52 +341,48 @@ void ASample_ChannelGroupEntity::RemoveChannelFromGroupWithResultLambdaSample()
 	
 	// Remove channel from the channel group using the channel group entity
 	FString Channel = TEXT("guild_chat");
-	ChannelGroupEntity->RemoveChannelFromGroup(Channel, OnRemoveChannelFromGroupResponse);
+	ChannelGroupEntity->RemoveChannelFromGroupAsync(Channel, OnRemoveChannelFromGroupResponse);
 }
 
 // snippet.remove_channel_group_entity
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::RemoveChannelGroupSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Remove the entire channel group using the channel group entity
-	ChannelGroupEntity->RemoveChannelGroup();
+	ChannelGroupEntity->RemoveChannelGroupAsync();
 }
 
 // snippet.remove_channel_group_with_result_entity
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::RemoveChannelGroupWithResultSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
-	FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse;
+	FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse;
 	OnRemoveChannelGroupResponse.BindDynamic(this, &ASample_ChannelGroupEntity::OnRemoveChannelGroupResponse);
 
 	// Remove the entire channel group using the channel group entity
-	ChannelGroupEntity->RemoveChannelGroup(OnRemoveChannelGroupResponse);
+	ChannelGroupEntity->RemoveChannelGroupAsync(OnRemoveChannelGroupResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
@@ -434,20 +402,18 @@ void ASample_ChannelGroupEntity::OnRemoveChannelGroupResponse(FPubnubOperationRe
 // ACTION REQUIRED: Replace ASample_ChannelGroupEntity with name of your Actor class
 void ASample_ChannelGroupEntity::RemoveChannelGroupWithResultLambdaSample()
 {
-	// Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	// Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a channel group entity for the group you want to work with
 	FString ChannelGroupName = TEXT("all-chats");
-	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubSubsystem->CreateChannelGroupEntity(ChannelGroupName);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = PubnubClient->CreateChannelGroupEntity(ChannelGroupName);
 
 	// Bind lambda to response delegate
-	FOnRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse;
+	FOnPubnubRemoveChannelGroupResponseNative OnRemoveChannelGroupResponse;
 	OnRemoveChannelGroupResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -461,7 +427,19 @@ void ASample_ChannelGroupEntity::RemoveChannelGroupWithResultLambdaSample()
 	});
 	
 	// Remove the entire channel group using the channel group entity
-	ChannelGroupEntity->RemoveChannelGroup(OnRemoveChannelGroupResponse);
+	ChannelGroupEntity->RemoveChannelGroupAsync(OnRemoveChannelGroupResponse);
 }
 
 // snippet.end
+
+UPubnubClient* ASample_ChannelGroupEntity::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

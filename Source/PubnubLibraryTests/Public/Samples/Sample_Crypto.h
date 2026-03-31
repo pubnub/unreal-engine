@@ -1,9 +1,9 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -28,6 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.set_crypto_module
+	// blueprint.kvmh9-q4
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void SetCryptoModuleSample();
 
@@ -36,6 +37,7 @@ public:
 	void SetCryptoModuleWithLegacySample();
 	
 	// snippet.get_crypto_module
+	// blueprint.wpnnrw6k
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void GetCryptoModuleSample();
 
@@ -56,6 +58,9 @@ public:
 	void ProviderDecryptUsingAlreadySetModuleSample();
 	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

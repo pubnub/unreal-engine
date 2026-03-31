@@ -1,9 +1,9 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 #include "Entities/PubnubUserMetadataEntity.h"
 #include "Entities/PubnubSubscription.h"
 
@@ -30,6 +30,7 @@ public:
 	/* USER METADATA ENTITY SAMPLE FUNCTIONS */
 	
     // snippet.create_user_metadata_entity
+    // blueprint.4kgvihsx
     UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|UserMetadataEntity")
     void CreateUserMetadataEntitySample();
 
@@ -90,4 +91,7 @@ public:
 
 	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };

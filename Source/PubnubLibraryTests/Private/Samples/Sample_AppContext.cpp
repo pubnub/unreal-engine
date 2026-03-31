@@ -1,29 +1,21 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 
 #include "Samples/Sample_AppContext.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 //Internal function, don't copy it with the samples
@@ -79,13 +71,11 @@ ASample_AppContext::ASample_AppContext()
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::SetUserMetadataSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create user metadata object
 	FPubnubUserData UserMetadata;
@@ -94,27 +84,28 @@ void ASample_AppContext::SetUserMetadataSample()
 	UserMetadata.Custom = "{\"level\": 5, \"rank\": \"gold\"}";
 	
 	// Set user metadata
-	PubnubSubsystem->SetUserMetadata(UserID, UserMetadata);
+	FString UserID = TEXT("Player_001");
+	FPubnubUserInputData UserInputData = FPubnubUserInputData::FromPubnubUserData(UserMetadata);
+	PubnubClient->SetUserMetadataAsync(UserID, UserInputData);
 }
 
 // snippet.set_user_metadata_with_result
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::SetUserMetadataWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 	
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
+	FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse;
 	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetUserMetadataResponse);
 
 	// Create user metadata object
+	FString UserID = TEXT("Player_002");
 	FPubnubUserData UserMetadata;
 	UserMetadata.UserName = "Player Two";
 	UserMetadata.Status = "active";
@@ -122,7 +113,8 @@ void ASample_AppContext::SetUserMetadataWithResultSample()
 
 	// Set user metadata with all available data included in response
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	PubnubSubsystem->SetUserMetadata(UserID, UserMetadata, OnSetUserMetadataResponse, Include);
+	FPubnubUserInputData UserInputData = FPubnubUserInputData::FromPubnubUserData(UserMetadata);
+	PubnubClient->SetUserMetadataAsync(UserID, UserInputData, OnSetUserMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -142,16 +134,14 @@ void ASample_AppContext::OnSetUserMetadataResponse(FPubnubOperationResult Result
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::SetUserMetadataWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnSetUserMetadataResponseNative OnSetUserMetadataResponse;
+	FOnPubnubSetUserMetadataResponseNative OnSetUserMetadataResponse;
 	OnSetUserMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
 	{
 		if(Result.Error)
@@ -165,6 +155,7 @@ void ASample_AppContext::SetUserMetadataWithLambdaSample()
 	});
 	
 	// Create user metadata object
+	FString UserID = TEXT("Player_003");
 	FPubnubUserData UserMetadata;
 	UserMetadata.UserName = "Player Three";
 	UserMetadata.Status = "inactive";
@@ -172,103 +163,32 @@ void ASample_AppContext::SetUserMetadataWithLambdaSample()
 
 	// Set user metadata with all available data included in response
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	PubnubSubsystem->SetUserMetadata(UserID, UserMetadata, OnSetUserMetadataResponse, Include);
+	FPubnubUserInputData UserInputData = FPubnubUserInputData::FromPubnubUserData(UserMetadata);
+	PubnubClient->SetUserMetadataAsync(UserID, UserInputData, OnSetUserMetadataResponse, Include);
 }
 
 // snippet.set_user_metadata_raw
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::SetUserMetadataRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_004");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate	
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
+	FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse;
 	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetUserMetadataRawResponse);
 
 	// Create user metadata object as a raw JSON string
+	FString UserID = TEXT("Player_004");
 	FString UserMetadataJson = R"({"name": "Player Four", "custom": {"class": "mage", "mana": 150}})";
 	
 	// Set user metadata with a raw include string
 	FString Include = TEXT("custom");
-	PubnubSubsystem->SetUserMetadataRaw(UserID, UserMetadataJson, OnSetUserMetadataResponse, Include);
-}
-
-// snippet.update_user_metadata_iteratively
-// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::UpdateUserMetadataIterativelySample()
-{
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_005");
-	PubnubSubsystem->SetUserID(UserID);
-	
-	// Create initial user metadata object
-	FPubnubUserData UserMetadata;
-	UserMetadata.UserName = "Player Two";
-	UserMetadata.Status = "active";
-	UserMetadata.Custom = "{\"inventory_slots\": 20, \"guild_id\": \"G2\"}";
-
-	// Bind response delegate
-	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
-	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnInitialSetUserMetadataResponse);
-
-	// Set initial user metadata
-	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	PubnubSubsystem->SetUserMetadata(UserID, UserMetadata, OnSetUserMetadataResponse);
-}
-
-// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnInitialSetUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
-{
-	if(Result.Error)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to set initial user metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
-		return;
-	}
-	
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	FString UserID = TEXT("Player_005");
-	
-	// Create updated version of user metadata object - change status to "inactive"
-	FPubnubUserData UpdatedUserMetadata = UserData;
-	UpdatedUserMetadata.Status = "inactive";
-
-	// Bind response delegate
-	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnSetUserMetadataResponse OnSetUserMetadataResponse;
-	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnUpdateUserMetadataResponse);
-
-	// Update user metadata
-	FPubnubGetMetadataInclude Include;
-	Include.IncludeStatus = true;
-	PubnubSubsystem->SetUserMetadata(UserID, UpdatedUserMetadata, OnSetUserMetadataResponse, Include);
-}
-
-// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnUpdateUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
-{
-	if(Result.Error)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to update user metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Successfully updated user metadata. New status is: %s"), *UserData.Status);
-	}
+	PubnubClient->SetUserMetadataRawAsync(UserID, UserMetadataJson, OnSetUserMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -284,29 +204,98 @@ void ASample_AppContext::OnSetUserMetadataRawResponse(FPubnubOperationResult Res
 	}
 }
 
+// snippet.update_user_metadata_iteratively
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::UpdateUserMetadataIterativelySample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
+	
+	// Create initial user metadata object
+	FString UserID = TEXT("Player_005");
+	FPubnubUserInputData UserInputData;
+	UserInputData.UserName = "Player Two";
+	UserInputData.Status = "active";
+	UserInputData.Custom = "{\"inventory_slots\": 20, \"guild_id\": \"G2\"}";
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse;
+	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnInitialSetUserMetadataResponse);
+
+	// Set initial user metadata
+	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
+	PubnubClient->SetUserMetadataAsync(UserID, UserInputData, OnSetUserMetadataResponse, Include);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnInitialSetUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set initial user metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		return;
+	}
+	
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+
+	FString UserID = TEXT("Player_005");
+	
+	// Create updated version of user metadata object - change status to "inactive"
+	FPubnubUserData UpdatedUserMetadata = UserData;
+	UpdatedUserMetadata.Status = "inactive";
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse;
+	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnUpdateUserMetadataResponse);
+
+	// Update user metadata
+	FPubnubGetMetadataInclude Include;
+	Include.IncludeStatus = true;
+	FPubnubUserInputData UserInputData = FPubnubUserInputData::FromPubnubUserData(UpdatedUserMetadata);
+	PubnubClient->SetUserMetadataAsync(UserID, UserInputData, OnSetUserMetadataResponse, Include);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnUpdateUserMetadataResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to update user metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully updated user metadata. New status is: %s"), *UserData.Status);
+	}
+}
+
 // snippet.get_all_user_metadata
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllUserMetadataSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse;
+	FOnPubnubGetAllUserMetadataResponse OnGetAllUserMetadataResponse;
 	OnGetAllUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllUserMetadataResponse_Simple);
 
 	// Get all user metadata with a limit of 5
-	PubnubSubsystem->GetAllUserMetadata(OnGetAllUserMetadataResponse, FPubnubGetAllInclude(), 5);
+	PubnubClient->GetAllUserMetadataAsync(OnGetAllUserMetadataResponse, FPubnubGetAllInclude(), 5);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnGetAllUserMetadataResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+void ASample_AppContext::OnGetAllUserMetadataResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -320,8 +309,8 @@ void ASample_AppContext::OnGetAllUserMetadataResponse_Simple(FPubnubOperationRes
 		{
 			UE_LOG(LogTemp, Log, TEXT("- UserID: %s, Name: %s"), *User.UserID, *User.UserName);
 		}
-		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+		if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+		if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 	}
 }
 
@@ -329,17 +318,15 @@ void ASample_AppContext::OnGetAllUserMetadataResponse_Simple(FPubnubOperationRes
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllUserMetadataWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse;
+	FOnPubnubGetAllUserMetadataResponse OnGetAllUserMetadataResponse;
 	OnGetAllUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllUserMetadataResponse_WithSettings);
 
 	// Create settings with includes and a filter
@@ -350,11 +337,11 @@ void ASample_AppContext::GetAllUserMetadataWithSettingsSample()
 	int Limit = 10;
 	
 	// Get all user metadata with custom settings
-	PubnubSubsystem->GetAllUserMetadata(OnGetAllUserMetadataResponse, Include, Limit, Filter);
+	PubnubClient->GetAllUserMetadataAsync(OnGetAllUserMetadataResponse, Include, Limit, Filter);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnGetAllUserMetadataResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+void ASample_AppContext::OnGetAllUserMetadataResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -368,8 +355,8 @@ void ASample_AppContext::OnGetAllUserMetadataResponse_WithSettings(FPubnubOperat
 		{
 			UE_LOG(LogTemp, Log, TEXT("- UserID: %s, Name: %s, Custom: %s, Status: %s"), *User.UserID, *User.UserName, *User.Custom, *User.Status);
 		}
-		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+		if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+		if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 	}
 }
 
@@ -377,17 +364,15 @@ void ASample_AppContext::OnGetAllUserMetadataResponse_WithSettings(FPubnubOperat
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllUserMetadataWithAllIncludesSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse;
+	FOnPubnubGetAllUserMetadataResponse OnGetAllUserMetadataResponse;
 	OnGetAllUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllUserMetadataResponse_WithAllIncludes);
 
 	// Get all user metadata with all available data included
@@ -396,12 +381,14 @@ void ASample_AppContext::GetAllUserMetadataWithAllIncludesSample()
 	FPubnubGetAllSort Sort;
 	Sort.GetAllSort.Add(FPubnubGetAllSingleSort{EPubnubGetAllSortType::PGAST_Name, true});
 	FString NextPage = "Mg"; // Page should be taken from previous response to get next or previous part of the objects
+	FPubnubPage Page;
+	Page.Next = NextPage;
 
-	PubnubSubsystem->GetAllUserMetadata(OnGetAllUserMetadataResponse, Include, 100, Filter, Sort, NextPage);
+	PubnubClient->GetAllUserMetadataAsync(OnGetAllUserMetadataResponse, Include, 100, Filter, Sort, Page);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnGetAllUserMetadataResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+void ASample_AppContext::OnGetAllUserMetadataResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -415,8 +402,8 @@ void ASample_AppContext::OnGetAllUserMetadataResponse_WithAllIncludes(FPubnubOpe
 		{
 			UE_LOG(LogTemp, Log, TEXT("- UserID: %s, Name: %s, Custom: %s, Status: %s"), *User.UserID, *User.UserName, *User.Custom, *User.Status);
 		}
-		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+		if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+		if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 	}
 }
 
@@ -424,18 +411,16 @@ void ASample_AppContext::OnGetAllUserMetadataResponse_WithAllIncludes(FPubnubOpe
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllUserMetadataWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse;
-	OnGetAllUserMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+	FOnPubnubGetAllUserMetadataResponseNative OnGetAllUserMetadataResponse;
+	OnGetAllUserMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount)
 	{
 		if(Result.Error)
 		{
@@ -449,30 +434,28 @@ void ASample_AppContext::GetAllUserMetadataWithLambdaSample()
 			{
 				UE_LOG(LogTemp, Log, TEXT("- UserID: %s, Name: %s"), *User.UserID, *User.UserName);
 			}
-			if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-			if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+			if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+			if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 		}
 	});
 	
 	// Get all user metadata with a limit of 5
-	PubnubSubsystem->GetAllUserMetadata(OnGetAllUserMetadataResponse, FPubnubGetAllInclude(), 5);
+	PubnubClient->GetAllUserMetadataAsync(OnGetAllUserMetadataResponse, FPubnubGetAllInclude(), 5);
 }
 
 // snippet.get_all_user_metadata_raw
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllUserMetadataRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllUserMetadataResponse OnGetAllUserMetadataResponse;
+	FOnPubnubGetAllUserMetadataResponse OnGetAllUserMetadataResponse;
 	OnGetAllUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllUserMetadataRawResponse);
 
 	// Create settings with includes and a filter
@@ -482,11 +465,11 @@ void ASample_AppContext::GetAllUserMetadataRawSample()
 	int Limit = 10;
 	
 	// Get all user metadata with custom settings
-	PubnubSubsystem->GetAllUserMetadataRaw(OnGetAllUserMetadataResponse, Include, Limit, Filter, Sort);
+	PubnubClient->GetAllUserMetadataRawAsync(OnGetAllUserMetadataResponse, Include, Limit, Filter, Sort);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnGetAllUserMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FString PageNext, FString PagePrev)
+void ASample_AppContext::OnGetAllUserMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubUserData>& UsersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -500,8 +483,8 @@ void ASample_AppContext::OnGetAllUserMetadataRawResponse(FPubnubOperationResult 
 		{
 			UE_LOG(LogTemp, Log, TEXT("- UserID: %s, Name: %s, Custom: %s, Status: %s"), *User.UserID, *User.UserName, *User.Custom, *User.Status);
 		}
-		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+		if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+		if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 	}
 }
 
@@ -509,21 +492,20 @@ void ASample_AppContext::OnGetAllUserMetadataRawResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetUserMetadataSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetUserMetadataResponse OnGetUserMetadataResponse;
+	FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse;
 	OnGetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetUserMetadataResponse_Simple);
 
 	// Get user metadata
-	PubnubSubsystem->GetUserMetadata(UserID, OnGetUserMetadataResponse);
+	FString UserID = TEXT("Player_001");
+	PubnubClient->GetUserMetadataAsync(UserID, OnGetUserMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -543,22 +525,21 @@ void ASample_AppContext::OnGetUserMetadataResponse_Simple(FPubnubOperationResult
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetUserMetadataWithAllIncludesSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetUserMetadataResponse OnGetUserMetadataResponse;
+	FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse;
 	OnGetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetUserMetadataResponse_WithAllIncludes);
 
 	// Get user metadata with all available data included
+	FString UserID = TEXT("Player_002");
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	PubnubSubsystem->GetUserMetadata(UserID, OnGetUserMetadataResponse, Include);
+	PubnubClient->GetUserMetadataAsync(UserID, OnGetUserMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -578,17 +559,15 @@ void ASample_AppContext::OnGetUserMetadataResponse_WithAllIncludes(FPubnubOperat
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetUserMetadataWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetUserMetadataResponseNative OnGetUserMetadataResponse;
+	FOnPubnubGetUserMetadataResponseNative OnGetUserMetadataResponse;
 	OnGetUserMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubUserData& UserData)
 	{
 		if(Result.Error)
@@ -602,29 +581,29 @@ void ASample_AppContext::GetUserMetadataWithLambdaSample()
 	});
 	
 	// Get user metadata
-	PubnubSubsystem->GetUserMetadata(UserID, OnGetUserMetadataResponse);
+	FString UserID = TEXT("Player_003");
+	PubnubClient->GetUserMetadataAsync(UserID, OnGetUserMetadataResponse);
 }
 
 // snippet.get_user_metadata_raw
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetUserMetadataRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_004");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetUserMetadataResponse OnGetUserMetadataResponse;
+	FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse;
 	OnGetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetUserMetadataRawResponse);
 
 	// Get user metadata with raw include string
+	FString UserID = TEXT("Player_004");
 	FString Include = TEXT("custom,status");
-	PubnubSubsystem->GetUserMetadataRaw(UserID, OnGetUserMetadataResponse, Include);
+	PubnubClient->GetUserMetadataRawAsync(UserID, OnGetUserMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -644,39 +623,35 @@ void ASample_AppContext::OnGetUserMetadataRawResponse(FPubnubOperationResult Res
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::RemoveUserMetadataSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 	
 	// Remove user metadata
 	FString UserToRemove = TEXT("Player_001");
-	PubnubSubsystem->RemoveUserMetadata(UserToRemove);
+	PubnubClient->RemoveUserMetadataAsync(UserToRemove);
 }
 
 // snippet.remove_user_metadata_with_result
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::RemoveUserMetadataWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse;
+	FOnPubnubRemoveUserMetadataResponse OnRemoveUserMetadataResponse;
 	OnRemoveUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnRemoveUserMetadataResponse);
 
 	// Remove user metadata
 	FString UserToRemove = TEXT("Player_002");
-	PubnubSubsystem->RemoveUserMetadata(UserToRemove, OnRemoveUserMetadataResponse);
+	PubnubClient->RemoveUserMetadataAsync(UserToRemove, OnRemoveUserMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -696,16 +671,14 @@ void ASample_AppContext::OnRemoveUserMetadataResponse(FPubnubOperationResult Res
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::RemoveUserMetadataWithResultLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse;
+	FOnPubnubRemoveUserMetadataResponseNative OnRemoveUserMetadataResponse;
 	OnRemoveUserMetadataResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -720,20 +693,18 @@ void ASample_AppContext::RemoveUserMetadataWithResultLambdaSample()
 	
 	// Remove user metadata
 	FString UserToRemove = TEXT("Player_003");
-	PubnubSubsystem->RemoveUserMetadata(UserToRemove, OnRemoveUserMetadataResponse);
+	PubnubClient->RemoveUserMetadataAsync(UserToRemove, OnRemoveUserMetadataResponse);
 }
 
 // snippet.set_channel_metadata
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::SetChannelMetadataSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create channel metadata object
 	FPubnubChannelData ChannelMetadata;
@@ -743,36 +714,35 @@ void ASample_AppContext::SetChannelMetadataSample()
 	
 	// Set channel metadata
 	FString Channel = "general-chat-channel";
-	PubnubSubsystem->SetChannelMetadata(Channel, ChannelMetadata);
+	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData::FromPubnubChannelData(ChannelMetadata);
+	PubnubClient->SetChannelMetadataAsync(Channel, ChannelInputData);
 }
 
 // snippet.set_channel_metadata_with_result
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::SetChannelMetadataWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 	
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetChannelMetadataResponse);
 
 	// Create channel metadata object
-	FPubnubChannelData ChannelMetadata;
-	ChannelMetadata.ChannelName = "Trade Chat";
-	ChannelMetadata.Status = "active";
-	ChannelMetadata.Custom = "{\"rules\": \"wts_wtt_only\"}";
+	FPubnubChannelInputData ChannelInputData;
+	ChannelInputData.ChannelName = "Trade Chat";
+	ChannelInputData.Status = "active";
+	ChannelInputData.Custom = "{\"rules\": \"wts_wtt_only\"}";
 
 	// Set channel metadata with all available data included in response
 	FString Channel = "trade-chat-channel";
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	PubnubSubsystem->SetChannelMetadata(Channel, ChannelMetadata, OnSetChannelMetadataResponse, Include);
+	PubnubClient->SetChannelMetadataAsync(Channel, ChannelInputData, OnSetChannelMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -792,16 +762,14 @@ void ASample_AppContext::OnSetChannelMetadataResponse(FPubnubOperationResult Res
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::SetChannelMetadataWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnSetChannelMetadataResponseNative OnSetChannelMetadataResponse;
+	FOnPubnubSetChannelMetadataResponseNative OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
 	{
 		if(Result.Error)
@@ -823,24 +791,23 @@ void ASample_AppContext::SetChannelMetadataWithLambdaSample()
 	// Set channel metadata with all available data included in response
 	FString Channel = "guild-hall-channel";
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	PubnubSubsystem->SetChannelMetadata(Channel, ChannelMetadata, OnSetChannelMetadataResponse, Include);
+	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData({ChannelMetadata.ChannelName, ChannelMetadata.Description, ChannelMetadata.Custom, ChannelMetadata.Status, ChannelMetadata.Type});
+	PubnubClient->SetChannelMetadataAsync(Channel, ChannelInputData, OnSetChannelMetadataResponse, Include);
 }
 
 // snippet.set_channel_metadata_raw
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::SetChannelMetadataRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetChannelMetadataRawResponse);
 
 	// Create channel metadata object as a raw JSON string
@@ -849,20 +816,18 @@ void ASample_AppContext::SetChannelMetadataRawSample()
 	// Set channel metadata with a raw include string
 	FString Channel = "secret-lair-channel";
 	FString Include = TEXT("custom");
-	PubnubSubsystem->SetChannelMetadataRaw(Channel, ChannelMetadataJson, OnSetChannelMetadataResponse, Include);
+	PubnubClient->SetChannelMetadataRawAsync(Channel, ChannelMetadataJson, OnSetChannelMetadataResponse, Include);
 }
 
 // snippet.update_channel_metadata_iteratively
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::UpdateChannelMetadataIterativelySample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 	
 	// Create initial channel metadata object
 	FString ChannelID = TEXT("iterative-channel-update-test");
@@ -873,11 +838,12 @@ void ASample_AppContext::UpdateChannelMetadataIterativelySample()
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnInitialSetChannelMetadataResponse);
 
 	// Set initial channel metadata 
-	PubnubSubsystem->SetChannelMetadata(ChannelID, ChannelMetadata, OnSetChannelMetadataResponse);
+	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData::FromPubnubChannelData(ChannelMetadata);
+	PubnubClient->SetChannelMetadataAsync(ChannelID, ChannelInputData, OnSetChannelMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -891,9 +857,9 @@ void ASample_AppContext::OnInitialSetChannelMetadataResponse(FPubnubOperationRes
 	
 	UE_LOG(LogTemp, Log, TEXT("Successfully set initial channel metadata. Description: %s"), *ChannelData.Description);
 
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
 
 	// Use the ChannelID from the response
 	FString ChannelID = ChannelData.ChannelID;
@@ -904,11 +870,12 @@ void ASample_AppContext::OnInitialSetChannelMetadataResponse(FPubnubOperationRes
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse;
 	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnUpdateChannelMetadataResponse);
 
 	// Update channel metadata 
-	PubnubSubsystem->SetChannelMetadata(ChannelID, UpdatedChannelMetadata, OnSetChannelMetadataResponse);
+	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData::FromPubnubChannelData(UpdatedChannelMetadata);
+	PubnubClient->SetChannelMetadataAsync(ChannelID, ChannelInputData, OnSetChannelMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -942,25 +909,23 @@ void ASample_AppContext::OnSetChannelMetadataRawResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllChannelMetadataSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
+	FOnPubnubGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
 	OnGetAllChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllChannelMetadataResponse_Simple);
 
 	// Get all channel metadata with a limit of 5
-	PubnubSubsystem->GetAllChannelMetadata(OnGetAllChannelMetadataResponse, FPubnubGetAllInclude(), 5);
+	PubnubClient->GetAllChannelMetadataAsync(OnGetAllChannelMetadataResponse, FPubnubGetAllInclude(), 5);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnGetAllChannelMetadataResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+void ASample_AppContext::OnGetAllChannelMetadataResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -974,8 +939,8 @@ void ASample_AppContext::OnGetAllChannelMetadataResponse_Simple(FPubnubOperation
 		{
 			UE_LOG(LogTemp, Log, TEXT("- ChannelID: %s, Name: %s"), *Channel.ChannelID, *Channel.ChannelName);
 		}
-		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+		if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+		if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 	}
 }
 
@@ -983,17 +948,15 @@ void ASample_AppContext::OnGetAllChannelMetadataResponse_Simple(FPubnubOperation
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllChannelMetadataWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
+	FOnPubnubGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
 	OnGetAllChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllChannelMetadataResponse_WithSettings);
 
 	// Create settings with includes and a filter
@@ -1004,11 +967,11 @@ void ASample_AppContext::GetAllChannelMetadataWithSettingsSample()
 	int Limit = 10;
 	
 	// Get all channel metadata with custom settings
-	PubnubSubsystem->GetAllChannelMetadata(OnGetAllChannelMetadataResponse, Include, Limit, Filter);
+	PubnubClient->GetAllChannelMetadataAsync(OnGetAllChannelMetadataResponse, Include, Limit, Filter);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnGetAllChannelMetadataResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+void ASample_AppContext::OnGetAllChannelMetadataResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -1022,8 +985,8 @@ void ASample_AppContext::OnGetAllChannelMetadataResponse_WithSettings(FPubnubOpe
 		{
 			UE_LOG(LogTemp, Log, TEXT("- ChannelID: %s, Name: %s, Custom: %s, Status: %s"), *Channel.ChannelID, *Channel.ChannelName, *Channel.Custom, *Channel.Status);
 		}
-		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+		if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+		if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 	}
 }
 
@@ -1031,17 +994,15 @@ void ASample_AppContext::OnGetAllChannelMetadataResponse_WithSettings(FPubnubOpe
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllChannelMetadataWithAllIncludesSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
+	FOnPubnubGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
 	OnGetAllChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllChannelMetadataResponse_WithAllIncludes);
 
 	// Get all channel metadata with all available data included
@@ -1050,12 +1011,14 @@ void ASample_AppContext::GetAllChannelMetadataWithAllIncludesSample()
 	FPubnubGetAllSort Sort;
 	Sort.GetAllSort.Add(FPubnubGetAllSingleSort{EPubnubGetAllSortType::PGAST_Name, true});
 	FString NextPage = "Mg"; // Page should be taken from previous response to get next or previous part of the objects
+	FPubnubPage Page;
+	Page.Next = NextPage;
 
-	PubnubSubsystem->GetAllChannelMetadata(OnGetAllChannelMetadataResponse, Include, 100, Filter, Sort, NextPage);
+	PubnubClient->GetAllChannelMetadataAsync(OnGetAllChannelMetadataResponse, Include, 100, Filter, Sort, Page);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnGetAllChannelMetadataResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+void ASample_AppContext::OnGetAllChannelMetadataResponse_WithAllIncludes(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -1069,8 +1032,8 @@ void ASample_AppContext::OnGetAllChannelMetadataResponse_WithAllIncludes(FPubnub
 		{
 			UE_LOG(LogTemp, Log, TEXT("- ChannelID: %s, Name: %s, Custom: %s, Status: %s"), *Channel.ChannelID, *Channel.ChannelName, *Channel.Custom, *Channel.Status);
 		}
-		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+		if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+		if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 	}
 }
 
@@ -1078,17 +1041,15 @@ void ASample_AppContext::OnGetAllChannelMetadataResponse_WithAllIncludes(FPubnub
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllChannelMetadataWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse;
-	OnGetAllChannelMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+	FOnPubnubGetAllChannelMetadataResponseNative OnGetAllChannelMetadataResponse;
+	OnGetAllChannelMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount)
 	{
 		if(Result.Error)
 		{
@@ -1101,30 +1062,28 @@ void ASample_AppContext::GetAllChannelMetadataWithLambdaSample()
 			{
 				UE_LOG(LogTemp, Log, TEXT("- ChannelID: %s, Name: %s"), *Channel.ChannelID, *Channel.ChannelName);
 			}
-			if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-			if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+			if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+			if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 		}
 	});
 	
 	// Get all channel metadata with a limit of 5
-	PubnubSubsystem->GetAllChannelMetadata(OnGetAllChannelMetadataResponse, FPubnubGetAllInclude(), 5);
+	PubnubClient->GetAllChannelMetadataAsync(OnGetAllChannelMetadataResponse, FPubnubGetAllInclude(), 5);
 }
 
 // snippet.get_all_channel_metadata_raw
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetAllChannelMetadataRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
+	FOnPubnubGetAllChannelMetadataResponse OnGetAllChannelMetadataResponse;
 	OnGetAllChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetAllChannelMetadataRawResponse);
 
 	// Create settings with includes and a filter
@@ -1134,11 +1093,11 @@ void ASample_AppContext::GetAllChannelMetadataRawSample()
 	int Limit = 10;
 	
 	// Get all channel metadata with custom settings
-	PubnubSubsystem->GetAllChannelMetadataRaw(OnGetAllChannelMetadataResponse, Include, Limit, Filter, Sort);
+	PubnubClient->GetAllChannelMetadataRawAsync(OnGetAllChannelMetadataResponse, Include, Limit, Filter, Sort);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-void ASample_AppContext::OnGetAllChannelMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FString PageNext, FString PagePrev)
+void ASample_AppContext::OnGetAllChannelMetadataRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelData>& ChannelsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -1152,8 +1111,8 @@ void ASample_AppContext::OnGetAllChannelMetadataRawResponse(FPubnubOperationResu
 		{
 			UE_LOG(LogTemp, Log, TEXT("- ChannelID: %s, Name: %s, Custom: %s, Status: %s"), *Channel.ChannelID, *Channel.ChannelName, *Channel.Custom, *Channel.Status);
 		}
-		if (!PageNext.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *PageNext);
-		if (!PagePrev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *PagePrev);
+		if (!Page.Next.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Next Page: %s"), *Page.Next);
+		if (!Page.Prev.IsEmpty()) UE_LOG(LogTemp, Log, TEXT("Previous Page: %s"), *Page.Prev);
 	}
 }
 
@@ -1161,22 +1120,20 @@ void ASample_AppContext::OnGetAllChannelMetadataRawResponse(FPubnubOperationResu
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetChannelMetadataSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetChannelMetadataResponse OnGetChannelMetadataResponse;
+	FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse;
 	OnGetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetChannelMetadataResponse_Simple);
 
 	// Get channel metadata
 	FString Channel = TEXT("general-chat-channel");
-	PubnubSubsystem->GetChannelMetadata(Channel, OnGetChannelMetadataResponse);
+	PubnubClient->GetChannelMetadataAsync(Channel, OnGetChannelMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -1196,23 +1153,21 @@ void ASample_AppContext::OnGetChannelMetadataResponse_Simple(FPubnubOperationRes
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetChannelMetadataWithAllIncludesSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetChannelMetadataResponse OnGetChannelMetadataResponse;
+	FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse;
 	OnGetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetChannelMetadataResponse_WithAllIncludes);
 
 	// Get channel metadata with all available data included
 	FString Channel = TEXT("trade-chat-channel");
 	FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
-	PubnubSubsystem->GetChannelMetadata(Channel, OnGetChannelMetadataResponse, Include);
+	PubnubClient->GetChannelMetadataAsync(Channel, OnGetChannelMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -1232,16 +1187,14 @@ void ASample_AppContext::OnGetChannelMetadataResponse_WithAllIncludes(FPubnubOpe
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetChannelMetadataWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnGetChannelMetadataResponseNative OnGetChannelMetadataResponse;
+	FOnPubnubGetChannelMetadataResponseNative OnGetChannelMetadataResponse;
 	OnGetChannelMetadataResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubChannelData& ChannelData)
 	{
 		if(Result.Error)
@@ -1256,30 +1209,28 @@ void ASample_AppContext::GetChannelMetadataWithLambdaSample()
 	
 	// Get channel metadata
 	FString Channel = TEXT("guild-hall-channel");
-	PubnubSubsystem->GetChannelMetadata(Channel, OnGetChannelMetadataResponse);
+	PubnubClient->GetChannelMetadataAsync(Channel, OnGetChannelMetadataResponse);
 }
 
 // snippet.get_channel_metadata_raw
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::GetChannelMetadataRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnGetChannelMetadataResponse OnGetChannelMetadataResponse;
+	FOnPubnubGetChannelMetadataResponse OnGetChannelMetadataResponse;
 	OnGetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnGetChannelMetadataRawResponse);
 
 	// Get channel metadata with raw include string
 	FString Channel = TEXT("trade-chat-channel");
 	FString Include = TEXT("custom,status");
-	PubnubSubsystem->GetChannelMetadataRaw(Channel, OnGetChannelMetadataResponse, Include);
+	PubnubClient->GetChannelMetadataRawAsync(Channel, OnGetChannelMetadataResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -1299,39 +1250,35 @@ void ASample_AppContext::OnGetChannelMetadataRawResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::RemoveChannelMetadataSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 	
 	// Remove channel metadata
 	FString Channel = TEXT("general-chat-channel");
-	PubnubSubsystem->RemoveChannelMetadata(Channel);
+	PubnubClient->RemoveChannelMetadataAsync(Channel);
 }
 
 // snippet.remove_channel_metadata_with_result
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::RemoveChannelMetadataWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
-	FOnRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse;
+	FOnPubnubRemoveChannelMetadataResponse OnRemoveChannelMetadataResponse;
 	OnRemoveChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnRemoveChannelMetadataResponse);
 
 	// Remove channel metadata
 	FString Channel = TEXT("trade-chat-channel");
-	PubnubSubsystem->RemoveChannelMetadata(Channel, OnRemoveChannelMetadataResponse);
+	PubnubClient->RemoveChannelMetadataAsync(Channel, OnRemoveChannelMetadataResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
@@ -1351,16 +1298,14 @@ void ASample_AppContext::OnRemoveChannelMetadataResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
 void ASample_AppContext::RemoveChannelMetadataWithResultLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse;
+	FOnPubnubRemoveChannelMetadataResponseNative OnRemoveChannelMetadataResponse;
 	OnRemoveChannelMetadataResponse.BindLambda([](const FPubnubOperationResult& Result)
 	{
 		if(Result.Error)
@@ -1375,7 +1320,19 @@ void ASample_AppContext::RemoveChannelMetadataWithResultLambdaSample()
 	
 	// Remove channel metadata
 	FString Channel = TEXT("guild-hall-channel");
-	PubnubSubsystem->RemoveChannelMetadata(Channel, OnRemoveChannelMetadataResponse);
+	PubnubClient->RemoveChannelMetadataAsync(Channel, OnRemoveChannelMetadataResponse);
 }
 
 // snippet.end
+
+UPubnubClient* ASample_AppContext::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

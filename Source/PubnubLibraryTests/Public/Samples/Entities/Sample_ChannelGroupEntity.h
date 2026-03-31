@@ -1,9 +1,9 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 #include "Entities/PubnubChannelGroupEntity.h"
 #include "Entities/PubnubSubscription.h"
 
@@ -30,6 +30,7 @@ public:
 	/* CHANNEL GROUP ENTITY SAMPLE FUNCTIONS */
 	
     // snippet.create_channel_group_entity
+    // blueprint.5tpcgkrz
     UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|ChannelGroupEntity")
     void CreateChannelGroupEntitySample();
 
@@ -98,4 +99,7 @@ public:
 
 	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };

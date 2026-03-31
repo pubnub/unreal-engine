@@ -1,9 +1,9 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -28,6 +28,7 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.add_channel_to_group
+	// blueprint.3rwckkal
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Channel Groups")
 	void AddChannelToGroupSample();
 
@@ -43,6 +44,7 @@ public:
 	void AddChannelToGroupWithResultLambdaSample();
 
 	// snippet.list_channels_from_group
+	// blueprint.saoacm0a
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Channel Groups")
 	void ListChannelsFromGroupSample();
 	
@@ -54,6 +56,7 @@ public:
 	void ListChannelsFromGroupWithLambdaSample();
 
 	// snippet.remove_channel_from_group
+	// blueprint.stmbdo5-
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Channel Groups")
 	void RemoveChannelFromGroupSample();
 
@@ -69,6 +72,7 @@ public:
 	void RemoveChannelFromGroupWithResultLambdaSample();
 	
 	// snippet.remove_channel_group
+	// blueprint.ygpybt62
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Channel Groups")
 	void RemoveChannelGroupSample();
 
@@ -82,8 +86,11 @@ public:
 	// snippet.remove_channel_group_with_result_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Channel Groups")
 	void RemoveChannelGroupWithResultLambdaSample();
-
+	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

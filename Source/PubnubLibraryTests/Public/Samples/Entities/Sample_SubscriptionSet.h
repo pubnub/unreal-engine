@@ -1,9 +1,9 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 #include "Entities/PubnubChannelEntity.h"
 #include "Entities/PubnubChannelGroupEntity.h"
 #include "Entities/PubnubChannelMetadataEntity.h"
@@ -33,6 +33,7 @@ public:
 	/* SUBSCRIPTION SET SAMPLE FUNCTIONS */
 	
 	// snippet.create_subscription_set_from_names
+	// blueprint.9d9mt0u6
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|SubscriptionSet")
 	void CreateSubscriptionSetFromNamesSample();
 
@@ -40,6 +41,7 @@ public:
 	void OnMessage_SubscriptionSetFromNamesSample(FPubnubMessageData Message);
 
 	// snippet.create_subscription_set_from_entities
+	// blueprint.alzawuju
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|SubscriptionSet")
 	void CreateSubscriptionSetFromEntitiesSample();
 
@@ -56,4 +58,7 @@ public:
 
 	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };

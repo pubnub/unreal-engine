@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -30,6 +30,24 @@ enum class EPubnubErrorType : uint8
 {
 	PET_Error		UMETA(DisplayName="Error"),
 	PET_Warning		UMETA(DisplayName="Warning")
+};
+
+UENUM(BlueprintType)
+enum class EPubnubLogLevel : uint8
+{
+	PLL_Trace		UMETA(DisplayName="Trace"),
+	PLL_Debug		UMETA(DisplayName="Debug"),
+	PLL_Info		UMETA(DisplayName="Info"),
+	PLL_Warning		UMETA(DisplayName="Warning"),
+	PLL_Error		UMETA(DisplayName="Error"),
+	PLL_None		UMETA(DisplayName="None")
+};
+
+UENUM(BlueprintType)
+enum class EPubnubLogSource : uint8
+{
+	PLS_UE			UMETA(DisplayName="UE"),
+	PLS_CCore		UMETA(DisplayName="CCore")
 };
 
 UENUM(BlueprintType)

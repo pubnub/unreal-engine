@@ -1,12 +1,10 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Entities/PubnubBaseEntity.h"
 #include "PubnubChannelGroupEntity.generated.h"
-
-class UPubnubSubsystem;
 
 
 /**
@@ -27,6 +25,17 @@ public:
 	UPubnubChannelGroupEntity();
 
 	/**
+	 * Adds a channel to this channel group (blocking).
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to add to the channel group.
+	 * @return Result structure containing operation status.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	FPubnubOperationResult AddChannelToGroup(FString Channel);
+
+	/**
 	 * Adds a channel to this channel group.
 	 * 
 	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
@@ -35,7 +44,7 @@ public:
 	 * @param OnAddChannelToGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnAddChannelToGroupResponse"))
-	void AddChannelToGroup(FString Channel, FOnAddChannelToGroupResponse OnAddChannelToGroupResponse);
+	void AddChannelToGroupAsync(FString Channel, FOnPubnubAddChannelToGroupResponse OnAddChannelToGroupResponse);
 
 	/**
 	 * Adds a channel to this channel group.
@@ -46,7 +55,18 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void AddChannelToGroup(FString Channel, FOnAddChannelToGroupResponseNative NativeCallback = nullptr);
+	void AddChannelToGroupAsync(FString Channel, FOnPubnubAddChannelToGroupResponseNative NativeCallback = nullptr);
+
+	/**
+	 * Removes a channel from this channel group (blocking).
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @param Channel The ID of the channel to remove from the channel group.
+	 * @return Result structure containing operation status.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	FPubnubOperationResult RemoveChannelFromGroup(FString Channel);
 
 	/**
 	 * Removes a channel from this channel group.
@@ -57,7 +77,7 @@ public:
 	 * @param OnRemoveChannelFromGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelFromGroupResponse"))
-	void RemoveChannelFromGroup(FString Channel, FOnRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
+	void RemoveChannelFromGroupAsync(FString Channel, FOnPubnubRemoveChannelFromGroupResponse OnRemoveChannelFromGroupResponse);
 
 	/**
 	 * Removes a channel from this channel group.
@@ -68,7 +88,17 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveChannelFromGroup(FString Channel, FOnRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
+	void RemoveChannelFromGroupAsync(FString Channel, FOnPubnubRemoveChannelFromGroupResponseNative NativeCallback = nullptr);
+
+	/**
+	 * Lists the channels that belong to this channel group (blocking).
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @return Result structure containing operation status and list of channels.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	FPubnubListChannelsFromGroupResult ListChannelsFromGroup();
 
 	/**
 	 * Lists the channels that belong to this channel group.
@@ -78,7 +108,7 @@ public:
 	 * @param OnListChannelsResponse The callback function used to handle the result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
-	void ListChannelsFromGroup(FOnListChannelsFromGroupResponse OnListChannelsResponse);
+	void ListChannelsFromGroupAsync(FOnPubnubListChannelsFromGroupResponse OnListChannelsResponse);
 
 	/**
 	 * Lists the channels that belong to this channel group.
@@ -87,7 +117,17 @@ public:
 	 * 
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 */
-	void ListChannelsFromGroup(FOnListChannelsFromGroupResponseNative NativeCallback);
+	void ListChannelsFromGroupAsync(FOnPubnubListChannelsFromGroupResponseNative NativeCallback);
+
+	/**
+	 * Removes this channel group (blocking).
+	 * 
+	 * @Note Requires the *Stream Controller* add-on to be enabled for your key in the PubNub Admin Portal.
+	 * 
+	 * @return Result structure containing operation status.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups")
+	FPubnubOperationResult RemoveChannelGroup();
 
 	/**
 	 * Removes this channel group.
@@ -97,7 +137,7 @@ public:
 	 * @param OnRemoveChannelGroupResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Channel Groups", meta = (AutoCreateRefTerm = "OnRemoveChannelGroupResponse"))
-	void RemoveChannelGroup(FOnRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
+	void RemoveChannelGroupAsync(FOnPubnubRemoveChannelGroupResponse OnRemoveChannelGroupResponse);
 
 	/**
 	 * Removes this channel group.
@@ -107,6 +147,6 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveChannelGroup(FOnRemoveChannelGroupResponseNative NativeCallback = nullptr);
+	void RemoveChannelGroupAsync(FOnPubnubRemoveChannelGroupResponseNative NativeCallback = nullptr);
 	
 };

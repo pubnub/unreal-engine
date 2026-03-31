@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 
 #include "Threads/PubnubFunctionThread.h"
@@ -25,33 +25,36 @@ bool FPubnubFunctionThread::Init()
 
 uint32 FPubnubFunctionThread::Run()
 {
-	
 	while(!bShutdown)
 	{
-		if(!PubnubAsyncFunctionsQueue.IsEmpty())
+		TArray<TFunction<void()>> FunctionsToExecute;
 		{
-			//Run all functions from the queue
-			for(int i = 0; i <  PubnubAsyncFunctionsQueue.Num(); i++)
+			FScopeLock QueueLock(&QueueMutex);
+			if(PubnubAsyncFunctionsQueue.IsEmpty() && !PubnubAsyncFunctionsBuffer.IsEmpty())
 			{
-				PubnubAsyncFunctionsQueue[i]();
-				
-				//If last called operation is subscribe operation, we need to wait until it's finished as it's not blocking
-				if(IsLockedForSubscription)
-				{
-					WaitForSubscriptionOperationEnd();
-				}
+				PubnubAsyncFunctionsQueue = MoveTemp(PubnubAsyncFunctionsBuffer);
 			}
-			
-			//Clear queue
-			PubnubAsyncFunctionsQueue.Empty();
+
+			if(!PubnubAsyncFunctionsQueue.IsEmpty())
+			{
+				FunctionsToExecute = MoveTemp(PubnubAsyncFunctionsQueue);
+			}
 		}
 
-		//Add functions from buffer to queue. Lock Mutex until everything is finished.
-		FCriticalSection Mutex;
-		Mutex.Lock();
-		PubnubAsyncFunctionsQueue = PubnubAsyncFunctionsBuffer;
-		PubnubAsyncFunctionsBuffer.Empty();
-		Mutex.Unlock();
+		if(!FunctionsToExecute.IsEmpty())
+		{
+			//Run all functions from the queue
+			for(int i = 0; i < FunctionsToExecute.Num(); i++)
+			{
+				FunctionsToExecute[i]();
+
+				//Stop executing functions if thread was set to Shutdown
+				if(bShutdown)
+				{
+					break;
+				}
+			}
+		}
 		
 		FPlatformProcess::Sleep(QueueLoopDelay);
 	}
@@ -71,34 +74,6 @@ void FPubnubFunctionThread::AddFunctionToQueue(TFunction<void()> InFunction)
 {
 	//Add function to buffer firstly, it will be added to queue after current queue is done
 	//Lock this array for other threads, so it can be added safely
-	FCriticalSection Mutex;
-	Mutex.Lock();
+	FScopeLock QueueLock(&QueueMutex);
 	PubnubAsyncFunctionsBuffer.Add(InFunction);
-	Mutex.Unlock();
-}
-
-void FPubnubFunctionThread::LockForSubscribeOperation()
-{
-	IsLockedForSubscription = true;
-}
-
-void FPubnubFunctionThread::UnlockAfterSubscriptionOperationFinished()
-{
-	IsLockedForSubscription = false;
-}
-
-void FPubnubFunctionThread::WaitForSubscriptionOperationEnd()
-{
-	int LoopCount = 0;
-	while(IsLockedForSubscription)
-	{
-		FPlatformProcess::Sleep(WaitForSubscriptionDelay);
-		LoopCount++;
-		if(LoopCount > WaitForSubscriptionDelayMaxCount)
-		{
-			UE_LOG(PubnubLog, Error, TEXT("WaitForSubscriptionOperationEnd exausted all tries. Skipping waiting for subscription result."))
-			break;
-		}
-
-	}
 }

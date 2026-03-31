@@ -1,12 +1,10 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Entities/PubnubBaseEntity.h"
 #include "PubnubUserMetadataEntity.generated.h"
-
-class UPubnubSubsystem;
 
 
 /**
@@ -27,6 +25,18 @@ public:
 
 		
 	/**
+	 * Sets metadata for this User in the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param UserMetadata User Metadata object to set.
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return Result structure containing operation status and updated user metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubUserMetadataResult SetUserMetadata(FPubnubUserInputData UserMetadata, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
 	 * Sets metadata for this User in the PubNub App Context.
 	 * 
 	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
@@ -36,7 +46,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnSetUserMetadataResponse"))
-	void SetUserMetadata(FPubnubUserData UserMetadata, FOnSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetUserMetadataAsync(FPubnubUserInputData UserMetadata, FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Sets metadata for this User in the PubNub App Context.
@@ -48,7 +58,18 @@ public:
 	 * 						 Can be skipped if operation result is not needed.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void SetUserMetadata(FPubnubUserData UserMetadata, FOnSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void SetUserMetadataAsync(FPubnubUserInputData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+
+	/**
+	 * Retrieves metadata for this User from the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @param Include (Optional) List of property names to include in the response.
+	 * @return Result structure containing operation status and user metadata.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubUserMetadataResult GetUserMetadata(FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for this User from the PubNub App Context.
@@ -59,7 +80,7 @@ public:
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
-	void GetUserMetadata(FOnGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void GetUserMetadataAsync(FOnPubnubGetUserMetadataResponse OnGetUserMetadataResponse, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
 	/**
 	 * Retrieves metadata for this User from the PubNub App Context.
@@ -69,8 +90,18 @@ public:
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param Include (Optional) List of property names to include in the response.
 	 */
-	void GetUserMetadata(FOnGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
+	void GetUserMetadataAsync(FOnPubnubGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 	
+
+	/**
+	 * Removes all metadata associated with this User from the PubNub App Context (blocking).
+	 * 
+	 * @Note Requires the *App Context* add-on to be enabled for your key in the PubNub Admin Portal
+	 * 
+	 * @return Result structure containing operation status.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
+	FPubnubOperationResult RemoveUserMetadata();
 
 	/**
 	 * Removes all metadata associated with this User from the PubNub App Context.
@@ -80,7 +111,7 @@ public:
 	 * @param OnRemoveUserMetadataResponse (Optional) Delegate to listen for the operation result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context", meta = (AutoCreateRefTerm = "OnRemoveUserMetadataResponse"))
-	void RemoveUserMetadata(FOnRemoveUserMetadataResponse OnRemoveUserMetadataResponse);
+	void RemoveUserMetadataAsync(FOnPubnubRemoveUserMetadataResponse OnRemoveUserMetadataResponse);
 
 	/**
 	 * Removes all metadata associated with this User from the PubNub App Context.
@@ -90,6 +121,6 @@ public:
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
 	 */
-	void RemoveUserMetadata(FOnRemoveUserMetadataResponseNative NativeCallback = nullptr);
+	void RemoveUserMetadataAsync(FOnPubnubRemoveUserMetadataResponseNative NativeCallback = nullptr);
 	
 };

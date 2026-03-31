@@ -1,9 +1,9 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
 // snippet.includes
-#include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 // snippet.end
 
@@ -28,14 +28,17 @@ public:
 	/* SAMPLE FUNCTIONS */
 	
 	// snippet.publish_simple
+	// blueprint.wsbv6i96
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void PublishSimpleSample();
 
 	// snippet.publish_with_settings
+	// blueprint._edd6l7i
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void PublishWithSettingsSample();
 
 	// snippet.publish_with_result
+	// blueprint.et_v8xym
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void PublishWithResultSample();
 	
@@ -47,14 +50,17 @@ public:
 	void PublishWithResultLambdaSample();
 
 	// snippet.simple_signal
+	// blueprint.mmy6g9-_
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SimpleSignalSample();
 
 	// snippet.signal_with_settings
+	// blueprint.xrmsghs7
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SignalWithSettingsSample();
 
 	// snippet.signal_with_result
+	// blueprint.larcjidg
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SignalWithResultSample();
 
@@ -66,6 +72,7 @@ public:
 	void SignalWithResultLambdaSample();
 
 	// snippet.subscribe
+	// blueprint.3fpbztx1
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SubscribeSample();
 
@@ -77,6 +84,7 @@ public:
 	void SubscribeWithLambdaSample();
 
 	// snippet.subscribe_to_group
+	// blueprint.vny2_wkg
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SubscribeToGroupSample();
 
@@ -84,6 +92,7 @@ public:
 	void OnMessageReceived_SubscribeToGroupSample(FPubnubMessageData Message);
 
 	// snippet.subscribe_with_presence
+	// blueprint.v7n6lycr
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SubscribeWithPresenceSample();
 
@@ -91,6 +100,7 @@ public:
 	void OnMessageReceived_SubscribeWithPresenceSample(FPubnubMessageData Message);
 
 	// snippet.subscribe_with_result
+	// blueprint.pargt46o
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void SubscribeWithResultSample();
 
@@ -101,18 +111,24 @@ public:
 	void OnSubscribeResultReceived(FPubnubOperationResult Result);
 
 	// snippet.unsubscribe_from_channel
+	// blueprint.9yloz2xg
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void UnsubscribeFromChannelSample();
 	
 	// snippet.unsubscribe_from_group
+	// blueprint.r1ijf67z
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void UnsubscribeFromGroupSample();
 
 	// snippet.unsubscribe_from_all
+	// blueprint.uvhdnh8k
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void UnsubscribeFromAllSample();
 	
 	// snippet.end
+	
+private:
+	UPubnubClient* GetPubnubClient();
 };
 
 

@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -22,5 +22,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Timetoken Utilities")
 	static FString GetCurrentUnixTimetoken();
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Timetoken Utilities")
+	static FString AddIntToTimetoken(const FString Timetoken, const int64 ToAdd);
 
 };

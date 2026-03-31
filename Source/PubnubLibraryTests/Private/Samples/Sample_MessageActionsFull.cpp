@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 // snippet.full_message_actions_example
 
@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
 #include "PubnubSubsystem.h"
+#include "PubnubClient.h"
 
 
 void ASample_MessageActionsFull::BeginPlay()
@@ -18,20 +19,23 @@ void ASample_MessageActionsFull::BeginPlay()
 
 void ASample_MessageActionsFull::RunMessageActionsFullExample()
 {
-	//Get PubnubSubsystem from GameInstance and store it
+	//Get PubnubSubsystem from GameInstance
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Create Pubnub Client using Pubnub Subsystem
+	FPubnubConfig Config;
+	Config.PublishKey = TEXT("demo");   //replace with your Publish Key from Admin Portal
+	Config.SubscribeKey = TEXT("demo"); //replace with your Subscribe Key from Admin Portal
+	Config.UserID = TEXT("Player_001");
+	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
 
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
-
-	UE_LOG(LogTemp, Log, TEXT("Message Actions example: User ID is set"));
+	UE_LOG(LogTemp, Log, TEXT("Message Actions example: Pubnub Client is created"));
 
 	// 1. Publish a message to get a timetoken
-	FOnPublishMessageResponse OnPublishResponse;
+	FOnPubnubPublishMessageResponse OnPublishResponse;
 	OnPublishResponse.BindDynamic(this, &ASample_MessageActionsFull::OnPublishResponse);
-	PubnubSubsystem->PublishMessage(TestChannel, TEXT("{\"message\":\"What a great play!\"}"), OnPublishResponse);
+	PubnubClient->PublishMessageAsync(TestChannel, TEXT("{\"message\":\"What a great play!\"}"), OnPublishResponse);
 }
 
 void ASample_MessageActionsFull::OnPublishResponse(FPubnubOperationResult Result, FPubnubMessageData Message)
@@ -52,9 +56,9 @@ void ASample_MessageActionsFull::AddFirstMessageAction()
 {
 	// 2. Add a "like" action
 	UE_LOG(LogTemp, Log, TEXT("Message Actions example: adding 'like' action..."));
-	FOnAddMessageActionResponse OnAddMessageActionResponse;
+	FOnPubnubAddMessageActionResponse OnAddMessageActionResponse;
 	OnAddMessageActionResponse.BindDynamic(this, &ASample_MessageActionsFull::OnAddFirstMessageActionResponse);
-	PubnubSubsystem->AddMessageAction(TestChannel, TestMessageTimetoken, TEXT("reaction"), TEXT("like"), OnAddMessageActionResponse);
+	PubnubClient->AddMessageActionAsync(TestChannel, TestMessageTimetoken, TEXT("reaction"), TEXT("like"), OnAddMessageActionResponse);
 }
 
 void ASample_MessageActionsFull::OnAddFirstMessageActionResponse(FPubnubOperationResult Result, FPubnubMessageActionData MessageActionData)
@@ -75,9 +79,9 @@ void ASample_MessageActionsFull::AddSecondMessageAction()
 {
 	// 3. Add a "smiley" action
 	UE_LOG(LogTemp, Log, TEXT("Message Actions example: adding 'smiley_face' action..."));
-	FOnAddMessageActionResponse OnAddMessageActionResponse;
+	FOnPubnubAddMessageActionResponse OnAddMessageActionResponse;
 	OnAddMessageActionResponse.BindDynamic(this, &ASample_MessageActionsFull::OnAddSecondMessageActionResponse);
-	PubnubSubsystem->AddMessageAction(TestChannel, TestMessageTimetoken, TEXT("reaction"), TEXT("smiley_face"), OnAddMessageActionResponse);
+	PubnubClient->AddMessageActionAsync(TestChannel, TestMessageTimetoken, TEXT("reaction"), TEXT("smiley_face"), OnAddMessageActionResponse);
 }
 
 void ASample_MessageActionsFull::OnAddSecondMessageActionResponse(FPubnubOperationResult Result, FPubnubMessageActionData MessageActionData)
@@ -97,9 +101,11 @@ void ASample_MessageActionsFull::GetAllMessageActions()
 {
 	// 4. Get all actions for the channel
 	UE_LOG(LogTemp, Log, TEXT("Message Actions example: getting all actions..."));
-	FOnGetMessageActionsResponse OnGetMessageActionsResponse;
+	FOnPubnubGetMessageActionsResponse OnGetMessageActionsResponse;
 	OnGetMessageActionsResponse.BindDynamic(this, &ASample_MessageActionsFull::OnGetMessageActionsResponse);
-	PubnubSubsystem->GetMessageActions(TestChannel, OnGetMessageActionsResponse);
+	FString StartTimetoken = TEXT("18000000000000000"); // Newer timetoken
+	FString EndTimetoken = TEXT("17000000000000000");   // Older timetoken
+	PubnubClient->GetMessageActionsAsync(TestChannel, OnGetMessageActionsResponse, StartTimetoken, EndTimetoken);
 }
 
 void ASample_MessageActionsFull::OnGetMessageActionsResponse(FPubnubOperationResult Result, const TArray<FPubnubMessageActionData>& MessageActions)
@@ -123,9 +129,9 @@ void ASample_MessageActionsFull::RemoveFirstMessageAction()
 {
 	// 5. Remove the "like" action
 	UE_LOG(LogTemp, Log, TEXT("Message Actions example: removing 'like' action..."));
-	FOnRemoveMessageActionResponse OnRemoveMessageActionResponse;
+	FOnPubnubRemoveMessageActionResponse OnRemoveMessageActionResponse;
 	OnRemoveMessageActionResponse.BindDynamic(this, &ASample_MessageActionsFull::OnRemoveMessageActionResponse);
-	PubnubSubsystem->RemoveMessageAction(TestChannel, TestMessageTimetoken, LikeActionTimetoken, OnRemoveMessageActionResponse);
+	PubnubClient->RemoveMessageActionAsync(TestChannel, TestMessageTimetoken, LikeActionTimetoken, OnRemoveMessageActionResponse);
 }
 
 void ASample_MessageActionsFull::OnRemoveMessageActionResponse(FPubnubOperationResult Result)

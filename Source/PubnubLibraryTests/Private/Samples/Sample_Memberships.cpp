@@ -1,29 +1,21 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 
 #include "Samples/Sample_Memberships.h"
-// snippet.includes
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
-
-// snippet.end
+#include "PubnubSubsystem.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * To ensure independence, each sample retrieves the PubnubSubsystem and explicitly calls `SetUserID()` 
- * before performing any PubNub operations.
- *
- * In a real project, however, you only need to call `SetUserID()` once — typically during initialization 
- * (e.g., in GameInstance or at login) before making your first PubNub request.
- * 
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
  */
 
-// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change.
+// NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
 
 
 //Internal function, don't copy it with the samples
@@ -69,13 +61,11 @@ ASample_Memberships::ASample_Memberships()
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::SetMembershipsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create memberships data
 	TArray<FPubnubMembershipInputData> MembershipsToSet;
@@ -91,24 +81,23 @@ void ASample_Memberships::SetMembershipsSample()
 	MembershipsToSet.Add(Membership2);
 	
 	// Set memberships for the user
-	PubnubSubsystem->SetMemberships(UserID, MembershipsToSet);
+	FString UserID = TEXT("Player_001");
+	PubnubClient->SetMembershipsAsync(UserID, MembershipsToSet);
 }
 
 // snippet.set_memberships_with_result
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::SetMembershipsWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnSetMembershipsResponse OnSetMembershipsResponse;
+	FOnPubnubSetMembershipsResponse OnSetMembershipsResponse;
 	OnSetMembershipsResponse.BindDynamic(this, &ASample_Memberships::OnSetMembershipsResponse);
 	
 	// Create memberships data
@@ -119,12 +108,13 @@ void ASample_Memberships::SetMembershipsWithResultSample()
 	MembershipsToSet.Add(Membership1);
 
 	// Set memberships and include extra data in the response
+	FString UserID = TEXT("Player_002");
 	FPubnubMembershipInclude Include = FPubnubMembershipInclude::FromValue(true);
-	PubnubSubsystem->SetMemberships(UserID, MembershipsToSet, OnSetMembershipsResponse, Include);
+	PubnubClient->SetMembershipsAsync(UserID, MembershipsToSet, OnSetMembershipsResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnSetMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnSetMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -144,17 +134,15 @@ void ASample_Memberships::OnSetMembershipsResponse(FPubnubOperationResult Result
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::SetMembershipsWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnSetMembershipsResponseNative OnSetMembershipsResponse;
-	OnSetMembershipsResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+	FOnPubnubSetMembershipsResponseNative OnSetMembershipsResponse;
+	OnSetMembershipsResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 	{
 		if(Result.Error)
 		{
@@ -178,37 +166,37 @@ void ASample_Memberships::SetMembershipsWithLambdaSample()
 	MembershipsToSet.Add(Membership1);
 	
 	// Set memberships and include extra data in the response
+	FString UserID = TEXT("Player_003");
 	FPubnubMembershipInclude Include = FPubnubMembershipInclude::FromValue(true);
-	PubnubSubsystem->SetMemberships(UserID, MembershipsToSet, OnSetMembershipsResponse, Include);
+	PubnubClient->SetMembershipsAsync(UserID, MembershipsToSet, OnSetMembershipsResponse, Include);
 }
 
 // snippet.set_memberships_raw
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::SetMembershipsRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_004");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnSetMembershipsResponse OnSetMembershipsResponse;
+	FOnPubnubSetMembershipsResponse OnSetMembershipsResponse;
 	OnSetMembershipsResponse.BindDynamic(this, &ASample_Memberships::OnSetMembershipsRawResponse);
 	
 	// Create memberships data as a raw JSON string
 	FString MembershipsJson = R"([{"channel": {"id": "arena-channel"}, "custom": {"rank": "diamond"}, "status": "active"}, {"channel": {"id": "spectator-channel"}, "type": "viewer"}])";
 	
 	// Set memberships with raw JSON and includes
+	FString UserID = TEXT("Player_004");
 	FString Include = "custom,status,type,channel.custom";
-	PubnubSubsystem->SetMembershipsRaw(UserID, MembershipsJson, OnSetMembershipsResponse, Include);
+	PubnubClient->SetMembershipsRawAsync(UserID, MembershipsJson, OnSetMembershipsResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnSetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnSetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -228,25 +216,24 @@ void ASample_Memberships::OnSetMembershipsRawResponse(FPubnubOperationResult Res
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::GetMembershipsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnGetMembershipsResponse OnGetMembershipsResponse;
+	FOnPubnubGetMembershipsResponse OnGetMembershipsResponse;
 	OnGetMembershipsResponse.BindDynamic(this, &ASample_Memberships::OnGetMembershipsResponse_Simple);
 
 	// Get memberships for a user
-	PubnubSubsystem->GetMemberships(UserID, OnGetMembershipsResponse);
+	FString UserID = TEXT("Player_001");
+	PubnubClient->GetMembershipsAsync(UserID, OnGetMembershipsResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnGetMembershipsResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnGetMembershipsResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -266,31 +253,30 @@ void ASample_Memberships::OnGetMembershipsResponse_Simple(FPubnubOperationResult
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::GetMembershipsWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnGetMembershipsResponse OnGetMembershipsResponse;
+	FOnPubnubGetMembershipsResponse OnGetMembershipsResponse;
 	OnGetMembershipsResponse.BindDynamic(this, &ASample_Memberships::OnGetMembershipsResponse_WithSettings);
 
 	// Create settings
+	FString UserID = TEXT("Player_002");
 	FPubnubMembershipInclude Include = FPubnubMembershipInclude::FromValue(true);
 	FString Filter = TEXT("status=='active'");
 	FPubnubMembershipSort Sort;
 	Sort.MembershipSort.Add(FPubnubMembershipSingleSort{EPubnubMembershipSortType::PMST_ChannelID, true});
 	
 	// Get memberships with custom settings
-	PubnubSubsystem->GetMemberships(UserID, OnGetMembershipsResponse, Include, 100, Filter, Sort);
+	PubnubClient->GetMembershipsAsync(UserID, OnGetMembershipsResponse, Include, 100, Filter, Sort);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnGetMembershipsResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnGetMembershipsResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -310,17 +296,15 @@ void ASample_Memberships::OnGetMembershipsResponse_WithSettings(FPubnubOperation
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::GetMembershipsWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnGetMembershipsResponseNative OnGetMembershipsResponse;
-	OnGetMembershipsResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+	FOnPubnubGetMembershipsResponseNative OnGetMembershipsResponse;
+	OnGetMembershipsResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 	{
 		if(Result.Error)
 		{
@@ -337,37 +321,37 @@ void ASample_Memberships::GetMembershipsWithLambdaSample()
 	});
 	
 	// Get memberships for a user
-	PubnubSubsystem->GetMemberships(UserID, OnGetMembershipsResponse);
+	FString UserID = TEXT("Player_003");
+	PubnubClient->GetMembershipsAsync(UserID, OnGetMembershipsResponse);
 }
 
 // snippet.get_memberships_raw
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::GetMembershipsRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_004");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnGetMembershipsResponse OnGetMembershipsResponse;
+	FOnPubnubGetMembershipsResponse OnGetMembershipsResponse;
 	OnGetMembershipsResponse.BindDynamic(this, &ASample_Memberships::OnGetMembershipsRawResponse);
 	
 	// Create settings as raw strings
+	FString UserID = TEXT("Player_004");
 	FString Include = "custom,channel.custom";
 	FString Filter = TEXT("status=='active'");
 	FString Sort = "channel.id:desc";
 	
 	// Get memberships with raw settings
-	PubnubSubsystem->GetMembershipsRaw(UserID, OnGetMembershipsResponse, Include, 100, Filter, Sort);
+	PubnubClient->GetMembershipsRawAsync(UserID, OnGetMembershipsResponse, Include, 100, Filter, Sort);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnGetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnGetMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -387,13 +371,11 @@ void ASample_Memberships::OnGetMembershipsRawResponse(FPubnubOperationResult Res
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::RemoveMembershipsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a list of channel IDs to remove memberships from
 	TArray<FString> ChannelsToRemove;
@@ -401,24 +383,23 @@ void ASample_Memberships::RemoveMembershipsSample()
 	ChannelsToRemove.Add("trade-chat-channel");
 	
 	// Remove memberships for the user
-	PubnubSubsystem->RemoveMemberships(UserID, ChannelsToRemove);
+	FString UserID = TEXT("Player_001");
+	PubnubClient->RemoveMembershipsAsync(UserID, ChannelsToRemove);
 }
 
 // snippet.remove_memberships_with_result
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::RemoveMembershipsWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnRemoveMembershipsResponse OnRemoveMembershipsResponse;
+	FOnPubnubRemoveMembershipsResponse OnRemoveMembershipsResponse;
 	OnRemoveMembershipsResponse.BindDynamic(this, &ASample_Memberships::OnRemoveMembershipsResponse);
 	
 	// Create a list of channel IDs to remove memberships from
@@ -426,12 +407,13 @@ void ASample_Memberships::RemoveMembershipsWithResultSample()
 	ChannelsToRemove.Add("guild-hall-channel");
 
 	// Remove memberships and include extra data in the response
+	FString UserID = TEXT("Player_002");
 	FPubnubMembershipInclude Include = FPubnubMembershipInclude::FromValue(true);
-	PubnubSubsystem->RemoveMemberships(UserID, ChannelsToRemove, OnRemoveMembershipsResponse, Include);
+	PubnubClient->RemoveMembershipsAsync(UserID, ChannelsToRemove, OnRemoveMembershipsResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnRemoveMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnRemoveMembershipsResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -447,17 +429,15 @@ void ASample_Memberships::OnRemoveMembershipsResponse(FPubnubOperationResult Res
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::RemoveMembershipsWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnRemoveMembershipsResponseNative OnRemoveMembershipsResponse;
-	OnRemoveMembershipsResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+	FOnPubnubRemoveMembershipsResponseNative OnRemoveMembershipsResponse;
+	OnRemoveMembershipsResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 	{
 		if(Result.Error)
 		{
@@ -474,37 +454,37 @@ void ASample_Memberships::RemoveMembershipsWithLambdaSample()
 	ChannelsToRemove.Add("private-lounge-channel");
 	
 	// Remove memberships and include extra data in the response
+	FString UserID = TEXT("Player_003");
 	FPubnubMembershipInclude Include = FPubnubMembershipInclude::FromValue(true);
-	PubnubSubsystem->RemoveMemberships(UserID, ChannelsToRemove, OnRemoveMembershipsResponse, Include);
+	PubnubClient->RemoveMembershipsAsync(UserID, ChannelsToRemove, OnRemoveMembershipsResponse, Include);
 }
 
 // snippet.remove_memberships_raw
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::RemoveMembershipsRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_004");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnRemoveMembershipsResponse OnRemoveMembershipsResponse;
+	FOnPubnubRemoveMembershipsResponse OnRemoveMembershipsResponse;
 	OnRemoveMembershipsResponse.BindDynamic(this, &ASample_Memberships::OnRemoveMembershipsRawResponse);
 	
 	// Create memberships data as a raw JSON string
 	FString MembershipsJson = R"([{"channel": {"id": "arena-channel"}}, {"channel": {"id": "spectator-channel"}}])";
 	
 	// Remove memberships with raw JSON and includes
+	FString UserID = TEXT("Player_004");
 	FString Include = "custom,channel.custom";
-	PubnubSubsystem->RemoveMembershipsRaw(UserID, MembershipsJson, OnRemoveMembershipsResponse, Include);
+	PubnubClient->RemoveMembershipsRawAsync(UserID, MembershipsJson, OnRemoveMembershipsResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnRemoveMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnRemoveMembershipsRawResponse(FPubnubOperationResult Result, const TArray<FPubnubMembershipData>& MembershipsData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -520,13 +500,11 @@ void ASample_Memberships::OnRemoveMembershipsRawResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::SetChannelMembersSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create members data
 	TArray<FPubnubChannelMemberInputData> MembersToSet;
@@ -542,24 +520,22 @@ void ASample_Memberships::SetChannelMembersSample()
 	MembersToSet.Add(Member2);
 	
 	// Set members for the channel
-	PubnubSubsystem->SetChannelMembers("general-chat-channel", MembersToSet);
+	PubnubClient->SetChannelMembersAsync("general-chat-channel", MembersToSet);
 }
 
 // snippet.set_channel_members_with_result
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::SetChannelMembersWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnSetChannelMembersResponse OnSetChannelMembersResponse;
+	FOnPubnubSetChannelMembersResponse OnSetChannelMembersResponse;
 	OnSetChannelMembersResponse.BindDynamic(this, &ASample_Memberships::OnSetChannelMembersResponse);
 	
 	// Create members data
@@ -571,11 +547,11 @@ void ASample_Memberships::SetChannelMembersWithResultSample()
 
 	// Set members and include extra data in the response
 	FPubnubMemberInclude Include = FPubnubMemberInclude::FromValue(true);
-	PubnubSubsystem->SetChannelMembers("guild-hall-channel", MembersToSet, OnSetChannelMembersResponse, Include);
+	PubnubClient->SetChannelMembersAsync("guild-hall-channel", MembersToSet, OnSetChannelMembersResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnSetChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnSetChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -595,17 +571,15 @@ void ASample_Memberships::OnSetChannelMembersResponse(FPubnubOperationResult Res
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::SetChannelMembersWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnSetChannelMembersResponseNative OnSetChannelMembersResponse;
-	OnSetChannelMembersResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+	FOnPubnubSetChannelMembersResponseNative OnSetChannelMembersResponse;
+	OnSetChannelMembersResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 	{
 		if(Result.Error)
 		{
@@ -630,24 +604,22 @@ void ASample_Memberships::SetChannelMembersWithLambdaSample()
 	
 	// Set members and include extra data in the response
 	FPubnubMemberInclude Include = FPubnubMemberInclude::FromValue(true);
-	PubnubSubsystem->SetChannelMembers("private-lounge-channel", MembersToSet, OnSetChannelMembersResponse, Include);
+	PubnubClient->SetChannelMembersAsync("private-lounge-channel", MembersToSet, OnSetChannelMembersResponse, Include);
 }
 
 // snippet.set_channel_members_raw
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::SetChannelMembersRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_004");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnSetChannelMembersResponse OnSetChannelMembersResponse;
+	FOnPubnubSetChannelMembersResponse OnSetChannelMembersResponse;
 	OnSetChannelMembersResponse.BindDynamic(this, &ASample_Memberships::OnSetChannelMembersRawResponse);
 	
 	// Create members data as a raw JSON string
@@ -655,11 +627,11 @@ void ASample_Memberships::SetChannelMembersRawSample()
 	
 	// Set members with raw JSON and includes
 	FString Include = "custom,status,type,user.custom";
-	PubnubSubsystem->SetChannelMembersRaw("arena-channel", MembersJson, OnSetChannelMembersResponse, Include);
+	PubnubClient->SetChannelMembersRawAsync("arena-channel", MembersJson, OnSetChannelMembersResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnSetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnSetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -679,25 +651,23 @@ void ASample_Memberships::OnSetChannelMembersRawResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::GetChannelMembersSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnGetChannelMembersResponse OnGetChannelMembersResponse;
+	FOnPubnubGetChannelMembersResponse OnGetChannelMembersResponse;
 	OnGetChannelMembersResponse.BindDynamic(this, &ASample_Memberships::OnGetChannelMembersResponse_Simple);
 
 	// Get members for a channel
-	PubnubSubsystem->GetChannelMembers("general-chat-channel", OnGetChannelMembersResponse);
+	PubnubClient->GetChannelMembersAsync("general-chat-channel", OnGetChannelMembersResponse);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnGetChannelMembersResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnGetChannelMembersResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -717,17 +687,15 @@ void ASample_Memberships::OnGetChannelMembersResponse_Simple(FPubnubOperationRes
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::GetChannelMembersWithSettingsSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnGetChannelMembersResponse OnGetChannelMembersResponse;
+	FOnPubnubGetChannelMembersResponse OnGetChannelMembersResponse;
 	OnGetChannelMembersResponse.BindDynamic(this, &ASample_Memberships::OnGetChannelMembersResponse_WithSettings);
 
 	// Create settings
@@ -737,11 +705,11 @@ void ASample_Memberships::GetChannelMembersWithSettingsSample()
 	Sort.MemberSort.Add(FPubnubMemberSingleSort{EPubnubMemberSortType::PMeST_UserID, true});
 	
 	// Get members with custom settings
-	PubnubSubsystem->GetChannelMembers("guild-hall-channel", OnGetChannelMembersResponse, Include, 100, Filter, Sort);
+	PubnubClient->GetChannelMembersAsync("guild-hall-channel", OnGetChannelMembersResponse, Include, 100, Filter, Sort);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnGetChannelMembersResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnGetChannelMembersResponse_WithSettings(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -761,17 +729,15 @@ void ASample_Memberships::OnGetChannelMembersResponse_WithSettings(FPubnubOperat
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::GetChannelMembersWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnGetChannelMembersResponseNative OnGetChannelMembersResponse;
-	OnGetChannelMembersResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+	FOnPubnubGetChannelMembersResponseNative OnGetChannelMembersResponse;
+	OnGetChannelMembersResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 	{
 		if(Result.Error)
 		{
@@ -788,24 +754,22 @@ void ASample_Memberships::GetChannelMembersWithLambdaSample()
 	});
 	
 	// Get members for a channel
-	PubnubSubsystem->GetChannelMembers("private-lounge-channel", OnGetChannelMembersResponse);
+	PubnubClient->GetChannelMembersAsync("private-lounge-channel", OnGetChannelMembersResponse);
 }
 
 // snippet.get_channel_members_raw
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::GetChannelMembersRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_004");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnGetChannelMembersResponse OnGetChannelMembersResponse;
+	FOnPubnubGetChannelMembersResponse OnGetChannelMembersResponse;
 	OnGetChannelMembersResponse.BindDynamic(this, &ASample_Memberships::OnGetChannelMembersRawResponse);
 	
 	// Create settings as raw strings
@@ -814,11 +778,11 @@ void ASample_Memberships::GetChannelMembersRawSample()
 	FString Sort = "user.id:desc";
 	
 	// Get members with raw settings
-	PubnubSubsystem->GetChannelMembersRaw("arena-channel", OnGetChannelMembersResponse, Include, 100, Filter, Sort);
+	PubnubClient->GetChannelMembersRawAsync("arena-channel", OnGetChannelMembersResponse, Include, 100, Filter, Sort);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnGetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnGetChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -838,13 +802,11 @@ void ASample_Memberships::OnGetChannelMembersRawResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::RemoveChannelMembersSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_001");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Create a list of user IDs to remove from the channel
 	TArray<FString> UsersToRemove;
@@ -852,24 +814,22 @@ void ASample_Memberships::RemoveChannelMembersSample()
 	UsersToRemove.Add("User_002");
 	
 	// Remove members from the channel
-	PubnubSubsystem->RemoveChannelMembers("general-chat-channel", UsersToRemove);
+	PubnubClient->RemoveChannelMembersAsync("general-chat-channel", UsersToRemove);
 }
 
 // snippet.remove_channel_members_with_result
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::RemoveChannelMembersWithResultSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_002");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnRemoveChannelMembersResponse OnRemoveChannelMembersResponse;
+	FOnPubnubRemoveChannelMembersResponse OnRemoveChannelMembersResponse;
 	OnRemoveChannelMembersResponse.BindDynamic(this, &ASample_Memberships::OnRemoveChannelMembersResponse);
 	
 	// Create a list of user IDs to remove
@@ -878,11 +838,11 @@ void ASample_Memberships::RemoveChannelMembersWithResultSample()
 
 	// Remove members and include extra data in the response
 	FPubnubMemberInclude Include = FPubnubMemberInclude::FromValue(true);
-	PubnubSubsystem->RemoveChannelMembers("guild-hall-channel", UsersToRemove, OnRemoveChannelMembersResponse, Include);
+	PubnubClient->RemoveChannelMembersAsync("guild-hall-channel", UsersToRemove, OnRemoveChannelMembersResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnRemoveChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnRemoveChannelMembersResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -898,17 +858,15 @@ void ASample_Memberships::OnRemoveChannelMembersResponse(FPubnubOperationResult 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::RemoveChannelMembersWithLambdaSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_003");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind lambda to response delegate
-	FOnRemoveChannelMembersResponseNative OnRemoveChannelMembersResponse;
-	OnRemoveChannelMembersResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+	FOnPubnubRemoveChannelMembersResponseNative OnRemoveChannelMembersResponse;
+	OnRemoveChannelMembersResponse.BindLambda([](const FPubnubOperationResult& Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 	{
 		if(Result.Error)
 		{
@@ -926,24 +884,22 @@ void ASample_Memberships::RemoveChannelMembersWithLambdaSample()
 	
 	// Remove members and include extra data in the response
 	FPubnubMemberInclude Include = FPubnubMemberInclude::FromValue(true);
-	PubnubSubsystem->RemoveChannelMembers("private-lounge-channel", UsersToRemove, OnRemoveChannelMembersResponse, Include);
+	PubnubClient->RemoveChannelMembersAsync("private-lounge-channel", UsersToRemove, OnRemoveChannelMembersResponse, Include);
 }
 
 // snippet.remove_channel_members_raw
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
 void ASample_Memberships::RemoveChannelMembersRawSample()
 {
-	//Get PubnubSubsystem from GameInstance
-	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
-	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
-
-	//Set UserID
-	FString UserID = TEXT("Player_004");
-	PubnubSubsystem->SetUserID(UserID);
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
 
 	// Bind response delegate
 	// ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-	FOnRemoveChannelMembersResponse OnRemoveChannelMembersResponse;
+	FOnPubnubRemoveChannelMembersResponse OnRemoveChannelMembersResponse;
 	OnRemoveChannelMembersResponse.BindDynamic(this, &ASample_Memberships::OnRemoveChannelMembersRawResponse);
 	
 	// Create members data as a raw JSON string
@@ -951,11 +907,11 @@ void ASample_Memberships::RemoveChannelMembersRawSample()
 	
 	// Remove members with raw JSON and includes
 	FString Include = "custom,user.custom";
-	PubnubSubsystem->RemoveChannelMembersRaw("arena-channel", MembersJson, OnRemoveChannelMembersResponse, Include);
+	PubnubClient->RemoveChannelMembersRawAsync("arena-channel", MembersJson, OnRemoveChannelMembersResponse, Include);
 }
 
 // ACTION REQUIRED: Replace ASample_Memberships with name of your Actor class
-void ASample_Memberships::OnRemoveChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FString PageNext, FString PagePrev)
+void ASample_Memberships::OnRemoveChannelMembersRawResponse(FPubnubOperationResult Result, const TArray<FPubnubChannelMemberData>& MembersData, FPubnubPage Page, int TotalCount)
 {
 	if(Result.Error)
 	{
@@ -968,3 +924,15 @@ void ASample_Memberships::OnRemoveChannelMembersRawResponse(FPubnubOperationResu
 }
 
 // snippet.end
+
+UPubnubClient* ASample_Memberships::GetPubnubClient()
+{
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
+	
+	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	
+	PubnubClient->SetUserID(TEXT("player_001"));
+	return PubnubClient;
+}

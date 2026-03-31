@@ -1,4 +1,4 @@
-// Copyright 2025 PubNub Inc. All Rights Reserved.
+// Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #pragma once
 
@@ -31,7 +31,13 @@ public:
 	static FString SerializeString(const FString& InString);
 	//Converts serialized string into it's normal, literal form
 	static FString DeserializeString(const FString InString);
+	
+	//Adds Provided string as ObjectField to JsonObject. If AddNullFieldIfEmpty is set to true, null field will be added in case if empty JsonObjectString
+	static void AddObjectFieldToJson(const FString& FieldName, const FString& JsonObjectString, TSharedPtr<FJsonObject> &JsonObject, bool AddNullFieldIfEmpty = false);
+	//Adds Provided string as StringField to JsonObject. If AddNullFieldIfEmpty is set to true, null field will be added in case if empty FieldValue
+	static void AddStringFieldToJson(const FString& FieldName, const FString& FieldValue, TSharedPtr<FJsonObject> &JsonObject, bool AddNullFieldIfEmpty = false);
 
+	
 	/**
 	 * Checks if gives string can be converted to a json
 	 * @param InString - String to check
@@ -74,7 +80,7 @@ public:
 	/**
 	 * Converter from GetAllUserMetadata_Json response to actual types
 	 */
-	static void GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData> &UsersData, FString &PageNext, FString &PagePrev);
+	static void GetAllUserMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubUserData> &UsersData, FPubnubPage &Page, int &TotalCount);
 
 	/**
 	 * Converter from GetUserMetadata_Json response to actual types
@@ -84,7 +90,7 @@ public:
 	/**
 	 * Converter from GetAllChannelMetadata_Json response to actual types
 	 */
-	static void GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData> &ChannelsData, FString &PageNext, FString &PagePrev);
+	static void GetAllChannelMetadataJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelData> &ChannelsData, FPubnubPage &Page, int &TotalCount);
 
 	/**
 	 * Converter from GetChannelMetadata_Json response to actual types
@@ -104,12 +110,12 @@ public:
 	/**
 	 * Converter from GetMemberships_Json response to actual types
 	 */
-	static void GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMembershipData> &MembershipsData, FString &PageNext, FString &PagePrev);
+	static void GetMembershipsJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubMembershipData> &MembershipsData, FPubnubPage &Page, int &TotalCount);
 
 	/**
 	 * Converter from GetChannelMembers_Json response to actual types
 	 */
-	static void GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelMemberData> &MembershipsData, FString &PageNext, FString &PagePrev);
+	static void GetChannelMembersJsonToData(FString ResponseJson, FPubnubOperationResult& Result, TArray<FPubnubChannelMemberData> &MembershipsData, FPubnubPage &Page, int &TotalCount);
 
 	/**
 	 * Converter from Json string containing User data to FPubnubUserData
@@ -118,9 +124,10 @@ public:
 	static FPubnubUserData GetUserDataFromJson(FString ResponseJson);
 
 	/**
-	 * Converter from FPubnubUserData to Json string containing User data
+	 * Converter from FPubnubUserData to Json string containing User data.
+	 * UserID is provided separately, because during Set operations ID from the struct is ignored.
 	 */
-	static FString GetJsonFromUserData(const FPubnubUserData& UserData);
+	static FString GetJsonFromUserData(const FString UserID, const FPubnubUserInputData& UserData);
 
 	/**
 	 * Converter from Json string containing Channel data to FPubnubChannelData
@@ -129,9 +136,10 @@ public:
 	static FPubnubChannelData GetChannelDataFromJson(FString ResponseJson);
 
 	/**
-	 * Converter from FPubnubChannelData to Json string containing Channel data
+	 * Converter from FPubnubChannelData to Json string containing Channel data.
+	 * ChannelID is provided separately, because during Set operations ID from the struct is ignored.
 	 */
-	static FString GetJsonFromChannelData(const FPubnubChannelData& ChannelData);
+	static FString GetJsonFromChannelData(const FString ChannelID, const FPubnubChannelInputData& ChannelData);
 
 	/**
 	 * Converter from Json string containing Membership data to FPubnubMembershipData
@@ -204,6 +212,17 @@ public:
 	static FPubnubOperationResult GetOperationResultFromJson_AppContext(TSharedPtr<FJsonObject> JsonObject);
 	static FPubnubOperationResult GetOperationResultFromJson_AppContext(FString ResponseJson);
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubChannelUpdateData GetChannelUpdateDataFromMessageContent(const FString& MessageContent);
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubUserUpdateData GetUserUpdateDataFromMessageContent(const FString& MessageContent);
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubMembershipUpdateData GetMembershipUpdateDataFromMessageContent(const FString& MessageContent);
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Pubnub|Json Utilities")
+	static FPubnubMessageActionData GetMessageActionFromMessageData(const FPubnubMessageData& MessageData);
 };
 
 
