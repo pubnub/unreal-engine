@@ -64,7 +64,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllUserMetadata_HappyPath_Defa
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllUserMetadata_AllOptionalParameters, FPubnubAutomationTestBase,
-	"Pubnub.Integration.UserMetadata.GetAllUserMetadata.3FullParams.IncludeSortFilterLimitTotalCount",
+	"Pubnub.Integration.UserMetadata.GetAllUserMetadata.3FullParameters.IncludeSortFilterLimitTotalCount",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllUserMetadata_FilterFindsCreatedUser, FPubnubAutomationTestBase,
@@ -84,7 +84,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetUserMetadata_HappyPath_Require
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetUserMetadata_AllInputFieldsAndInclude, FPubnubAutomationTestBase,
-	"Pubnub.Integration.UserMetadata.SetUserMetadata.3FullParams.AllFieldsAndInclude",
+	"Pubnub.Integration.UserMetadata.SetUserMetadata.3FullParameters.AllFieldsAndInclude",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetUserMetadata_UpdateThenGetReflectsNewValues, FPubnubAutomationTestBase,
@@ -104,7 +104,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetUserMetadata_HappyPath_AfterSe
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetUserMetadata_AllIncludes_ReturnsCustomStatusType, FPubnubAutomationTestBase,
-	"Pubnub.Integration.UserMetadata.GetUserMetadata.3FullParams.AllIncludes",
+	"Pubnub.Integration.UserMetadata.GetUserMetadata.3FullParameters.AllIncludes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetUserMetadata_UnknownUser_ReturnsError, FPubnubAutomationTestBase,

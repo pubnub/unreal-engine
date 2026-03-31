@@ -100,7 +100,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetMemberships_HappyPath_AfterSet
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetMemberships_AllOptionalParameters, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Memberships.GetMemberships.3FullParams.IncludeFilterSortLimitTotalCount",
+	"Pubnub.Integration.Memberships.GetMemberships.3FullParameters.IncludeFilterSortLimitTotalCount",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetMemberships_UserWithNoMemberships_ReturnsEmptyData, FPubnubAutomationTestBase,
@@ -124,7 +124,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetMemberships_HappyPath_ChannelI
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetMemberships_AllInputFieldsAndListParams, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Memberships.SetMemberships.3FullParams.FieldsIncludeFilterSortLimitPage",
+	"Pubnub.Integration.Memberships.SetMemberships.3FullParameters.FieldsIncludeFilterSortLimitPage",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetMemberships_UpdateStatus_ThenGetReflects, FPubnubAutomationTestBase,
@@ -144,7 +144,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveMemberships_HappyPath_ThenG
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveMemberships_AllOptionalParameters, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Memberships.RemoveMemberships.3FullParams.IncludeFilterSortLimitTotalCount",
+	"Pubnub.Integration.Memberships.RemoveMemberships.3FullParameters.IncludeFilterSortLimitTotalCount",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveMemberships_SecondRemove_StillSucceeds, FPubnubAutomationTestBase,
@@ -164,7 +164,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetChannelMembers_HappyPath_After
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetChannelMembers_AllOptionalParameters, FPubnubAutomationTestBase,
-	"Pubnub.Integration.ChannelMembers.GetChannelMembers.3FullParams.IncludeFilterSortLimitTotalCount",
+	"Pubnub.Integration.ChannelMembers.GetChannelMembers.3FullParameters.IncludeFilterSortLimitTotalCount",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetChannelMembers_ChannelWithNoMembers_UserNotListed, FPubnubAutomationTestBase,
@@ -188,7 +188,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMembers_HappyPath_UserI
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMembers_AllInputFieldsAndListParams, FPubnubAutomationTestBase,
-	"Pubnub.Integration.ChannelMembers.SetChannelMembers.3FullParams.FieldsIncludeFilterSortLimitPage",
+	"Pubnub.Integration.ChannelMembers.SetChannelMembers.3FullParameters.FieldsIncludeFilterSortLimitPage",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMembers_UpdateStatus_ThenGetReflects, FPubnubAutomationTestBase,
@@ -208,7 +208,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveChannelMembers_HappyPath_Th
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveChannelMembers_AllOptionalParameters, FPubnubAutomationTestBase,
-	"Pubnub.Integration.ChannelMembers.RemoveChannelMembers.3FullParams.IncludeFilterSortLimitTotalCount",
+	"Pubnub.Integration.ChannelMembers.RemoveChannelMembers.3FullParameters.IncludeFilterSortLimitTotalCount",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubRemoveChannelMembers_SecondRemove_StillSucceeds, FPubnubAutomationTestBase,

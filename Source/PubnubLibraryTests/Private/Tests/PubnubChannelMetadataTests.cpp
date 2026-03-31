@@ -64,7 +64,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllChannelMetadata_HappyPath_D
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllChannelMetadata_AllOptionalParameters, FPubnubAutomationTestBase,
-	"Pubnub.Integration.ChannelMetadata.GetAllChannelMetadata.3FullParams.IncludeSortFilterLimitTotalCount",
+	"Pubnub.Integration.ChannelMetadata.GetAllChannelMetadata.3FullParameters.IncludeSortFilterLimitTotalCount",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetAllChannelMetadata_FilterFindsCreatedChannel, FPubnubAutomationTestBase,
@@ -84,7 +84,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMetadata_HappyPath_Requ
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMetadata_AllInputFieldsAndInclude, FPubnubAutomationTestBase,
-	"Pubnub.Integration.ChannelMetadata.SetChannelMetadata.3FullParams.AllFieldsAndInclude",
+	"Pubnub.Integration.ChannelMetadata.SetChannelMetadata.3FullParameters.AllFieldsAndInclude",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMetadata_UpdateThenGetReflectsNewValues, FPubnubAutomationTestBase,
@@ -104,7 +104,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetChannelMetadata_HappyPath_Afte
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetChannelMetadata_AllIncludes_ReturnsCustomStatusType, FPubnubAutomationTestBase,
-	"Pubnub.Integration.ChannelMetadata.GetChannelMetadata.3FullParams.AllIncludes",
+	"Pubnub.Integration.ChannelMetadata.GetChannelMetadata.3FullParameters.AllIncludes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubGetChannelMetadata_UnknownChannel_ReturnsError, FPubnubAutomationTestBase,

@@ -67,7 +67,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_ChannelEntity_SubscribeD
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_ChannelEntity_Subscribe_WithPresenceSettings, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Entities.CreateChannelEntity.3FullParams.SubscriptionReceivePresence",
+	"Pubnub.Integration.Entities.CreateChannelEntity.3FullParameters.SubscriptionReceivePresence",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // Second Subscribe on the same UPubnubSubscription without Unsubscribe should be rejected.
@@ -88,7 +88,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_GroupEntity_AddListSubsc
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_GroupEntity_Subscribe_WithPresenceSettings, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Entities.CreateChannelGroupEntity.3FullParams.SubscriptionReceivePresence",
+	"Pubnub.Integration.Entities.CreateChannelGroupEntity.3FullParameters.SubscriptionReceivePresence",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_ChannelMetadataEntity_Se
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_ChannelMetadataEntity_GetWithAllIncludes, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Entities.CreateChannelMetadataEntity.3FullParams.GetWithIncludeCustomStatusType",
+	"Pubnub.Integration.Entities.CreateChannelMetadataEntity.3FullParameters.GetWithIncludeCustomStatusType",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_UserMetadataEntity_SetGe
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_UserMetadataEntity_SetWithIncludeAndFields, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Entities.CreateUserMetadataEntity.3FullParams.SetWithIncludeAndOptionalFields",
+	"Pubnub.Integration.Entities.CreateUserMetadataEntity.3FullParameters.SetWithIncludeAndOptionalFields",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // ---------------------------------------------------------------------------
@@ -136,7 +136,7 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_SubscriptionSet_SingleCh
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_SubscriptionSet_MultiChannelGroupPresence, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Entities.CreateSubscriptionSet.3FullParams.MultiChannelGroupPresence",
+	"Pubnub.Integration.Entities.CreateSubscriptionSet.3FullParameters.MultiChannelGroupPresence",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubEntities_SubscriptionSetFromEntities_Empty_SubscribeFails, FPubnubAutomationTestBase,
