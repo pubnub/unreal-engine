@@ -3,6 +3,8 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Tests/PubnubTestsUtils.h"
+
+#include "PubnubClient.h"
 #include "Tests/AutomationCommon.h"
 #include "PubnubSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -135,13 +137,21 @@ void FPubnubAutomationTestBase::CleanUp()
 	//Final clean up
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
 	{
+		if (PubnubClient)
+		{
+			PubnubClient->DestroyClient();
+		}
+	}, 0.1f));
+	
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
+	{
 		PubnubSubsystem->DeinitPubnub();
-	}, 0.2f));
+	}, 0.1f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
 	{
 		GameInstance->Shutdown();
-	}, 0.2f));
+	}, 0.1f));
 	ADD_LATENT_AUTOMATION_COMMAND(FEngineWaitLatentCommand(0.2f));
 }
 
