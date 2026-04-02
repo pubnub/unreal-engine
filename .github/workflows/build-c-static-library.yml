@@ -1,0 +1,261 @@
+name: Build static library
+
+on:
+  workflow_dispatch:
+    inputs:
+      cBranch:
+        description: "C-Core SDK repository branch"
+        required: true
+        default: "master"
+        type: string
+      ueBranch:
+        description: "Unreal Engine SDK target branch"
+        required: true
+        default: "master"
+        type: string
+      ueVersion:
+        description: "Unreal Engine SDK version"
+        required: true
+        type: string
+      cVerboseBuild:
+        description: "Verbose build"
+        required: true
+        default: false
+        type: boolean
+      featureUseExternAPI:
+        description: "[Feature] Externs"
+        required: true
+        default: true
+        type: boolean
+      featureUseLogCallback:
+        description: "[Feature] Custom log callback"
+        required: true
+        default: true
+        type: boolean
+      customLogLevel:
+        description: "Custom log level"
+        required: true
+        default: "WARNING"
+        type: choice
+        options:
+          - TRACE
+          - DEBUG
+          - INFO
+          - WARNING
+          - ERROR
+
+jobs:
+  build:
+    name: Building ${{ matrix.preset }}
+    strategy:
+      matrix:
+        include:
+          # - os: windows
+          #   runner-group: organization/windows-gh
+          #   preset: windows-release
+          #   build-path: c-core-sdk/windows-build
+          #   filename: pubnub.lib
+          # - os: ubuntu
+          #   runner-group: organization/Default
+          #   preset: linux-release
+          #   build-path: c-core-sdk/linux-build
+          #   filename: libpubnub.a
+          - os: macos
+            runner-group: organization/macos-gh
+            preset: macos-release
+            build-path: c-core-sdk/macos-build
+            filename: libpubnub.a
+          # - os: macos
+          #   runner-group: organization/macos-gh
+          #   preset: macos-android-release
+          #   build-path: c-core-sdk/android-build
+          #   filename: libpubnub.a
+          #   android_ndk: $ANDROID_NDK_HOME
+          #   android_abi: arm64-v8a
+          #   android_platform: android-21
+          #   toolchain: $ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake
+    runs-on:
+      group: ${{ matrix.runner-group }}
+    steps:
+      - name: Checkout Unreal Engine SDK
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ueBranch }}
+          token: ${{ secrets.GH_TOKEN }}
+          path: ue-sdk
+      - name: Checkout OpenSSL lib
+        uses: actions/checkout@v4
+        with:
+          repository: pubnub/c-core
+          ref: static-openssl-lib
+          token: ${{ secrets.GH_TOKEN }}
+          path: openssl
+      - name: Checkout C-Core SDK
+        uses: actions/checkout@v4
+        with:
+          repository: pubnub/c-core
+          ref: ${{ inputs.cBranch }}
+          token: ${{ secrets.GH_TOKEN }}
+          path: c-core-sdk
+      - name: Generate CMakePresets.json
+        run: |
+          COMMON_CACHE_VARIABLES=$(cat <<-EOF
+                  "CMAKE_BUILD_TYPE": "Release",
+                  "SHARED_LIB": "OFF",
+                  "OPENSSL": "ON",
+                  "USE_REVOKE_TOKEN_API": "ON",
+                  "USE_GRANT_TOKEN_API": "ON",
+                  "USE_CRYPTO_API": "ON",
+                  "USE_PROXY": "ON",
+                  "USE_GZIP_COMPRESSION": "ON",
+                  "RECEIVE_GZIP_RESPONSE": "ON",
+                  "USE_RETRY_CONFIGURATION": "OFF",
+                  "USE_SUBSCRIBE_V2": "ON",
+                  "USE_SUBSCRIBE_EVENT_ENGINE": "OFF",
+                  "USE_ADVANCED_HISTORY": "ON",
+                  "USE_OBJECTS_API": "ON",
+                  "USE_AUTO_HEARTBEAT": "ON",
+                  "USE_ACTIONS_API": "ON",
+                  "USE_FETCH_HISTORY": "ON",
+                  "USE_CALLBACK_API": "OFF",
+                  "USE_IPV6": "ON",
+                  "USE_SET_DNS_SERVERS": "OFF",
+                  "USE_EXTERN_API": "${{ github.event.inputs.featureUseExternAPI == 'true' && 'ON' || 'OFF' }}",
+                  "USE_LEGACY_CRYPTO_RANDOM_IV": "ON",
+                  "USE_LOG_CALLBACK": "${{ github.event.inputs.featureUseLogCallback == 'true' && 'ON' || 'OFF' }}",
+                  "SDK_VERSION_SUFFIX": "\\\\\"/Unreal/${{ github.event.inputs.ueVersion }}\\\\\"",
+                  "LOG_LEVEL": "${{ github.event.inputs.customLogLevel }}"
+          EOF
+
+          )
+
+          cat > "${{ github.workspace }}/c-core-sdk/CMakePresets.json" <<-EOF
+          {
+            "version": 3,
+            "configurePresets": [
+              {
+                "name": "windows-release",
+                "description": "Release build for Windows with OpenSSL",
+                "generator": "Ninja",
+                "binaryDir": "${{ github.workspace }}/${{ matrix.build-path }}",
+                "cacheVariables": {
+                  ${COMMON_CACHE_VARIABLES},
+                  "CMAKE_C_FLAGS": "-fdebug-prefix-map=\"$(pwd)/c-core-sdk\"=. -ffile-prefix-map=\"$(pwd)/c-core-sdk\"=.",
+                  "CMAKE_CXX_FLAGS": "-fdebug-prefix-map=\"$(pwd)/c-core-sdk\"=. -ffile-prefix-map=\"$(pwd)/c-core-sdk\"=.",
+                  "OPENSSL_ROOT_DIR": "${{ github.workspace }}/openssl/windows",
+                  "CUSTOM_OPENSSL_LIB_DIR": "${{ github.workspace }}/openssl/windows/lib",
+                  "CUSTOM_OPENSSL_INCLUDE_DIR": "${{ github.workspace }}/openssl/windows/include"
+                }
+              },
+              {
+                "name": "linux-release",
+                "description": "Release build for linux with Universal Binary",
+                "generator": "Ninja",
+                "binaryDir": "${{ github.workspace }}/${{ matrix.build-path }}",
+                "cacheVariables": {
+                  ${COMMON_CACHE_VARIABLES},
+                  "CMAKE_C_FLAGS": "-fdebug-prefix-map=\"$(pwd)/c-core-sdk\"=. -ffile-prefix-map=\"$(pwd)/c-core-sdk\"=. -fPIC",
+                  "CMAKE_CXX_FLAGS": "-fdebug-prefix-map=\"$(pwd)/c-core-sdk\"=. -ffile-prefix-map=\"$(pwd)/c-core-sdk\"=. -fPIC",
+                  "CMAKE_OSX_ARCHITECTURES": "x86_64"
+                }
+              },
+              {
+                "name": "macos-release",
+                "description": "Release build for macOS with Universal Binary",
+                "generator": "Ninja",
+                "binaryDir": "${{ github.workspace }}/${{ matrix.build-path }}",
+                "cacheVariables": {
+                  ${COMMON_CACHE_VARIABLES},
+                  "CMAKE_C_FLAGS": "-fdebug-prefix-map=\"$(pwd)/c-core-sdk\"=. -ffile-prefix-map=\"$(pwd)/c-core-sdk\"=. -fPIC",
+                  "CMAKE_CXX_FLAGS": "-fdebug-prefix-map=\"$(pwd)/c-core-sdk\"=. -ffile-prefix-map=\"$(pwd)/c-core-sdk\"=. -fPIC",
+                  "CMAKE_OSX_ARCHITECTURES": "x86_64;arm64"
+                }
+              },
+              {
+                "name": "android-release",
+                "description": "Cross-compiled build for Android",
+                "generator": "Ninja",
+                "binaryDir": "${{ github.workspace }}/${{ matrix.build-path }}",
+                "cacheVariables": {
+                  ${COMMON_CACHE_VARIABLES},
+                  "CMAKE_C_FLAGS": "-fdebug-prefix-map=\"$(pwd)/c-core-sdk\"=. -ffile-prefix-map=\"$(pwd)/c-core-sdk\"=.",
+                  "CMAKE_CXX_FLAGS": "-fdebug-prefix-map=\"$(pwd)/c-core-sdk\"=. -ffile-prefix-map=\"$(pwd)/c-core-sdk\"=.",
+                  "OPENSSL_ROOT_DIR": "${{ github.workspace }}/openssl/android",
+                  "CUSTOM_OPENSSL_LIB_DIR": "${{ github.workspace }}/openssl/android/lib",
+                  "CUSTOM_OPENSSL_INCLUDE_DIR": "${{ github.workspace }}/openssl/android/include",
+                  "CMAKE_TOOLCHAIN_FILE": "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake",
+                  "ANDROID_ABI": "arm64-v8a",
+                  "ANDROID_PLATFORM": "android-21"
+                }
+              }
+            ]
+          }
+
+          EOF
+
+      - name: Configure Cmake
+        run: cmake --fresh -S"${{ github.workspace }}"/c-core-sdk --preset=${{ matrix.preset }}
+      - name: Build library
+        run: cmake --build ${{ github.workspace }}/${{ matrix.build-path }} ${{ github.event.inputs.cVerboseBuild == 'true' && '--verbose' || '' }}
+      - name: Upload static library
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.preset }}
+          path: ${{ github.workspace }}/${{ matrix.build-path }}/${{ matrix.filename }}
+          retention-days: 1
+  store:
+    name: Store built libraries
+    runs-on:
+      group: organization/Default
+    steps:
+      - name: Checkout Unreal Engine SDK
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ueBranch }}
+          token: ${{ secrets.GH_TOKEN }}
+          path: ue-sdk
+      - name: Checkout C-Core SDK
+        uses: actions/checkout@v4
+        with:
+          repository: pubnub/c-core
+          ref: ${{ inputs.cBranch }}
+          token: ${{ secrets.GH_TOKEN }}
+          path: c-core-sdk
+      # - name: Download Windows library
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     # This is `preset` name from the build matrix.
+      #     name: windows-release
+      #     path: ${{ github.workspace }}/ue-sdk/Source/ThirdParty/sdk/lib/win64
+      - name: Download macOS library
+        uses: actions/download-artifact@v4
+        with:
+          # This is `preset` name from the build matrix.
+          name: macos-release
+          path: ${{ github.workspace }}/ue-sdk/Source/ThirdParty/sdk/lib/MacOS
+      # - name: Download Linux library
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     # This is `preset` name from the build matrix.
+      #     name: linux-release
+      #     path: ${{ github.workspace }}/ue-sdk/Source/ThirdParty/sdk/lib/<linux>
+      # - name: Download Android library
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     # This is `preset` name from the build matrix.
+      #     name: macos-android-release
+      #     path: ${{ github.workspace }}/ue-sdk/Source/ThirdParty/sdk/lib/<android>
+      - name: Copy headers
+        run: |
+          # Clear previous headers.
+          rm -rf ${{ github.workspace }}/ue-sdk/Source/ThirdParty/sdk/Include
+          mkdir -p ${{ github.workspace }}/ue-sdk/Source/ThirdParty/sdk/Include
+
+          cd ${{ github.workspace }}/c-core-sdk
+          find . \( -name '*.h' -o -name '*.hpp' \) | cpio -pdm ${{ github.workspace }}/ue-sdk/Source/ThirdParty/sdk/Include
+      - name: Commit changes
+        run: |
+          cd ${{ github.workspace }}/ue-sdk
+
+          git add .
+          git commit -m "build(library): add new PubNub static library"
