@@ -3,6 +3,13 @@ schema: 1
 version: 2.0.0
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2026-04-02
+    version: 2.0.1
+    changes:
+      - type: feature
+        text: "Add a way to change pn-sdk, so it can be used by UE Chat SDK."
+      - type: bug
+        text: "Fix cleaning up PubnubClient in tests, so they don't leave open connections."
   - date: 2026-03-31
     version: 2.0.0
     changes:
