@@ -1,6 +1,6 @@
 name: unreal-engine
 schema: 1
-version: 2.0.0
+version: 2.0.1
 scm: github.com/pubnub/unreal-engine
 changelog:
   - date: 2026-04-02
