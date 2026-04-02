@@ -2148,6 +2148,14 @@ TArray<UPubnubSubscriptionSet*> UPubnubClient::GetActiveSubscriptionSets()
 	return SubscriptionSets;
 }
 
+void UPubnubClient::SetRuntimeSdkVersionSuffix(FString Suffix)
+{
+	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
+
+	SetRuntimeSdkVersionSuffix_priv(Suffix);
+}
+
 void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubConfig InConfig, int InClientID, FString InDebugName )
 {
 	PubnubSubsystem = InPubnubSubsystem;
@@ -2286,6 +2294,9 @@ void UPubnubClient::DeinitializeClient()
 	delete[] OriginBuffer;
 	OriginBuffer = nullptr;
 	OriginLength = 0;
+	delete[] RuntimeSdkVersionSuffixBuffer;
+	RuntimeSdkVersionSuffixBuffer = nullptr;
+	RuntimeSdkVersionSuffixLength = 0;
 	delete PubnubCallsThread;
 	PubnubCallsThread = nullptr;
 
@@ -2588,6 +2599,8 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	pubnub_init(ctx_ee, PublishKey, SubscribeKey);
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("C-Core contexts initialized."));
 	AttachCCoreLogger();
+	
+	SetRuntimeSdkVersionSuffix_priv("-Pubnub-C-core/7.1.2/Unreal/2.0.1");
 
 	pubnub_subscribe_status_callback_t Callback = +[](const pubnub_t *pb, const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data, void* _data)
 	{
@@ -3497,6 +3510,33 @@ int UPubnubClient::SetOrigin_priv(FString Origin)
 	//This is just a setter, so no need to call it on a separate thread
 	Result = pubnub_origin_set(ctx_pub, OriginBuffer);
 	return Result;
+}
+
+void UPubnubClient::SetRuntimeSdkVersionSuffix_priv(FString Suffix)
+{
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("set runtime sdk version suffix called. SuffixLength=%d"), Suffix.Len()));
+
+	delete[] RuntimeSdkVersionSuffixBuffer;
+	RuntimeSdkVersionSuffixBuffer = nullptr;
+	RuntimeSdkVersionSuffixLength = 0;
+
+	if (Suffix.IsEmpty())
+	{
+		pubnub_set_sdk_version_suffix(ctx_pub, nullptr);
+		pubnub_set_sdk_version_suffix(ctx_ee, nullptr);
+		PUBNUB_LOG_FUNCTION_TRACE(TEXT("runtime sdk version suffix reset to compile-time SDK identification."));
+		return;
+	}
+
+	FTCHARToUTF8 Converter(*Suffix);
+	RuntimeSdkVersionSuffixLength = Converter.Length();
+	RuntimeSdkVersionSuffixBuffer = new char[RuntimeSdkVersionSuffixLength + 1];
+	FMemory::Memcpy(RuntimeSdkVersionSuffixBuffer, Converter.Get(), RuntimeSdkVersionSuffixLength);
+	RuntimeSdkVersionSuffixBuffer[RuntimeSdkVersionSuffixLength] = '\0';
+
+	pubnub_set_sdk_version_suffix(ctx_pub, RuntimeSdkVersionSuffixBuffer);
+	pubnub_set_sdk_version_suffix(ctx_ee, RuntimeSdkVersionSuffixBuffer);
+	PUBNUB_LOG_FUNCTION_TRACE(TEXT("runtime sdk version suffix applied to pub and ee contexts."));
 }
 
 FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings)

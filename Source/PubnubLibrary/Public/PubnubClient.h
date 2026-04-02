@@ -2586,6 +2586,12 @@ public:
 #pragma endregion 
 	
 
+	/**
+	 * Internal native API intended for integration layers such as PubnubChat. Don't use this function directly.
+	 */
+	void SetRuntimeSdkVersionSuffix(FString Suffix);
+
+
 private:
 
 	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
@@ -2638,6 +2644,10 @@ private:
 	//Origin has to be kept alive for the lifetime of the sdk, so this is the container for it
 	char* OriginBuffer = nullptr;
 	size_t OriginLength = 0;
+
+	//Runtime SDK suffix has to be kept alive for the lifetime of the sdk, so this is the container for it
+	char* RuntimeSdkVersionSuffixBuffer = nullptr;
+	size_t RuntimeSdkVersionSuffixLength = 0;
 
 #pragma endregion 
 
@@ -2723,6 +2733,7 @@ private:
 	FString ParseToken_priv(FString Token);
 	void SetAuthToken_priv(FString Token);
 	int SetOrigin_priv(FString Origin);
+	void SetRuntimeSdkVersionSuffix_priv(FString Suffix);
 	FPubnubFetchHistoryResult FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	FPubnubOperationResult DeleteMessages_priv(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 	FPubnubMessageCountsResult MessageCounts_priv(FString Channel, FString Timetoken);

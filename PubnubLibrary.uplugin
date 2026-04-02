@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"Version": 15,
+	"Version": 16,
 	"VersionName": "2.0.0",
 	"FriendlyName": "Pubnub Unreal SDK",
 	"Description": "Quickly add interactive features to your game that scale without building your backend infrastructure.",
