@@ -360,14 +360,17 @@ void UPubnubLogManager::HandleCCoreLog(const pubnub_log_message_t* Message)
 
 const pubnub_logger_interface& UPubnubLogManager::GetCCoreLoggerInterface()
 {
-	static const struct pubnub_logger_interface LoggerInterface = {
-		.trace = &ForwardCCoreLog,
-		.debug = &ForwardCCoreLog,
-		.info = &ForwardCCoreLog,
-		.warn = &ForwardCCoreLog,
-		.error = &ForwardCCoreLog,
-		.destroy = nullptr
-	};
+	static const struct pubnub_logger_interface LoggerInterface = []()
+	{
+		struct pubnub_logger_interface Interface{};
+		Interface.trace = &ForwardCCoreLog;
+		Interface.debug = &ForwardCCoreLog;
+		Interface.info = &ForwardCCoreLog;
+		Interface.warn = &ForwardCCoreLog;
+		Interface.error = &ForwardCCoreLog;
+		Interface.destroy = nullptr;
+		return Interface;
+	}();
 	return LoggerInterface;
 }
 

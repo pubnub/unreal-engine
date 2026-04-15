@@ -3,9 +3,10 @@
 Merge Pubnub and PubnubChat plugins into a single FAB-ready plugin (PubnubGamingSDK).
 
 Output: Plugins/PubnubGamingSDK/
-  - PubnubLibrary.uplugin (merged descriptor; no plugin dependency)
-  - Source/ (PubnubLibrary, PubnubLibraryTests, ThirdParty, PubnubChatSDK, PubnubChatSDKTests)
+  - PubnubLibrary.uplugin (merged descriptor; no plugin dependency, no test modules)
+  - Source/ (merged Pubnub and PubnubChat sources)
   - Content/ (from PubnubChat)
+  - Scripts/ (from Pubnub)
   - LICENSE (from Pubnub, or PubnubChat if Pubnub has none)
 
 Run from project root or any directory; paths are resolved from script location.
@@ -16,6 +17,17 @@ from __future__ import annotations
 import json
 import shutil
 from pathlib import Path
+
+
+_EXCLUDED_MODULES = frozenset({
+    "PubnubLibraryTests",
+    "PubnubChatSDKTests",
+})
+
+_EXCLUDED_SOURCE_DIRS = frozenset({
+    "PubnubLibraryTests",
+    "PubnubChatSDKTests",
+})
 
 
 # Names to exclude when copying directory trees.
@@ -38,6 +50,16 @@ def _should_ignore(name: str) -> bool:
 
 def _ignore_func(_dir: Path, names: list[str]) -> list[str]:
     return [n for n in names if _should_ignore(n)]
+
+
+def _filter_modules(modules: list[dict]) -> list[dict]:
+    return [module for module in modules if module.get("Name") not in _EXCLUDED_MODULES]
+
+
+def _ignore_source_dirs(_dir: Path, names: list[str]) -> list[str]:
+    ignored = _ignore_func(_dir, names)
+    ignored.extend(name for name in names if name in _EXCLUDED_SOURCE_DIRS)
+    return ignored
 
 
 def main() -> None:
@@ -70,8 +92,8 @@ def main() -> None:
     merged = dict(pubnub_desc)
     merged.pop("Plugins", None)
 
-    pubnub_modules = list(merged.get("Modules", []))
-    chat_modules = list(chat_desc.get("Modules", []))
+    pubnub_modules = _filter_modules(list(merged.get("Modules", [])))
+    chat_modules = _filter_modules(list(chat_desc.get("Modules", [])))
     merged["Modules"] = pubnub_modules + chat_modules
 
     # Create output (replace existing)
@@ -86,16 +108,18 @@ def main() -> None:
     shutil.copytree(
         pubnub_root / "Source",
         out_root / "Source",
-        ignore=_ignore_func,
+        ignore=_ignore_source_dirs,
     )
 
     # Merge PubnubChat Source into same Source tree
     out_source = out_root / "Source"
     chat_source = pubnub_chat_root / "Source"
     for item in chat_source.iterdir():
+        if item.name in _EXCLUDED_SOURCE_DIRS:
+            continue
         dst = out_source / item.name
         if item.is_dir():
-            shutil.copytree(item, dst, ignore=_ignore_func)
+            shutil.copytree(item, dst, ignore=_ignore_source_dirs)
         else:
             shutil.copy2(item, dst)
 
@@ -103,6 +127,11 @@ def main() -> None:
     chat_content = pubnub_chat_root / "Content"
     if chat_content.is_dir():
         shutil.copytree(chat_content, out_root / "Content", ignore=_ignore_func)
+
+    # Copy Scripts from Pubnub
+    pubnub_scripts = pubnub_root / "Scripts"
+    if pubnub_scripts.is_dir():
+        shutil.copytree(pubnub_scripts, out_root / "Scripts", ignore=_ignore_func)
 
     # Copy LICENSE (Pubnub first, then PubnubChat)
     for root in (pubnub_root, pubnub_chat_root):
