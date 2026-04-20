@@ -601,7 +601,15 @@ struct FPubnubUserInputData
 	 */
 	static FPubnubUserInputData FromPubnubUserData(const FPubnubUserData& UserData)
 	{
-		return FPubnubUserInputData({.UserName = UserData.UserName, .ExternalID = UserData.ExternalID, .ProfileUrl = UserData.ProfileUrl, .Email = UserData.Email, .Custom = UserData.Custom, .Status = UserData.Status, .Type = UserData.Type});
+		FPubnubUserInputData InputData;
+		InputData.UserName = UserData.UserName;
+		InputData.ExternalID = UserData.ExternalID;
+		InputData.ProfileUrl = UserData.ProfileUrl;
+		InputData.Email = UserData.Email;
+		InputData.Custom = UserData.Custom;
+		InputData.Status = UserData.Status;
+		InputData.Type = UserData.Type;
+		return InputData;
 	}
 };
 
@@ -650,7 +658,13 @@ struct FPubnubChannelInputData
 	 */
 	static FPubnubChannelInputData FromPubnubChannelData(const FPubnubChannelData& ChannelData)
 	{
-		return FPubnubChannelInputData({.ChannelName = ChannelData.ChannelName, .Description = ChannelData.Description, .Custom = ChannelData.Custom, .Status = ChannelData.Status, .Type = ChannelData.Type});
+		FPubnubChannelInputData InputData;
+		InputData.ChannelName = ChannelData.ChannelName;
+		InputData.Description = ChannelData.Description;
+		InputData.Custom = ChannelData.Custom;
+		InputData.Status = ChannelData.Status;
+		InputData.Type = ChannelData.Type;
+		return InputData;
 	}
 };
 
@@ -691,7 +705,12 @@ struct FPubnubMembershipInputData
 	 */
 	static FPubnubMembershipInputData FromPubnubMembershipData(const FPubnubMembershipData& MembershipData)
 	{
-		return FPubnubMembershipInputData({.Channel = MembershipData.Channel.ChannelID, .Custom = MembershipData.Custom, .Status = MembershipData.Status, .Type = MembershipData.Type});
+		FPubnubMembershipInputData InputData;
+		InputData.Channel = MembershipData.Channel.ChannelID;
+		InputData.Custom = MembershipData.Custom;
+		InputData.Status = MembershipData.Status;
+		InputData.Type = MembershipData.Type;
+		return InputData;
 	}
 };
 
@@ -732,7 +751,12 @@ struct FPubnubChannelMemberInputData
 	 */
 	static FPubnubChannelMemberInputData FromPubnubMembershipData(const FPubnubChannelMemberData& ChannelMemberData)
 	{
-		return FPubnubChannelMemberInputData({.User = ChannelMemberData.User.UserID, .Custom = ChannelMemberData.Custom, .Status = ChannelMemberData.Status, .Type = ChannelMemberData.Type});
+		FPubnubChannelMemberInputData InputData;
+		InputData.User = ChannelMemberData.User.UserID;
+		InputData.Custom = ChannelMemberData.Custom;
+		InputData.Status = ChannelMemberData.Status;
+		InputData.Type = ChannelMemberData.Type;
+		return InputData;
 	}
 };
 
@@ -1109,7 +1133,7 @@ struct FPubnubMessageCountsResult
 	/** Status and error information for this operation */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
 	/** The number of messages in the specified time range */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int MessageCounts;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int MessageCounts = 0;
 };
 
 USTRUCT(BlueprintType)

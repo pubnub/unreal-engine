@@ -5,7 +5,8 @@
 #include "Entities/PubnubBaseEntity.h"
 #include "FunctionLibraries/PubnubUtilities.h"
 #include "FunctionLibraries/PubnubInternalUtilities.h"
-
+#include "PubnubInternalMacros.h"
+#include "PubnubInternalStructLibrary.h"
 
 void UPubnubSubscriptionBase::BeginDestroy()
 {
@@ -16,6 +17,18 @@ void UPubnubSubscriptionBase::BeginDestroy()
 
 FPubnubOperationResult UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
 {
+	PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	
+	if(!CCoreSubscription)
+	{
+		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscription is invalid.")});
+	}
+	
+	if (bIsSubscribed)
+	{
+		return FPubnubOperationResult({0, true, TEXT("Subscription is already subscribed.")});
+	}
+	
 	return PubnubClient->SubscribeWithSubscription(this, Cursor);
 }
 
@@ -32,15 +45,17 @@ void UPubnubSubscription::SubscribeAsync(FOnPubnubSubscribeOperationResponse OnS
 
 void UPubnubSubscription::SubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
-	if(!IsInitialized)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This Subscription is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
-		return;
-	}
+	PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(NativeCallback);
 	
 	if(!CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription set is invalid."));
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscription is invalid."));
+		return;
+	}
+	
+	if (bIsSubscribed)
+	{
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Subscription is already subscribed."));
 		return;
 	}
 	
@@ -54,6 +69,18 @@ void UPubnubSubscription::SubscribeAsync(FPubnubSubscriptionCursor Cursor)
 
 FPubnubOperationResult UPubnubSubscription::Unsubscribe()
 {
+	PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	
+	if(!CCoreSubscription)
+	{
+		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscription is invalid.")});
+	}
+	
+	if (!bIsSubscribed)
+	{
+		return FPubnubOperationResult({0, true, TEXT("Subscription is not subscribed")});
+	}
+	
 	return PubnubClient->UnsubscribeWithSubscription(this);
 }
 
@@ -70,15 +97,17 @@ void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponse O
 
 void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback)
 {
-	if(!IsInitialized)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This Subscription is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
-		return;
-	}
+	PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(NativeCallback);
 	
 	if(!CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: internal C-Core subscription set is invalid."));
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscription is invalid."));
+		return;
+	}
+	
+	if (!bIsSubscribed)
+	{
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Subscription is not subscribed."));
 		return;
 	}
 
@@ -155,6 +184,11 @@ void UPubnubSubscription::InitWithCCoreSubscription(UPubnubClient* InPubnubClien
 
 void UPubnubSubscription::InternalInit()
 {
+	// Set weak pointer to this object in the heap payload
+	FPubnubInternalSubscriptionListenerUserData* UserData = new FPubnubInternalSubscriptionListenerUserData();
+	UserData->WeakSubscription = this;
+	ListenerUserData = UserData;
+
 	// Create callbacks for each Listener type
 
 	// Messages and Presence
@@ -163,12 +197,8 @@ void UPubnubSubscription::InternalInit()
 		if(!user_data)
 		{return;}
 		
-		// Validate object before creating weak pointer to prevent crashes during destruction
-		UPubnubSubscription* SubscriptionPtr = static_cast<UPubnubSubscription*>(user_data);
-		if(!SubscriptionPtr->IsValidLowLevelFast())
-		{return;}
-		
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(SubscriptionPtr);
+		FPubnubInternalSubscriptionListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionListenerUserData*>(user_data);
+		TWeakObjectPtr<UPubnubSubscription> SubscriptionWeak = ListenerUserDataPtr->WeakSubscription;
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
@@ -220,12 +250,8 @@ void UPubnubSubscription::InternalInit()
 		if(!user_data)
 		{return;}
 		
-		// Validate object before creating weak pointer to prevent crashes during destruction
-		UPubnubSubscription* SubscriptionPtr = static_cast<UPubnubSubscription*>(user_data);
-		if(!SubscriptionPtr->IsValidLowLevelFast())
-		{return;}
-		
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(SubscriptionPtr);
+		FPubnubInternalSubscriptionListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionListenerUserData*>(user_data);
+		TWeakObjectPtr<UPubnubSubscription> SubscriptionWeak = ListenerUserDataPtr->WeakSubscription;
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
@@ -260,12 +286,8 @@ void UPubnubSubscription::InternalInit()
 		if(!user_data)
 		{return;}
 		
-		// Validate object before creating weak pointer to prevent crashes during destruction
-		UPubnubSubscription* SubscriptionPtr = static_cast<UPubnubSubscription*>(user_data);
-		if(!SubscriptionPtr->IsValidLowLevelFast())
-		{return;}
-		
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(SubscriptionPtr);
+		FPubnubInternalSubscriptionListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionListenerUserData*>(user_data);
+		TWeakObjectPtr<UPubnubSubscription> SubscriptionWeak = ListenerUserDataPtr->WeakSubscription;
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
@@ -300,12 +322,8 @@ void UPubnubSubscription::InternalInit()
 		if(!user_data)
 		{return;}
 		
-		// Validate object before creating weak pointer to prevent crashes during destruction
-		UPubnubSubscription* SubscriptionPtr = static_cast<UPubnubSubscription*>(user_data);
-		if(!SubscriptionPtr->IsValidLowLevelFast())
-		{return;}
-		
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscription>(SubscriptionPtr);
+		FPubnubInternalSubscriptionListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionListenerUserData*>(user_data);
+		TWeakObjectPtr<UPubnubSubscription> SubscriptionWeak = ListenerUserDataPtr->WeakSubscription;
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
@@ -335,10 +353,10 @@ void UPubnubSubscription::InternalInit()
 	};
 
 	// Register created callback in subscription
-	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessages, EPubnubListenerType::PLT_Message, this);
-	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackSignals, EPubnubListenerType::PLT_Signal, this);
-	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackObjects, EPubnubListenerType::PLT_Objects, this);
-	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, this);
+	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessages, EPubnubListenerType::PLT_Message, ListenerUserData);
+	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackSignals, EPubnubListenerType::PLT_Signal, ListenerUserData);
+	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackObjects, EPubnubListenerType::PLT_Objects, ListenerUserData);
+	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, ListenerUserData);
 
 	// Bind to deinitialize start so subscription C-Core resources are released
 	PubnubClient->OnClientDeinitializeStart.AddDynamic(this, &UPubnubSubscription::CleanUpSubscription);
@@ -375,6 +393,12 @@ void UPubnubSubscription::CleanUpSubscription()
 	}
 	CCoreSubscription = nullptr;
 
+	if(ListenerUserData)
+	{
+		delete static_cast<FPubnubInternalSubscriptionListenerUserData*>(ListenerUserData);
+		ListenerUserData = nullptr;
+	}
+
 	if(PubnubClient)
 	{
 		PubnubClient->OnClientDeinitializeStart.RemoveDynamic(this, &UPubnubSubscription::CleanUpSubscription);
@@ -383,16 +407,16 @@ void UPubnubSubscription::CleanUpSubscription()
 
 FPubnubOperationResult UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCursor Cursor)
 {
-	if(!IsInitialized)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
-		return FPubnubOperationResult({0, true, TEXT("SubscriptionSet is invalid.")});
-	}
+	PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 
 	if(!CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription set is invalid."));
 		return FPubnubOperationResult({0, true, TEXT("CCoreSubscriptionSet is invalid.")});
+	}
+	
+	if (bIsSubscribed)
+	{
+		return FPubnubOperationResult({0, true, TEXT("SubscriptionSet is already subscribed.")});
 	}
 
 	return PubnubClient->SubscribeWithSubscriptionSet(this, Cursor);
@@ -411,15 +435,17 @@ void UPubnubSubscriptionSet::SubscribeAsync(FOnPubnubSubscribeOperationResponse 
 
 void UPubnubSubscriptionSet::SubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
-	if(!IsInitialized)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
-		return;
-	}
+	PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(NativeCallback);
 	
 	if(!CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Subscribe]: internal C-Core subscription set is invalid."));
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscriptionSet is invalid."));
+		return;
+	}
+	
+	if (bIsSubscribed)
+	{
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("SubscriptionSet is already subscribed."));
 		return;
 	}
 	
@@ -433,6 +459,18 @@ void UPubnubSubscriptionSet::SubscribeAsync(FPubnubSubscriptionCursor Cursor)
 
 FPubnubOperationResult UPubnubSubscriptionSet::Unsubscribe()
 {
+	PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
+	
+	if(!CCoreSubscriptionSet)
+	{
+		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscriptionSet is invalid.")});
+	}
+	
+	if (!bIsSubscribed)
+	{
+		return FPubnubOperationResult({0, true, TEXT("SubscriptionSet is not subscribed")});
+	}
+	
 	return PubnubClient->UnsubscribeWithSubscriptionSet(this);
 }
 
@@ -449,17 +487,20 @@ void UPubnubSubscriptionSet::UnsubscribeAsync(FOnPubnubSubscribeOperationRespons
 
 void UPubnubSubscriptionSet::UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback)
 {
-	if(!IsInitialized)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
-		return;
-	}
+	PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(NativeCallback);
 	
 	if(!CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[Unsubscribe]: internal C-Core subscription set is invalid."));
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscriptionSet is invalid."));
 		return;
 	}
+	
+	if (!bIsSubscribed)
+	{
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("SubscriptionSet is not subscribed."));
+		return;
+	}
+
 
 	PubnubClient->UnsubscribeWithSubscriptionSetAsync(this, NativeCallback);
 }
@@ -629,6 +670,11 @@ void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubClient* InPubnu
 
 void UPubnubSubscriptionSet::InternalInit()
 {
+	// Set weak pointer to this object in the heap payload
+	FPubnubInternalSubscriptionSetListenerUserData* UserData = new FPubnubInternalSubscriptionSetListenerUserData();
+	UserData->WeakSubscriptionSet = this;
+	ListenerUserData = UserData;
+
 	// Create callbacks for each Listener type
 
 	// Messages and Presence
@@ -637,12 +683,8 @@ void UPubnubSubscriptionSet::InternalInit()
 		if(!user_data)
 		{return;}
 		
-		// Validate object before creating weak pointer to prevent crashes during destruction
-		UPubnubSubscriptionSet* SubscriptionPtr = static_cast<UPubnubSubscriptionSet*>(user_data);
-		if(!SubscriptionPtr->IsValidLowLevelFast())
-		{return;}
-		
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(SubscriptionPtr);
+		FPubnubInternalSubscriptionSetListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(user_data);
+		TWeakObjectPtr<UPubnubSubscriptionSet> SubscriptionWeak = ListenerUserDataPtr->WeakSubscriptionSet;
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
@@ -692,12 +734,8 @@ void UPubnubSubscriptionSet::InternalInit()
 		if(!user_data)
 		{return;}
 		
-		// Validate object before creating weak pointer to prevent crashes during destruction
-		UPubnubSubscriptionSet* SubscriptionPtr = static_cast<UPubnubSubscriptionSet*>(user_data);
-		if(!SubscriptionPtr->IsValidLowLevelFast())
-		{return;}
-		
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(SubscriptionPtr);
+		FPubnubInternalSubscriptionSetListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(user_data);
+		TWeakObjectPtr<UPubnubSubscriptionSet> SubscriptionWeak = ListenerUserDataPtr->WeakSubscriptionSet;
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
@@ -730,12 +768,8 @@ void UPubnubSubscriptionSet::InternalInit()
 		if(!user_data)
 		{return;}
 		
-		// Validate object before creating weak pointer to prevent crashes during destruction
-		UPubnubSubscriptionSet* SubscriptionPtr = static_cast<UPubnubSubscriptionSet*>(user_data);
-		if(!SubscriptionPtr->IsValidLowLevelFast())
-		{return;}
-		
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(SubscriptionPtr);
+		FPubnubInternalSubscriptionSetListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(user_data);
+		TWeakObjectPtr<UPubnubSubscriptionSet> SubscriptionWeak = ListenerUserDataPtr->WeakSubscriptionSet;
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
@@ -768,12 +802,8 @@ void UPubnubSubscriptionSet::InternalInit()
 		if(!user_data)
 		{return;}
 		
-		// Validate object before creating weak pointer to prevent crashes during destruction
-		UPubnubSubscriptionSet* SubscriptionPtr = static_cast<UPubnubSubscriptionSet*>(user_data);
-		if(!SubscriptionPtr->IsValidLowLevelFast())
-		{return;}
-		
-		auto SubscriptionWeak = TWeakObjectPtr<UPubnubSubscriptionSet>(SubscriptionPtr);
+		FPubnubInternalSubscriptionSetListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(user_data);
+		TWeakObjectPtr<UPubnubSubscriptionSet> SubscriptionWeak = ListenerUserDataPtr->WeakSubscriptionSet;
 		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
 		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
 		{
@@ -801,10 +831,10 @@ void UPubnubSubscriptionSet::InternalInit()
 	};
 
 	// Register created callback in subscription
-	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessages, EPubnubListenerType::PLT_Message, this);
-	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackSignals, EPubnubListenerType::PLT_Signal, this);
-	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackObjects, EPubnubListenerType::PLT_Objects, this);
-	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, this);
+	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessages, EPubnubListenerType::PLT_Message, ListenerUserData);
+	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackSignals, EPubnubListenerType::PLT_Signal, ListenerUserData);
+	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackObjects, EPubnubListenerType::PLT_Objects, ListenerUserData);
+	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, ListenerUserData);
 
 	// Bind to deinitialize start so subscription C-Core resources are released
 	PubnubClient->OnClientDeinitializeStart.AddDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
@@ -841,6 +871,12 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 		pubnub_subscription_set_free(&CCoreSubscriptionSet);
 	}
 	CCoreSubscriptionSet = nullptr;
+
+	if(ListenerUserData)
+	{
+		delete static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(ListenerUserData);
+		ListenerUserData = nullptr;
+	}
 
 	if(PubnubClient)
 	{

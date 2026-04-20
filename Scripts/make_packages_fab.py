@@ -6,7 +6,7 @@ import json
 import zipfile
 
 print("Creating packages for Unreal Engine")
-supported_ue_versions = ["5.0.0", "5.1.0", "5.2.0", "5.3.0", "5.4.0", "5.5.0", "5.6.0"]
+supported_ue_versions = ["5.0.0", "5.1.0", "5.2.0", "5.3.0", "5.4.0", "5.5.0", "5.6.0", "5.7.0"]
 
 print("Preparing files")
 
@@ -16,6 +16,7 @@ plugin_root = os.path.normpath(os.path.join(script_dir, ".."))
 temporary_dir = os.path.join(plugin_root, "PubnubGamingSDK")
 
 shutil.copytree(plugin_root, temporary_dir)
+shutil.rmtree(os.path.join(temporary_dir, "Scripts"), ignore_errors=True)
 
 # os.remove(temporary_dir + "/LICENSE")
 # os.remove(temporary_dir + "/make_packages.py")
