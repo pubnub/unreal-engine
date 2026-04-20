@@ -3,6 +3,13 @@ schema: 1
 version: 2.0.2
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2026-04-20
+    version: 2.0.2
+    changes:
+      - type: bug
+        text: "Fix errors that could be printed when Subscription Objects were garbage collected."
+      - type: bug
+        text: "Fix compilation errors when C++ 20 support is not enabled by replace designated initializers."
   - date: 2026-04-02
     version: 2.0.1
     changes:
