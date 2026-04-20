@@ -214,16 +214,16 @@ bool UPubnubInternalUtilities::EEUnsubscribeWithSubscriptionSet(pubnub_subscript
 	return true;
 }
 
-bool UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller)
+bool UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, void* UserData)
 {
 	if(ListenerType == EPubnubListenerType::PLT_All)
 	{
-		EEAddSubscriptionListenersOfAllTypes(Subscription, Callback, Caller);
+		EEAddSubscriptionListenersOfAllTypes(Subscription, Callback, UserData);
 		return false;
 	}
 	
 	pubnub_subscribe_listener_type PubnubListenerType = static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(ListenerType));
-	enum pubnub_res AddMessageListenerResult = pubnub_subscribe_add_subscription_listener(Subscription, PubnubListenerType, Callback, Caller);
+	enum pubnub_res AddMessageListenerResult = pubnub_subscribe_add_subscription_listener(Subscription, PubnubListenerType, Callback, UserData);
 
 	if(PNR_OK != AddMessageListenerResult)
 	{
@@ -235,24 +235,24 @@ bool UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(pubnub_subscripti
 	return true;
 }
 
-void UPubnubInternalUtilities::EEAddSubscriptionListenersOfAllTypes(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, UObject* Caller)
+void UPubnubInternalUtilities::EEAddSubscriptionListenersOfAllTypes(pubnub_subscription_t* Subscription, pubnub_subscribe_message_callback_t Callback, void* UserData)
 {
 	for(EPubnubListenerType Type : TEnumRange<EPubnubListenerType>())
 	{
-		EEAddSubscriptionListenerOfType(Subscription, Callback, Type, Caller);
+		EEAddSubscriptionListenerOfType(Subscription, Callback, Type, UserData);
 	}
 }
 
-bool UPubnubInternalUtilities::EERemoveSubscriptionListenerOfType(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller)
+bool UPubnubInternalUtilities::EERemoveSubscriptionListenerOfType(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, void* UserData)
 {
 	if(ListenerType == EPubnubListenerType::PLT_All)
 	{
-		EERemoveSubscriptionListenersOfAllTypes(SubscriptionPtr, Callback, Caller);
+		EERemoveSubscriptionListenersOfAllTypes(SubscriptionPtr, Callback, UserData);
 		return false;
 	}
 
 	pubnub_subscribe_listener_type PubnubListenerType = static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(ListenerType));
-	enum pubnub_res RemoveMessageActionListenerResult =  pubnub_subscribe_remove_subscription_listener(*SubscriptionPtr, PubnubListenerType, Callback, Caller);
+	enum pubnub_res RemoveMessageActionListenerResult =  pubnub_subscribe_remove_subscription_listener(*SubscriptionPtr, PubnubListenerType, Callback, UserData);
 	if(PNR_OK != RemoveMessageActionListenerResult)
 	{
 		FString ResultString(pubnub_res_2_string(RemoveMessageActionListenerResult));
@@ -263,24 +263,24 @@ bool UPubnubInternalUtilities::EERemoveSubscriptionListenerOfType(pubnub_subscri
 	return true;
 }
 
-void UPubnubInternalUtilities::EERemoveSubscriptionListenersOfAllTypes(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, UObject* Caller)
+void UPubnubInternalUtilities::EERemoveSubscriptionListenersOfAllTypes(pubnub_subscription_t** SubscriptionPtr, pubnub_subscribe_message_callback_t Callback, void* UserData)
 {
 	for(EPubnubListenerType Type : TEnumRange<EPubnubListenerType>())
 	{
-		EERemoveSubscriptionListenerOfType(SubscriptionPtr, Callback, Type, Caller);
+		EERemoveSubscriptionListenerOfType(SubscriptionPtr, Callback, Type, UserData);
 	}
 }
 
-bool UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(pubnub_subscription_set_t* SubscriptionSet, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller)
+bool UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(pubnub_subscription_set_t* SubscriptionSet, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, void* UserData)
 {
 	if(ListenerType == EPubnubListenerType::PLT_All)
 	{
-		EEAddSubscriptionSetListenersOfAllTypes(SubscriptionSet, Callback, Caller);
+		EEAddSubscriptionSetListenersOfAllTypes(SubscriptionSet, Callback, UserData);
 		return false;
 	}
 	
 	pubnub_subscribe_listener_type PubnubListenerType = static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(ListenerType));
-	enum pubnub_res AddMessageListenerResult = pubnub_subscribe_add_subscription_set_listener(SubscriptionSet, PubnubListenerType, Callback, Caller);
+	enum pubnub_res AddMessageListenerResult = pubnub_subscribe_add_subscription_set_listener(SubscriptionSet, PubnubListenerType, Callback, UserData);
 
 	if(PNR_OK != AddMessageListenerResult)
 	{
@@ -292,24 +292,24 @@ bool UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(pubnub_subscri
 	return true;
 }
 
-void UPubnubInternalUtilities::EEAddSubscriptionSetListenersOfAllTypes(pubnub_subscription_set_t* SubscriptionSet, pubnub_subscribe_message_callback_t Callback, UObject* Caller)
+void UPubnubInternalUtilities::EEAddSubscriptionSetListenersOfAllTypes(pubnub_subscription_set_t* SubscriptionSet, pubnub_subscribe_message_callback_t Callback, void* UserData)
 {
 	for(EPubnubListenerType Type : TEnumRange<EPubnubListenerType>())
 	{
-		EEAddSubscriptionSetListenerOfType(SubscriptionSet, Callback, Type, Caller);
+		EEAddSubscriptionSetListenerOfType(SubscriptionSet, Callback, Type, UserData);
 	}
 }
 
-bool UPubnubInternalUtilities::EERemoveSubscriptionSetListenerOfType(pubnub_subscription_set_t** SubscriptionSetPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, UObject* Caller)
+bool UPubnubInternalUtilities::EERemoveSubscriptionSetListenerOfType(pubnub_subscription_set_t** SubscriptionSetPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, void* UserData)
 {
 	if(ListenerType == EPubnubListenerType::PLT_All)
 	{
-		EERemoveSubscriptionSetListenersOfAllTypes(SubscriptionSetPtr, Callback, Caller);
+		EERemoveSubscriptionSetListenersOfAllTypes(SubscriptionSetPtr, Callback, UserData);
 		return false;
 	}
 
 	pubnub_subscribe_listener_type PubnubListenerType = static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(ListenerType));
-	enum pubnub_res RemoveMessageActionListenerResult =  pubnub_subscribe_remove_subscription_set_listener(*SubscriptionSetPtr, PubnubListenerType, Callback, Caller);
+	enum pubnub_res RemoveMessageActionListenerResult =  pubnub_subscribe_remove_subscription_set_listener(*SubscriptionSetPtr, PubnubListenerType, Callback, UserData);
 	if(PNR_OK != RemoveMessageActionListenerResult)
 	{
 		FString ResultString(pubnub_res_2_string(RemoveMessageActionListenerResult));
@@ -320,10 +320,10 @@ bool UPubnubInternalUtilities::EERemoveSubscriptionSetListenerOfType(pubnub_subs
 	return true;
 }
 
-void UPubnubInternalUtilities::EERemoveSubscriptionSetListenersOfAllTypes(pubnub_subscription_set_t** SubscriptionSetPtr, pubnub_subscribe_message_callback_t Callback, UObject* Caller)
+void UPubnubInternalUtilities::EERemoveSubscriptionSetListenersOfAllTypes(pubnub_subscription_set_t** SubscriptionSetPtr, pubnub_subscribe_message_callback_t Callback, void* UserData)
 {
 	for(EPubnubListenerType Type : TEnumRange<EPubnubListenerType>())
 	{
-		EERemoveSubscriptionSetListenerOfType(SubscriptionSetPtr, Callback, Type, Caller);
+		EERemoveSubscriptionSetListenerOfType(SubscriptionSetPtr, Callback, Type, UserData);
 	}
 }

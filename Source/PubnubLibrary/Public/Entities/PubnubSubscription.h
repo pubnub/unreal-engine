@@ -103,7 +103,10 @@ public:
 	virtual void BeginDestroy() override;
 
 protected:
-	
+
+	/** Opaque heap block passed to C-Core as listener user_data; holds internal routing state for native callbacks. Freed when the subscription is cleaned up. */
+	void* ListenerUserData = nullptr;
+
 	UPROPERTY()
 	TObjectPtr<UPubnubClient> PubnubClient = nullptr;
 

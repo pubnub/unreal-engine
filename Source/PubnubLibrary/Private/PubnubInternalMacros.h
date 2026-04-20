@@ -587,3 +587,43 @@
 			return __VA_ARGS__; \
 		} \
 	} while (false)
+
+/**
+ * Ensures that the Pubnub Entity is properly initialized before proceeding.
+ *
+ */
+#define PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED() \
+	do { \
+		FPubnubOperationResult Result; \
+		if (!IsInitialized) \
+		{ \
+			Result.Error = true; \
+			Result.ErrorMessage = TEXT("Entity is not initialized. Aborting operation. This entity was already destroyed or was not initialized correctly."); \
+			return Result; \
+		} \
+		if (!PubnubClient) \
+		{ \
+			Result.Error = true; \
+			Result.ErrorMessage = TEXT("PubnubClient is invalid. Aborting operation. This entity was already destroyed or was not initialized correctly."); \
+			return Result; \
+		} \
+	} while (false)
+
+
+/**
+ * Ensures that the Pubnub Entity is properly initialized before proceeding.
+ *
+ */
+#define PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(Delegate, ...) \
+	do { \
+		if (!IsInitialized) \
+			{ \
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("PubnubClient is not initialized."), ##__VA_ARGS__); \
+			return; \
+		} \
+		if (!PubnubClient) \
+			{ \
+			UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(Delegate, TEXT("PubnubCallsThread is invalid."), ##__VA_ARGS__); \
+			return; \
+		} \
+	} while (false)
