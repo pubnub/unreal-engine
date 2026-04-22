@@ -226,6 +226,13 @@ struct dns_queries_tracking {
     /** Whether query should be retried in case of partial completion. */
     bool need_retry;
 
+    /** DNS transaction ID used for the @c A record query. */
+    uint16_t id_a;
+#if PUBNUB_USE_IPV6
+    /** DNS transaction ID used for the @c AAAA record query. */
+    uint16_t id_aaaa;
+#endif /* PUBNUB_USE_IPV6 */
+
     /* @c A record response received. */
     bool received_a;
     /* Temporarily storage until @c AAAA record response will be received. */
@@ -499,6 +506,25 @@ struct pubnub_ {
 #else  /* PUBNUB_USE_IPV6 */
     struct sockaddr_in dns_addr;
 #endif /* !PUBNUB_USE_IPV6 */
+
+#if defined(_WIN32)
+    /** Windows OS DNS resolution state (DnsQueryEx).
+        Used when no custom DNS servers are configured, allowing
+        the OS resolver to handle DNS (VPN-aware, uses system DNS cache).
+      */
+    struct pbpal_os_dns {
+        bool active;
+        DNS_QUERY_CANCEL cancel_a;
+        DNS_QUERY_CANCEL cancel_aaaa;
+        DNS_QUERY_RESULT query_result_a;
+        DNS_QUERY_RESULT query_result_aaaa;
+        /** Set by thread pool callback via InterlockedExchange. */
+        volatile LONG completed_a;
+        volatile LONG completed_aaaa;
+        volatile LONG status_a;
+        volatile LONG status_aaaa;
+    } os_dns;
+#endif /* defined(_WIN32) */
 #endif /* defined(PUBNUB_CALLBACK_API) */
 
     /** Subscribed channels and channel groups saved.
