@@ -10,6 +10,7 @@ Output: Plugins/PubnubGamingSDK/
   - LICENSE (from Pubnub, or PubnubChat if Pubnub has none)
 
 Run from project root or any directory; paths are resolved from script location.
+Prompts for VersionName; the merged PubnubLibrary.uplugin uses FriendlyName "PubNub Gaming SDK".
 """
 
 from __future__ import annotations
@@ -82,15 +83,21 @@ def main() -> None:
     if not pubnub_chat_uplugin.is_file():
         raise SystemExit(f"Missing {pubnub_chat_uplugin}")
 
+    version_name = input("Enter package VersionName (e.g. 1.0.2): ").strip()
+    if not version_name:
+        raise SystemExit("VersionName is required (non-empty).")
+
     # Load descriptors
     with open(pubnub_uplugin, encoding="utf-8") as f:
         pubnub_desc = json.load(f)
     with open(pubnub_chat_uplugin, encoding="utf-8") as f:
         chat_desc = json.load(f)
 
-    # Build merged .uplugin: base on Pubnub (version unchanged), merge modules, drop Plugins
+    # Build merged .uplugin: base on Pubnub, merge modules, drop Plugins
     merged = dict(pubnub_desc)
     merged.pop("Plugins", None)
+    merged["VersionName"] = version_name
+    merged["FriendlyName"] = "PubNub Gaming SDK"
 
     pubnub_modules = _filter_modules(list(merged.get("Modules", [])))
     chat_modules = _filter_modules(list(chat_desc.get("Modules", [])))

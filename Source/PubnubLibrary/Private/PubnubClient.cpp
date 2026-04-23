@@ -2600,7 +2600,7 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("C-Core contexts initialized."));
 	AttachCCoreLogger();
 	
-	SetRuntimeSdkVersionSuffix_priv("-Pubnub-C-core/7.1.3/Unreal/2.0.3");
+	SetRuntimeSdkVersionSuffix_priv(UPubnubInternalUtilities::GetPubnubSdkVersionSuffix());
 
 	pubnub_subscribe_status_callback_t Callback = +[](const pubnub_t *pb, const pubnub_subscription_status status, const pubnub_subscription_status_data_t status_data, void* _data)
 	{

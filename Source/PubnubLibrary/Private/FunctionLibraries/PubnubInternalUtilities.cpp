@@ -2,8 +2,19 @@
 
 #include "FunctionLibraries/PubnubInternalUtilities.h"
 #include "PubnubClient.h"
+#include "PubnubLibraryVersion.h"
 #include "FunctionLibraries/PubnubUtilities.h"
 
+FString UPubnubInternalUtilities::GetPubnubSdkVersionSuffix()
+{
+	return FString::Printf(
+		TEXT("-Pubnub-C-core/%s/Unreal/%d.%d.%d"),
+		ANSI_TO_TCHAR(PUBNUB_C_CORE_VERSION),
+		PUBNUB_LIBRARY_VERSION_MAJOR,
+		PUBNUB_LIBRARY_VERSION_MINOR,
+		PUBNUB_LIBRARY_VERSION_PATCH
+	);
+}
 
 void UPubnubInternalUtilities::PublishUESettingsToPubnubPublishOptions(const FPubnubPublishSettings &PublishSettings, pubnub_publish_options& PubnubPublishOptions)
 {
