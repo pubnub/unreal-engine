@@ -26,6 +26,9 @@ public:
 	static void HereNowUESettingsToPubnubHereNowOptions(const FPubnubListUsersFromChannelSettings &HereNowSettings, pubnub_here_now_options &PubnubHereNowOptions);
 	static void SetStateUESettingsToPubnubSetStateOptions(const FPubnubSetStateSettings &SetStateSettings, pubnub_set_state_options &PubnubSetStateOptions);
 	static void FetchHistoryUESettingsToPbFetchHistoryOptions(const FPubnubFetchHistorySettings &FetchHistorySettings, pubnub_fetch_history_options &PubnubFetchHistoryOptions);
+
+	/** e.g. "-Pubnub-C-core/7.1.3/Unreal/2.0.2" for runtime PNSDK suffix; uses PUBNUB_C_CORE_VERSION and PUBNUB_LIBRARY_VERSION_*. */
+	static FString GetPubnubSdkVersionSuffix();
 	
 	/* C-CORE EVENT ENGINE HELPERS */
 
