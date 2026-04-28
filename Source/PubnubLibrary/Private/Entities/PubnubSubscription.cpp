@@ -140,7 +140,7 @@ UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription
 		return nullptr;
 	}
 
-	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+	UPubnubSubscriptionSet* SubscriptionSet = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscriptionSet>(this);
 	SubscriptionSet->InitWithSubscriptions(PubnubClient, this, Subscription);
 	
 	return SubscriptionSet;

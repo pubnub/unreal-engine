@@ -6,6 +6,7 @@
 #include "PubnubInternalMacros.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "FunctionLibraries/PubnubUtilities.h"
+#include "FunctionLibraries/PubnubInternalUtilities.h"
 #include "PubnubClient.h"
 
 DEFINE_LOG_CATEGORY(PubnubLog)
@@ -31,7 +32,7 @@ void UPubnubSubsystem::Deinitialize()
 
 UPubnubClient* UPubnubSubsystem::CreatePubnubClient(FPubnubConfig Config, FString DebugName)
 {
-	UPubnubClient* PubnubClient = NewObject<UPubnubClient>(this);
+	UPubnubClient* PubnubClient = UPubnubInternalUtilities::SafeNewObject<UPubnubClient>(this);
 
 	int NewID = NextClientID++;
 

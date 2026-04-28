@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "PubNub.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "UObject/GarbageCollection.h"
 #include "PubnubStructLibrary.h"
 #include "PubnubInternalUtilities.generated.h"
 
@@ -48,4 +49,21 @@ public:
 	static void EEAddSubscriptionSetListenersOfAllTypes(pubnub_subscription_set_t* SubscriptionSet, pubnub_subscribe_message_callback_t Callback, void* UserData);
 	static bool EERemoveSubscriptionSetListenerOfType(pubnub_subscription_set_t** SubscriptionSetPtr, pubnub_subscribe_message_callback_t Callback, EPubnubListenerType ListenerType, void* UserData);
 	static void EERemoveSubscriptionSetListenersOfAllTypes(pubnub_subscription_set_t** SubscriptionSetPtr, pubnub_subscribe_message_callback_t Callback, void* UserData);
+
+
+	/* TEMPLATES */
+
+	/**
+	 * Thread-safe wrapper around NewObject<T>.
+	 *
+	 * FGCScopeGuard takes Unreal's GC async lock, which prevents GC from starting while the
+	 * guard is alive (and waits for an in-progress GC to finish before returning from its
+	 * constructor). Holding it across the NewObject call.
+	 */
+	template<typename ObjectType, typename OuterType>
+	static ObjectType* SafeNewObject(OuterType* Outer)
+	{
+		FGCScopeGuard GCGuard;
+		return NewObject<ObjectType>(Outer);
+	}
 };
