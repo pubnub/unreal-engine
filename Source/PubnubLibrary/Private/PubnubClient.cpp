@@ -1914,7 +1914,7 @@ void UPubnubClient::SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterf
 	}
 	else
 	{
-		CryptoBridge = NewObject<UPubnubCryptoBridge>(this);
+		CryptoBridge = UPubnubInternalUtilities::SafeNewObject<UPubnubCryptoBridge>(this);
 		CryptoBridge->InitCryptoBridge(CryptoModule);
 
 		pubnub_set_crypto_module(ctx_pub, CryptoBridge->GetProvider());
@@ -2006,7 +2006,7 @@ UPubnubChannelEntity* UPubnubClient::CreateChannelEntity(FString Channel)
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
 	
-	UPubnubChannelEntity* ChannelEntity = NewObject<UPubnubChannelEntity>(this);
+	UPubnubChannelEntity* ChannelEntity = UPubnubInternalUtilities::SafeNewObject<UPubnubChannelEntity>(this);
 	ChannelEntity->InitEntity(this);
 	ChannelEntity->EntityID = Channel;
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channel entity created for '%s'."), *Channel));
@@ -2018,7 +2018,7 @@ UPubnubChannelGroupEntity* UPubnubClient::CreateChannelGroupEntity(FString Chann
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_IF_FIELD_EMPTY(ChannelGroup, nullptr);
 	
-	UPubnubChannelGroupEntity* ChannelGroupEntity = NewObject<UPubnubChannelGroupEntity>(this);
+	UPubnubChannelGroupEntity* ChannelGroupEntity = UPubnubInternalUtilities::SafeNewObject<UPubnubChannelGroupEntity>(this);
 	ChannelGroupEntity->InitEntity(this);
 	ChannelGroupEntity->EntityID = ChannelGroup;
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channel group entity created for '%s'."), *ChannelGroup));
@@ -2030,7 +2030,7 @@ UPubnubChannelMetadataEntity* UPubnubClient::CreateChannelMetadataEntity(FString
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_IF_FIELD_EMPTY(Channel, nullptr);
 	
-	UPubnubChannelMetadataEntity* ChannelMetadataEntity = NewObject<UPubnubChannelMetadataEntity>(this);
+	UPubnubChannelMetadataEntity* ChannelMetadataEntity = UPubnubInternalUtilities::SafeNewObject<UPubnubChannelMetadataEntity>(this);
 	ChannelMetadataEntity->InitEntity(this);
 	ChannelMetadataEntity->EntityID = Channel;
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("channel metadata entity created for '%s'."), *Channel));
@@ -2042,7 +2042,7 @@ UPubnubUserMetadataEntity* UPubnubClient::CreateUserMetadataEntity(FString User)
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	PUBNUB_RETURN_IF_FIELD_EMPTY(User, nullptr);
 	
-	UPubnubUserMetadataEntity* UserMetadataEntity = NewObject<UPubnubUserMetadataEntity>(this);
+	UPubnubUserMetadataEntity* UserMetadataEntity = UPubnubInternalUtilities::SafeNewObject<UPubnubUserMetadataEntity>(this);
 	UserMetadataEntity->InitEntity(this);
 	UserMetadataEntity->EntityID = User;
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("user metadata entity created for '%s'."), *User));
@@ -2057,7 +2057,7 @@ UPubnubSubscriptionSet* UPubnubClient::CreateSubscriptionSet(TArray<FString> Cha
 	{
 		PUBNUB_LOG_FUNCTION_WARNING(TEXT("[CreateSubscriptionSet]: at least one Channel or ChannelGroup is needed to create SubscriptionSet."));
 	}
-	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+	UPubnubSubscriptionSet* SubscriptionSet = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscriptionSet>(this);
 	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("subscription set created."));
 	return SubscriptionSet;
@@ -2079,7 +2079,7 @@ UPubnubSubscriptionSet* UPubnubClient::CreateSubscriptionSetFromEntities(TArray<
 		Entity->EntityType == EPubnubEntityType::PEnT_ChannelGroup? ChannelGroups.Add(Entity->EntityID) : Channels.Add(Entity->EntityID);
 	}
 	
-	UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+	UPubnubSubscriptionSet* SubscriptionSet = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscriptionSet>(this);
 	SubscriptionSet->InitSubscriptionSet(this, Channels, ChannelGroups, SubscriptionSettings);
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("subscription set created from entities. ChannelsCount=%d, ChannelGroupsCount=%d"), Channels.Num(), ChannelGroups.Num()));
 	return SubscriptionSet;
@@ -2100,7 +2100,7 @@ TArray<UPubnubSubscription*> UPubnubClient::GetActiveSubscriptions()
 
 	for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
 	{
-		UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
+		UPubnubSubscription* Subscription = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscription>(this);
 		Subscription->InitWithCCoreSubscription(this, CCoreSub);
 		Subscriptions.Add(Subscription);
 	}
@@ -2123,7 +2123,7 @@ TArray<UPubnubSubscriptionSet*> UPubnubClient::GetActiveSubscriptionSets()
 
 	for(pubnub_subscription_set_t* CCoreSubsSet : MakeArrayView(CCoreSubSets, Count))
 	{
-		UPubnubSubscriptionSet* SubscriptionSet = NewObject<UPubnubSubscriptionSet>(this);
+		UPubnubSubscriptionSet* SubscriptionSet = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscriptionSet>(this);
 		SubscriptionSet->InitWithCCoreSubscriptionSet(this, CCoreSubsSet);
 		SubscriptionSets.Add(SubscriptionSet);
 		
@@ -2139,7 +2139,7 @@ TArray<UPubnubSubscriptionSet*> UPubnubClient::GetActiveSubscriptionSets()
 
 		for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
 		{
-			UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
+			UPubnubSubscription* Subscription = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscription>(this);
 			Subscription->InitWithCCoreSubscription(this, CCoreSub);
 			SubscriptionSet->Subscriptions.Add(Subscription);
 		}
@@ -2162,7 +2162,7 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 	ClientID = InClientID;
 	DebugName = InDebugName;
 
-	LoggerManager = NewObject<UPubnubLogManager>(this);
+	LoggerManager = UPubnubInternalUtilities::SafeNewObject<UPubnubLogManager>(this);
 	if (LoggerManager)
 	{
 		const FString EmitterID = DebugName.IsEmpty()
@@ -2172,7 +2172,7 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 
 		if (InConfig.LoggerConfig.bEnableDefaultLogger)
 		{
-			DefaultLogger = NewObject<UPubnubDefaultLogger>(this);
+			DefaultLogger = UPubnubInternalUtilities::SafeNewObject<UPubnubDefaultLogger>(this);
 			if (DefaultLogger)
 			{
 				IPubnubLoggerInterface::Execute_SetMinimumLogLevel(DefaultLogger, InConfig.LoggerConfig.DefaultLoggerMinLevel);
@@ -2469,9 +2469,18 @@ void UPubnubClient::OnCCoreSubscriptionStatusReceived(int StatusEnum, const void
 	}
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("subscription status payload parsed. ChannelsCount=%d, ChannelGroupsCount=%d"), SubscriptionStatusData.Channels.Num(), SubscriptionStatusData.ChannelGroups.Num()));
 
-	//Call SubscriptionStatusChanged delegates 
-	OnSubscriptionStatusChanged.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
-	OnSubscriptionStatusChangedNative.Broadcast((EPubnubSubscriptionStatus)status, SubscriptionStatusData);
+	//Dispatch SubscriptionStatusChanged delegates on the game thread.
+
+	TWeakObjectPtr<UPubnubClient> ThisClientWeak = MakeWeakObjectPtr<UPubnubClient>(this);
+	const EPubnubSubscriptionStatus FinalStatus = (EPubnubSubscriptionStatus)status;
+	AsyncTask(ENamedThreads::GameThread, [ThisClientWeak, FinalStatus, SubscriptionStatusData]()
+	{
+		if(ThisClientWeak.IsValid())
+		{
+			ThisClientWeak.Get()->OnSubscriptionStatusChanged.Broadcast(FinalStatus, SubscriptionStatusData);
+			ThisClientWeak.Get()->OnSubscriptionStatusChangedNative.Broadcast(FinalStatus, SubscriptionStatusData);
+		}
+	});
 }
 
 FString UPubnubClient::GetLastResponse(pubnub_t* context)

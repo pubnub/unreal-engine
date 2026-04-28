@@ -4,6 +4,7 @@
 #include "Entities/PubnubSubscription.h"
 #include "PubnubSubsystem.h"
 #include "PubnubClient.h"
+#include "FunctionLibraries/PubnubInternalUtilities.h"
 
 UPubnubSubscription* UPubnubBaseEntity::CreateSubscription(FPubnubSubscribeSettings SubscribeSettings)
 {
@@ -13,7 +14,7 @@ UPubnubSubscription* UPubnubBaseEntity::CreateSubscription(FPubnubSubscribeSetti
 		return nullptr;
 	}
 
-	UPubnubSubscription* Subscription = NewObject<UPubnubSubscription>(this);
+	UPubnubSubscription* Subscription = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscription>(this);
 
 	Subscription->InitSubscription(PubnubClient, this, SubscribeSettings);
 
