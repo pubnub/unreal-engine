@@ -221,6 +221,14 @@ private:
 	void InitWithCCoreSubscription(UPubnubClient* InPubnubClient, pubnub_subscription_t* InCCoreSubscription);
 	void InternalInit();
 
+	/**
+	 * Unregisters all C-Core listeners that were attached to this subscription's
+	 * CCoreSubscription. Must be invoked before ListenerUserData is freed so PubNub
+	 * cannot invoke the callback with a dangling user_data pointer during in-flight
+	 * unsubscribe / subscription free.
+	 */
+	void RemoveRegisteredListeners();
+
 	UFUNCTION()
 	virtual void CleanUpSubscription() override;
 };
@@ -370,6 +378,15 @@ private:
 	void InitWithSubscriptions(UPubnubClient* InPubnubClient, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2);
 	void InitWithCCoreSubscriptionSet(UPubnubClient* InPubnubClient, pubnub_subscription_set_t* InCCoreSubscriptionSet);
 	void InternalInit();
+
+	/**
+	 * Unregisters all C-Core listeners that were attached to this set's
+	 * CCoreSubscriptionSet. Must be invoked before ListenerUserData is freed so
+	 * PubNub cannot invoke the callback with a dangling user_data pointer during
+	 * in-flight unsubscribe / subscription_set free.
+	 */
+	void RemoveRegisteredListeners();
+
 	UFUNCTION()
 	virtual void CleanUpSubscription() override;
 };

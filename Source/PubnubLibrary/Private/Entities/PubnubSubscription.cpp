@@ -352,6 +352,11 @@ void UPubnubSubscription::InternalInit()
 		});
 	};
 
+	UserData->MessageCb = CallbackMessages;
+	UserData->SignalCb = CallbackSignals;
+	UserData->ObjectsCb = CallbackObjects;
+	UserData->MessageActionCb = CallbackMessageActions;
+
 	// Register created callback in subscription
 	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessages, EPubnubListenerType::PLT_Message, ListenerUserData);
 	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackSignals, EPubnubListenerType::PLT_Signal, ListenerUserData);
@@ -363,6 +368,33 @@ void UPubnubSubscription::InternalInit()
 
 	//Now we are fully initialized
 	IsInitialized = true;
+}
+
+void UPubnubSubscription::RemoveRegisteredListeners()
+{
+	if (!CCoreSubscription || !ListenerUserData)
+	{
+		return;
+	}
+
+	auto* UD = static_cast<FPubnubInternalSubscriptionListenerUserData*>(ListenerUserData);
+
+	auto TryRemove =
+		[this](EPubnubListenerType UEType, pubnub_subscribe_message_callback_t Fn)
+	{
+		if (!Fn)
+		{
+			return;
+		}
+		const pubnub_subscribe_listener_type CoreType =
+			static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(UEType));
+		pubnub_subscribe_remove_subscription_listener(CCoreSubscription, CoreType, Fn, ListenerUserData);
+	};
+
+	TryRemove(EPubnubListenerType::PLT_Message, UD->MessageCb);
+	TryRemove(EPubnubListenerType::PLT_Signal, UD->SignalCb);
+	TryRemove(EPubnubListenerType::PLT_MessageAction, UD->MessageActionCb);
+	TryRemove(EPubnubListenerType::PLT_Objects, UD->ObjectsCb);
 }
 
 void UPubnubSubscription::CleanUpSubscription()
@@ -386,6 +418,11 @@ void UPubnubSubscription::CleanUpSubscription()
 	OnPubnubMessageActionNative.Clear();
 	FOnPubnubAnyMessageType.Clear();
 	FOnPubnubAnyMessageTypeNative.Clear();
+
+	if (IsValid(PubnubClient))
+	{
+		RemoveRegisteredListeners();
+	}
 
 	if(CCoreSubscription && IsValid(PubnubClient))
 	{
@@ -830,7 +867,12 @@ void UPubnubSubscriptionSet::InternalInit()
 		});
 	};
 
-	// Register created callback in subscription
+	UserData->MessageCb = CallbackMessages;
+	UserData->SignalCb = CallbackSignals;
+	UserData->ObjectsCb = CallbackObjects;
+	UserData->MessageActionCb = CallbackMessageActions;
+
+	// Register created callback in subscription set
 	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessages, EPubnubListenerType::PLT_Message, ListenerUserData);
 	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackSignals, EPubnubListenerType::PLT_Signal, ListenerUserData);
 	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackObjects, EPubnubListenerType::PLT_Objects, ListenerUserData);
@@ -841,6 +883,33 @@ void UPubnubSubscriptionSet::InternalInit()
 
 	//Now we are fully initialized
 	IsInitialized = true;
+}
+
+void UPubnubSubscriptionSet::RemoveRegisteredListeners()
+{
+	if (!CCoreSubscriptionSet || !ListenerUserData)
+	{
+		return;
+	}
+
+	auto* UD = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(ListenerUserData);
+
+	auto TryRemove =
+		[this](EPubnubListenerType UEType, pubnub_subscribe_message_callback_t Fn)
+	{
+		if (!Fn)
+		{
+			return;
+		}
+		const pubnub_subscribe_listener_type CoreType =
+			static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(UEType));
+		pubnub_subscribe_remove_subscription_set_listener(CCoreSubscriptionSet, CoreType, Fn, ListenerUserData);
+	};
+
+	TryRemove(EPubnubListenerType::PLT_Message, UD->MessageCb);
+	TryRemove(EPubnubListenerType::PLT_Signal, UD->SignalCb);
+	TryRemove(EPubnubListenerType::PLT_MessageAction, UD->MessageActionCb);
+	TryRemove(EPubnubListenerType::PLT_Objects, UD->ObjectsCb);
 }
 
 void UPubnubSubscriptionSet::CleanUpSubscription()
@@ -865,6 +934,11 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 	OnPubnubMessageActionNative.Clear();
 	FOnPubnubAnyMessageType.Clear();
 	FOnPubnubAnyMessageTypeNative.Clear();
+
+	if (IsValid(PubnubClient))
+	{
+		RemoveRegisteredListeners();
+	}
 
 	if(CCoreSubscriptionSet && IsValid(PubnubClient))
 	{
