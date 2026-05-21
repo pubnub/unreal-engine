@@ -3,6 +3,15 @@ schema: 1
 version: 2.0.5
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2026-05-21
+    version: 2.0.5
+    changes:
+      - type: bug
+        text: "`UPubnubSubscription[Set]::CleanUpSubscription` now explicitly unregisters every C-Core listener before freeing the heap-allocated user_data, so an in-flight message dispatched after unsubscribe can no longer reach a freed payload."
+      - type: improvement
+        text: "Add better Mutexes handling for Pubnub Client Operations. Guard the whole operations instead of main pubnub calls, so there is no crash if client is deinitialized during another operation."
+      - type: improvement
+        text: "Add cashing of all registered subscriptions and sets in PubnubClient so the same C-Core resource can no longer be claimed (and freed) by two competing UE wrappers at deinit."
   - date: 2026-04-28
     version: 2.0.4
     changes:
