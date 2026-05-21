@@ -2088,21 +2088,22 @@ UPubnubSubscriptionSet* UPubnubClient::CreateSubscriptionSetFromEntities(TArray<
 TArray<UPubnubSubscription*> UPubnubClient::GetActiveSubscriptions()
 {
 	size_t Count;
-	pubnub_subscription** CCoreSubs =  pubnub_subscriptions(ctx_ee, &Count);
+	pubnub_subscription** CCoreSubs = pubnub_subscriptions(ctx_ee, &Count);
 	if (!CCoreSubs || Count == 0) {
 		return {};
 	}
 
-	//Free CCoreSubs when the function ends
 	ON_SCOPE_EXIT { free(CCoreSubs); };
 
 	TArray<UPubnubSubscription*> Subscriptions;
+	Subscriptions.Reserve(Count);
 
-	for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
+	for (pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
 	{
-		UPubnubSubscription* Subscription = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscription>(this);
-		Subscription->InitWithCCoreSubscription(this, CCoreSub);
-		Subscriptions.Add(Subscription);
+		if (UPubnubSubscription* Existing = FindManagedSubscription(CCoreSub))
+		{
+			Subscriptions.Add(Existing);
+		}
 	}
 
 	return Subscriptions;
@@ -2111,42 +2112,157 @@ TArray<UPubnubSubscription*> UPubnubClient::GetActiveSubscriptions()
 TArray<UPubnubSubscriptionSet*> UPubnubClient::GetActiveSubscriptionSets()
 {
 	size_t Count;
-	pubnub_subscription_set** CCoreSubSets =  pubnub_subscription_sets(ctx_ee, &Count);
+	pubnub_subscription_set** CCoreSubSets = pubnub_subscription_sets(ctx_ee, &Count);
 	if (!CCoreSubSets || Count == 0) {
 		return {};
 	}
 
-	//Free CCoreSubs when the function ends
 	ON_SCOPE_EXIT { free(CCoreSubSets); };
 
 	TArray<UPubnubSubscriptionSet*> SubscriptionSets;
+	SubscriptionSets.Reserve(Count);
 
-	for(pubnub_subscription_set_t* CCoreSubsSet : MakeArrayView(CCoreSubSets, Count))
+	for (pubnub_subscription_set_t* CCoreSubsSet : MakeArrayView(CCoreSubSets, Count))
 	{
-		UPubnubSubscriptionSet* SubscriptionSet = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscriptionSet>(this);
-		SubscriptionSet->InitWithCCoreSubscriptionSet(this, CCoreSubsSet);
+		UPubnubSubscriptionSet* SubscriptionSet = FindManagedSubscriptionSet(CCoreSubsSet);
+		if (!SubscriptionSet)
+		{
+			continue;
+		}
 		SubscriptionSets.Add(SubscriptionSet);
-		
-		size_t SubsCount;
 
-		pubnub_subscription** CCoreSubs = pubnub_subscription_set_subscriptions(CCoreSubsSet, &SubsCount);
-		if (!CCoreSubs || Count == 0) {
+
+		if (!SubscriptionSet->Subscriptions.IsEmpty())
+		{
 			continue;
 		}
 
-		//Free CCoreSubs when the function ends
+		size_t SubsCount = 0;
+		pubnub_subscription** CCoreSubs = pubnub_subscription_set_subscriptions(CCoreSubsSet, &SubsCount);
+		if (!CCoreSubs || SubsCount == 0)
+		{
+			continue;
+		}
 		ON_SCOPE_EXIT { free(CCoreSubs); };
 
-		for(pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, Count))
+		for (pubnub_subscription_t* CCoreSub : MakeArrayView(CCoreSubs, SubsCount))
 		{
-			UPubnubSubscription* Subscription = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscription>(this);
-			Subscription->InitWithCCoreSubscription(this, CCoreSub);
-			SubscriptionSet->Subscriptions.Add(Subscription);
+			if (UPubnubSubscription* Existing = FindManagedSubscription(CCoreSub))
+			{
+				SubscriptionSet->Subscriptions.Add(Existing);
+			}
 		}
 	}
 
 	return SubscriptionSets;
 }
+
+#pragma region UE WRAPPER CACHE (INTERNAL)
+
+void UPubnubClient::RegisterManagedSubscription(pubnub_subscription_t* CCorePtr, UPubnubSubscription* Wrapper)
+{
+	if (!CCorePtr || !Wrapper)
+	{
+		return;
+	}
+
+	// Defensive: if a stale weak entry exists for this C-Core address (the prior
+	// wrapper having been GC'd without going through CleanUpSubscription), it is
+	// safe to overwrite.
+	if (const TWeakObjectPtr<UPubnubSubscription>* Existing = ManagedSubscriptions.Find(CCorePtr))
+	{
+		if (UPubnubSubscription* AlivePrev = Existing->Get(); IsValid(AlivePrev) && AlivePrev != Wrapper)
+		{
+			return;
+		}
+	}
+
+	ManagedSubscriptions.Add(CCorePtr, Wrapper);
+}
+
+void UPubnubClient::RegisterManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr, UPubnubSubscriptionSet* Wrapper)
+{
+	if (!CCorePtr || !Wrapper)
+	{
+		return;
+	}
+
+	if (const TWeakObjectPtr<UPubnubSubscriptionSet>* Existing = ManagedSubscriptionSets.Find(CCorePtr))
+	{
+		if (UPubnubSubscriptionSet* AlivePrev = Existing->Get(); IsValid(AlivePrev) && AlivePrev != Wrapper)
+		{
+			return;
+		}
+	}
+
+	ManagedSubscriptionSets.Add(CCorePtr, Wrapper);
+}
+
+void UPubnubClient::UnregisterManagedSubscription(pubnub_subscription_t* CCorePtr)
+{
+	if (!CCorePtr)
+	{
+		return;
+	}
+	ManagedSubscriptions.Remove(CCorePtr);
+}
+
+void UPubnubClient::UnregisterManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr)
+{
+	if (!CCorePtr)
+	{
+		return;
+	}
+	ManagedSubscriptionSets.Remove(CCorePtr);
+}
+
+UPubnubSubscription* UPubnubClient::FindManagedSubscription(pubnub_subscription_t* CCorePtr)
+{
+	if (!CCorePtr)
+	{
+		return nullptr;
+	}
+
+	const TWeakObjectPtr<UPubnubSubscription>* Found = ManagedSubscriptions.Find(CCorePtr);
+	if (!Found)
+	{
+		return nullptr;
+	}
+
+	UPubnubSubscription* Wrapper = Found->Get();
+	if (!IsValid(Wrapper))
+	{
+		// Prune the stale entry so the C-Core address can later be reused
+		// safely if the allocator hands it back for a new resource.
+		ManagedSubscriptions.Remove(CCorePtr);
+		return nullptr;
+	}
+	return Wrapper;
+}
+
+UPubnubSubscriptionSet* UPubnubClient::FindManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr)
+{
+	if (!CCorePtr)
+	{
+		return nullptr;
+	}
+
+	const TWeakObjectPtr<UPubnubSubscriptionSet>* Found = ManagedSubscriptionSets.Find(CCorePtr);
+	if (!Found)
+	{
+		return nullptr;
+	}
+
+	UPubnubSubscriptionSet* Wrapper = Found->Get();
+	if (!IsValid(Wrapper))
+	{
+		ManagedSubscriptionSets.Remove(CCorePtr);
+		return nullptr;
+	}
+	return Wrapper;
+}
+
+#pragma endregion
 
 void UPubnubClient::SetRuntimeSdkVersionSuffix(FString Suffix)
 {

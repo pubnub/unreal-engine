@@ -162,6 +162,11 @@ void UPubnubSubscription::InitSubscription(UPubnubClient* InPubnubClient, UPubnu
 	CCoreSubscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(InPubnubClient->ctx_ee, Entity->EntityID, Entity->EntityType, InSubscribeSettings);
 
 	InternalInit();
+
+	// Register as the canonical UE wrapper for this C-Core subscription so that
+	// UPubnubClient::GetActiveSubscriptions returns this very wrapper rather
+	// than constructing a duplicate that would race for ownership at deinit.
+	InPubnubClient->RegisterManagedSubscription(CCoreSubscription, this);
 }
 
 void UPubnubSubscription::InitWithCCoreSubscription(UPubnubClient* InPubnubClient, pubnub_subscription_t* InCCoreSubscription)
@@ -180,6 +185,12 @@ void UPubnubSubscription::InitWithCCoreSubscription(UPubnubClient* InPubnubClien
 	CCoreSubscription = InCCoreSubscription;
 
 	InternalInit();
+
+	// Register as the canonical wrapper for this C-Core subscription. Today
+	// UPubnubClient::GetActiveSubscriptions only ever calls this Init path when
+	// no managed wrapper exists, so this is essentially a defensive registration
+	// for any future caller that adopts an externally produced C-Core pointer.
+	InPubnubClient->RegisterManagedSubscription(CCoreSubscription, this);
 }
 
 void UPubnubSubscription::InternalInit()
@@ -422,6 +433,14 @@ void UPubnubSubscription::CleanUpSubscription()
 	if (IsValid(PubnubClient))
 	{
 		RemoveRegisteredListeners();
+	}
+
+	// Drop the wrapper-cache entry while the C-Core address is still a valid
+	// map key. Doing this before pubnub_subscription_free guarantees the address
+	// cannot be reused by the allocator and silently collide with our cached entry.
+	if (IsValid(PubnubClient) && CCoreSubscription)
+	{
+		PubnubClient->UnregisterManagedSubscription(CCoreSubscription);
 	}
 
 	if(CCoreSubscription && IsValid(PubnubClient))
@@ -673,6 +692,14 @@ void UPubnubSubscriptionSet::InitSubscriptionSet(UPubnubClient* InPubnubClient, 
 	CCoreSubscriptionSet = UPubnubInternalUtilities::EEGetSubscriptionSetForEntities(InPubnubClient->ctx_ee, Channels, ChannelGroups, InSubscribeSettings);
 
 	InternalInit();
+
+	// Register as the canonical UE wrapper for this C-Core subscription set so
+	// that GetActiveSubscriptionSets returns this very wrapper rather than
+	// constructing a duplicate that would race for ownership at deinit.
+	if (IsValid(InPubnubClient))
+	{
+		InPubnubClient->RegisterManagedSubscriptionSet(CCoreSubscriptionSet, this);
+	}
 }
 
 void UPubnubSubscriptionSet::InitWithSubscriptions(UPubnubClient* InPubnubClient, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2)
@@ -682,14 +709,19 @@ void UPubnubSubscriptionSet::InitWithSubscriptions(UPubnubClient* InPubnubClient
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, One of provided subscriptions is invalid."));
 		return;
 	}
-	
+
 	PubnubClient = InPubnubClient;
-	
+
 	CCoreSubscriptionSet = pubnub_subscription_set_alloc_with_subscriptions(Subscription1->CCoreSubscription, Subscription2->CCoreSubscription, nullptr);
 	Subscriptions.Add(Subscription1);
 	Subscriptions.Add(Subscription2);
-	
+
 	InternalInit();
+
+	if (IsValid(InPubnubClient))
+	{
+		InPubnubClient->RegisterManagedSubscriptionSet(CCoreSubscriptionSet, this);
+	}
 }
 
 void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubClient* InPubnubClient, pubnub_subscription_set_t* InCCoreSubscriptionSet)
@@ -703,6 +735,13 @@ void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubClient* InPubnu
 	CCoreSubscriptionSet = InCCoreSubscriptionSet;
 
 	InternalInit();
+
+	// Defensive registration; today GetActiveSubscriptionSets only constructs
+	// fresh wrappers via this Init path when no canonical wrapper is cached.
+	if (IsValid(InPubnubClient))
+	{
+		InPubnubClient->RegisterManagedSubscriptionSet(CCoreSubscriptionSet, this);
+	}
 }
 
 void UPubnubSubscriptionSet::InternalInit()
@@ -938,6 +977,15 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 	if (IsValid(PubnubClient))
 	{
 		RemoveRegisteredListeners();
+	}
+
+	// Drop the wrapper-cache entry while the C-Core address is still a valid
+	// map key. Doing this before pubnub_subscription_set_free guarantees the
+	// address cannot be reused by the allocator and silently collide with our
+	// cached entry.
+	if (IsValid(PubnubClient) && CCoreSubscriptionSet)
+	{
+		PubnubClient->UnregisterManagedSubscriptionSet(CCoreSubscriptionSet);
 	}
 
 	if(CCoreSubscriptionSet && IsValid(PubnubClient))
