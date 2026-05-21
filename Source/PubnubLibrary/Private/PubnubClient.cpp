@@ -2355,12 +2355,10 @@ void UPubnubClient::DeinitializeClient()
 	PUBNUB_LOG_FUNCTION_INFO(TEXT("deinitializing pubnub client."));
 	OnClientDeinitializeStart.Broadcast();
 
-	//Mark the client as deinitializing FIRST so any new public API call
-	//short-circuits via PUBNUB_RETURN_*_IF_NOT_INITIALIZED before it can
-	//reach the C-Core contexts.
+	//Mark deinitializing FIRST so new public API calls short-circuit via PUBNUB_RETURN_*_IF_NOT_INITIALIZED before reaching the C-Core contexts.
 	IsInitialized.store(false, std::memory_order_release);
 
-	//Signal cancel on both contexts BEFORE we try to take PubnubOperationMutex.
+	//Cancel both contexts BEFORE taking the operation mutexes - wakes up any worker thread blocked in pubnub_await so it can release the lock promptly.
 	if(ctx_pub) { pubnub_cancel(ctx_pub); }
 	if(ctx_ee)  { pubnub_cancel(ctx_ee);  }
 
@@ -2372,18 +2370,16 @@ void UPubnubClient::DeinitializeClient()
 		PUBNUB_LOG_FUNCTION_TRACE(TEXT("pubnub calls thread stopped."));
 	}
 
-	{
-		FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
-		//Unsubscribe from all channels and groups so this user will not be visible for others anymore
-		UnsubscribeAllForDeinit();
-	}
-
 	PubnubSubsystem = nullptr;
 
-	//Acquire exclusive ownership of ctx_pub / ctx_ee. By the time we hold this lock, any *_priv that was executing on the worker thread has finished its
-	//post-await work and released the same mutex (the *_priv functions hold it via FPubnubOperationLockGuard for their entire body). New *_priv calls
-	//cannot enter because IsInitialized is already false above and the public API guards short-circuit.
+	//Hold BOTH context mutexes during teardown: ctx_pub is guarded by PubnubOperationMutex, ctx_ee by SubscriptionOperationExecutionMutex.
+	//Lock order Subscription -> Operation matches every other path in this class (sync *_priv take only Operation; subscribe *_priv take only Subscription), so nesting cannot deadlock.
 	{
+		FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
+
+		//Unsubscribes and cleans up subscription maps; touches ctx_ee.
+		UnsubscribeAllForDeinit();
+
 		FScopeLock OperationLock(&PubnubOperationMutex);
 
 		if(ctx_pub && ctx_ee)
@@ -2400,10 +2396,7 @@ void UPubnubClient::DeinitializeClient()
 
 			PUBNUB_LOG_FUNCTION_TRACE(TEXT("Start freeing C-Core contexts."));
 
-			//Drain any residual cancelled operation on the SYNC context.
-			//Safe to call when the context is idle - returns immediately in
-			//that case; otherwise it ensures the cancellation completed
-			//before pubnub_free runs.
+			//Drain any residual cancelled operation on the SYNC context. No-op if ctx is idle.
 			pubnub_await(ctx_pub);
 
 			pubnub_logger_remove_all(ctx_pub);
@@ -2962,11 +2955,6 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(Channel);
 
-	//Create subscription for channel entity
-	pubnub_subscription_t* Subscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(ctx_ee, Channel, EPubnubEntityType::PEnT_Channel, SubscribeSettings);
-	//Return if created subscription is invalid
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS((Subscription != nullptr), TEXT("Failed to subscribe to channel. Pubnub_subscription_alloc didn't create subscription."));
-	
 	//Create callback that will be triggered by the c-core event engine
 	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
@@ -2983,16 +2971,34 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 	};
 
 	FString StartFailureMessage = TEXT("Failed to subscribe to channel.");
+	//Allocation and ctx_ee access happen inside the lambda so they run under
+	//SubscriptionOperationExecutionMutex (taken by ExecuteSerializedSubscriptionOperation),
+	//preventing a race with DeinitializeClient freeing ctx_ee.
 	FPubnubOperationResult SubscribeResult = ExecuteSerializedSubscriptionOperation(
 		StartFailureMessage,
 		TEXT("Subscribe operation timed out"),
 		[&]()
 		{
+			//Guard against deinit having already freed ctx_ee while we were waiting for the lock.
+			if(!ctx_ee)
+			{
+				StartFailureMessage = TEXT("PubnubClient was deinitialized before the subscribe operation could run.");
+				return false;
+			}
+
+			//Dedup before allocating to avoid a wasted pubnub_subscription_alloc/free pair.
 			if(ChannelSubscriptions.Contains(Channel))
 			{
 				PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("subscription for channel '%s' already exists. Aborting operation."), *Channel));
 				StartFailureMessage = TEXT("Already subscribed to this channel. Aborting operation.");
-				pubnub_subscription_free(&Subscription);
+				return false;
+			}
+
+			pubnub_subscription_t* Subscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(ctx_ee, Channel, EPubnubEntityType::PEnT_Channel, SubscribeSettings);
+			if(!Subscription)
+			{
+				PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to subscribe to channel '%s'. pubnub_subscription_alloc didn't create subscription."), *Channel));
+				StartFailureMessage = TEXT("Failed to subscribe to channel. pubnub_subscription_alloc didn't create subscription.");
 				return false;
 			}
 
@@ -3022,12 +3028,7 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_USER_ID_NOT_SET();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_FIELD_EMPTY(ChannelGroup);
-	
-	//Create subscription for channel group entity
-	pubnub_subscription_t* Subscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(ctx_ee, ChannelGroup, EPubnubEntityType::PEnT_ChannelGroup, SubscribeSettings);
-	//Return if created subscription is invalid
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS((Subscription != nullptr), TEXT("Failed to subscribe to group. Pubnub_subscription_alloc didn't create subscription."));
-	
+
 	//Create callback that will be triggered by the c-core event engine
 	pubnub_subscribe_message_callback_t Callback = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
 	{
@@ -3044,16 +3045,34 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 	};
 
 	FString StartFailureMessage = TEXT("Failed to subscribe to channel group.");
+	//Allocation and ctx_ee access happen inside the lambda so they run under
+	//SubscriptionOperationExecutionMutex (taken by ExecuteSerializedSubscriptionOperation),
+	//preventing a race with DeinitializeClient freeing ctx_ee.
 	FPubnubOperationResult SubscribeResult = ExecuteSerializedSubscriptionOperation(
 		StartFailureMessage,
 		TEXT("Subscribe operation timed out"),
 		[&]()
 		{
+			//Guard against deinit having already freed ctx_ee while we were waiting for the lock.
+			if(!ctx_ee)
+			{
+				StartFailureMessage = TEXT("PubnubClient was deinitialized before the subscribe operation could run.");
+				return false;
+			}
+
+			//Dedup before allocating to avoid a wasted pubnub_subscription_alloc/free pair.
 			if(ChannelGroupSubscriptions.Contains(ChannelGroup))
 			{
 				PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("subscription for channel group '%s' already exists. Aborting operation."), *ChannelGroup));
 				StartFailureMessage = TEXT("Already subscribed to this channel group. Aborting operation.");
-				pubnub_subscription_free(&Subscription);
+				return false;
+			}
+
+			pubnub_subscription_t* Subscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(ctx_ee, ChannelGroup, EPubnubEntityType::PEnT_ChannelGroup, SubscribeSettings);
+			if(!Subscription)
+			{
+				PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to subscribe to channel group '%s'. pubnub_subscription_alloc didn't create subscription."), *ChannelGroup));
+				StartFailureMessage = TEXT("Failed to subscribe to group. pubnub_subscription_alloc didn't create subscription.");
 				return false;
 			}
 
