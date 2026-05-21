@@ -30,6 +30,10 @@ struct pubnub_;
 typedef struct pubnub_ pubnub_t;
 struct pubnub_logger;
 typedef struct pubnub_logger pubnub_logger_t;
+struct pubnub_subscription;
+typedef struct pubnub_subscription pubnub_subscription_t;
+struct pubnub_subscription_set;
+typedef struct pubnub_subscription_set pubnub_subscription_set_t;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubClientDeinitialized);
@@ -2591,8 +2595,50 @@ public:
 	 */
 	void SetRuntimeSdkVersionSuffix(FString Suffix);
 
+#pragma region PubnubSubscriptionCache (INTERNAL)
+
+	/**
+	 * Internal: registers a UE wrapper as the canonical wrapper for the given C-Core
+	 * subscription pointer. 
+	 */
+	void RegisterManagedSubscription(pubnub_subscription_t* CCorePtr, UPubnubSubscription* Wrapper);
+
+	/** Internal: counterpart to RegisterManagedSubscription for subscription sets. */
+	void RegisterManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr, UPubnubSubscriptionSet* Wrapper);
+
+	/**
+	 * Internal: removes the cached mapping for the given C-Core subscription pointer.
+	 * Must be called from CleanUpSubscription BEFORE pubnub_subscription_free, while the
+	 * pointer is still valid as a map key, so that the C-Core address cannot be reused
+	 * by the allocator and accidentally collide with the cached entry.
+	 */
+	void UnregisterManagedSubscription(pubnub_subscription_t* CCorePtr);
+
+	/** Internal: counterpart to UnregisterManagedSubscription for subscription sets. */
+	void UnregisterManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr);
+
+	/**
+	 * Internal: returns the live UE wrapper associated with the given C-Core subscription
+	 * pointer, or nullptr if no mapping exists or the cached wrapper has been garbage
+	 * collected. Stale (GC'd) entries are pruned during this lookup.
+	 */
+	UPubnubSubscription* FindManagedSubscription(pubnub_subscription_t* CCorePtr);
+
+	/** Internal: counterpart to FindManagedSubscription for subscription sets. */
+	UPubnubSubscriptionSet* FindManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr);
+
+#pragma endregion
+
 
 private:
+
+	/**
+	 * Maps each live C-Core subscription pointer to its single canonical UE wrapper.
+	 */
+	TMap<pubnub_subscription_t*, TWeakObjectPtr<UPubnubSubscription>> ManagedSubscriptions;
+
+	/** Counterpart to ManagedSubscriptions for subscription sets. */
+	TMap<pubnub_subscription_set_t*, TWeakObjectPtr<UPubnubSubscriptionSet>> ManagedSubscriptionSets;
 
 	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
 	FPubnubFunctionThread* PubnubCallsThread = nullptr;

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "FunctionLibraries/PubnubLogUtilities.h"
+#include "PubnubInternalStructLibrary.h"
 
 /**
  * Formats a single named value as "Name=Value" using PubnubLogUtilities::LogToString.
@@ -512,10 +513,20 @@
 /**
  * Attempts to acquire the PubnubOperationMutex lock to prevent concurrent operations.
  *
+ * On success, an RAII guard (FPubnubOperationLockGuard) is created in the caller's
+ * scope; the lock is automatically released when the calling function returns -
+ * including the post-pubnub_await result accessors. This is intentional and lets
+ * DeinitializeClient safely synchronize with in-flight operations by acquiring
+ * the same mutex before freeing C-Core contexts.
+ *
  * If the lock is already held (another operation is in progress), this macro will:
  *   - Log a warning message about concurrent usage
  *   - Set the error flag in the provided wrapper struct
  *   - Return the wrapper struct with error information
+ *
+ * IMPORTANT: This macro must be used as a complete statement at function scope
+ * (not inside a single-statement if/else without braces). It declares a local
+ * RAII guard whose lifetime must extend to the end of the calling function.
  *
  * Usage: Use at the beginning of _priv functions that return wrapper structs to ensure
  *        operations are not called concurrently (mixing Sync and Async is not supported).
@@ -523,45 +534,53 @@
  * @param ReturnWrapper The wrapper struct type to return on failure
  */
 #define PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(ReturnWrapper) \
-	do { \
-		if (!PubnubOperationMutex.TryLock()) \
+	FPubnubOperationLockGuard PubnubOperationLockGuard(PubnubOperationMutex); \
+	if (!PubnubOperationLockGuard.TryLock()) \
+	{ \
+		if (LoggerManager) \
 		{ \
-			if (LoggerManager) \
-			{ \
-				LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
-			} \
-			FPubnubOperationResult Result; \
-			Result.Error = true; \
-			Result.ErrorMessage = FString::Printf(TEXT("Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently.")); \
-			ReturnWrapper.Result = Result; \
-			return ReturnWrapper; \
+			LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
 		} \
-	} while (false)
+		FPubnubOperationResult Result; \
+		Result.Error = true; \
+		Result.ErrorMessage = FString::Printf(TEXT("Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently.")); \
+		ReturnWrapper.Result = Result; \
+		return ReturnWrapper; \
+	}
 
 /**
  * Attempts to acquire the PubnubOperationMutex lock to prevent concurrent operations.
+ *
+ * On success, an RAII guard (FPubnubOperationLockGuard) is created in the caller's
+ * scope; the lock is automatically released when the calling function returns -
+ * including the post-pubnub_await result accessors. This is intentional and lets
+ * DeinitializeClient safely synchronize with in-flight operations by acquiring
+ * the same mutex before freeing C-Core contexts.
  *
  * If the lock is already held (another operation is in progress), this macro will:
  *   - Log a warning message about concurrent usage
  *   - Return an FPubnubOperationResult with error information
  *
+ * IMPORTANT: This macro must be used as a complete statement at function scope
+ * (not inside a single-statement if/else without braces). It declares a local
+ * RAII guard whose lifetime must extend to the end of the calling function.
+ *
  * Usage: Use at the beginning of _priv functions that return FPubnubOperationResult to ensure
  *        operations are not called concurrently (mixing Sync and Async is not supported).
  */
 #define PUBNUB_TRY_LOCK_MUTEX_RETURN_OPERATION_RESULT_IF_LOCKED() \
-	do { \
-		if (!PubnubOperationMutex.TryLock()) \
+	FPubnubOperationLockGuard PubnubOperationLockGuard(PubnubOperationMutex); \
+	if (!PubnubOperationLockGuard.TryLock()) \
+	{ \
+		if (LoggerManager) \
 		{ \
-			if (LoggerManager) \
-			{ \
-				LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
-			} \
-			FPubnubOperationResult Result; \
-			Result.Error = true; \
-			Result.ErrorMessage = FString::Printf(TEXT("Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently.")); \
-			return Result; \
+			LoggerManager->Log(EPubnubLogLevel::PLL_Warning, EPubnubLogSource::PLS_UE, FString::Printf(TEXT("[%s]: Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))), ANSI_TO_TCHAR(__FUNCTION__)); \
 		} \
-	} while (false)
+		FPubnubOperationResult Result; \
+		Result.Error = true; \
+		Result.ErrorMessage = FString::Printf(TEXT("Another Pubnub operation is in progress. Do not call Sync and Async functions concurrently.")); \
+		return Result; \
+	}
 
 
 /**
