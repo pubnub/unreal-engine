@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HAL/CriticalSection.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "PubNub.h"
@@ -40,4 +41,49 @@ struct FPubnubInternalSubscriptionSetListenerUserData
 	pubnub_subscribe_message_callback_t SignalCb = nullptr;
 	pubnub_subscribe_message_callback_t MessageActionCb = nullptr;
 	pubnub_subscribe_message_callback_t ObjectsCb = nullptr;
+};
+
+/**
+ * RAII guard around a non-blocking acquisition of an FCriticalSection.
+ *
+ * The guard is intentionally constructed in two phases (construct + TryLock) so it
+ * can be declared at function scope by a macro, and only the TryLock() result needs
+ * to drive control flow. If TryLock() succeeds the lock is automatically released
+ * when the enclosing function returns; if it fails the destructor is a no-op.
+ *
+ * Used by PUBNUB_TRY_LOCK_MUTEX_* macros (PubnubInternalMacros.h) to guarantee that
+ * the operation mutex is never leaked across early returns and is always released
+ * after every code path that touches a Pubnub C-Core context (including the
+ * post-pubnub_await result accessors such as pubnub_last_http_code /
+ * pubnub_last_publish_result), so DeinitializeClient can safely free those
+ * contexts under the same mutex.
+ */
+struct FPubnubOperationLockGuard
+{
+	explicit FPubnubOperationLockGuard(FCriticalSection& InMutex)
+		: Mutex(InMutex)
+		, bLocked(false)
+	{
+	}
+
+	~FPubnubOperationLockGuard()
+	{
+		if (bLocked)
+		{
+			Mutex.Unlock();
+		}
+	}
+
+	bool TryLock()
+	{
+		bLocked = Mutex.TryLock();
+		return bLocked;
+	}
+
+	FPubnubOperationLockGuard(const FPubnubOperationLockGuard&) = delete;
+	FPubnubOperationLockGuard& operator=(const FPubnubOperationLockGuard&) = delete;
+
+private:
+	FCriticalSection& Mutex;
+	bool bLocked;
 };

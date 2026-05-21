@@ -2355,6 +2355,15 @@ void UPubnubClient::DeinitializeClient()
 	PUBNUB_LOG_FUNCTION_INFO(TEXT("deinitializing pubnub client."));
 	OnClientDeinitializeStart.Broadcast();
 
+	//Mark the client as deinitializing FIRST so any new public API call
+	//short-circuits via PUBNUB_RETURN_*_IF_NOT_INITIALIZED before it can
+	//reach the C-Core contexts.
+	IsInitialized.store(false, std::memory_order_release);
+
+	//Signal cancel on both contexts BEFORE we try to take PubnubOperationMutex.
+	if(ctx_pub) { pubnub_cancel(ctx_pub); }
+	if(ctx_ee)  { pubnub_cancel(ctx_ee);  }
+
 	CancelPendingSubscriptionOperation(TEXT("Subscription operation cancelled because PubnubClient is being deinitialized."));
 
 	if(PubnubCallsThread)
@@ -2368,41 +2377,48 @@ void UPubnubClient::DeinitializeClient()
 		//Unsubscribe from all channels and groups so this user will not be visible for others anymore
 		UnsubscribeAllForDeinit();
 	}
-	
-	IsInitialized = false;
+
 	PubnubSubsystem = nullptr;
 
-	if(ctx_pub && ctx_ee)
+	//Acquire exclusive ownership of ctx_pub / ctx_ee. By the time we hold this lock, any *_priv that was executing on the worker thread has finished its
+	//post-await work and released the same mutex (the *_priv functions hold it via FPubnubOperationLockGuard for their entire body). New *_priv calls
+	//cannot enter because IsInitialized is already false above and the public API guards short-circuit.
 	{
-		//We set this to prevent crash from C-Core when it's trying to clean up provider made in UE
-		pubnub_set_crypto_module(ctx_pub, nullptr);
-		pubnub_set_crypto_module(ctx_ee, nullptr);
+		FScopeLock OperationLock(&PubnubOperationMutex);
 
-		//Clean up Crypto bridge if it was created
-		if(CryptoBridge)
+		if(ctx_pub && ctx_ee)
 		{
-			CryptoBridge->CleanUpCryptoBridge();
+			//We set this to prevent crash from C-Core when it's trying to clean up provider made in UE
+			pubnub_set_crypto_module(ctx_pub, nullptr);
+			pubnub_set_crypto_module(ctx_ee, nullptr);
+
+			//Clean up Crypto bridge if it was created
+			if(CryptoBridge)
+			{
+				CryptoBridge->CleanUpCryptoBridge();
+			}
+
+			PUBNUB_LOG_FUNCTION_TRACE(TEXT("Start freeing C-Core contexts."));
+
+			//Drain any residual cancelled operation on the SYNC context.
+			//Safe to call when the context is idle - returns immediately in
+			//that case; otherwise it ensures the cancellation completed
+			//before pubnub_free runs.
+			pubnub_await(ctx_pub);
+
+			pubnub_logger_remove_all(ctx_pub);
+			pubnub_logger_remove_all(ctx_ee);
+			pubnub_logger_free(&CCoreLogger);
+
+			pubnub_free(ctx_pub);
+			pubnub_free_with_timeout(ctx_ee, 2000);
+
+			ctx_pub = nullptr;
+			ctx_ee = nullptr;
+			PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core contexts freed."));
 		}
-		
-		PUBNUB_LOG_FUNCTION_TRACE(TEXT("Start freeing C-Core contexts."));
-		
-		//Clean up and free C-Core contexts
-		pubnub_cancel(ctx_ee);
-		pubnub_cancel(ctx_pub);
-		pubnub_await(ctx_pub);
-		
-		pubnub_logger_remove_all(ctx_pub);
-		pubnub_logger_remove_all(ctx_ee);
-		pubnub_logger_free(&CCoreLogger);
-		
-		pubnub_free(ctx_pub);
-		pubnub_free_with_timeout(ctx_ee, 2000);
-		
-		ctx_pub = nullptr;
-		ctx_ee = nullptr;
-		PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core contexts freed."));
 	}
-	
+
 	IsUserIDSet = false;
 	delete[] AuthTokenBuffer;
 	AuthTokenBuffer = nullptr;
@@ -2710,9 +2726,9 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 		PUBNUB_LOG_FUNCTION_ERROR(TEXT("Subscribe key is empty, can't initialize Pubnub"));
 		return;
 	}
-
-	PubnubOperationMutex.Lock();
 	
+	FScopeLock OperationLock(&PubnubOperationMutex);
+
 	ctx_pub = pubnub_alloc();
 	ctx_ee = pubnub_alloc();
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("C-Core contexts allocated."));
@@ -2750,8 +2766,7 @@ void UPubnubClient::InitPubnub_priv(const FPubnubConfig& Config)
 	{
 		SetSecretKey_priv();
 	}
-	
-	PubnubOperationMutex.Unlock();
+
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("InitPubnub_priv finished successfully."));
 }
 
@@ -2834,8 +2849,6 @@ FPubnubPublishMessageResult UPubnubClient::PublishMessage_priv(FString Channel, 
 	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("publish await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(PublishResultStatus))));
 	
-	PubnubOperationMutex.Unlock();
-	
 	FPubnubMessageData PublishedMessage;
 	FPubnubOperationResult PublishResult;
 
@@ -2905,8 +2918,6 @@ FPubnubSignalResult UPubnubClient::Signal_priv(FString Channel, FString Message,
 	
 	pubnub_res PublishResultStatus = pubnub_await(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("signal await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_2_string(PublishResultStatus))));
-
-	PubnubOperationMutex.Unlock();
 
 	FPubnubMessageData SignalMessage;
 	FPubnubOperationResult PublishResult;
@@ -3186,8 +3197,6 @@ FPubnubOperationResult UPubnubClient::AddChannelToGroup_priv(FString Channel, FS
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-
-	PubnubOperationMutex.Unlock();
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
 	return Result;
@@ -3216,8 +3225,6 @@ FPubnubOperationResult UPubnubClient::RemoveChannelFromGroup_priv(FString Channe
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-
-	PubnubOperationMutex.Unlock();
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
 	return Result;
@@ -3242,8 +3249,6 @@ FPubnubListChannelsFromGroupResult UPubnubClient::ListChannelsFromGroup_priv(FSt
 	
 	FString JsonResponse = GetLastChannelResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-
-	PubnubOperationMutex.Unlock();
 
 	FPubnubOperationResult Result;
 	TArray<FString> Channels;
@@ -3277,8 +3282,6 @@ FPubnubOperationResult UPubnubClient::RemoveChannelGroup_priv(FString ChannelGro
 	//So we need to get the response separately
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-	
-	PubnubOperationMutex.Unlock();
 
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
@@ -3315,8 +3318,6 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FStri
 	
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-
-	PubnubOperationMutex.Unlock();
 	
 	FPubnubOperationResult Result;
 	
@@ -3361,8 +3362,6 @@ FPubnubListUsersSubscribedChannelsResult UPubnubClient::ListUserSubscribedChanne
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-	
-	PubnubOperationMutex.Unlock();
 	
 	FPubnubOperationResult Result;
 	TArray<FString> Channels;
@@ -3421,8 +3420,6 @@ FPubnubOperationResult UPubnubClient::SetState_priv(FString Channel, FString Sta
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
 
-	PubnubOperationMutex.Unlock();
-
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
 	return Result;
@@ -3457,8 +3454,6 @@ FPubnubGetStateResult UPubnubClient::GetState_priv(FString Channel, FString Chan
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
-
-	PubnubOperationMutex.Unlock();
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
 	return FPubnubGetStateResult({Result, JsonResponse});
@@ -3482,8 +3477,6 @@ FPubnubOperationResult UPubnubClient::Heartbeat_priv(FString Channel, FString Ch
 
 	FString JsonResponse = GetLastResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-	
-	PubnubOperationMutex.Unlock();
 	
 	FPubnubOperationResult Result;
 	Result.Error = false;
@@ -3513,8 +3506,6 @@ FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(FString PermissionObject)
 	
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-	
-	PubnubOperationMutex.Unlock();
 	
 	//Access Manager has similar result structure to AppContext, so we use the same getter
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
@@ -3552,8 +3543,6 @@ FPubnubOperationResult UPubnubClient::RevokeToken_priv(FString Token)
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
-	
-	PubnubOperationMutex.Unlock();
 	
 	//Access Manager has similar result structure to AppContext, so we use the same getter
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
@@ -3719,8 +3708,6 @@ FPubnubFetchHistoryResult UPubnubClient::FetchHistory_priv(FString Channel, FPub
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *HistoryResponse));
 	}
 	
-	PubnubOperationMutex.Unlock();
-	
 	//Parse Json response into data
 	FPubnubOperationResult Result;
 	TArray<FPubnubHistoryMessageData> Messages;
@@ -3767,8 +3754,6 @@ FPubnubOperationResult UPubnubClient::DeleteMessages_priv(FString Channel, FPubn
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
-	PubnubOperationMutex.Unlock();
-
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
 	return Result;
@@ -3801,8 +3786,6 @@ FPubnubMessageCountsResult UPubnubClient::MessageCounts_priv(FString Channel, FS
 
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-	
-	PubnubOperationMutex.Unlock();
 
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
@@ -3847,8 +3830,6 @@ FPubnubMessageCountsMultipleResult UPubnubClient::MessageCountsMultiple_priv(TAr
 
 	FString JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 	PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("json response: %s"), *JsonResponse));
-	
-	PubnubOperationMutex.Unlock();
 	
 	FPubnubMessageCountsMultipleResult Result;
 	Result.Result = UPubnubJsonUtilities::GetOperationResultFromJson(JsonResponse);
@@ -3904,8 +3885,6 @@ FPubnubGetAllUserMetadataResult UPubnubClient::GetAllUserMetadata_priv(FString I
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
-	PubnubOperationMutex.Unlock();
-	
 	//Parse Json response into data
 	FPubnubGetAllUserMetadataResult GetAllUserMetadataResult;
 	UPubnubJsonUtilities::GetAllUserMetadataJsonToData(JsonResponse, GetAllUserMetadataResult.Result, GetAllUserMetadataResult.UsersData, GetAllUserMetadataResult.Page, GetAllUserMetadataResult.TotalCount);
@@ -3951,8 +3930,6 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
-	PubnubOperationMutex.Unlock();
-	
 	//Parse Json response into data
 	FPubnubUserMetadataResult SetUserMetadataResult;
 	UPubnubJsonUtilities::GetUserMetadataJsonToData(JsonResponse, SetUserMetadataResult.Result, SetUserMetadataResult.UserData);
@@ -3987,8 +3964,6 @@ FPubnubUserMetadataResult UPubnubClient::GetUserMetadata_priv(FString User, FStr
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get user metadata request sent."));
 
 	const FString JsonResponse = GetResponseForGetObject(ctx_pub);
-
-	PubnubOperationMutex.Unlock();
 	
 	//Parse Json response into data
 	FPubnubUserMetadataResult GetUserMetadataResult;
@@ -4032,8 +4007,6 @@ FPubnubOperationResult UPubnubClient::RemoveUserMetadata_priv(FString User)
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
-	
-	PubnubOperationMutex.Unlock();
 
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
@@ -4083,9 +4056,7 @@ FPubnubGetAllChannelMetadataResult UPubnubClient::GetAllChannelMetadata_priv(FSt
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
-	//Parse Json response into data
-	PubnubOperationMutex.Unlock();
-	
+	//Parse Json response into data	
 	FPubnubGetAllChannelMetadataResult GetAllChannelMetadataResult;
 	UPubnubJsonUtilities::GetAllChannelMetadataJsonToData(JsonResponse, GetAllChannelMetadataResult.Result, GetAllChannelMetadataResult.ChannelsData, GetAllChannelMetadataResult.Page, GetAllChannelMetadataResult.TotalCount);
 	PUBNUB_LOG_OPERATION_RESULT(GetAllChannelMetadataResult.Result);
@@ -4130,8 +4101,6 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
-	PubnubOperationMutex.Unlock();
-	
 	//Parse Json response into data
 	FPubnubChannelMetadataResult SetChannelMetadataResult;
 	UPubnubJsonUtilities::GetChannelMetadataJsonToData(JsonResponse, SetChannelMetadataResult.Result, SetChannelMetadataResult.ChannelData);
@@ -4167,8 +4136,6 @@ FPubnubChannelMetadataResult UPubnubClient::GetChannelMetadata_priv(FString Chan
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("get channel metadata request sent."));
 
 	const FString JsonResponse = GetResponseForGetObject(ctx_pub);
-
-	PubnubOperationMutex.Unlock();
 	
 	//Parse Json response into data
 	FPubnubChannelMetadataResult GetChannelMetadataResult;
@@ -4212,8 +4179,6 @@ FPubnubOperationResult UPubnubClient::RemoveChannelMetadata_priv(FString Channel
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
-	
-	PubnubOperationMutex.Unlock();
 
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
@@ -4265,8 +4230,6 @@ FPubnubMembershipsResult UPubnubClient::GetMemberships_priv(FString User, FStrin
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
-	
-	PubnubOperationMutex.Unlock();
 	
 	//Parse Json response into data
 	FPubnubMembershipsResult GetMembershipsResult;
@@ -4331,8 +4294,6 @@ FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FStrin
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
-	PubnubOperationMutex.Unlock();
-	
 	//Parse Json response into data
 	FPubnubMembershipsResult SetMembershipsResult;
 	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, SetMembershipsResult.Result, SetMembershipsResult.MembershipsData, SetMembershipsResult.Page, SetMembershipsResult.TotalCount);
@@ -4396,8 +4357,6 @@ FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FSt
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
-	PubnubOperationMutex.Unlock();
-	
 	//Parse Json response into data
 	FPubnubMembershipsResult RemoveMembershipsResult;
 	UPubnubJsonUtilities::GetMembershipsJsonToData(JsonResponse, RemoveMembershipsResult.Result, RemoveMembershipsResult.MembershipsData, RemoveMembershipsResult.Page, RemoveMembershipsResult.TotalCount);
@@ -4455,8 +4414,6 @@ FPubnubChannelMembersResult UPubnubClient::GetChannelMembers_priv(FString Channe
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
-
-	PubnubOperationMutex.Unlock();
 	
 	//Parse Json response into data
 	FPubnubChannelMembersResult GetChannelMembersResult;
@@ -4520,8 +4477,6 @@ FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channe
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
-	PubnubOperationMutex.Unlock();
-	
 	//Parse Json response into data
 	FPubnubChannelMembersResult SetChannelMembersResult;
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, SetChannelMembersResult.Result, SetChannelMembersResult.MembersData, SetChannelMembersResult.Page, SetChannelMembersResult.TotalCount);
@@ -4584,8 +4539,6 @@ FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers_priv(FString Cha
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 	
-	PubnubOperationMutex.Unlock();
-	
 	//Parse Json response into data
 	FPubnubChannelMembersResult RemoveChannelMembersResult;
 	UPubnubJsonUtilities::GetChannelMembersJsonToData(JsonResponse, RemoveChannelMembersResult.Result, RemoveChannelMembersResult.MembersData, RemoveChannelMembersResult.Page, RemoveChannelMembersResult.TotalCount);
@@ -4636,8 +4589,6 @@ FPubnubAddMessageActionResult UPubnubClient::AddMessageAction_priv(FString Chann
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
-	
-	PubnubOperationMutex.Unlock();
 	
 	//Parse Json response into data
 	FPubnubAddMessageActionResult AddMessageActionResult;
@@ -4703,8 +4654,6 @@ FPubnubOperationResult UPubnubClient::RemoveMessageAction_priv(FString Channel, 
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
 
-	PubnubOperationMutex.Unlock();
-
 	FPubnubOperationResult Result = UPubnubJsonUtilities::GetOperationResultFromJson_AppContext(JsonResponse);
 	PUBNUB_LOG_OPERATION_RESULT(Result);
 	return Result;
@@ -4739,8 +4688,6 @@ FPubnubGetMessageActionsResult UPubnubClient::GetMessageActions_priv(FString Cha
 		JsonResponse = UPubnubUtilities::PubnubGetLastServerHttpResponse(ctx_pub);
 		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("fallback json response: %s"), *JsonResponse));
 	}
-
-	PubnubOperationMutex.Unlock();
 
 	//Parse Json response into data
 	FPubnubGetMessageActionsResult GetMessageActionsResult;
