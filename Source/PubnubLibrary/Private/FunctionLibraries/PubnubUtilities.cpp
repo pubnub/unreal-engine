@@ -13,8 +13,6 @@ FPubnubConfig UPubnubUtilities::PubnubConfigFromPluginSettings(UPubnubSettings* 
 	FPubnubConfig Config;
 	Config.PublishKey = PubnubSettings->PublishKey;
 	Config.SubscribeKey = PubnubSettings->SubscribeKey;
-	Config.SecretKey = PubnubSettings->SecretKey;
-	Config.SetSecretKeyAutomatically = PubnubSettings->SetSecretKeyAutomatically;
 
 	return Config;
 }

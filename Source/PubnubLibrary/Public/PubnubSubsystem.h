@@ -204,10 +204,13 @@ public:
 	FString GetUserID();
 
 	/**
-	 * Sets the secret key for the PubNub account. Uses SecretKey provided in plugin settings.
-	 * Don't call it manually if "SetSecretKeyAutomatically" in plugin settings is set to true.
+	 * Applies the Secret Key from the default client's FPubnubConfig to the underlying SDK context.
+	 * Server/admin use only — never call this in shipped game clients.
+	 * Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true.
+	 * For client apps, use PAM v3 tokens minted server-side and SetAuthToken instead.
+	 * See https://www.pubnub.com/docs/general/setup/access-manager
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Init", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void SetSecretKey();
 
 	/**
@@ -601,7 +604,8 @@ public:
 	
 	/**
 	 * Requests an access token from the PubNub server with the specified permissions.
-	 * Requires SecretKey to be set.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
+	 * For client apps, mint tokens on your backend and distribute them via SetAuthToken.
 	 * 
 	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -610,13 +614,15 @@ public:
 	 * @param Permissions A struct containing all permissions that will be granted with this token.
 	 * @param OnGrantTokenResponse The callback function used to handle the result.
 	 * @param Meta (Optional) metadata that will be embedded into the token.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only", meta=(DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix)."))
 	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnGrantTokenResponse OnGrantTokenResponse, FString Meta = "");
 
 	/**
 	 * Requests an access token from the PubNub server with the specified permissions.
-	 * Requires SecretKey to be set.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
+	 * For client apps, mint tokens on your backend and distribute them via SetAuthToken.
 	 * 
 	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -625,28 +631,33 @@ public:
 	 * @param Permissions A struct containing all permissions that will be granted with this token.
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param Meta (Optional) metadata that will be embedded into the token.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
 	void GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnGrantTokenResponseNative NativeCallback, FString Meta = "");
 	
 	/**
 	 * Revokes a previously granted access token.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
 	 * 
 	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Token The access token to revoke.
 	 * @param OnRevokeTokenResponse (Optional) Delegate to listen for the operation result.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnRevokeTokenResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only", meta = (DeprecatedFunction, DeprecationMessage="This UPubnubSubsystem API is deprecated. Use UPubnubClient instead: get or create a client with CreatePubnubClient or GetPubnubClient, then call the equivalent method on that client (on UPubnubClient, async APIs use the *Async suffix).", AutoCreateRefTerm = "OnRevokeTokenResponse"))
 	void RevokeToken(FString Token, FOnRevokeTokenResponse OnRevokeTokenResponse);
 
 	/**
 	 * Revokes a previously granted access token.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
 	 * 
 	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Token The access token to revoke.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
 	void RevokeToken(FString Token, FOnRevokeTokenResponseNative NativeCallback = nullptr);
 

@@ -32,6 +32,13 @@ struct FPubnubLoggerConfig
 	TArray<UObject*> InitialLoggers;
 };
 
+/**
+ * Configuration for a PubNub client instance.
+ *
+ * For shipped game clients, use only PublishKey and SubscribeKey here, then call SetAuthToken with a
+ * PAM v3 token minted by your backend. Do not ship a Secret Key in client builds.
+ * See https://www.pubnub.com/docs/general/setup/access-manager
+ */
 USTRUCT(BlueprintType)
 struct FPubnubConfig
 {
@@ -41,17 +48,25 @@ struct FPubnubConfig
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PublishKey = "demo";
 	/** Specifies the Subscribe Key to be used for subscribing to a channel. You can get one from the PubNub Admin Portal. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SubscribeKey = "demo";
-	/** Secret key from Admin Portal. When set, it gives user root permissions for Access Manager.
-	 * To use it set SetSecretKeyAutomatically to true or call SetSecretKey function.
+	/**
+	 * Secret Key from the Admin Portal. Grants unrestricted root permissions on the keyset.
+	 * Server/admin use only — never ship this value in client builds. Provide it when creating a
+	 * dedicated-server or backend client via FPubnubConfig, not via global plugin settings.
+	 * Set SetSecretKeyAutomatically to true or call SetSecretKey after initialization.
+	 * For client apps, use PAM v3 tokens minted server-side and SetAuthToken instead.
+	 * See https://www.pubnub.com/docs/general/setup/access-manager
 	 */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SecretKey = "";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Server Only") FString SecretKey = "";
 	/** Identify the user or the device that connects to PubNub. Necessary for all PubNub operations. If provided, this UsedID will be set automatically.
 	 * If you keep this field empty, use SetUserID before the first PubNub operation.
 	 * It's a UTF-8 encoded string of up to 92 alphanumeric characters.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
-	/** If true SecretKey will be set during Initialization phase. Secret key gives user root permissions for Access Manager */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool SetSecretKeyAutomatically = false;
+	/**
+	 * If true, SecretKey is applied during client initialization. Server/admin use only.
+	 * Do not enable this in shipped game clients.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Server Only") bool SetSecretKeyAutomatically = false;
 	/** Logger setup used during client initialization. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger") FPubnubLoggerConfig LoggerConfig;
 	
