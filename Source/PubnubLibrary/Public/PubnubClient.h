@@ -891,14 +891,28 @@ public:
 
 	
 	/**
-	 * Sets the PAM v3 access token for this client. Use this in shipped game clients after your backend
-	 * mints a scoped token.
+	 * Sets the PAM v3 access token for this client on the calling thread. The underlying update is
+	 * immediate (no network call), but this variant blocks the caller until the token pointer is
+	 * swapped in both C-Core contexts.
+	 * Use this in shipped game clients after your backend mints a scoped token.
 	 * 
 	 * @param Token PAM v3 access token with embedded permissions, minted server-side.
 	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
 	void SetAuthToken(FString Token);
+
+	/**
+	 * Sets the PAM v3 access token for this client. The underlying update is immediate (no network
+	 * call), but this variant queues the work on the PubNub operations thread so it is serialized
+	 * with other async PubNub API calls.
+	 * Use this in shipped game clients after your backend mints a scoped token.
+	 * 
+	 * @param Token PAM v3 access token with embedded permissions, minted server-side.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	void SetAuthTokenAsync(FString Token);
 
 	/**
 	 * Sets the origin for the PubNub client.
@@ -2700,6 +2714,8 @@ private:
 	//Auth token has to be kept alive for the lifetime of the sdk, so this is the container for it
 	char* AuthTokenBuffer = nullptr;
 	size_t AuthTokenLength = 0;
+	//Previous auth token buffers retired after a swap; freed at deinit because ctx_ee may still read them briefly
+	TArray<char*> RetiredAuthTokenBuffers;
 
 	//Origin has to be kept alive for the lifetime of the sdk, so this is the container for it
 	char* OriginBuffer = nullptr;

@@ -784,6 +784,21 @@ void UPubnubClient::SetAuthToken(FString Token)
 	SetAuthToken_priv(Token);
 }
 
+void UPubnubClient::SetAuthTokenAsync(FString Token)
+{
+	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED();
+
+	TWeakObjectPtr<UPubnubClient> WeakThis = MakeWeakObjectPtr<UPubnubClient>(this);
+
+	PubnubCallsThread->AddFunctionToQueue([WeakThis, Token]
+	{
+		if(!WeakThis.IsValid())
+		{return;}
+
+		WeakThis.Get()->SetAuthToken_priv(Token);
+	});
+}
+
 int UPubnubClient::SetOrigin(FString Origin)
 {
 	PUBNUB_RETURN_IF_CLIENT_NOT_INITIALIZED(-1);
@@ -2416,6 +2431,11 @@ void UPubnubClient::DeinitializeClient()
 	delete[] AuthTokenBuffer;
 	AuthTokenBuffer = nullptr;
 	AuthTokenLength = 0;
+	for (char* RetiredBuffer : RetiredAuthTokenBuffers)
+	{
+		delete[] RetiredBuffer;
+	}
+	RetiredAuthTokenBuffers.Empty();
 	delete[] OriginBuffer;
 	OriginBuffer = nullptr;
 	OriginLength = 0;
@@ -3601,17 +3621,38 @@ void UPubnubClient::SetAuthToken_priv(FString Token)
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("set auth token called. TokenLength=%d"), Token.Len()));
 	PUBNUB_RETURN_IF_USER_ID_NOT_SET();
 
-	//Auth token has to be kept alive for the lifetime of the sdk, so we copy it into AuthTokenBuffer
+	//Lock order matches DeinitializeClient: Subscription -> Operation.
+	FScopeLock SubscriptionExecutionLock(&SubscriptionOperationExecutionMutex);
+	FScopeLock OperationLock(&PubnubOperationMutex);
+
+	//Auth token has to be kept alive for the lifetime of the sdk; C-Core stores the pointer, not a copy.
 	FTCHARToUTF8 Converter(*Token);
-	AuthTokenLength = Converter.Length();
-	delete[] AuthTokenBuffer;
-	AuthTokenBuffer = new char[AuthTokenLength + 1];
-	FMemory::Memcpy(AuthTokenBuffer, Converter.Get(), AuthTokenLength);
-	AuthTokenBuffer[AuthTokenLength] = '\0';
-	
-	//This is just a setter, so no need to call it on a separate thread
-	pubnub_set_auth_token(ctx_pub, AuthTokenBuffer);
-	pubnub_set_auth_token(ctx_ee, AuthTokenBuffer);
+	const size_t NewLength = Converter.Length();
+
+	char* const NewBuffer = new char[NewLength + 1];
+	FMemory::Memcpy(NewBuffer, Converter.Get(), NewLength);
+	NewBuffer[NewLength] = '\0';
+
+	char* const OldBuffer = AuthTokenBuffer;
+
+	AuthTokenBuffer = NewBuffer;
+	AuthTokenLength = NewLength;
+
+	if (ctx_pub)
+	{
+		pubnub_set_auth_token(ctx_pub, AuthTokenBuffer);
+	}
+	if (ctx_ee)
+	{
+		pubnub_set_auth_token(ctx_ee, AuthTokenBuffer);
+	}
+
+	//In-flight ctx_ee subscribe I/O may still dereference OldBuffer briefly after the swap.
+	if (OldBuffer)
+	{
+		RetiredAuthTokenBuffers.Add(OldBuffer);
+	}
+
 	PUBNUB_LOG_FUNCTION_TRACE(TEXT("auth token applied to pub and ee contexts."));
 }
 
