@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "PubnubStructLibrary.h"
 #include "PubnubLogUtilities.generated.h"
 
 UCLASS()
@@ -21,6 +22,9 @@ public:
 	static FString LogToString(const FText& Value);
 	static FString LogToString(const UObject* Value);
 	static FString LogToString(UObject* Value);
+
+	/** Formats FPubnubConfig for logging, masking SecretKey to its first 8 characters plus length. */
+	static FString LogConfigToString(const FPubnubConfig& Config);
 
 	template<typename T, typename TEnableIf<TIsEnum<T>::Value, int>::Type = 0>
 	static FString LogToString(const T& Value)
@@ -53,5 +57,6 @@ public:
 	}
 
 private:
+	static FString MaskSecretKeyForLog(const FString& SecretKey);
 	static FString LogUStructToString(const UScriptStruct* Struct, const void* StructData);
 };

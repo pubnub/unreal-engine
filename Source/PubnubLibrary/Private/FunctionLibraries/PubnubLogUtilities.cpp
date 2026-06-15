@@ -47,6 +47,25 @@ FString UPubnubLogUtilities::LogToString(UObject* Value)
 	return LogToString(static_cast<const UObject*>(Value));
 }
 
+FString UPubnubLogUtilities::LogConfigToString(const FPubnubConfig& Config)
+{
+	FPubnubConfig ConfigToLog = Config;
+	ConfigToLog.SecretKey = MaskSecretKeyForLog(Config.SecretKey);
+	return LogToString(ConfigToLog);
+}
+
+FString UPubnubLogUtilities::MaskSecretKeyForLog(const FString& SecretKey)
+{
+	if (SecretKey.IsEmpty())
+	{
+		return SecretKey;
+	}
+
+	const int32 Length = SecretKey.Len();
+	const FString Prefix = SecretKey.Left(FMath::Min(8, Length));
+	return FString::Printf(TEXT("%s… (len=%d)"), *Prefix, Length);
+}
+
 FString UPubnubLogUtilities::LogUStructToString(const UScriptStruct* Struct, const void* StructData)
 {
 	if (!Struct || !StructData)

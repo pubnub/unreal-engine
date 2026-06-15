@@ -2320,7 +2320,7 @@ void UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 			LoggerManager->AddLogger(LoggerInterface);
 		}
 	}
-	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("initializing pubnub client. ClientID=%d, DebugName=%s, Config=%s"), ClientID, *DebugName, *UPubnubLogUtilities::LogToString(InConfig)));
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("initializing pubnub client. ClientID=%d, DebugName=%s, Config=%s"), ClientID, *DebugName, *UPubnubLogUtilities::LogConfigToString(InConfig)));
 
 	SavePubnubConfig(InConfig);
 	
