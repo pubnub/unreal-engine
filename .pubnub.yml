@@ -1,8 +1,19 @@
 name: unreal-engine
 schema: 1
-version: 2.0.5
+version: 2.1.0
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2026-06-22
+    version: 2.1.0
+    changes:
+      - type: bug
+        text: "Fix C-Core crash during timer-list assert in callback API on Windows when closing or reconnecting during async DnsQueryEx DNS resolution."
+      - type: improvement
+        text: "Mask `SecretKey` in logs."
+      - type: improvement
+        text: "Remove `SecretKey` from global config (plugin settings), so it's not exposed in `.ini` files."
+      - type: improvement
+        text: "Make `SetAuthToken` safer, add Async option to queue `SetAuthToken` with other functions."
   - date: 2026-05-21
     version: 2.0.5
     changes:

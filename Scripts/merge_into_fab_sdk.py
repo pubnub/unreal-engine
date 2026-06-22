@@ -10,13 +10,19 @@ Output: Plugins/PubnubGamingSDK/
   - LICENSE (from Pubnub, or PubnubChat if Pubnub has none)
 
 Run from project root or any directory; paths are resolved from script location.
-Prompts for VersionName; the merged PubnubLibrary.uplugin uses FriendlyName "PubNub Gaming SDK".
+Prompts for VersionName when omitted; the merged PubnubLibrary.uplugin uses FriendlyName "PubNub Gaming SDK".
+
+CLI examples:
+  python merge_into_fab_sdk.py --version-name 1.0.2
+  python merge_into_fab_sdk.py -v 1.0.2
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import shutil
+import sys
 from pathlib import Path
 
 
@@ -63,7 +69,35 @@ def _ignore_source_dirs(_dir: Path, names: list[str]) -> list[str]:
     return ignored
 
 
-def main() -> None:
+def _prompt(label: str, *, required: bool = True) -> str:
+    while True:
+        value = input(f"{label}: ").strip()
+        if value or not required:
+            return value
+        print("  Value is required.")
+
+
+def _resolve_input(label: str, arg_value: str | None, *, required: bool = True) -> str:
+    if arg_value is not None:
+        return arg_value.strip()
+    return _prompt(label, required=required)
+
+
+def _build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Merge Pubnub and PubnubChat plugins into a single FAB-ready plugin.",
+    )
+    parser.add_argument(
+        "-v",
+        "--version-name",
+        help="Package VersionName (e.g. 1.0.2). Prompts when omitted.",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = _build_arg_parser().parse_args(argv)
+
     script_dir = Path(__file__).resolve().parent
     # Project root: Scripts -> Pubnub -> Plugins -> project root
     project_root = script_dir.parent.parent.parent
@@ -83,7 +117,7 @@ def main() -> None:
     if not pubnub_chat_uplugin.is_file():
         raise SystemExit(f"Missing {pubnub_chat_uplugin}")
 
-    version_name = input("Enter package VersionName (e.g. 1.0.2): ").strip()
+    version_name = _resolve_input("Enter package VersionName (e.g. 1.0.2)", args.version_name)
     if not version_name:
         raise SystemExit("VersionName is required (non-empty).")
 
@@ -151,4 +185,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nAborted.", file=sys.stderr)
+        sys.exit(130)

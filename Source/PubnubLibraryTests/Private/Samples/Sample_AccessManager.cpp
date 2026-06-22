@@ -12,6 +12,10 @@
  *
  * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
  * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
+ *
+ * SERVER API WARNING: Samples that use SetSecretKey, GrantToken, or RevokeToken are for dedicated servers
+ * or backend tooling only. Do not use these APIs in shipped game clients. For client apps, mint PAM v3 tokens
+ * on your backend and distribute them via SetAuthToken instead.
  */
 
 // NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
@@ -52,9 +56,9 @@ void ASample_AccessManager::GrantTokenSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 
-	//Set secret key to be able to grant token
-	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
-	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	// SERVER ONLY: SetSecretKey and GrantToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
 	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
@@ -101,9 +105,9 @@ void ASample_AccessManager::GrantTokenWithLambdaSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 	
-	//Set secret key to be able to grant token
-	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
-	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	// SERVER ONLY: SetSecretKey and GrantToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
 	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
@@ -146,9 +150,9 @@ void ASample_AccessManager::GrantTokenVariousResourcesSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 
-	//Set secret key to be able to grant token
-	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
-	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	// SERVER ONLY: SetSecretKey and GrantToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
 	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
@@ -224,9 +228,9 @@ void ASample_AccessManager::GrantTokenRegexSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 
-	//Set secret key to be able to grant token
-	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
-	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	// SERVER ONLY: SetSecretKey and GrantToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
 	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
@@ -272,9 +276,9 @@ void ASample_AccessManager::GrantTokenComplexSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 
-	//Set secret key to be able to grant token
-	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
-	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	// SERVER ONLY: SetSecretKey and GrantToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
 	PubnubClient->SetSecretKey();
 
 	// Create the permissions structure
@@ -356,9 +360,9 @@ void ASample_AccessManager::RevokeTokenSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 
-	//Set secret key to be able to revoke token
-	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
-	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	// SERVER ONLY: SetSecretKey and RevokeToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
 	PubnubClient->SetSecretKey();
 	
 	// Revoke the token
@@ -377,9 +381,9 @@ void ASample_AccessManager::RevokeTokenWithResultSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 
-	//Set secret key to be able to revoke token
-	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
-	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	// SERVER ONLY: SetSecretKey and RevokeToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
 	PubnubClient->SetSecretKey();
 
 	// Bind response delegate
@@ -416,9 +420,9 @@ void ASample_AccessManager::RevokeTokenWithResultLambdaSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 
-	//Set secret key to be able to revoke token
-	//Make sure proper SecretKey is set in PubnubSDK PluginSettings
-	//This is not required if "SetSecretKeyAutomatically" is set to true in PubnubSDK PluginSettings
+	// SERVER ONLY: SetSecretKey and RevokeToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
 	PubnubClient->SetSecretKey();
 
 	// Bind lambda to response delegate

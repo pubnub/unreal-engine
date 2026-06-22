@@ -191,10 +191,11 @@ public:
 	FString GetUserID();
 
 	/**
-	 * Sets the secret key for the PubNub account. Uses SecretKey provided in plugin settings.
-	 * Don't call it manually if "SetSecretKeyAutomatically" in plugin settings is set to true.
+	 * Applies the Secret Key from this client's FPubnubConfig to the underlying SDK context.
+	 * Server/admin use only — never call this in shipped game clients.
+	 * Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|AccessManager")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only")
 	void SetSecretKey();
 
 	
@@ -790,7 +791,8 @@ public:
 		
 	/**
 	 * Requests an access token from the PubNub server synchronously with the specified permissions.
-	 * Requires SecretKey to be set.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
+	 * For client apps, mint tokens on your backend and distribute them via SetAuthToken.
 	 * 
 	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -799,13 +801,15 @@ public:
 	 * @param Permissions A struct containing all permissions that will be granted with this token.
 	 * @param Meta (Optional) metadata that will be embedded into the token.
 	 * @return FPubnubGrantTokenResult containing the operation result and granted token.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only")
 	FPubnubGrantTokenResult GrantToken(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta = "");
 
 	/**
 	 * Requests an access token from the PubNub server with the specified permissions.
-	 * Requires SecretKey to be set.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
+	 * For client apps, mint tokens on your backend and distribute them via SetAuthToken.
 	 * 
 	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -814,13 +818,15 @@ public:
 	 * @param Permissions A struct containing all permissions that will be granted with this token.
 	 * @param OnGrantTokenResponse The callback function used to handle the result.
 	 * @param Meta (Optional) metadata that will be embedded into the token.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only")
 	void GrantTokenAsync(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnPubnubGrantTokenResponse OnGrantTokenResponse, FString Meta = "");
 
 	/**
 	 * Requests an access token from the PubNub server with the specified permissions.
-	 * Requires SecretKey to be set.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
+	 * For client apps, mint tokens on your backend and distribute them via SetAuthToken.
 	 * 
 	 * @Note Requires the *Access Manager* add-on to be enabled for your key in the PubNub Admin Portal
 	 *
@@ -829,40 +835,47 @@ public:
 	 * @param Permissions A struct containing all permissions that will be granted with this token.
 	 * @param NativeCallback The callback function used to handle the result. Delegate in native form that can accept lambdas.
 	 * @param Meta (Optional) metadata that will be embedded into the token.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
 	void GrantTokenAsync(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FOnPubnubGrantTokenResponseNative NativeCallback, FString Meta = "");
 
 	
 	/**
 	 * Revokes a previously granted access token synchronously.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
 	 * 
 	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Token The access token to revoke.
 	 * @return FPubnubOperationResult containing the operation result.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only")
 	FPubnubOperationResult RevokeToken(FString Token);
 
 	/**
 	 * Revokes a previously granted access token.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
 	 * 
 	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Token The access token to revoke.
 	 * @param OnRevokeTokenResponse (Optional) Delegate to listen for the operation result.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager", meta = (AutoCreateRefTerm = "OnRevokeTokenResponse"))
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only", meta = (AutoCreateRefTerm = "OnRevokeTokenResponse"))
 	void RevokeTokenAsync(FString Token, FOnPubnubRevokeTokenResponse OnRevokeTokenResponse);
 
 	/**
 	 * Revokes a previously granted access token.
+	 * Server/admin use only — requires SecretKey in FPubnubConfig. Never call from shipped game clients.
 	 * 
 	 * @Note Requires the *Revoke v3 Token* in *Access Manager* section to be enabled for your key in the PubNub Admin Portal
 	 * 
 	 * @param Token The access token to revoke.
 	 * @param NativeCallback (Optional) Delegate to listen for the operation result. Delegate in native form that can accept lambdas.
 	 * 						 Can be skipped if operation result is not needed.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
 	void RevokeTokenAsync(FString Token, FOnPubnubRevokeTokenResponseNative NativeCallback = nullptr);
 
@@ -878,13 +891,28 @@ public:
 
 	
 	/**
-	 * This method is used by the client devices to update the authentication token granted by the server.
+	 * Sets the PAM v3 access token for this client on the calling thread. The underlying update is
+	 * immediate (no network call), but this variant blocks the caller until the token pointer is
+	 * swapped in both C-Core contexts.
+	 * Use this in shipped game clients after your backend mints a scoped token.
 	 * 
-	 * @param Token Existing token with embedded permissions.
-	 * 
+	 * @param Token PAM v3 access token with embedded permissions, minted server-side.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
 	void SetAuthToken(FString Token);
+
+	/**
+	 * Sets the PAM v3 access token for this client. The underlying update is immediate (no network
+	 * call), but this variant queues the work on the PubNub operations thread so it is serialized
+	 * with other async PubNub API calls.
+	 * Use this in shipped game clients after your backend mints a scoped token.
+	 * 
+	 * @param Token PAM v3 access token with embedded permissions, minted server-side.
+	 * @see https://www.pubnub.com/docs/general/setup/access-manager
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
+	void SetAuthTokenAsync(FString Token);
 
 	/**
 	 * Sets the origin for the PubNub client.
@@ -2686,6 +2714,8 @@ private:
 	//Auth token has to be kept alive for the lifetime of the sdk, so this is the container for it
 	char* AuthTokenBuffer = nullptr;
 	size_t AuthTokenLength = 0;
+	//Previous auth token buffers retired after a swap; freed at deinit because ctx_ee may still read them briefly
+	TArray<char*> RetiredAuthTokenBuffers;
 
 	//Origin has to be kept alive for the lifetime of the sdk, so this is the container for it
 	char* OriginBuffer = nullptr;
