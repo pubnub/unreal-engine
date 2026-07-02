@@ -273,6 +273,11 @@ sdks:
                       - Windows 11 Pro
                     target-architecture:
                       - x86-64
+                supported-unreal-engine-versions:
+                    minimum-ue-version:
+                      - 5.0
+                    maximum-ue-version:
+                      - 5.7
   - 
       full-name: Unreal Engine SDK
       short-name: UnrealEngine
@@ -321,14 +326,10 @@ sdks:
                     target-architecture:
                       - x86-64
                 supported-unreal-engine-versions:
-                    minimum-ue-version:
-                      - 5.0
-                    maximum-ue-version:
-                      - 5.6
                     minimum-ue-fab-version:
                       - 5.2
                     maximum-ue-fab-version:
-                      - 5.6
+                      - 5.7
 features:
   access:
     - ACCESS-GRANT
