@@ -1,0 +1,472 @@
+/* Copyright (c) PubNub Inc. */
+/* See LICENSE in the root directory of this source tree. */
+/* Generated from config.h.in by CMake - do not edit. */
+
+#ifndef PUBNUB_CONFIG_H
+#define PUBNUB_CONFIG_H
+
+#define PUBNUB_SDK_VERSION_MAJOR @pubnub_VERSION_MAJOR@
+#define PUBNUB_SDK_VERSION_MINOR @pubnub_VERSION_MINOR@
+#define PUBNUB_SDK_VERSION_PATCH @pubnub_VERSION_PATCH@
+#define PUBNUB_SDK_VERSION       "@pubnub_VERSION@"
+
+/**
+ * @brief Platform identifier injected at configure time.
+ *
+ * Defaults to CMAKE_SYSTEM_NAME (e.g. "Linux", "Darwin", "Windows").
+ * Overridable via -DPUBNUB_SDK_PLATFORM=FreeRTOS for embedded targets.
+ */
+#define PUBNUB_SDK_PLATFORM      "@PUBNUB_SDK_PLATFORM@"
+
+/**
+ * @brief Canonical SDK identifier used in the pnsdk query parameter.
+ *
+ * Format: `<OS>-PubNub-C-core/MAJOR.MINOR.PATCH`. Assembled at
+ * preprocessing time via string-literal concatenation, so it has
+ * no runtime cost. Override via -DPUBNUB_SDK_IDENTIFIER="..." if needed.
+ */
+#ifndef PUBNUB_SDK_IDENTIFIER
+#define PUBNUB_SDK_IDENTIFIER    PUBNUB_SDK_PLATFORM "-PubNub-C-core/" PUBNUB_SDK_VERSION
+#endif
+
+/* Wire feature toggles (PUBNUB_ENABLE_*).
+   Gate user-facing protocol capabilities. Disabling excludes the
+   corresponding feature module entirely. */
+#cmakedefine01 PUBNUB_ENABLE_PUBLISH
+#cmakedefine01 PUBNUB_ENABLE_SUBSCRIBE
+#cmakedefine01 PUBNUB_ENABLE_PRESENCE
+#cmakedefine01 PUBNUB_ENABLE_HISTORY
+#cmakedefine01 PUBNUB_ENABLE_MESSAGE_ACTIONS
+#cmakedefine01 PUBNUB_ENABLE_SIGNAL
+#cmakedefine01 PUBNUB_ENABLE_TIME
+#cmakedefine01 PUBNUB_ENABLE_PAM
+#cmakedefine01 PUBNUB_ENABLE_APP_CONTEXT
+#cmakedefine01 PUBNUB_ENABLE_FILES
+#cmakedefine01 PUBNUB_ENABLE_FILESYSTEM
+#cmakedefine01 PUBNUB_ENABLE_CHANNEL_GROUPS
+#cmakedefine01 PUBNUB_ENABLE_CRYPTO
+#cmakedefine01 PUBNUB_ENABLE_PUSH_NOTIFICATIONS
+#cmakedefine01 PUBNUB_ENABLE_RETRY
+#cmakedefine01 PUBNUB_ENABLE_SECURE_TRANSPORT
+#cmakedefine01 PUBNUB_ENABLE_CPP_WRAPPER
+
+/* When 1, pubnub_create()/pubnub_destroy() are unavailable;
+   only pubnub_init()/pubnub_deinit() with caller-provided memory work. */
+#cmakedefine01 PUBNUB_CFG_NO_HEAP
+
+/*
+ * Compile-time tunables (PUBNUB_CFG_*).
+ *
+ * When built via CMake, values are substituted by configure_file.
+ * For non-CMake builds, override at compile time via -DPUBNUB_CFG_<NAME>=<value>.
+ */
+
+#ifndef PUBNUB_CFG_MAX_IN_FLIGHT_REQUESTS
+#define PUBNUB_CFG_MAX_IN_FLIGHT_REQUESTS @PUBNUB_CFG_MAX_IN_FLIGHT_REQUESTS@
+#endif
+
+#ifndef PUBNUB_CFG_MAX_PENDING_REQUESTS
+#define PUBNUB_CFG_MAX_PENDING_REQUESTS @PUBNUB_CFG_MAX_PENDING_REQUESTS@
+#endif
+
+#ifndef PUBNUB_CFG_REQUEST_BUFFER_SIZE
+#define PUBNUB_CFG_REQUEST_BUFFER_SIZE @PUBNUB_CFG_REQUEST_BUFFER_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_RESPONSE_BUFFER_SIZE
+#define PUBNUB_CFG_RESPONSE_BUFFER_SIZE @PUBNUB_CFG_RESPONSE_BUFFER_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_URL_BUFFER_SIZE
+#define PUBNUB_CFG_URL_BUFFER_SIZE @PUBNUB_CFG_URL_BUFFER_SIZE@
+#endif
+
+#cmakedefine PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS @PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS@
+
+#ifndef PUBNUB_CFG_SUBSCRIBE_MAX_BATCH_SIZE
+#define PUBNUB_CFG_SUBSCRIBE_MAX_BATCH_SIZE @PUBNUB_CFG_SUBSCRIBE_MAX_BATCH_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS
+#define PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS @PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS@
+#endif
+
+/**
+ * @brief Maximum milliseconds to block in transport poll per iteration.
+ *
+ * Controls the blocking duration for both the background thread poll loop
+ * and the cooperative @c pubnub_await fallback. On RTOS targets with a
+ * hardware watchdog, keep this well below the watchdog timeout.
+ */
+#ifdef PUBNUB_CFG_BG_POLL_INTERVAL_MS
+  #error "PUBNUB_CFG_BG_POLL_INTERVAL_MS was removed. Use PUBNUB_CFG_MAX_POLL_MS instead."
+#endif
+#ifdef PUBNUB_CFG_BG_IDLE_INTERVAL_MS
+  #error "PUBNUB_CFG_BG_IDLE_INTERVAL_MS was removed. Use PUBNUB_CFG_MAX_POLL_MS instead."
+#endif
+#ifdef PUBNUB_CFG_BG_MAX_POLL_MS
+  #error "PUBNUB_CFG_BG_MAX_POLL_MS was renamed to PUBNUB_CFG_MAX_POLL_MS."
+#endif
+#ifndef PUBNUB_CFG_MAX_POLL_MS
+#define PUBNUB_CFG_MAX_POLL_MS @PUBNUB_CFG_MAX_POLL_MS@
+#endif
+
+#ifndef PUBNUB_CFG_TRANSACTION_TIMEOUT_MS
+#define PUBNUB_CFG_TRANSACTION_TIMEOUT_MS @PUBNUB_CFG_TRANSACTION_TIMEOUT_MS@
+#endif
+
+#ifndef PUBNUB_CFG_NON_TRANSACTION_TIMEOUT_MS
+#define PUBNUB_CFG_NON_TRANSACTION_TIMEOUT_MS @PUBNUB_CFG_NON_TRANSACTION_TIMEOUT_MS@
+#endif
+
+/* Retry tunables (only meaningful when PUBNUB_ENABLE_RETRY is set). */
+#ifndef PUBNUB_CFG_RETRY_DELAY_MS
+#define PUBNUB_CFG_RETRY_DELAY_MS @PUBNUB_CFG_RETRY_DELAY_MS@
+#endif
+
+#ifndef PUBNUB_CFG_RETRY_MAX_DELAY_MS
+#define PUBNUB_CFG_RETRY_MAX_DELAY_MS @PUBNUB_CFG_RETRY_MAX_DELAY_MS@
+#endif
+
+#ifndef PUBNUB_CFG_LINEAR_MAX_RETRIES
+#define PUBNUB_CFG_LINEAR_MAX_RETRIES @PUBNUB_CFG_LINEAR_MAX_RETRIES@
+#endif
+
+#ifndef PUBNUB_CFG_EXPONENTIAL_MAX_RETRIES
+#define PUBNUB_CFG_EXPONENTIAL_MAX_RETRIES @PUBNUB_CFG_EXPONENTIAL_MAX_RETRIES@
+#endif
+
+/* Files feature tunables (only meaningful when PUBNUB_ENABLE_FILES is set). */
+#ifndef PUBNUB_CFG_FILE_UPLOAD_TIMEOUT_MS
+#define PUBNUB_CFG_FILE_UPLOAD_TIMEOUT_MS @PUBNUB_CFG_FILE_UPLOAD_TIMEOUT_MS@
+#endif
+
+/* Files feature tunables (continued) */
+#ifndef PUBNUB_CFG_FILES_MAX_DOWNLOAD_SIZE
+#define PUBNUB_CFG_FILES_MAX_DOWNLOAD_SIZE @PUBNUB_CFG_FILES_MAX_DOWNLOAD_SIZE@
+#endif
+
+#cmakedefine PUBNUB_CFG_ARENA_POOL_SIZE @PUBNUB_CFG_ARENA_POOL_SIZE@
+#cmakedefine PUBNUB_CFG_ARENA_ALLOC_BUDGET @PUBNUB_CFG_ARENA_ALLOC_BUDGET@
+
+/**
+ * 1 when the SDK statically owns the arena backing pool (hosted profiles).
+ * 0 when the application must provide the pool (embedded profile).
+ *
+ * When 0, pn_allocator_default() returns NULL and pubnub_config_t::allocator
+ * must be set by the caller. PUBNUB_CFG_ARENA_POOL_SIZE remains defined as
+ * the recommended minimum pool size regardless of this toggle.
+ */
+#cmakedefine01 PUBNUB_CFG_ARENA_POOL_OWNER_SDK
+
+/**
+ * @brief Compile-time upper bound for static context storage.
+ *
+ * Use as the array size for a static buffer passed to
+ * @c pubnub_init() on targets where heap allocation is unavailable.
+ * A @c PUBNUB_STATIC_ASSERT in @c client.c guards against the formula
+ * drifting below the real @c sizeof(struct pubnub_context).
+ *
+ * @code
+ * static PUBNUB_ALIGNAS(max_align_t) uint8_t ctx_mem[PUBNUB_CONTEXT_SIZE];
+ * pubnub_context_t* ctx = (pubnub_context_t*)ctx_mem;
+ * pubnub_init(ctx, &cfg);
+ * @endcode
+ *
+ * @note Not available in shared-library builds (@c PUBNUB_BUILD_SHARED=ON).
+ *       Use @c pubnub_context_size() for runtime size queries instead.
+ */
+#if !defined(PUBNUB_SHARED_EXPORT) && !defined(PUBNUB_SHARED)
+#cmakedefine PUBNUB_CONTEXT_SIZE @PUBNUB_CONTEXT_SIZE@
+#endif
+
+#cmakedefine PUBNUB_CFG_MAX_LOG_MESSAGE_SIZE @PUBNUB_CFG_MAX_LOG_MESSAGE_SIZE@
+
+#cmakedefine PUBNUB_CFG_LOG_LEVEL_COMPILED @PUBNUB_CFG_LOG_LEVEL_COMPILED@
+
+#ifndef PUBNUB_CFG_MAX_LOGGERS
+#define PUBNUB_CFG_MAX_LOGGERS @PUBNUB_CFG_MAX_LOGGERS@
+#endif
+
+#ifndef PUBNUB_CFG_HTTP_MAX_PATH_SEGMENTS
+#define PUBNUB_CFG_HTTP_MAX_PATH_SEGMENTS @PUBNUB_CFG_HTTP_MAX_PATH_SEGMENTS@
+#endif
+
+#ifndef PUBNUB_CFG_HTTP_MAX_QUERY_PARAMS
+#define PUBNUB_CFG_HTTP_MAX_QUERY_PARAMS @PUBNUB_CFG_HTTP_MAX_QUERY_PARAMS@
+#endif
+
+#ifndef PUBNUB_CFG_HTTP_MAX_HEADERS
+#define PUBNUB_CFG_HTTP_MAX_HEADERS @PUBNUB_CFG_HTTP_MAX_HEADERS@
+#endif
+
+#ifndef PUBNUB_CFG_HTTP_MAX_RESP_HEADERS
+#define PUBNUB_CFG_HTTP_MAX_RESP_HEADERS @PUBNUB_CFG_HTTP_MAX_RESP_HEADERS@
+#endif
+
+#ifndef PUBNUB_CFG_HTTP_SCRATCH_SIZE
+#define PUBNUB_CFG_HTTP_SCRATCH_SIZE @PUBNUB_CFG_HTTP_SCRATCH_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_PUBLISH_META_BUF_SIZE
+#define PUBNUB_CFG_PUBLISH_META_BUF_SIZE @PUBNUB_CFG_PUBLISH_META_BUF_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_OBJECT_BUFFER_SIZE
+#define PUBNUB_CFG_OBJECT_BUFFER_SIZE @PUBNUB_CFG_OBJECT_BUFFER_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_SCRATCH_BUFFER_SIZE
+#define PUBNUB_CFG_SCRATCH_BUFFER_SIZE @PUBNUB_CFG_SCRATCH_BUFFER_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_ORIGIN
+#define PUBNUB_CFG_ORIGIN "@PUBNUB_CFG_ORIGIN@"
+#endif
+
+/**
+ * @brief Maximum number of middleware layers a single pipeline may own.
+ *
+ * Sized to fit the canonical chain ( @c pnsdk + @c userid + @c auth + @c signature)
+ * plus headroom for additional middlewares ( @c retry, @c telemetry, @c gzip, etc.)
+ * without touching this cap.
+ *
+ * @note The configure-time floor of @b 3 enforced below keeps @c pnsdk + @c userid + @c auth
+ *       available even when signing is compiled out.
+ */
+#ifndef PUBNUB_CFG_PIPELINE_MAX_MIDDLEWARES
+#define PUBNUB_CFG_PIPELINE_MAX_MIDDLEWARES @PUBNUB_CFG_PIPELINE_MAX_MIDDLEWARES@
+#endif
+#cmakedefine01 PUBNUB_CFG_MINIMAL_FORMATTER
+
+/* Crypto module tunables. */
+#ifndef PUBNUB_CFG_CRYPTO_MAX_FALLBACK_CRYPTORS
+#define PUBNUB_CFG_CRYPTO_MAX_FALLBACK_CRYPTORS @PUBNUB_CFG_CRYPTO_MAX_FALLBACK_CRYPTORS@
+#endif
+
+/* Compile-time footprint / quality toggles ( @c PUBNUB_CFG_*).
+   Tune how the implementation is shaped without changing wire surface. */
+
+/* Per-context mutex for thread-safe same-context access. */
+#cmakedefine01 PUBNUB_CFG_THREAD_SAFETY
+
+/* Stringifier for pubnub_res_t values. When @c 0, @c pubnub_res_str
+   returns "" for every input - saves ~400-500 B @c .rodata on Cortex-M0. */
+#cmakedefine01 PUBNUB_CFG_RES_STR
+
+/**
+ * @brief Maximum JSON object/array nesting depth accepted by the
+ *        @c serialization provider's parser and tolerated by the
+ *        recursive destroy walker.
+ *
+ * Bounds the worst-case stack consumption of recursive parse and free
+ * paths in JSON backends. Hostile or malformed inputs with depth
+ * beyond this value cause @c parse to return @c NULL with no allocation
+ * leaks; tree construction APIs that would push past the limit fail
+ * the same way.
+ *
+ * @b Default: @c 16 (hosted profiles), reduced in the bare-metal profile.
+ */
+#ifndef PUBNUB_CFG_JSON_MAX_NESTING_DEPTH
+#define PUBNUB_CFG_JSON_MAX_NESTING_DEPTH @PUBNUB_CFG_JSON_MAX_NESTING_DEPTH@
+#endif
+
+/**
+ * @brief Compile-time toggle for the optional JSON helper layer.
+ *
+ * When @c 1, the richer helpers in @c pubnub/json.h are compiled in
+ * (varargs object builder, deep clone, debug-string serializer) and
+ * the macros in @c pubnub/json_macros.h are usable. When @c 0, those
+ * helpers and macros are excluded from translation entirely; the
+ * always-on small wrappers ( @c pubnub_json_object_set_str,
+ * @c pubnub_json_array_append, @c pubnub_json_destroy) remain
+ * available regardless.
+ *
+ * @b Default: @c ON for hosted profiles (full, minimal) or @c OFF for the
+ * embedded profile, where the varargs builder's stack pressure and
+ * the clone walker's code size are not justified for the typical
+ * tight-footprint targets.
+ */
+#cmakedefine01 PUBNUB_CFG_JSON_HELPERS
+
+/**
+ * @brief Compile-time toggle for floating-point JSON values.
+ *
+ * When @c 1, the serialization provider exposes the @c value_create_double
+ * constructor and @c value_as_double accessor; floating-point JSON
+ * tokens parse into the @c PUBNUB_JSON_DOUBLE node type. When @c 0,
+ * the corresponding @c vtable entries MUST be NULL and floating-point
+ * literals encountered during parse fall back to backend-defined
+ * handling (typically: best-effort int conversion or parse failure).
+ *
+ * @b Default: @c ON for hosted profiles ( @c full, @c minimal) and the
+ * embedded profile (most RTOS targets have soft-float support). @c OFF
+ * for the bare-metal profile (Cortex-M0/M0+ without an FPU), where
+ * the libc double-formatting code is itself prohibitively large.
+ */
+#cmakedefine01 PUBNUB_CFG_JSON_DOUBLE
+
+/* Socket transport configuration */
+#ifndef PUBNUB_CFG_SOCKET_HEADER_BUF_SIZE
+#define PUBNUB_CFG_SOCKET_HEADER_BUF_SIZE @PUBNUB_CFG_SOCKET_HEADER_BUF_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_SOCKET_CONNECT_TIMEOUT_MS
+#define PUBNUB_CFG_SOCKET_CONNECT_TIMEOUT_MS @PUBNUB_CFG_SOCKET_CONNECT_TIMEOUT_MS@
+#endif
+
+#ifndef PUBNUB_CFG_SOCKET_KEEPALIVE_MAX_IDLE_MS
+#define PUBNUB_CFG_SOCKET_KEEPALIVE_MAX_IDLE_MS @PUBNUB_CFG_SOCKET_KEEPALIVE_MAX_IDLE_MS@
+#endif
+
+#ifndef PUBNUB_CFG_SOCKET_KEEPALIVE_MAX_REQUESTS
+#define PUBNUB_CFG_SOCKET_KEEPALIVE_MAX_REQUESTS @PUBNUB_CFG_SOCKET_KEEPALIVE_MAX_REQUESTS@
+#endif
+
+#ifndef PUBNUB_CFG_SOCKET_DECOMP_MAX_BUFFER_SIZE
+#define PUBNUB_CFG_SOCKET_DECOMP_MAX_BUFFER_SIZE @PUBNUB_CFG_SOCKET_DECOMP_MAX_BUFFER_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_MAX_DNS_RESULTS
+#define PUBNUB_CFG_MAX_DNS_RESULTS @PUBNUB_CFG_MAX_DNS_RESULTS@
+#endif
+
+#ifndef PUBNUB_CFG_DNS_CACHE_SIZE
+#define PUBNUB_CFG_DNS_CACHE_SIZE @PUBNUB_CFG_DNS_CACHE_SIZE@
+#endif
+
+#ifndef PUBNUB_CFG_MAX_DNS_SERVERS
+#define PUBNUB_CFG_MAX_DNS_SERVERS @PUBNUB_CFG_MAX_DNS_SERVERS@
+#endif
+
+#ifndef PUBNUB_CFG_MAX_HOSTNAME_LEN
+#define PUBNUB_CFG_MAX_HOSTNAME_LEN @PUBNUB_CFG_MAX_HOSTNAME_LEN@
+#endif
+
+#ifndef PUBNUB_CFG_DNS_PLATFORM_STATE_SIZE
+#define PUBNUB_CFG_DNS_PLATFORM_STATE_SIZE @PUBNUB_CFG_DNS_PLATFORM_STATE_SIZE@
+#endif
+
+/**
+ * @brief Cap for cached DNS entries (seconds).
+ *
+ * When using the built-in UDP resolver the actual server TTL
+ * (PubNub: 300 s) is used; this cap only restricts entries where
+ * the server returns a longer TTL or where the platform OS resolver
+ * provides no TTL.
+ */
+#ifndef PUBNUB_CFG_DNS_MAX_TTL_SEC
+#define PUBNUB_CFG_DNS_MAX_TTL_SEC @PUBNUB_CFG_DNS_MAX_TTL_SEC@
+#endif
+
+#cmakedefine01 PUBNUB_ENABLE_CUSTOM_DNS
+#cmakedefine01 PUBNUB_ENABLE_COMPRESSION
+#cmakedefine01 PUBNUB_ENABLE_REQUEST_COMPRESSION
+#cmakedefine01 PUBNUB_ENABLE_PROXY
+#cmakedefine01 PUBNUB_ENABLE_IPV6
+
+/* Compile-time validation. */
+
+#if PUBNUB_CFG_MAX_PENDING_REQUESTS < 1
+  #error "PUBNUB_CFG_MAX_PENDING_REQUESTS must be >= 1"
+#endif
+
+#if PUBNUB_CFG_REQUEST_BUFFER_SIZE < 256
+  #error "PUBNUB_CFG_REQUEST_BUFFER_SIZE must be >= 256"
+#endif
+
+#if PUBNUB_CFG_RESPONSE_BUFFER_SIZE < 256
+  #error "PUBNUB_CFG_RESPONSE_BUFFER_SIZE must be >= 256"
+#endif
+
+#if PUBNUB_CFG_URL_BUFFER_SIZE < 128
+  #error "PUBNUB_CFG_URL_BUFFER_SIZE must be >= 128"
+#endif
+
+#ifdef PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
+  #if PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS < 1
+    #error "PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS must be >= 1"
+  #endif
+#endif
+
+#if PUBNUB_CFG_SUBSCRIBE_MAX_BATCH_SIZE < 1
+  #error "PUBNUB_CFG_SUBSCRIBE_MAX_BATCH_SIZE must be >= 1"
+#endif
+
+#if PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS < 1
+  #error "PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS must be >= 1"
+#endif
+
+#if PUBNUB_CFG_TRANSACTION_TIMEOUT_MS < 1000
+  #error "PUBNUB_CFG_TRANSACTION_TIMEOUT_MS must be >= 1000"
+#endif
+
+#ifdef PUBNUB_CFG_NON_TRANSACTION_TIMEOUT_MS
+  #if PUBNUB_CFG_NON_TRANSACTION_TIMEOUT_MS < 1000
+    #error "PUBNUB_CFG_NON_TRANSACTION_TIMEOUT_MS must be >= 1000"
+  #endif
+#endif
+
+#if PUBNUB_CFG_RETRY_DELAY_MS < 100
+  #error "PUBNUB_CFG_RETRY_DELAY_MS must be >= 100"
+#endif
+
+#if PUBNUB_CFG_RETRY_MAX_DELAY_MS < PUBNUB_CFG_RETRY_DELAY_MS
+  #error "PUBNUB_CFG_RETRY_MAX_DELAY_MS must be >= PUBNUB_CFG_RETRY_DELAY_MS"
+#endif
+
+#ifdef PUBNUB_CFG_ARENA_POOL_SIZE
+  #if PUBNUB_CFG_ARENA_POOL_SIZE < 1024
+    #error "PUBNUB_CFG_ARENA_POOL_SIZE must be >= 1024"
+  #endif
+#endif
+
+#ifdef PUBNUB_CFG_MAX_LOG_MESSAGE_SIZE
+  /* When 0, pubnub_log_text_formatted() is excluded from the build. */
+  #if PUBNUB_CFG_MAX_LOG_MESSAGE_SIZE != 0 && PUBNUB_CFG_MAX_LOG_MESSAGE_SIZE < 64
+    #error "PUBNUB_CFG_MAX_LOG_MESSAGE_SIZE must be 0 (disabled) or >= 64"
+  #endif
+#endif
+
+#if PUBNUB_CFG_MAX_LOGGERS < 1
+  #error "PUBNUB_CFG_MAX_LOGGERS must be >= 1"
+#endif
+
+#if PUBNUB_CFG_HTTP_MAX_PATH_SEGMENTS < 4
+  #error "PUBNUB_CFG_HTTP_MAX_PATH_SEGMENTS must be >= 4"
+#endif
+
+#if PUBNUB_CFG_HTTP_MAX_QUERY_PARAMS < 4
+  #error "PUBNUB_CFG_HTTP_MAX_QUERY_PARAMS must be >= 4"
+#endif
+
+#if PUBNUB_CFG_HTTP_MAX_HEADERS < 2
+  #error "PUBNUB_CFG_HTTP_MAX_HEADERS must be >= 2"
+#endif
+
+#if PUBNUB_CFG_HTTP_MAX_RESP_HEADERS < 2
+  #error "PUBNUB_CFG_HTTP_MAX_RESP_HEADERS must be >= 2"
+#endif
+
+#if PUBNUB_CFG_HTTP_SCRATCH_SIZE < 32
+  #error "PUBNUB_CFG_HTTP_SCRATCH_SIZE must be >= 32"
+#endif
+
+#if PUBNUB_CFG_PIPELINE_MAX_MIDDLEWARES < (3 + PUBNUB_ENABLE_PAM + PUBNUB_ENABLE_RETRY + PUBNUB_ENABLE_REQUEST_COMPRESSION)
+  #error "PUBNUB_CFG_PIPELINE_MAX_MIDDLEWARES is too small for the enabled middleware set"
+#endif
+
+#if PUBNUB_CFG_FILES_MAX_DOWNLOAD_SIZE < 0
+  #error "PUBNUB_CFG_FILES_MAX_DOWNLOAD_SIZE must be >= 0 (0 = no limit)"
+#endif
+
+#if PUBNUB_CFG_MAX_POLL_MS < 1 || PUBNUB_CFG_MAX_POLL_MS > 5000
+  #error "PUBNUB_CFG_MAX_POLL_MS must be in [1, 5000]"
+#endif
+
+#if PUBNUB_CFG_DNS_MAX_TTL_SEC < 1 || PUBNUB_CFG_DNS_MAX_TTL_SEC > 86400
+  #error "PUBNUB_CFG_DNS_MAX_TTL_SEC must be between 1 and 86400 seconds"
+#endif
+
+
+#endif /* PUBNUB_CONFIG_H */
