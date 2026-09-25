@@ -4,6 +4,32 @@
 #ifndef PUBNUB_FEATURE_ACCESS_H
 #define PUBNUB_FEATURE_ACCESS_H
 
+/**
+ * @file features/access.h
+ * @brief PubNub Access Manager (PAM) — server-side environments only.
+ *
+ * @warning **PAM requires a secret key embedded in the calling process.**
+ *          Secret keys must NEVER reside in device firmware, mobile apps,
+ *          or any code distributed to end-users. Exposure of a secret key
+ *          gives an attacker unrestricted administrative access to your
+ *          PubNub keyset.
+ *
+ * @par Intended environments
+ * PAM is designed for **trusted server-side** processes (backend APIs,
+ * cloud functions, server daemons) where the secret key can be stored
+ * securely via environment variables or secrets managers.
+ *
+ * @par Embedded / IoT devices
+ * Devices must NOT store or use the secret key. The correct pattern is:
+ *  1. A server-side service calls @c pubnub_grant_token() to issue a
+ *     short-lived, least-privilege token for the device.
+ *  2. The device receives the token through a secure provisioning channel.
+ *  3. The device calls @c pubnub_set_auth_token() — no secret key involved.
+ *
+ * The SDK enforces this at build time: @c PUBNUB_ENABLE_PAM is a
+ * compile-time @c FATAL_ERROR on the @c embedded profile.
+ */
+
 #include "pubnub/config.h"
 
 #if PUBNUB_ENABLE_PAM

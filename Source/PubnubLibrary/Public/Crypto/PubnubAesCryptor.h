@@ -3,39 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PubnubCryptorInterface.h"
-#include "UObject/NoExportTypes.h"
+#include "Crypto/PubnubCryptorInterface.h"
 #include "PubnubAesCryptor.generated.h"
 
-
-struct pubnub_crypto_provider_t;
-
-struct FPubnubEncryptedDataInternal
-{
-	TArray<uint8> Data;
-	TArray<uint8> Metadata; // Contains the IV
-};
+struct pubnub_crypto_provider;
 
 /**
- * AES-based cryptor implementation for PubNub message encryption and decryption.
- * 
- * This class provides AES (Advanced Encryption Standard) encryption/decryption functionality
- * for PubNub messages. It implements the IPubnubCryptorInterface to provide a standardized
- * encryption interface that can be used with PubNub's crypto module.
- * 
- * Features:
- * - AES encryption with 256-bit keys
- * - Random IV generation for each encryption operation
- * - SHA-256 key hashing for enhanced security
- * - Blueprint-compatible interface for Unreal Engine projects
- * 
- * Usage:
- * 1. Create an instance of UPubnubAesCryptor
- * 2. Set the cipher key using SetCipherKey()
- * 3. Use the cryptor with PubNub's crypto module for automatic message encryption/decryption
- * 
- * @note The cipher key must be set before performing any encryption/decryption operations.
- * @note Each encryption operation generates a unique random IV for security.
+ * AES-256-CBC cryptor (identifier "ACRH").
+ *
+ * Wraps pubnub_cryptor_aes_cbc_create. The cipher key is hashed with SHA-256.
+ * Each encrypt uses a random 16-byte IV, returned as metadata.
+ * Call SetCipherKey before Encrypt, Decrypt, or UPubnubCryptoModule::InitCryptoModule.
  */
 UCLASS(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubAesCryptor : public UObject, public IPubnubCryptorInterface
@@ -43,39 +21,33 @@ class PUBNUBLIBRARY_API UPubnubAesCryptor : public UObject, public IPubnubCrypto
 	GENERATED_BODY()
 
 public:
-
-	/** Sets the cipher key. It's required to SetCipherKey before any encryption/decryption operations. */
+	/** Sets the cipher key. Required before encryption, decryption, or module init. */
 	UFUNCTION(BlueprintCallable, Category = "PubNub|Crypto")
-	void SetCipherKey(const FString& NewCipherKey) { CipherKey = NewCipherKey; }
+	void SetCipherKey(const FString& NewCipherKey);
 
-	/** Returns the current cipher key. */
+	/** Returns the cipher key currently stored on this object. */
 	UFUNCTION(BlueprintCallable, Category = "PubNub|Crypto")
 	FString GetCipherKey() const { return CipherKey; }
 
+	virtual void BeginDestroy() override;
+
+	/** Borrowed C-Core cryptor. Null until the key has been applied. */
+	pubnub_crypto_provider* GetNativeCryptor();
+
+	/** Stops further key changes. Called when a crypto module takes this cryptor. */
+	void Seal();
+
 protected:
 	UPROPERTY()
-	FString CipherKey = "";
+	FString CipherKey;
 
 private:
-
-	// IPubnubCryptoInterface
 	virtual TArray<uint8> GetIdentifier_Implementation() override;
 	virtual FPubnubEncryptedData Encrypt_Implementation(const FString& Data) override;
 	virtual FString Decrypt_Implementation(const FPubnubEncryptedData& Data) override;
 
-	//Constants
-	static constexpr int32 AesBlockSize = 16;
-	static constexpr int32 AesIvSize    = 16;
-	static constexpr int32 Sha256Len    = 32;
+	void DestroyNativeCryptor();
 
-	static bool EncryptData(const FString& CipherKey, const TArray<uint8>& DataToEncrypt, FPubnubEncryptedDataInternal& OutResult);
-	static bool DecryptData(const FString& CipherKey, const FPubnubEncryptedDataInternal& EncryptedData, TArray<uint8>& OutResult);
-	
-	static void GenerateRandomIV(uint8* IV, int32 Size);
-	static bool HashKeySHA256(const FString& Key, uint8* OutHash);
-    
-	// Data conversion helpers
-	FPubnubEncryptedData ConvertToInterface(const FPubnubEncryptedDataInternal& InternalData);
-	FPubnubEncryptedDataInternal ConvertFromInterface(const FPubnubEncryptedData& InterfaceData);
-	
+	pubnub_crypto_provider* NativeCryptor = nullptr;
+	bool bSealed = false;
 };

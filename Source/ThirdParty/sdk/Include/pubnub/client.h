@@ -95,7 +95,9 @@ typedef enum pubnub_endpoint_group {
     /** Message actions / reactions. */
     PUBNUB_ENDPOINT_MESSAGE_REACTIONS = 0x40,
     /** Access Manager grants. */
-    PUBNUB_ENDPOINT_PAM = 0x80
+    PUBNUB_ENDPOINT_PAM = 0x80,
+    /** File upload / download / list / delete. */
+    PUBNUB_ENDPOINT_FILES = 0x100
 } pubnub_endpoint_group_t;
 
 /**
@@ -228,6 +230,21 @@ typedef struct pubnub_config {
     const char* pnsdk_suffix;
 
     /**
+     * @brief Override for the base SDK identifier in the @c pnsdk query
+     *        parameter (@b optional, null-terminated).
+     *
+     * When non-NULL and non-empty, completely replaces the compile-time
+     * @c PUBNUB_SDK_IDENTIFIER as the base string sent in @c pnsdk.
+     * The @c pnsdk_suffix (if set) is still appended after it. Use this
+     * for wrapper SDKs that need their own identity (e.g.
+     * @c "Unreal-PubNub/5.4" or @c "Unity/2.3.0").
+     *
+     * @c NULL (default, zero-init safe) uses the compile-time identifier
+     * unchanged.
+     */
+    const char* pnsdk_override;
+
+    /**
      * @brief User ID / UUID (@b required, null-terminated).
      *
      * @note Runtime-mutable after init via @c pubnub_set_user_id.
@@ -304,12 +321,11 @@ typedef struct pubnub_config {
     /**
      * @brief Presence timeout in seconds.
      *
-     * @c 0 (default): the SDK uses an internal default of 300 s for the
-     * heartbeat parameter sent on subscription-list changes; no periodic
-     * heartbeat timer is started. Non-zero: the SDK sends periodic
-     * heartbeat REST calls at <tt>presence_timeout / 2 - 1</tt> seconds
-     * (unless @c heartbeat_interval overrides it) and registers the
-     * specified timeout with PubNub via @c ?heartbeat={presence_timeout}.
+     * Sets only the @c ?heartbeat={value} parameter registered with the
+     * server; it does not derive a client-side heartbeat interval. @c 0
+     * (default) uses an internal default of 300 s for that server-side
+     * parameter. To dispatch periodic client-side heartbeat REST calls,
+     * set @c heartbeat_interval to a nonzero value.
      *
      * @note Ignored at runtime when @c PUBNUB_ENABLE_PRESENCE is
      *       disabled at compile time.
@@ -319,15 +335,10 @@ typedef struct pubnub_config {
     /**
      * @brief Heartbeat interval in seconds.
      *
-     * Delay between periodic heartbeat requests while subscribed.
-     * Defaults to @c 0 (auto-computed as <tt>timeout / 2 - 1</tt>, which
-     * provides one full presence-timeout cycle of margin before server-side
-     * expiry).
-     *
-     * @note If both @c heartbeat_interval and @c presence_timeout are zero
-     *       (the @c pubnub_config_defaults() result), no automatic heartbeat
-     *       is sent. Set @c presence_timeout to enable the auto-computed
-     *       interval.
+     * Delay between periodic client-side heartbeat requests while
+     * subscribed. @c 0 (default) disables automatic client-side heartbeats
+     * entirely. Set a nonzero value in seconds to enable periodic heartbeat
+     * dispatching.
      *
      * @note Ignored at runtime when @c PUBNUB_ENABLE_PRESENCE is disabled at
      *       compile time.
@@ -631,6 +642,39 @@ PUBNUB_API pubnub_res_t pubnub_set_user_id(pubnub_context_t* ctx,
  */
 PUBNUB_API pubnub_res_t pubnub_set_log_level(pubnub_context_t* ctx,
                                              unsigned int      level);
+
+/**
+ * @brief Set the PubNub origin (hostname) for subsequent requests.
+ *
+ * Copies the origin string into an internal fixed-size buffer. The new
+ * origin takes effect on the next request dispatch. Requests already
+ * in-flight are unaffected (they hold their own copy of the host).
+ *
+ * Pass NULL or an empty string to reset to the compile-time default
+ * (@c PUBNUB_CFG_ORIGIN).
+ *
+ * @param ctx    Context to update. Must not be NULL.
+ * @param origin New origin hostname, or NULL to reset to default.
+ * @return PUBNUB_OK on success.
+ * @retval PUBNUB_ERR_NOT_INITIALIZED if @p ctx is NULL or not
+ *         initialized.
+ * @retval PUBNUB_ERR_INVALID_ARGUMENT if @p origin exceeds
+ *         @c PUBNUB_CFG_MAX_HOSTNAME_LEN.
+ */
+PUBNUB_API pubnub_res_t pubnub_set_origin(pubnub_context_t* ctx, const char* origin);
+
+/**
+ * @brief Get the current PubNub origin (hostname).
+ *
+ * The returned pointer is valid until the next call to
+ * pubnub_set_origin() on the same context, or until the context is
+ * destroyed.
+ *
+ * @param ctx Context to query. Must not be NULL.
+ * @return Current origin string, or NULL if @p ctx is NULL or not
+ *         initialized.
+ */
+PUBNUB_API const char* pubnub_get_origin(const pubnub_context_t* ctx);
 
 /**
  * @brief Return the context's resolved serialization provider.

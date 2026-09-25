@@ -279,7 +279,8 @@ typedef struct pubnub_push_list_channels_result {
  *
  * @param ctx  Initialized context (@b borrowed).
  * @param opts Add-channels options (@b borrowed).
- * @return Future handle (owned by caller).
+ * @return Future handle (owned by caller). Release via @c pubnub_future_release
+ *         after reading results.
  *
  * @see pubnub_future_release
  * @see pubnub_push_add_channels_opts_t
@@ -295,7 +296,8 @@ pubnub_push_add_channels(pubnub_context_t*                      ctx,
  *
  * @param ctx  Initialized context (@b borrowed).
  * @param opts Remove-channels options (@b borrowed).
- * @return Future handle (owned by caller).
+ * @return Future handle (owned by caller). Release via @c pubnub_future_release
+ *         after reading results.
  *
  * @see pubnub_future_release
  * @see pubnub_push_remove_channels_opts_t
@@ -315,7 +317,8 @@ pubnub_push_remove_channels(pubnub_context_t*                         ctx,
  *
  * @param ctx  Initialized context (@b borrowed).
  * @param opts List-channels options (@b borrowed).
- * @return Future handle (owned by caller).
+ * @return Future handle (owned by caller). Release via @c pubnub_future_release
+ *         after reading results.
  *
  * @see pubnub_push_list_channels_result
  * @see pubnub_future_release
@@ -332,7 +335,8 @@ pubnub_push_list_channels(pubnub_context_t*                       ctx,
  *
  * @param ctx  Initialized context (@b borrowed).
  * @param opts Remove-device options (@b borrowed).
- * @return Future handle (owned by caller).
+ * @return Future handle (owned by caller). Release via @c pubnub_future_release
+ *         after reading results.
  *
  * @see pubnub_future_release
  * @see pubnub_push_remove_device_opts_t

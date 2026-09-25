@@ -57,7 +57,7 @@ public:
 	void ListUsersFromChannelSample();
 
 	UFUNCTION()
-	void OnListUsersFromChannelResponse(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data);
+	void OnListUsersFromChannelResponse(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels);
 
 	// snippet.callback_function_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")

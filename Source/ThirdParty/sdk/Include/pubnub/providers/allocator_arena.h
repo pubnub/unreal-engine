@@ -8,6 +8,11 @@
 #include "pubnub/providers/allocator.h"
 #include "pubnub/pubnub_compat.h"
 
+#ifndef PUBNUB_ARENA_MAX_ZONE_B_CELLS
+#error "allocator_arena.h requires arena allocator configuration. " \
+       "Ensure PUBNUB_PROVIDER_ALLOCATOR=arena in your build."
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -28,12 +33,6 @@ extern "C" {
  * @endcode
  */
 #define PUBNUB_ARENA_RECOMMENDED_POOL_SIZE PUBNUB_CFG_ARENA_POOL_SIZE
-
-/**
- * @brief Opaque free-list block header; layout defined in the allocator
- *        implementation. Callers must not dereference this pointer.
- */
-struct pubnub_arena_free_block;
 
 /**
  * @brief Number of RX (response body) buffer slots in Zone A.
@@ -77,25 +76,36 @@ struct pubnub_arena_free_block;
  * **Zone A** — fixed-size, purpose-tagged slot pools. Serves
  * @c buf_acquire / @c buf_release in O(slots) time with no heap activity.
  *
- * **Zone B** — free-list bump allocator. Serves @c alloc / @c free for
+ * **Zone B** — fixed-cell pool allocator. Serves @c alloc / @c free for
  * both per-request objects (freed in @c feature_state_cleanup) and
- * context-lifetime dynamic objects (freed on rotation). Freed blocks are
- * prepended to an intrusive singly-linked list; the next @c alloc scans
- * for a first-fit before advancing the bump cursor.
+ * context-lifetime dynamic objects (freed on rotation). Zone B is
+ * divided into 256-byte cells; an allocation of N bytes claims
+ * ceil(N/256) consecutive cells. Freed cells are individually
+ * reclaimed and can be reassembled into any consecutive run.
  *
  * Declare as a file-scope @c static variable or embed in a larger struct.
  * Pass @c &instance.base to @c pubnub_config_t.allocator.
  *
- * @note @c realloc and @c buf_grow are @c NULL in the vtable. The SDK
- *       handles @c NULL realloc via alloc+copy+free, and treats @c NULL
- *       @c buf_grow as @c PUBNUB_ERR_BUFFER_TOO_SMALL (fixed partitions
- *       cannot grow).
+ * @note @c buf_grow is @c NULL in the vtable (fixed-size partitions
+ *       cannot grow; the SDK treats this as
+ *       @c PUBNUB_ERR_BUFFER_TOO_SMALL). @c realloc IS implemented:
+ *       it attempts in-place expansion by claiming adjacent free cells
+ *       and falls back to alloc-copy-free when that is not possible.
+ *       Returns @c NULL without touching the old block on failure.
  *
  * @warning **Single-tenant only.** Each arena instance serves exactly one
  *          @c pubnub_context_t. Sharing an arena across multiple contexts
- *          causes undefined behavior — @c deinit on one context rewinds
- *          the bump cursor, invalidating pointers held by the other.
+ *          causes undefined behavior — @c deinit on one context zeroes
+ *          all cell tracking, invalidating pointers held by the other.
  *          Create a separate arena (with its own pool) per context.
+ *
+ * @warning **No internal locking.** The arena itself performs no
+ *          synchronization. Within the standard SDK lifecycle all arena
+ *          access is serialised by the SDK's per-context mutex, so no
+ *          additional locking is needed. External locking is required only
+ *          when you call arena functions directly outside the SDK — for
+ *          example, concurrent crypto operations sharing the same arena
+ *          instance without going through a @c pubnub_context_t.
  */
 typedef struct pubnub_arena_allocator {
     /**
@@ -118,11 +128,8 @@ typedef struct pubnub_arena_allocator {
     /** @brief Zone A: in-use flag per SCRATCH slot. */
     uint8_t scratch_in_use[PUBNUB_ARENA_SCRATCH_SLOTS];
 
-    /** @brief Zone B: first byte of the bump region. */
+    /** @brief Zone B: first byte of the cell pool region. */
     uint8_t* zone_b_base;
-
-    /** @brief Zone B: bump cursor; next allocation starts here. */
-    uint8_t* zone_b_cursor;
 
     /**
      * @brief One-past-the-end of the pool (@c pool + @c pool_size).
@@ -132,8 +139,25 @@ typedef struct pubnub_arena_allocator {
      */
     uint8_t* zone_b_end;
 
-    /** @brief Zone B: head of the intrusive free-list (@c NULL = empty). */
-    struct pubnub_arena_free_block* free_list;
+    /**
+     * @brief Runtime cell count in Zone B.
+     *
+     * Computed at init from the actual pool size; always
+     * <= @c PUBNUB_ARENA_MAX_ZONE_B_CELLS.
+     */
+    size_t cell_total;
+
+    /** @brief Zone B: per-cell in-use flag (1 = allocated, 0 = free). */
+    uint8_t cell_in_use[PUBNUB_ARENA_MAX_ZONE_B_CELLS];
+
+    /**
+     * @brief Zone B: allocation size in cells at first cell of each alloc.
+     *
+     * The first cell of an N-cell allocation stores N; trailing cells
+     * store 0. Used by @c arena_free to determine how many cells to
+     * reclaim.
+     */
+    uint8_t cell_count[PUBNUB_ARENA_MAX_ZONE_B_CELLS];
 } pubnub_arena_allocator_t;
 
 /**
@@ -170,7 +194,11 @@ typedef struct pubnub_arena_allocator {
  * @param pool      Backing memory block (caller-owned). The SDK never
  *                  frees this buffer; it must outlive @p arena. Declare
  *                  as @c static or place via linker script on bare-metal
- *                  targets.
+ *                  targets. The pool buffer must be aligned to at least
+ *                  @c sizeof(double) (use @c PUBNUB_ALIGNAS(double) to
+ *                  ensure proper alignment); otherwise allocations requesting
+ *                  alignment > the pool's natural alignment may silently
+ * receive misaligned memory.
  * @param pool_size Size of @p pool in bytes. Must exceed the Zone A
  *                  footprint
  *                  (<tt>PUBNUB_ARENA_RX_SLOTS * PUBNUB_CFG_RESPONSE_BUFFER_SIZE

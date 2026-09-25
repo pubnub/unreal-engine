@@ -75,11 +75,11 @@ void ASample_PresenceFull::OnSetStateResponse(FPubnubOperationResult Result)
 	}
 }
 
-void ASample_PresenceFull::OnListUsersFromChannelResponse(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data)
+void ASample_PresenceFull::OnListUsersFromChannelResponse(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
 {
 	if (!Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully listed users. Occupancy: %d"), Data.Occupancy);
+		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully listed users. Occupancy: %d"), TotalOccupancy);
 	}
 	else
 	{
@@ -87,11 +87,11 @@ void ASample_PresenceFull::OnListUsersFromChannelResponse(FPubnubOperationResult
 	}
 }
 
-void ASample_PresenceFull::OnGetStateResponse(FPubnubOperationResult Result, FString StateResponse)
+void ASample_PresenceFull::OnGetStateResponse(FPubnubOperationResult Result, const TArray<FPubnubUserStateOnChannel>& States)
 {
 	if (!Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully got state: %s"), *StateResponse);
+		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully got state: %s"), *(States.Num() > 0 ? States[0].State : FString()));
 	}
 	else
 	{

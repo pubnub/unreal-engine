@@ -119,6 +119,45 @@
 #endif
 
 /**
+ * @brief Portable "do not inline this function" specifier.
+ *
+ * Apply to a cold function that owns a large stack buffer. Without it an
+ * optimizing compiler may inline the function into a hot caller, which
+ * hoists the buffer into the caller's prologue so it is allocated on
+ * every call — including the paths that never reach the cold code. On a
+ * constrained target that turns a rarely-used buffer into a permanent
+ * cost on the hot path.
+ *
+ * Use sparingly and only with a stack-usage measurement to back it up:
+ * blocking inlining costs a call and can cost code size.
+ *
+ * Place the macro at the very START of the declaration, before the
+ * storage-class specifier (@c PUBNUB_NOINLINE @c static @c int @c f(void)).
+ * On IAR the macro expands to a pragma, which is only honoured when it
+ * precedes the whole declaration — @c static @c PUBNUB_NOINLINE @c int
+ * silently loses the guarantee there.
+ *
+ * - **MSVC**: @c __declspec(noinline).
+ * - **GCC/Clang**: @c __attribute__((noinline)).
+ * - **IAR (ARM/RX)**: @c _Pragma("inline=never").
+ * - **Arm Compiler 5**: @c __attribute__((noinline)).
+ * - **Fallback**: expands to nothing; the buffer may be hoisted, so
+ *   verify stack usage on the target toolchain.
+ */
+#if defined(_MSC_VER)
+#define PUBNUB_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+#define PUBNUB_NOINLINE __attribute__((noinline))
+#elif defined(__ICCARM__) || defined(__ICCRX__)
+#define PUBNUB_NOINLINE _Pragma("inline=never")
+#elif defined(__CC_ARM)
+#define PUBNUB_NOINLINE __attribute__((noinline))
+#else
+/* Fallback: verify stack usage manually on this toolchain. */
+#define PUBNUB_NOINLINE
+#endif
+
+/**
  * @brief Shared-library symbol decoration macro.
  *
  * When building the SDK as a shared library, public API functions are

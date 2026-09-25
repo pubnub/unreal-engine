@@ -76,10 +76,6 @@ bool FPubnubGeneral_SetUserID_GetUserID_HappyPath::RunTest(const FString& Parame
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	TestEqual(TEXT("Initial GetUserID should match FPubnubConfig.UserID from InitTest"), PubnubClient->GetUserID(), ExpectedFromConfig);
 
@@ -100,10 +96,6 @@ bool FPubnubGeneral_SetUserID_EmptyString_DoesNotChangeUserId::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	TestEqual(TEXT("Baseline user id from config"), PubnubClient->GetUserID(), ExpectedFromConfig);
 
@@ -122,10 +114,6 @@ bool FPubnubGeneral_DisconnectSubscriptions_HappyPath::RunTest(const FString& Pa
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("gen_disc_user"));
 
 	const FPubnubOperationResult Disc = PubnubClient->DisconnectSubscriptions();
@@ -146,10 +134,6 @@ bool FPubnubGeneral_ReconnectSubscriptions_AfterDisconnect_EmptyTimetoken::RunTe
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("gen_reconn_user"));
 
 	UPubnubChannelEntity* const Ent = PubnubClient->CreateChannelEntity(Ch);
@@ -193,10 +177,6 @@ bool FPubnubGeneral_ReconnectSubscriptions_WithTimetokenParameter::RunTest(const
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("gen_reconn_tt_user"));
 
 	const FPubnubPublishMessageResult Pub = PubnubClient->PublishMessage(Ch, TEXT("{\"m\":\"reconnect_cursor\"}"));
@@ -234,10 +214,6 @@ bool FPubnubGeneral_Logger_AddRemove_GetLoggersCount::RunTest(const FString& Par
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("gen_log_user"));
 
 	const int32 Baseline = PubnubClient->GetLoggers().Num();
@@ -274,10 +250,6 @@ bool FPubnubGeneral_Logger_DuplicateAdd_IsIdempotent::RunTest(const FString& Par
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("gen_log_dup_user"));
 
 	const int32 Baseline = PubnubClient->GetLoggers().Num();
@@ -309,10 +281,6 @@ bool FPubnubGeneral_Logger_ClearLoggers_EmptiesList::RunTest(const FString& Para
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("gen_log_clr_user"));
 
 	PubnubClient->ClearLoggers();

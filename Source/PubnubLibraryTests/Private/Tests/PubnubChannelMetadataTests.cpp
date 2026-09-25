@@ -139,10 +139,6 @@ bool FPubnubGetAllChannelMetadata_HappyPath_DefaultParams::RunTest(const FString
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("cmeta_getall_default_caller"));
 
 	const FPubnubGetAllChannelMetadataResult R = PubnubClient->GetAllChannelMetadata();
@@ -166,10 +162,6 @@ bool FPubnubGetAllChannelMetadata_AllOptionalParameters::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData SetInput;
@@ -210,10 +202,6 @@ bool FPubnubGetAllChannelMetadata_FilterFindsCreatedChannel::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -280,10 +268,6 @@ bool FPubnubSetChannelMetadata_HappyPath_RequiredFieldsOnly::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -313,10 +297,6 @@ bool FPubnubSetChannelMetadata_AllInputFieldsAndInclude::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -362,10 +342,6 @@ bool FPubnubSetChannelMetadata_UpdateThenGetReflectsNewValues::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData First;
@@ -424,10 +400,6 @@ bool FPubnubGetChannelMetadata_HappyPath_AfterSet::RunTest(const FString& Parame
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -464,10 +436,6 @@ bool FPubnubGetChannelMetadata_AllIncludes_ReturnsCustomStatusType::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -504,10 +472,6 @@ bool FPubnubGetChannelMetadata_UnknownChannel_ReturnsError::RunTest(const FStrin
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("cmeta_get_unknown_caller"));
 
 	const FPubnubChannelMetadataResult R = PubnubClient->GetChannelMetadata(UnknownChannel);
@@ -553,10 +517,6 @@ bool FPubnubRemoveChannelMetadata_HappyPath_ThenGetFails::RunTest(const FString&
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -586,10 +546,6 @@ bool FPubnubRemoveChannelMetadata_SetAfterRemove_RecreatesMetadata::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData First;

@@ -149,10 +149,6 @@ bool FPubnubAddChannelToGroup_HappyPath_RequiredParamsOnly::RunTest(const FStrin
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult Result = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -181,10 +177,6 @@ bool FPubnubAddChannelToGroup_AddThenListChannels_ChannelInList::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -216,10 +208,6 @@ bool FPubnubAddChannelToGroup_AddSameChannelTwice_StillSucceeds::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult Add1 = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -294,10 +282,6 @@ bool FPubnubRemoveChannelFromGroup_HappyPath_RequiredParamsOnly::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -331,10 +315,6 @@ bool FPubnubRemoveChannelFromGroup_RemoveThenList_ChannelNotInList::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -391,10 +371,6 @@ bool FPubnubListChannelsFromGroup_HappyPath_RequiredParamsOnly::RunTest(const FS
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -426,10 +402,6 @@ bool FPubnubListChannelsFromGroup_EmptyGroup_ReturnsEmptyArray::RunTest(const FS
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -463,10 +435,6 @@ bool FPubnubListChannelsFromGroup_MultipleChannels_ReturnsAll::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddA = PubnubClient->AddChannelToGroup(ChA, TestGroup);
@@ -526,10 +494,6 @@ bool FPubnubRemoveChannelGroup_HappyPath_RequiredParamsOnly::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -556,10 +520,6 @@ bool FPubnubRemoveChannelGroup_RemoveThenList_GroupGone::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);

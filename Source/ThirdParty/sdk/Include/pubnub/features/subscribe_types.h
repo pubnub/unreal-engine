@@ -132,6 +132,15 @@ typedef struct pubnub_subscribe_status_event {
     /** HTTP status code when reason is PUBNUB_ERR_SERVER (e.g. 403,
      *  429); 0 otherwise. */
     uint16_t http_status_code;
+    /** Comma-separated channel names now active (including -pnpres
+     *  variants). Populated for SUBSCRIPTION_CHANGED and CONNECTED;
+     *  empty view for other categories. Valid only within the callback
+     *  invocation. */
+    pubnub_string_view_t channels;
+    /** Comma-separated channel group names now active. Populated for
+     *  SUBSCRIPTION_CHANGED and CONNECTED; empty view for other
+     *  categories. Valid only within the callback invocation. */
+    pubnub_string_view_t groups;
 } pubnub_subscribe_status_event_t;
 
 /**
@@ -264,9 +273,6 @@ typedef enum pubnub_subscribe_entity_type {
     PUBNUB_SUBSCRIBE_USER_METADATA = 3
 } pubnub_subscribe_entity_type_t;
 
-/** Forward declaration for the opaque entity handle. */
-typedef struct pn_entity pn_entity_t;
-
 /**
  * @brief Opaque entity handle.
  *
@@ -277,7 +283,7 @@ typedef struct pn_entity pn_entity_t;
  * Must be destroyed with @c pubnub_entity_destroy when no longer
  * needed.
  */
-typedef pn_entity_t* pubnub_entity_t;
+typedef struct pubnub_entity* pubnub_entity_t;
 
 /**
  * @brief Options for creating a subscription.
@@ -302,9 +308,6 @@ typedef struct pubnub_subscription_opts {
 /** @brief Zero-initializes subscription options. Call before overriding fields. */
 #define PUBNUB_SUBSCRIPTION_OPTS_INIT {0}
 
-/** Forward declaration for the opaque subscription handle. */
-typedef struct pn_subscription pn_subscription_t;
-
 /**
  * @brief Opaque subscription handle.
  *
@@ -312,10 +315,7 @@ typedef struct pn_subscription pn_subscription_t;
  * via @c pubnub_subscription_create, must be destroyed with
  * @c pubnub_subscription_destroy when no longer needed.
  */
-typedef pn_subscription_t* pubnub_subscription_t;
-
-/** Forward declaration for the opaque subscription set struct. */
-typedef struct pn_subscription_set pn_subscription_set_t;
+typedef struct pubnub_subscription* pubnub_subscription_t;
 
 /**
  * @brief Opaque subscription set handle.
@@ -328,7 +328,7 @@ typedef struct pn_subscription_set pn_subscription_set_t;
  *
  * @c NULL indicates an invalid/exhausted handle.
  */
-typedef pn_subscription_set_t* pubnub_subscription_set_t;
+typedef struct pubnub_subscription_set* pubnub_subscription_set_t;
 
 /** Sentinel for an invalid subscription set handle. */
 #define PUBNUB_SUBSCRIPTION_SET_INVALID ((pubnub_subscription_set_t)NULL)

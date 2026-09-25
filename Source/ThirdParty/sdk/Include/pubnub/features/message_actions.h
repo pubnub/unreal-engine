@@ -259,7 +259,8 @@ typedef struct pubnub_get_message_actions_result {
  * @param ctx  Initialized context (@b required, @b borrowed).
  * @param opts Operation options (@b required, @b borrowed). All required
  *             fields must be set; type must be <= 15 characters.
- * @return Future representing the in-flight request.
+ * @return Future handle (owned by caller). Release via @c pubnub_future_release
+ *         after reading results.
  *         Returns PUBNUB_FUTURE_INVALID on validation failure.
  *
  * @see pubnub_add_message_action_result
@@ -305,7 +306,8 @@ pubnub_add_message_action(pubnub_context_t*                       ctx,
  * @param ctx  Initialized context (@b required, @b borrowed).
  * @param opts Operation options (@b required, @b borrowed). Channel is
  *             required.
- * @return Future representing the in-flight request.
+ * @return Future handle (owned by caller). Release via @c pubnub_future_release
+ *         after reading results.
  *         Returns PUBNUB_FUTURE_INVALID on validation failure.
  *
  * @see pubnub_get_message_actions_result
@@ -344,7 +346,8 @@ pubnub_get_message_actions(pubnub_context_t*                        ctx,
  * @param ctx  Initialized context (@b required, @b borrowed).
  * @param opts Operation options (@b required, @b borrowed). All three
  *             identifier fields are required.
- * @return Future representing the in-flight request.
+ * @return Future handle (owned by caller). Release via @c pubnub_future_release
+ *         after reading results.
  *         Returns PUBNUB_FUTURE_INVALID on validation failure.
  *
  * @see pubnub_future_release

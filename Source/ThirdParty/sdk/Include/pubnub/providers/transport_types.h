@@ -115,6 +115,16 @@ typedef struct pubnub_http_request {
     uint8_t compress_body;
 
     /**
+     * @brief When non-zero, the core deadline timer skips this request.
+     *
+     * Set by the retry middleware during backoff (WAITING state) so
+     * the core's per-request timeout does not fire while a retry is
+     * pending. Cleared before each redispatch and on cancel.
+     * Zero-initialized default means the deadline is active.
+     */
+    uint8_t deadline_suspended;
+
+    /**
      * URL path segments (joined with '/' by the transport).
      *
      * Segments arrive **pre-encoded** by the feature/middleware layer

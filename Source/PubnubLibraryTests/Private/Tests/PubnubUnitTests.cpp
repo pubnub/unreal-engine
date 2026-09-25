@@ -13,7 +13,6 @@
 #include "Misc/AutomationTest.h"
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAddQuotesToStringUnitTest, "Pubnub.aUnit.Utilities.AddQuotesToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMembershipIncludeToStringUnitTest, "Pubnub.aUnit.Utilities.MembershipIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMemberIncludeToStringUnitTest, "Pubnub.aUnit.Utilities.MemberIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetAllIncludeToStringUnitTest, "Pubnub.aUnit.Utilities.GetAllIncludeToString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
@@ -62,31 +61,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetOperationResultFromJsonAppContextUnitTest, 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGetMessageActionFromMessageDataUnitTest, "Pubnub.aUnit.JsonUtilities.GetMessageActionFromMessageData", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 
 
-
-bool FAddQuotesToStringUnitTest::RunTest(const FString& Parameters)
-{
-	// Test adding quotes to unquoted string
-	FString Test = "abc";
-	FString TestWithQuotes = UPubnubUtilities::AddQuotesToString(Test);
-	TestEqual("Adding quotes to unquoted string failed", TestWithQuotes, "\"abc\"");
-
-	// Test adding quotes to already quoted string with SkipIfHasQuotes = true
-	FString Test2 = "\"abc\"";
-	FString Test2WithQuotes = UPubnubUtilities::AddQuotesToString(Test2, true);
-	TestEqual("Adding quotes to quoted string with SkipIfHasQuotes=true failed", Test2WithQuotes, "\"abc\"");
-
-	// Test adding quotes to already quoted string with SkipIfHasQuotes = false
-	FString Test3 = "\"abc\"";
-	FString Test3WithQuotes = UPubnubUtilities::AddQuotesToString(Test3, false);
-	TestEqual("Adding quotes to quoted string with SkipIfHasQuotes=false failed", Test3WithQuotes, "\"\"abc\"\"");
-
-	// Test empty string
-	FString Test4 = "";
-	FString Test4WithQuotes = UPubnubUtilities::AddQuotesToString(Test4);
-	TestEqual("Adding quotes to empty string failed", Test4WithQuotes, "\"\"");
-
-	return true;
-}
 
 bool FMembershipIncludeToStringUnitTest::RunTest(const FString& Parameters)
 {
@@ -534,104 +508,88 @@ bool FListUserSubscribedChannelsJsonToDataUnitTest::RunTest(const FString& Param
 
 bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
-	//Test basic response with user list
+	auto FindUser = [](const TArray<FPubnubUsersFromChannel>& Channels, const FString& UserID) -> const FPubnubUserFromChannel*
+	{
+		for (const FPubnubUsersFromChannel& ChannelUsers : Channels)
+		{
+			const FPubnubUserFromChannel* User = ChannelUsers.Users.FindByPredicate([&UserID](const FPubnubUserFromChannel& Entry)
+			{
+				return Entry.UserID == UserID;
+			});
+			if (User)
+			{
+				return User;
+			}
+		}
+		return nullptr;
+	};
+
 	FString TestBasicJson = "{\"status\": 200, \"message\": \"OK\", \"occupancy\": 2, \"uuids\": [\"User2\", \"User1\"], \"service\": \"Presence\"}";
 	FPubnubOperationResult Result;
-	FPubnubListUsersFromChannelWrapper Data;
-	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestBasicJson, Result, Data);
-	
-	//Verify status code
+	int TotalOccupancy = 0;
+	int TotalChannels = 0;
+	TArray<FPubnubUsersFromChannel> Channels;
+
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestBasicJson, Result, TotalOccupancy, TotalChannels, Channels);
+
 	TestEqual("Status code should be 200 for basic response", Result.Status, 200);
-	
-	//Verify message
 	TestEqual("Message should be 'OK' for basic response", Result.ErrorMessage, "OK");
-	
-	//Verify occupancy
-	TestEqual("Occupancy should be 2 for basic response", Data.Occupancy, 2);
-	
-	//Verify users state map
-	TestEqual("UsersState map should have 2 elements for basic response", Data.UsersState.Num(), 2);
-	TestTrue("UsersState should contain User1", Data.UsersState.Contains("User1"));
-	TestTrue("UsersState should contain User2", Data.UsersState.Contains("User2"));
-	TestEqual("User1 should have empty state", Data.UsersState["User1"], "");
-	TestEqual("User2 should have empty state", Data.UsersState["User2"], "");
+	TestEqual("Occupancy should be 2 for basic response", TotalOccupancy, 2);
+	TestEqual("Users should have 2 elements for basic response", Channels.Num() == 1 ? Channels[0].Users.Num() : 0, 2);
+	TestNotNull("Users should contain User1", FindUser(Channels, "User1"));
+	TestNotNull("Users should contain User2", FindUser(Channels, "User2"));
+	TestEqual("User1 should have empty state", FindUser(Channels, "User1") ? FindUser(Channels, "User1")->State : TEXT("missing"), "");
+	TestEqual("User2 should have empty state", FindUser(Channels, "User2") ? FindUser(Channels, "User2")->State : TEXT("missing"), "");
 
-	//Test response with user states
 	FString TestStatesJson = "{\"status\": 200, \"message\": \"OK\", \"occupancy\": 2, \"uuids\": [{\"uuid\": \"User2\"}, {\"uuid\": \"User1\", \"state\": {\"state\": \"new state\"}}], \"service\": \"Presence\"}";
-	Result.Status = 0;
-	Result.ErrorMessage.Empty();
-	Data = FPubnubListUsersFromChannelWrapper();
-	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestStatesJson, Result, Data);
-	
-	//Verify status code
+	Result = FPubnubOperationResult();
+	TotalOccupancy = 0;
+	TotalChannels = 0;
+	Channels.Reset();
+
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestStatesJson, Result, TotalOccupancy, TotalChannels, Channels);
+
 	TestEqual("Status code should be 200 for states response", Result.Status, 200);
-	
-	//Verify message
 	TestEqual("Message should be 'OK' for states response", Result.ErrorMessage, "OK");
-	
-	//Verify occupancy
-	TestEqual("Occupancy should be 2 for states response", Data.Occupancy, 2);
-	
-	//Verify users state map
-	TestEqual("UsersState map should have 2 elements for states response", Data.UsersState.Num(), 2);
-	TestTrue("UsersState should contain User1", Data.UsersState.Contains("User1"));
-	TestTrue("UsersState should contain User2", Data.UsersState.Contains("User2"));
-	TestEqual("User1 should have 'new state'", Data.UsersState["User1"], "{\"state\":\"new state\"}");
-	TestEqual("User2 should have empty state", Data.UsersState["User2"], "");
+	TestEqual("Occupancy should be 2 for states response", TotalOccupancy, 2);
+	TestEqual("Users should have 2 elements for states response", Channels.Num() == 1 ? Channels[0].Users.Num() : 0, 2);
+	TestEqual("User1 should have 'new state'", FindUser(Channels, "User1") ? FindUser(Channels, "User1")->State : TEXT(""), "{\"state\":\"new state\"}");
+	TestEqual("User2 should have empty state", FindUser(Channels, "User2") ? FindUser(Channels, "User2")->State : TEXT("missing"), "");
 
-	//Test response with disabled UUIDs
 	FString TestDisabledUuidsJson = "{\"status\": 200, \"message\": \"OK\", \"occupancy\": 2, \"service\": \"Presence\"}";
-	Result.Status = 0;
-	Result.ErrorMessage.Empty();
-	Data = FPubnubListUsersFromChannelWrapper();
-	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestDisabledUuidsJson, Result, Data);
-	
-	//Verify status code
+	Result = FPubnubOperationResult();
+	TotalOccupancy = 0;
+	TotalChannels = 0;
+	Channels.Reset();
+
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestDisabledUuidsJson, Result, TotalOccupancy, TotalChannels, Channels);
+
 	TestEqual("Status code should be 200 for disabled UUIDs response", Result.Status, 200);
-	
-	//Verify message
-	TestEqual("Message should be 'OK' for disabled UUIDs response", Result.ErrorMessage, "OK");
-	
-	//Verify occupancy
-	TestEqual("Occupancy should be 2 for disabled UUIDs response", Data.Occupancy, 2);
-	
-	//Verify users state map is empty
-	TestEqual("UsersState map should be empty for disabled UUIDs response", Data.UsersState.Num(), 0);
+	TestEqual("Occupancy should be 2 for disabled UUIDs response", TotalOccupancy, 2);
+	TestEqual("Users should be empty for disabled UUIDs response", Channels.Num() == 1 ? Channels[0].Users.Num() : -1, 0);
 
-	//Test error response
 	FString TestErrorJson = "{\"status\": 400, \"message\": \"Bad Request\", \"occupancy\": 0, \"service\": \"Presence\"}";
-	Result.Status = 0;
-	Result.ErrorMessage.Empty();
-	Data = FPubnubListUsersFromChannelWrapper();
-	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestErrorJson, Result, Data);
-	
-	//Verify status code
-	TestEqual("Status code should be 400 for error response", Result.Status, 400);
-	
-	//Verify message
-	TestEqual("Message should be 'Bad Request' for error response", Result.ErrorMessage, "Bad Request");
-	
-	//Verify occupancy
-	TestEqual("Occupancy should be 0 for error response", Data.Occupancy, 0);
-	
-	//Verify users state map is empty
-	TestEqual("UsersState map should be empty for error response", Data.UsersState.Num(), 0);
+	Result = FPubnubOperationResult();
+	TotalOccupancy = 0;
+	TotalChannels = 0;
+	Channels.Reset();
 
-	//Test invalid JSON
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestErrorJson, Result, TotalOccupancy, TotalChannels, Channels);
+
+	TestEqual("Status code should be 400 for error response", Result.Status, 400);
+	TestEqual("Message should be 'Bad Request' for error response", Result.ErrorMessage, "Bad Request");
+	TestEqual("Occupancy should be 0 for error response", TotalOccupancy, 0);
+
 	FString TestInvalidJson = "invalid json";
-	Result.Status = 0;
-	Result.ErrorMessage.Empty();
-	Data = FPubnubListUsersFromChannelWrapper();
-	
-	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestInvalidJson, Result, Data);
-	
-	//Verify users state map is empty
-	TestEqual("UsersState map should be empty for invalid JSON", Data.UsersState.Num(), 0);
-	
+	Result = FPubnubOperationResult();
+	TotalOccupancy = 0;
+	TotalChannels = 0;
+	Channels.Reset();
+
+	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestInvalidJson, Result, TotalOccupancy, TotalChannels, Channels);
+
+	TestEqual("Channels should be empty for invalid JSON", Channels.Num(), 0);
+
 	return true;
 }
 

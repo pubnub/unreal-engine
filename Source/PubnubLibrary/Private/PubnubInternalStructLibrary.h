@@ -4,43 +4,25 @@
 
 #include "CoreMinimal.h"
 #include "HAL/CriticalSection.h"
+#include "FunctionLibraries/PubnubUtilities.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "PubNub.h"
 THIRD_PARTY_INCLUDES_END
 
-class UPubnubSubscription;
-class UPubnubSubscriptionSet;
+class UPubnubSubscriptionBase;
 
 /**
- * Internal structs for the Pubnub library.
- *
- * Heap payloads registered as PubNub C-Core listener user_data: they carry Unreal-side context
- * for native callbacks that may run off the game thread or out of sync with UObject lifetime.
- * Using TWeakObjectPtr here avoids passing a raw UObject*, which native code must not assume
- * remains safe to dereference whenever a callback fires.
- *
- * Each callback pointer must match registration so we can unregister before ListenerUserData
- * is freed; otherwise PubNub can still invoke the listener during unsubscribe / subscription_free.
+ * Heap payload registered as PubNub C-Core listener user_data for an entity subscription
+ * or subscription set. The weak pointer stays safe if the UObject is destroyed before a
+ * callback that was already queued on the C-Core thread.
+ * Context is borrowed for the lifetime of the listener and is used only inside the callback
+ * to copy event views into UE strings before the callback returns.
  */
-struct FPubnubInternalSubscriptionListenerUserData
+struct FPubnubInternalEntityListenerUserData
 {
-	TWeakObjectPtr<UPubnubSubscription> WeakSubscription;
-
-	pubnub_subscribe_message_callback_t MessageCb = nullptr;
-	pubnub_subscribe_message_callback_t SignalCb = nullptr;
-	pubnub_subscribe_message_callback_t MessageActionCb = nullptr;
-	pubnub_subscribe_message_callback_t ObjectsCb = nullptr;
-};
-
-struct FPubnubInternalSubscriptionSetListenerUserData
-{
-	TWeakObjectPtr<UPubnubSubscriptionSet> WeakSubscriptionSet;
-
-	pubnub_subscribe_message_callback_t MessageCb = nullptr;
-	pubnub_subscribe_message_callback_t SignalCb = nullptr;
-	pubnub_subscribe_message_callback_t MessageActionCb = nullptr;
-	pubnub_subscribe_message_callback_t ObjectsCb = nullptr;
+	TWeakObjectPtr<UPubnubSubscriptionBase> WeakSubscription;
+	pubnub_context_t* Context = nullptr;
 };
 
 /**
@@ -86,4 +68,97 @@ struct FPubnubOperationLockGuard
 private:
 	FCriticalSection& Mutex;
 	bool bLocked;
+};
+
+/** One string field from a set-metadata JSON object. bSet is false when the field was absent. */
+struct FMetadataStringField
+{
+	FString Value;
+	bool bSet = false;
+};
+
+/** User metadata JSON split into the fields pubnub_set_uuid_metadata accepts. */
+struct FParsedUserMetadataObject
+{
+	FMetadataStringField Name;
+	FMetadataStringField ExternalId;
+	FMetadataStringField ProfileUrl;
+	FMetadataStringField Email;
+	FMetadataStringField Status;
+	FMetadataStringField Type;
+	FString CustomJson;
+	bool bHasCustom = false;
+	TArray<FString> NullStringFields;
+	TArray<FString> UnknownFields;
+	FString Error;
+};
+
+/** Channel metadata JSON split into the fields pubnub_set_channel_metadata accepts. */
+struct FParsedChannelMetadataObject
+{
+	FMetadataStringField Name;
+	FMetadataStringField Description;
+	FMetadataStringField Status;
+	FMetadataStringField Type;
+	FString CustomJson;
+	bool bHasCustom = false;
+	TArray<FString> NullStringFields;
+	TArray<FString> UnknownFields;
+	FString Error;
+};
+
+/** One App Context include token and the C-Core flag it maps to. */
+struct FAppContextIncludeToken
+{
+	const TCHAR* Name = nullptr;
+	uint32 Flag = 0;
+};
+
+/** One membership or channel-member item split into the fields the new C-Core set API accepts. */
+struct FParsedRelationInput
+{
+	FString Id;
+	FMetadataStringField Status;
+	FMetadataStringField Type;
+	FString CustomJson;
+	bool bHasCustom = false;
+};
+
+/** Parsed set or remove JSON array. Error is set when parsing fails. */
+struct FParsedRelationList
+{
+	TArray<FParsedRelationInput> Items;
+	TArray<FString> NullStringFields;
+	TArray<FString> UnknownFields;
+	FString Error;
+};
+
+/** UTF-8 storage for pubnub_membership_input_t pointers. Holders must outlive the C-Core call. */
+struct FMembershipInputBatch
+{
+	TArray<TUniquePtr<FUTF8StringHolder>> Holders;
+	TArray<pubnub_membership_input_t> Items;
+
+	const char* Hold(const FString& Value)
+	{
+		TUniquePtr<FUTF8StringHolder> Holder = MakeUnique<FUTF8StringHolder>(Value);
+		const char* Pointer = Holder->Get();
+		Holders.Add(MoveTemp(Holder));
+		return Pointer;
+	}
+};
+
+/** UTF-8 storage for pubnub_member_input_t pointers. Holders must outlive the C-Core call. */
+struct FMemberInputBatch
+{
+	TArray<TUniquePtr<FUTF8StringHolder>> Holders;
+	TArray<pubnub_member_input_t> Items;
+
+	const char* Hold(const FString& Value)
+	{
+		TUniquePtr<FUTF8StringHolder> Holder = MakeUnique<FUTF8StringHolder>(Value);
+		const char* Pointer = Holder->Get();
+		Holders.Add(MoveTemp(Holder));
+		return Pointer;
+	}
 };

@@ -30,18 +30,14 @@ void ASample_CryptoFull::RunCryptoFullExample()
 	Config.PublishKey = TEXT("demo");   //replace with your Publish Key from Admin Portal
 	Config.SubscribeKey = TEXT("demo"); //replace with your Subscribe Key from Admin Portal
 	Config.UserID = TEXT("Player_001");
-	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
 
-	UE_LOG(LogTemp, Log, TEXT("Crypto example, Pubnub Client is created"));
-	
-	// Set Crypto Module With Aes Cryptor
-	// Setting crypto module automatically encrypts all published messages and decrypts received messages
-	// Messages fetched from history are alsodecrypted automatically
+	// Crypto is fixed when the client is created. It encrypts published messages and decrypts received and history messages.
 	UPubnubAesCryptor* AesCryptor = NewObject<UPubnubAesCryptor>(this);
 	AesCryptor->SetCipherKey("enigma");
 	UPubnubCryptoModule* CryptoModule = NewObject<UPubnubCryptoModule>(this);
 	CryptoModule->InitCryptoModule(AesCryptor, {});
-	PubnubClient->SetCryptoModule(CryptoModule);
+	Config.CryptoModule = CryptoModule;
+	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
 
 	UE_LOG(LogTemp, Log, TEXT("Crypto example, Crypto Module is set"));
 

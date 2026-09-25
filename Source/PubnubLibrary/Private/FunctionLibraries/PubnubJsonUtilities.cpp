@@ -274,8 +274,12 @@ void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString Response
 	}
 }
 
-void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper &Data)
+void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, int& TotalOccupancy, int& TotalChannels, TArray<FPubnubUsersFromChannel>& Channels)
 {
+	TotalOccupancy = 0;
+	TotalChannels = 0;
+	Channels.Empty();
+
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	if(!StringToJsonObject(ResponseJson, JsonObject))
@@ -289,38 +293,56 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 	//Override status only if it was 0. Status could be set before in case of server error.
 	Result.Status = Result.Status == 0 ? ResultFromJson.Status : Result.Status;
 	Result.Error = Result.Status != 200;
-	
-	// Single-target Here Now: occupancy + uuids at the root (one channel or one group only).
-	if (JsonObject->HasField(ANSI_TO_TCHAR("occupancy")))
+
+	auto AppendUsers = [](const TArray<TSharedPtr<FJsonValue>>& UuidsJsonValue, TArray<FPubnubUserFromChannel>& Users)
 	{
+		for (const TSharedPtr<FJsonValue>& UuidJsonValue : UuidsJsonValue)
+		{
+			if (!UuidJsonValue.IsValid())
+			{
+				continue;
+			}
+
+			FPubnubUserFromChannel User;
+			// A uuid entry is either a string or an object with uuid and optional state.
+			if (!UuidJsonValue->TryGetString(User.UserID))
+			{
+				const TSharedPtr<FJsonObject> UserObject = UuidJsonValue->AsObject();
+				if (!UserObject.IsValid())
+				{
+					continue;
+				}
+				User.UserID = UserObject->GetStringField(ANSI_TO_TCHAR("uuid"));
+				User.State = UserObject->HasField(ANSI_TO_TCHAR("state")) ?
+					UPubnubJsonUtilities::JsonObjectToString(UserObject->GetObjectField(ANSI_TO_TCHAR("state"))) : "";
+			}
+			if (!User.UserID.IsEmpty())
+			{
+				Users.Add(User);
+			}
+		}
+	};
+
+	// Single-target response: occupancy and uuids at the root. The channel name is not in that body.
+	if (JsonObject->HasField(ANSI_TO_TCHAR("occupancy")) || JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
+	{
+		FPubnubUsersFromChannel ChannelUsers;
 		double OccupancyDouble = 0;
 		if (JsonObject->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), OccupancyDouble))
 		{
-			Data.Occupancy = static_cast<int>(OccupancyDouble);
+			ChannelUsers.Occupancy = static_cast<int>(OccupancyDouble);
 		}
+		if (JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
+		{
+			AppendUsers(JsonObject->GetArrayField(ANSI_TO_TCHAR("uuids")), ChannelUsers.Users);
+		}
+		Channels.Add(ChannelUsers);
+		TotalOccupancy = ChannelUsers.Occupancy;
+		TotalChannels = 1;
 	}
 
-	if (JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
-	{
-		TArray<TSharedPtr<FJsonValue>> UuidsJsonValue = JsonObject->GetArrayField(ANSI_TO_TCHAR("uuids"));
-		
-		for (auto UuidJsonValue : UuidsJsonValue)
-		{
-			FString Uuid;
-			FString State;
-			//Depending on if response was set to include uuids state this will be a string field or an object field
-			if (!UuidJsonValue->TryGetString(Uuid))
-			{
-				Uuid = UuidJsonValue->AsObject()->GetStringField(ANSI_TO_TCHAR("uuid"));
-				State = UuidJsonValue->AsObject()->HasField(ANSI_TO_TCHAR("state")) ?
-					JsonObjectToString(UuidJsonValue->AsObject()->GetObjectField(ANSI_TO_TCHAR("state"))) : "";
-			}
-			Data.UsersState.Add(Uuid, State);
-		}
-	}
-	// Multi-target Here Now (e.g. channel + channel_group in one request, or global here_now): response uses
-	// payload.total_occupancy and payload.channels.{channelName}.{occupancy,uuids} — not root occupancy/uuids.
-	// Must not be "else" after root uuids: some responses include an empty uuids array while still using payload.channels.
+	// Multi-target response: payload.total_occupancy and payload.channels.{channelName}.{occupancy,uuids}.
+	// Some bodies include an empty root uuids array and still use payload.channels.
 	if (JsonObject->HasField(ANSI_TO_TCHAR("payload")))
 	{
 		const TSharedPtr<FJsonObject>* PayloadPtr = nullptr;
@@ -329,10 +351,11 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 			const TSharedPtr<FJsonObject>* ChannelsMapPtr = nullptr;
 			if ((*PayloadPtr)->TryGetObjectField(ANSI_TO_TCHAR("channels"), ChannelsMapPtr) && ChannelsMapPtr && ChannelsMapPtr->IsValid())
 			{
+				Channels.Empty();
 				double TotalOcc = 0;
 				if ((*PayloadPtr)->TryGetNumberField(ANSI_TO_TCHAR("total_occupancy"), TotalOcc))
 				{
-					Data.Occupancy = static_cast<int>(TotalOcc);
+					TotalOccupancy = static_cast<int>(TotalOcc);
 				}
 
 				int32 SummedOccupancy = 0;
@@ -347,34 +370,35 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 					{
 						continue;
 					}
+
+					FPubnubUsersFromChannel ChannelUsers;
+					ChannelUsers.Channel = ChannelKvp.Key;
 					double ChOcc = 0;
 					if (ChannelEntry->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), ChOcc))
 					{
-						SummedOccupancy += static_cast<int>(ChOcc);
+						ChannelUsers.Occupancy = static_cast<int>(ChOcc);
+						SummedOccupancy += ChannelUsers.Occupancy;
 					}
 					if (ChannelEntry->HasField(ANSI_TO_TCHAR("uuids")))
 					{
-						TArray<TSharedPtr<FJsonValue>> UuidsJsonValue = ChannelEntry->GetArrayField(ANSI_TO_TCHAR("uuids"));
-						for (auto UuidJsonValue : UuidsJsonValue)
-						{
-							FString Uuid;
-							FString State;
-							if (!UuidJsonValue->TryGetString(Uuid))
-							{
-								Uuid = UuidJsonValue->AsObject()->GetStringField(ANSI_TO_TCHAR("uuid"));
-								State = UuidJsonValue->AsObject()->HasField(ANSI_TO_TCHAR("state")) ?
-									JsonObjectToString(UuidJsonValue->AsObject()->GetObjectField(ANSI_TO_TCHAR("state"))) : "";
-							}
-							if (!Uuid.IsEmpty() && !Data.UsersState.Contains(Uuid))
-							{
-								Data.UsersState.Add(Uuid, State);
-							}
-						}
+						AppendUsers(ChannelEntry->GetArrayField(ANSI_TO_TCHAR("uuids")), ChannelUsers.Users);
 					}
+					Channels.Add(ChannelUsers);
 				}
-				if (Data.Occupancy == 0 && SummedOccupancy > 0)
+
+				if (TotalOccupancy == 0 && SummedOccupancy > 0)
 				{
-					Data.Occupancy = SummedOccupancy;
+					TotalOccupancy = SummedOccupancy;
+				}
+
+				double TotalChannelsDouble = 0;
+				if ((*PayloadPtr)->TryGetNumberField(ANSI_TO_TCHAR("total_channels"), TotalChannelsDouble))
+				{
+					TotalChannels = static_cast<int>(TotalChannelsDouble);
+				}
+				else
+				{
+					TotalChannels = Channels.Num();
 				}
 			}
 		}

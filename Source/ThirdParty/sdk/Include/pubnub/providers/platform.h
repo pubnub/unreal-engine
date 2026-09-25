@@ -8,7 +8,7 @@
  * Exposes primitives only -- no business logic or retry policy.
  * All locks are non-recursive. All callbacks are from non-ISR context.
  *
- * **Mandatory methods:** monotonic_ms, sleep_ms, random_bytes.
+ * **Mandatory methods:** monotonic_ms, wall_clock_ms, sleep_ms, random_bytes.
  *
  * **Optional method groups (all-or-nothing):**
  * - Lock: lock_size, lock_init, lock_destroy, lock_acquire,
@@ -55,13 +55,37 @@ typedef struct pubnub_platform_provider {
     /**
      * @brief Return monotonic time in milliseconds.
      *
-     * SHOULD be Unix-epoch-anchored (required for PAM signing).
+     * Boot-relative clock used for timeouts and deadlines.
      * MUST NOT wrap or decrease within a session.
      *
      * @param self Pointer to this provider instance.
-     * @return Milliseconds since epoch.
+     * @return Milliseconds since an arbitrary fixed point (typically
+     *         boot). The value has no relationship to wall-clock time.
      */
     pubnub_milliseconds_t (*monotonic_ms)(struct pubnub_platform_provider* self);
+
+    /**
+     * @brief Return the current wall-clock time in milliseconds.
+     *
+     * Returns the number of milliseconds since the Unix epoch
+     * (1970-01-01T00:00:00 UTC). Used by the PAM signature middleware
+     * to generate the @c timestamp= HMAC signing parameter.
+     *
+     * Implementations:
+     * - Return the correct wall-clock time when a real-time clock or
+     *   SNTP synchronization is available.
+     * - Return @c 0 when wall-clock time is not available (bare-metal
+     *   without RTC/NTP, not yet synchronized). The PAM middleware
+     *   treats @c 0 as an error and returns @c PUBNUB_ERR_NO_WALL_CLOCK.
+     *
+     * @note This is separate from @c monotonic_ms. @c monotonic_ms is
+     *       boot-relative and used for timeouts and deadlines.
+     *       @c wall_clock_ms is epoch-anchored and used only for PAM.
+     *
+     * @param self Platform provider instance.
+     * @return Milliseconds since Unix epoch, or @c 0 if unavailable.
+     */
+    pubnub_milliseconds_t (*wall_clock_ms)(struct pubnub_platform_provider* self);
 
     /**
      * @brief Sleep/yield for at least @p ms milliseconds.

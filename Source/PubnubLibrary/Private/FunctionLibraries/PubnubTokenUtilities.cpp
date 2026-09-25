@@ -1,10 +1,13 @@
 // Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #include "FunctionLibraries/PubnubTokenUtilities.h"
+#include "FunctionLibraries/PubnubInternalUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "FunctionLibraries/PubnubUtilities.h"
 #include "PubnubStructLibrary.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "pubnub/features/access.h"
 
 
 FString UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta)
@@ -217,6 +220,164 @@ FString UPubnubTokenUtilities::ReworkParsedToken(const FString& ParsedToken)
 	return UPubnubJsonUtilities::JsonObjectToString(ReworkedTokenObject);
 }
 
+void UPubnubTokenUtilities::ParsedTokenResourceAt(pubnub_context_t* Context, EParsedTokenResourceKind Kind, size_t Index, pubnub_parsed_token_resource_t& OutResource)
+{
+	switch (Kind)
+	{
+	case EParsedTokenResourceKind::Channel:
+		OutResource = pubnub_parsed_token_channel_at(Context, Index);
+		return;
+	case EParsedTokenResourceKind::Group:
+		OutResource = pubnub_parsed_token_group_at(Context, Index);
+		return;
+	case EParsedTokenResourceKind::Uuid:
+		OutResource = pubnub_parsed_token_uuid_at(Context, Index);
+		return;
+	case EParsedTokenResourceKind::ChannelPattern:
+		OutResource = pubnub_parsed_token_channel_pattern_at(Context, Index);
+		return;
+	case EParsedTokenResourceKind::GroupPattern:
+		OutResource = pubnub_parsed_token_group_pattern_at(Context, Index);
+		return;
+	case EParsedTokenResourceKind::UuidPattern:
+		OutResource = pubnub_parsed_token_uuid_pattern_at(Context, Index);
+		return;
+	default:
+		OutResource = pubnub_parsed_token_resource_t{};
+		return;
+	}
+}
+
+void UPubnubTokenUtilities::AppendParsedTokenResources(pubnub_context_t* Context, uint32 Count, EParsedTokenResourceKind Kind, TArray<TPair<FString, int32>>& Out)
+{
+	Out.Reserve(static_cast<int32>(Count));
+	for (uint32 Index = 0; Index < Count; ++Index)
+	{
+		pubnub_parsed_token_resource_t Resource = {};
+		ParsedTokenResourceAt(Context, Kind, static_cast<size_t>(Index), Resource);
+		Out.Emplace(
+			UPubnubInternalUtilities::PubnubStringViewToString(Resource.name),
+			static_cast<int32>(Resource.permissions));
+	}
+}
+
+FString UPubnubTokenUtilities::BuildReworkedParsedToken(pubnub_context_t* Context, const pubnub_parsed_token_t& ParsedToken)
+{
+	TArray<TPair<FString, int32>> Channels;
+	TArray<TPair<FString, int32>> ChannelGroups;
+	TArray<TPair<FString, int32>> Users;
+	TArray<TPair<FString, int32>> ChannelPatterns;
+	TArray<TPair<FString, int32>> ChannelGroupPatterns;
+	TArray<TPair<FString, int32>> UserPatterns;
+	AppendParsedTokenResources(Context, ParsedToken.channel_count, EParsedTokenResourceKind::Channel, Channels);
+	AppendParsedTokenResources(Context, ParsedToken.group_count, EParsedTokenResourceKind::Group, ChannelGroups);
+	AppendParsedTokenResources(Context, ParsedToken.uuid_count, EParsedTokenResourceKind::Uuid, Users);
+	AppendParsedTokenResources(Context, ParsedToken.channel_pattern_count, EParsedTokenResourceKind::ChannelPattern, ChannelPatterns);
+	AppendParsedTokenResources(Context, ParsedToken.group_pattern_count, EParsedTokenResourceKind::GroupPattern, ChannelGroupPatterns);
+	AppendParsedTokenResources(Context, ParsedToken.uuid_pattern_count, EParsedTokenResourceKind::UuidPattern, UserPatterns);
+
+	return BuildReworkedParsedToken(
+		ParsedToken.version,
+		ParsedToken.timestamp,
+		ParsedToken.ttl,
+		UPubnubInternalUtilities::PubnubStringViewToString(ParsedToken.authorized_uuid),
+		Channels,
+		ChannelGroups,
+		Users,
+		ChannelPatterns,
+		ChannelGroupPatterns,
+		UserPatterns);
+}
+
+template<typename MakePermissionsFunc>
+static TSharedPtr<FJsonObject> BitmaskEntriesToPermissionsObject(const TArray<TPair<FString, int32>>& Entries, MakePermissionsFunc MakePermissions)
+{
+	TSharedPtr<FJsonObject> Object = MakeShareable(new FJsonObject);
+	for (const TPair<FString, int32>& Entry : Entries)
+	{
+		Object->SetObjectField(Entry.Key, MakePermissions(Entry.Value));
+	}
+	return Object;
+}
+
+FString UPubnubTokenUtilities::BuildReworkedParsedToken(
+	int32 Version,
+	uint64 Timestamp,
+	uint32 Ttl,
+	const FString& AuthorizedUuid,
+	const TArray<TPair<FString, int32>>& Channels,
+	const TArray<TPair<FString, int32>>& ChannelGroups,
+	const TArray<TPair<FString, int32>>& Users,
+	const TArray<TPair<FString, int32>>& ChannelPatterns,
+	const TArray<TPair<FString, int32>>& ChannelGroupPatterns,
+	const TArray<TPair<FString, int32>>& UserPatterns)
+{
+	TSharedPtr<FJsonObject> ReworkedTokenObject = MakeShareable(new FJsonObject);
+	ReworkedTokenObject->SetNumberField(TEXT("Version"), Version);
+	ReworkedTokenObject->SetNumberField(TEXT("Timestamp"), static_cast<double>(Timestamp));
+	ReworkedTokenObject->SetNumberField(TEXT("TTL"), Ttl);
+	if (!AuthorizedUuid.IsEmpty())
+	{
+		ReworkedTokenObject->SetStringField(TEXT("AuthorizedUuid"), AuthorizedUuid);
+	}
+
+	TSharedPtr<FJsonObject> ResourcesObject = MakeShareable(new FJsonObject);
+	if (Channels.Num() > 0)
+	{
+		ResourcesObject->SetObjectField(TEXT("Channels"), BitmaskEntriesToPermissionsObject(Channels, [](int Bitmask)
+		{
+			return CreateChannelPermissionsFromBitmask(Bitmask);
+		}));
+	}
+	if (ChannelGroups.Num() > 0)
+	{
+		ResourcesObject->SetObjectField(TEXT("ChannelGroups"), BitmaskEntriesToPermissionsObject(ChannelGroups, [](int Bitmask)
+		{
+			return CreateChannelGroupPermissionsFromBitmask(Bitmask);
+		}));
+	}
+	if (Users.Num() > 0)
+	{
+		ResourcesObject->SetObjectField(TEXT("Uuids"), BitmaskEntriesToPermissionsObject(Users, [](int Bitmask)
+		{
+			return CreateUserPermissionsFromBitmask(Bitmask);
+		}));
+	}
+	if (ResourcesObject->Values.Num() > 0)
+	{
+		ReworkedTokenObject->SetObjectField(TEXT("Resources"), ResourcesObject);
+	}
+
+	TSharedPtr<FJsonObject> PatternsObject = MakeShareable(new FJsonObject);
+	if (ChannelPatterns.Num() > 0)
+	{
+		PatternsObject->SetObjectField(TEXT("Channels"), BitmaskEntriesToPermissionsObject(ChannelPatterns, [](int Bitmask)
+		{
+			return CreateChannelPermissionsFromBitmask(Bitmask);
+		}));
+	}
+	if (ChannelGroupPatterns.Num() > 0)
+	{
+		PatternsObject->SetObjectField(TEXT("ChannelGroups"), BitmaskEntriesToPermissionsObject(ChannelGroupPatterns, [](int Bitmask)
+		{
+			return CreateChannelGroupPermissionsFromBitmask(Bitmask);
+		}));
+	}
+	if (UserPatterns.Num() > 0)
+	{
+		PatternsObject->SetObjectField(TEXT("Uuids"), BitmaskEntriesToPermissionsObject(UserPatterns, [](int Bitmask)
+		{
+			return CreateUserPermissionsFromBitmask(Bitmask);
+		}));
+	}
+	if (PatternsObject->Values.Num() > 0)
+	{
+		ReworkedTokenObject->SetObjectField(TEXT("Patterns"), PatternsObject);
+	}
+
+	return UPubnubJsonUtilities::JsonObjectToString(ReworkedTokenObject);
+}
+
 int UPubnubTokenUtilities::CalculateChannelPermissionsBitmask(const FPubnubChannelPermissions& Perms)
 {
 	// Calculate bitmask for channel permissions based on individual permission flags
@@ -350,4 +511,106 @@ TSharedPtr<FJsonObject> UPubnubTokenUtilities::CreateUserPermissionsFromBitmask(
 	PermissionsObject->SetBoolField(TEXT("Update"), (Bitmask & 64) != 0);
 	
 	return PermissionsObject;
+}
+
+/** Names stay alive for the C-Core call. Permission name pointers alias those holders. */
+struct FGrantResourcePermissions
+{
+	TArray<TUniquePtr<FUTF8StringHolder>> Names;
+	TArray<pubnub_access_resource_permission_t> Permissions;
+};
+
+struct FPubnubGrantTokenResourceStorage
+{
+	FGrantResourcePermissions Channels;
+	FGrantResourcePermissions ChannelGroups;
+	FGrantResourcePermissions Users;
+	FGrantResourcePermissions ChannelPatterns;
+	FGrantResourcePermissions ChannelGroupPatterns;
+	FGrantResourcePermissions UserPatterns;
+};
+
+void FPubnubGrantTokenResourceStorageDeleter::operator()(FPubnubGrantTokenResourceStorage* Storage) const
+{
+	delete Storage;
+}
+
+void UPubnubTokenUtilities::FillChannelGrantPermissions(const TArray<FChannelGrant>& Grants, FGrantResourcePermissions& Out)
+{
+	Out.Names.Reserve(Grants.Num());
+	Out.Permissions.Reserve(Grants.Num());
+	for (const FChannelGrant& Grant : Grants)
+	{
+		TUniquePtr<FUTF8StringHolder> Name = MakeUnique<FUTF8StringHolder>(Grant.Channel);
+		pubnub_access_resource_permission_t Permission = {};
+		Permission.name = Name->Get();
+		Permission.permissions = static_cast<uint32_t>(CalculateChannelPermissionsBitmask(Grant.Permissions));
+		Out.Names.Add(MoveTemp(Name));
+		Out.Permissions.Add(Permission);
+	}
+}
+
+void UPubnubTokenUtilities::FillChannelGroupGrantPermissions(const TArray<FChannelGroupGrant>& Grants, FGrantResourcePermissions& Out)
+{
+	Out.Names.Reserve(Grants.Num());
+	Out.Permissions.Reserve(Grants.Num());
+	for (const FChannelGroupGrant& Grant : Grants)
+	{
+		TUniquePtr<FUTF8StringHolder> Name = MakeUnique<FUTF8StringHolder>(Grant.ChannelGroup);
+		pubnub_access_resource_permission_t Permission = {};
+		Permission.name = Name->Get();
+		Permission.permissions = static_cast<uint32_t>(CalculateChannelGroupPermissionsBitmask(Grant.Permissions));
+		Out.Names.Add(MoveTemp(Name));
+		Out.Permissions.Add(Permission);
+	}
+}
+
+void UPubnubTokenUtilities::FillUserGrantPermissions(const TArray<FUserGrant>& Grants, FGrantResourcePermissions& Out)
+{
+	Out.Names.Reserve(Grants.Num());
+	Out.Permissions.Reserve(Grants.Num());
+	for (const FUserGrant& Grant : Grants)
+	{
+		TUniquePtr<FUTF8StringHolder> Name = MakeUnique<FUTF8StringHolder>(Grant.User);
+		pubnub_access_resource_permission_t Permission = {};
+		Permission.name = Name->Get();
+		Permission.permissions = static_cast<uint32_t>(CalculateUserPermissionsBitmask(Grant.Permissions));
+		Out.Names.Add(MoveTemp(Name));
+		Out.Permissions.Add(Permission);
+	}
+}
+
+void UPubnubTokenUtilities::ApplyGrantResourceList(const FGrantResourcePermissions& List, const pubnub_access_resource_permission_t*& OutPermissions, size_t& OutCount)
+{
+	if (List.Permissions.IsEmpty())
+	{
+		OutPermissions = nullptr;
+		OutCount = 0;
+		return;
+	}
+
+	OutPermissions = List.Permissions.GetData();
+	OutCount = static_cast<size_t>(List.Permissions.Num());
+}
+
+TUniquePtr<FPubnubGrantTokenResourceStorage, FPubnubGrantTokenResourceStorageDeleter> UPubnubTokenUtilities::BuildGrantTokenResourceStorage(const FPubnubGrantTokenPermissions& Permissions)
+{
+	TUniquePtr<FPubnubGrantTokenResourceStorage, FPubnubGrantTokenResourceStorageDeleter> Storage(new FPubnubGrantTokenResourceStorage());
+	FillChannelGrantPermissions(Permissions.Channels, Storage->Channels);
+	FillChannelGroupGrantPermissions(Permissions.ChannelGroups, Storage->ChannelGroups);
+	FillUserGrantPermissions(Permissions.Users, Storage->Users);
+	FillChannelGrantPermissions(Permissions.ChannelPatterns, Storage->ChannelPatterns);
+	FillChannelGroupGrantPermissions(Permissions.ChannelGroupPatterns, Storage->ChannelGroupPatterns);
+	FillUserGrantPermissions(Permissions.UserPatterns, Storage->UserPatterns);
+	return Storage;
+}
+
+void UPubnubTokenUtilities::ApplyGrantTokenResourceStorage(const FPubnubGrantTokenResourceStorage& Storage, pubnub_grant_token_opts_t& Opts)
+{
+	ApplyGrantResourceList(Storage.Channels, Opts.channels, Opts.channel_count);
+	ApplyGrantResourceList(Storage.ChannelGroups, Opts.groups, Opts.group_count);
+	ApplyGrantResourceList(Storage.Users, Opts.uuids, Opts.uuid_count);
+	ApplyGrantResourceList(Storage.ChannelPatterns, Opts.channel_patterns, Opts.channel_pattern_count);
+	ApplyGrantResourceList(Storage.ChannelGroupPatterns, Opts.group_patterns, Opts.group_pattern_count);
+	ApplyGrantResourceList(Storage.UserPatterns, Opts.uuid_patterns, Opts.uuid_pattern_count);
 }

@@ -317,7 +317,7 @@ void ASample_ChannelEntity::ListUsersFromChannelSample()
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
-void ASample_ChannelEntity::OnListUsersFromChannelResponse_Simple(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data)
+void ASample_ChannelEntity::OnListUsersFromChannelResponse_Simple(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
 {
 	if(Result.Error)
 	{
@@ -325,7 +325,7 @@ void ASample_ChannelEntity::OnListUsersFromChannelResponse_Simple(FPubnubOperati
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Data.Occupancy);
+		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), TotalOccupancy);
 	}
 }
 
@@ -358,7 +358,7 @@ void ASample_ChannelEntity::ListUsersFromChannelWithSettingsSample()
 }
 
 // ACTION REQUIRED: Replace ASample_ChannelEntity with name of your Actor class
-void ASample_ChannelEntity::OnListUsersFromChannelResponse_WithSettings(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data)
+void ASample_ChannelEntity::OnListUsersFromChannelResponse_WithSettings(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
 {
 	if(Result.Error)
 	{
@@ -366,11 +366,14 @@ void ASample_ChannelEntity::OnListUsersFromChannelResponse_WithSettings(FPubnubO
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Total occupancy: %d"), Data.Occupancy);
+		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Total occupancy: %d"), TotalOccupancy);
 		// List all users with theirs states
-		for (auto const& [UserID, UserState] : Data.UsersState)
+		for (const FPubnubUsersFromChannel& ChannelUsers : Channels)
 		{
-			UE_LOG(LogTemp, Log, TEXT("UserID: %s, User State: %s"), *UserID, *UserState);
+			for (const FPubnubUserFromChannel& User : ChannelUsers.Users)
+			{
+				UE_LOG(LogTemp, Log, TEXT("UserID: %s, User State: %s"), *User.UserID, *User.State);
+			}
 		}
 	}
 }
@@ -391,7 +394,7 @@ void ASample_ChannelEntity::ListUsersFromChannelWithLambdaSample()
 
 	// Bind lambda to response delegate
 	FOnPubnubListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
-	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubListUsersFromChannelWrapper& Data)
+	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
 	{
 		if(Result.Error)
 		{
@@ -399,7 +402,7 @@ void ASample_ChannelEntity::ListUsersFromChannelWithLambdaSample()
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Data.Occupancy);
+			UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), TotalOccupancy);
 		}
 	});
 	

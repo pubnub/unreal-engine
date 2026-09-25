@@ -5,6 +5,7 @@
 #include "Tests/PubnubTestsUtils.h"
 
 #include "PubnubClient.h"
+#include "Crypto/PubnubCryptoModule.h"
 #include "Tests/AutomationCommon.h"
 #include "PubnubSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -62,6 +63,60 @@ FString PubnubTests::GetTestSubscribeKeyWithPAM()
 		return SubscribeKey;
 	}
 	return TEXT("demo");
+}
+
+bool PubnubTests::HandshakeListContainsAll(const TArray<FString>& Have, const TArray<FString>& Need)
+{
+	for (const FString& Name : Need)
+	{
+		if (!Have.Contains(Name))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool PubnubTests::IsHandshakeReady(const FPubnubHandshakeTracker& Tracker, const TSharedPtr<int32>& Baseline, const TArray<FString>& ExpectedChannels, const TArray<FString>& ExpectedGroups)
+{
+	return *Tracker.Epoch > *Baseline
+		&& HandshakeListContainsAll(*Tracker.Channels, ExpectedChannels)
+		&& HandshakeListContainsAll(*Tracker.Groups, ExpectedGroups);
+}
+
+void PubnubTests::TrackHandshake(UPubnubClient* Client, const FPubnubHandshakeTracker& Tracker)
+{
+	Client->OnSubscriptionStatusChangedNative.AddLambda([Tracker](EPubnubSubscriptionStatus Status, const FPubnubSubscriptionStatusData& Data)
+	{
+		if (Status == EPubnubSubscriptionStatus::PSS_ConnectionError || Status == EPubnubSubscriptionStatus::PSS_DisconnectedUnexpectedly)
+		{
+			*Tracker.bFailed = true;
+			*Tracker.FailureReason = Data.Reason;
+			++(*Tracker.Epoch);
+			return;
+		}
+
+		if (Status == EPubnubSubscriptionStatus::PSS_Connected || Status == EPubnubSubscriptionStatus::PSS_SubscriptionChanged)
+		{
+			*Tracker.Channels = Data.Channels;
+			*Tracker.Groups = Data.ChannelGroups;
+			*Tracker.bFailed = false;
+			++(*Tracker.Epoch);
+			return;
+		}
+
+		if (Status == EPubnubSubscriptionStatus::PSS_Disconnected)
+		{
+			Tracker.Channels->Reset();
+			Tracker.Groups->Reset();
+			++(*Tracker.Epoch);
+		}
+	});
+}
+
+TSharedPtr<int32> PubnubTests::SnapshotHandshakeEpoch(const FPubnubHandshakeTracker& Tracker)
+{
+	return MakeShared<int32>(*Tracker.Epoch);
 }
 
 FString PubnubTests::GetTestSecretKeyWithPAM()
@@ -132,6 +187,34 @@ bool FPubnubAutomationTestBase::InitTestWithPAM()
 	return true;
 }
 
+bool FPubnubAutomationTestBase::RecreateClient(UPubnubCryptoModule* CryptoModule, bool bUsePamKeys, bool bIncludeSecretKey)
+{
+	if (!PubnubSubsystem)
+	{
+		return false;
+	}
+
+	if (PubnubClient)
+	{
+		PubnubClient->DestroyClient();
+		PubnubClient = nullptr;
+	}
+
+	FPubnubConfig Config;
+	Config.LoggerConfig.DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Debug;
+	Config.UserID = "UE_SDK_Test_User";
+	Config.PublishKey = bUsePamKeys ? PubnubTests::GetTestPublishKeyWithPAM() : PubnubTests::GetTestPublishKey();
+	Config.SubscribeKey = bUsePamKeys ? PubnubTests::GetTestSubscribeKeyWithPAM() : PubnubTests::GetTestSubscribeKey();
+	if (bIncludeSecretKey)
+	{
+		Config.SecretKey = bUsePamKeys ? PubnubTests::GetTestSecretKeyWithPAM() : PubnubTests::GetTestSecretKey();
+	}
+	Config.CryptoModule = CryptoModule;
+
+	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
+	return PubnubClient != nullptr;
+}
+
 void FPubnubAutomationTestBase::CleanUp()
 {
 	//Final clean up
@@ -143,11 +226,6 @@ void FPubnubAutomationTestBase::CleanUp()
 		}
 	}, 0.1f));
 	
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
-	{
-		PubnubSubsystem->DeinitPubnub();
-	}, 0.1f));
-
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]()
 	{
 		GameInstance->Shutdown();

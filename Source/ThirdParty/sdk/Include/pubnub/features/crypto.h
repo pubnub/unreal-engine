@@ -22,8 +22,6 @@ extern "C" {
 // clang-format on
 #endif
 
-/* pubnub_crypto_module_t forward-declared in pubnub/types_fwd.h */
-
 /**
  * @brief Create a crypto module with AES-CBC (ACRH) as the default
  *        cryptor.

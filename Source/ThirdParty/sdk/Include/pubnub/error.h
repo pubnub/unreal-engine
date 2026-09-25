@@ -78,6 +78,9 @@ typedef enum pubnub_res {
     /** Request timed out. */
     PUBNUB_ERR_TIMEOUT = 48,
 
+    /** Wall-clock time unavailable -- required for PAM signing. */
+    PUBNUB_ERR_NO_WALL_CLOCK = 49,
+
     /* 64..79 : transport / network (TLS folded in) */
 
     /** Transport / network failure. Includes TLS handshake and

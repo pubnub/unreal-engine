@@ -126,6 +126,11 @@ function Invoke-Checked {
     }
 }
 
+function Convert-ToCmakePath {
+    param([string]$Path)
+    return ($Path -replace '\\', '/')
+}
+
 function Copy-DirectoryReplace {
     param(
         [string]$Source,
@@ -201,26 +206,31 @@ if ($Clean -and (Test-Path -LiteralPath $BuildDir)) {
 }
 
 Write-Step "Configuring C-Core (static Win64, socket + OpenSSL)"
+$CmakeOpenSslIncludeDir = Convert-ToCmakePath $OpenSslIncludeDir
+$CmakeOpenSslCryptoLib = Convert-ToCmakePath $OpenSslCryptoLib
+$CmakeOpenSslSslLib = Convert-ToCmakePath $OpenSslSslLib
 $configureArgs = @(
     "-S", $CCoreRoot
     "-B", $BuildDir
     "-G", "NMake Makefiles"
+    "-DPUBNUB_PROVIDER_PLATFORM=windows"
     "-DCMAKE_BUILD_TYPE=Release"
-    "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL"
     "-DPUBNUB_PROFILE=full"
-    "-DPUBNUB_BUILD_SHARED=OFF"
     "-DPUBNUB_PROVIDER_TRANSPORT=socket"
-    "-DPUBNUB_SOCKET_TLS_BACKEND=openssl"
-    "-DPUBNUB_PROVIDER_CRYPTO=openssl"
     "-DPUBNUB_PROVIDER_LOGGER=none"
-    "-DPUBNUB_ENABLE_CUSTOM_DNS=ON"
     "-DPUBNUB_ENABLE_RETRY=OFF"
     "-DPUBNUB_LOG_MIN_LEVEL=DEBUG"
+    "-DOPENSSL_INCLUDE_DIR=$CmakeOpenSslIncludeDir"
+    "-DOPENSSL_CRYPTO_LIBRARY=$CmakeOpenSslCryptoLib"
+    "-DOPENSSL_SSL_LIBRARY=$CmakeOpenSslSslLib"
+    # Unreal-specific additions (not in the minimal configure line).
+    "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL"
+    "-DPUBNUB_BUILD_SHARED=OFF"
+    "-DPUBNUB_SOCKET_TLS_BACKEND=openssl"
+    "-DPUBNUB_PROVIDER_CRYPTO=openssl"
+    "-DPUBNUB_ENABLE_CUSTOM_DNS=ON"
     "-DOPENSSL_USE_STATIC_LIBS=ON"
-    "-DOPENSSL_ROOT_DIR=$OpenSslRoot"
-    "-DOPENSSL_INCLUDE_DIR=$OpenSslIncludeDir"
-    "-DOPENSSL_CRYPTO_LIBRARY=$OpenSslCryptoLib"
-    "-DOPENSSL_SSL_LIBRARY=$OpenSslSslLib"
+    "-DOPENSSL_ROOT_DIR=$(Convert-ToCmakePath $OpenSslRoot)"
 )
 Invoke-Checked -Exe $CMakeExe -Arguments $configureArgs -FailureMessage "CMake configure failed"
 

@@ -6,15 +6,18 @@
  * @brief Memory allocator provider interface.
  *
  * Two tiers: general (alloc/realloc/free) and purpose-tagged buffers
- * (buf_acquire/buf_release/buf_grow). Arena allocators may @c NULL out
- * realloc/buf_grow. All callbacks from non-ISR context only.
+ * (buf_acquire/buf_release/buf_grow). All callbacks from non-ISR context
+ * only.
  *
  * **Mandatory methods:** alloc, free, buf_acquire, buf_release.
  *
- * **Optional methods:** realloc, buf_grow, init, deinit.
- * Arena allocators set realloc and buf_grow to @c NULL (fixed partitions
- * cannot relocate). The SDK handles @c NULL realloc via alloc+copy+free
- * and @c NULL buf_grow as PUBNUB_ERR_BUFFER_TOO_SMALL.
+ * **Optional methods:** realloc, buf_grow, init, deinit. An implementation
+ * whose partitions cannot relocate leaves them @c NULL; the SDK handles
+ * @c NULL realloc via alloc+copy+free and @c NULL buf_grow as
+ * PUBNUB_ERR_BUFFER_TOO_SMALL. The bundled arena allocator implements
+ * realloc (its general tier is cell-based, so blocks can grow and shrink
+ * in place) but leaves buf_grow @c NULL because its purpose-tagged pools
+ * are fixed partitions.
  */
 
 #ifndef PUBNUB_PROVIDER_ALLOCATOR_H
@@ -78,7 +81,10 @@ typedef struct pubnub_allocator_provider {
      *
      * @param self  Pointer to this provider instance.
      * @param size  Requested allocation size in bytes.
-     * @param align Required alignment (must be power of 2, 0 or 1 = default).
+     * @param align Required alignment (must be power of 2, 0 or 1 = default). Arena
+     *              allocators achieve alignment through pool placement rather than
+     *              per-allocation adjustment; the pool itself must be at least @p
+     *              align-aligned for this to succeed.
      * @return Pointer to allocated memory, or @c NULL on failure.
      */
     void* (*alloc)(struct pubnub_allocator_provider* self, size_t size, size_t align);
@@ -196,5 +202,53 @@ typedef struct pubnub_allocator_provider {
 }
 // clang-format on
 #endif
+
+/* clang-format off */
+
+/**
+ * @brief Call-site debug logging wrappers for allocator vtable calls.
+ *
+ * When @c PUBNUB_CFG_ARENA_DEBUG is defined and non-zero, every
+ * PN_ALLOC / PN_FREE / PN_REALLOC invocation logs the call site
+ * (file, line, requested size or pointer) to stderr before delegating
+ * to the vtable. In the non-debug path the macros expand to plain
+ * vtable calls with zero overhead.
+ *
+ * C99-clean: uses the comma operator, not statement-expressions.
+ */
+#if defined(PUBNUB_CFG_ARENA_DEBUG) && PUBNUB_CFG_ARENA_DEBUG
+#include <stdio.h>
+
+#define PN_ALLOC(alloc_ptr, size, align)                                       \
+    (fprintf(stderr, "[csalloc] %s:%d req=%5zu\n",                             \
+             __FILE__, __LINE__, (size_t)(size)),                              \
+     (alloc_ptr)->alloc((alloc_ptr), (size_t)(size), (size_t)(align)))
+
+#define PN_FREE(alloc_ptr, ptr)                                                \
+    (fprintf(stderr, "[csfree]  %s:%d ptr=%p\n",                               \
+             __FILE__, __LINE__, (void*)(ptr)),                                \
+     (alloc_ptr)->free((alloc_ptr), (ptr)))
+
+#define PN_REALLOC(alloc_ptr, ptr, old_size, new_size, align)                  \
+    (fprintf(stderr, "[csrealloc] %s:%d old=%5zu new=%5zu\n",                  \
+             __FILE__, __LINE__, (size_t)(old_size), (size_t)(new_size)),      \
+     (alloc_ptr)->realloc((alloc_ptr), (ptr), (size_t)(old_size),             \
+                          (size_t)(new_size), (size_t)(align)))
+
+#else /* !PUBNUB_CFG_ARENA_DEBUG */
+
+#define PN_ALLOC(alloc_ptr, size, align)                                       \
+    (alloc_ptr)->alloc((alloc_ptr), (size_t)(size), (size_t)(align))
+
+#define PN_FREE(alloc_ptr, ptr)                                                \
+    (alloc_ptr)->free((alloc_ptr), (ptr))
+
+#define PN_REALLOC(alloc_ptr, ptr, old_size, new_size, align)                  \
+    (alloc_ptr)->realloc((alloc_ptr), (ptr), (size_t)(old_size),              \
+                         (size_t)(new_size), (size_t)(align))
+
+#endif /* PUBNUB_CFG_ARENA_DEBUG */
+
+/* clang-format on */
 
 #endif /* PUBNUB_PROVIDER_ALLOCATOR_H */

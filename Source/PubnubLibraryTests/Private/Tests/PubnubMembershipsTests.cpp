@@ -227,10 +227,6 @@ bool FPubnubGetMemberships_EmptyUser_ReturnsError::RunTest(const FString& Parame
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("memb_get_emptyuser_caller"));
 
 	const FPubnubMembershipsResult R = PubnubClient->GetMemberships(TEXT(""));
@@ -253,10 +249,6 @@ bool FPubnubGetMemberships_HappyPath_AfterSetMembership::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UserIn;
@@ -301,10 +293,6 @@ bool FPubnubGetMemberships_AllOptionalParameters::RunTest(const FString& Paramet
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UserIn;
@@ -373,10 +361,6 @@ bool FPubnubGetMemberships_UserWithNoMemberships_ReturnsEmptyData::RunTest(const
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UserIn;
@@ -413,10 +397,6 @@ bool FPubnubGetMemberships_AfterRemove_ChannelNotListed::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UserIn;
@@ -459,10 +439,6 @@ bool FPubnubSetMemberships_EmptyUser_ReturnsError::RunTest(const FString& Parame
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("memb_set_emptyuser_caller"));
 
 	FPubnubMembershipInputData M;
@@ -489,10 +465,6 @@ bool FPubnubSetMemberships_HappyPath_ChannelIdOnly::RunTest(const FString& Param
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData SuIn;
@@ -536,10 +508,6 @@ bool FPubnubSetMemberships_AllInputFieldsAndListParams::RunTest(const FString& P
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData SfuIn;
@@ -603,10 +571,6 @@ bool FPubnubSetMemberships_UpdateStatus_ThenGetReflects::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UuIn;
@@ -659,10 +623,6 @@ bool FPubnubRemoveMemberships_EmptyUser_ReturnsError::RunTest(const FString& Par
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("memb_rm_emptyuser_caller"));
 
 	TArray<FString> RmDummy;
@@ -687,10 +647,6 @@ bool FPubnubRemoveMemberships_HappyPath_ThenGetMissing::RunTest(const FString& P
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData RhuIn;
@@ -734,10 +690,6 @@ bool FPubnubRemoveMemberships_AllOptionalParameters::RunTest(const FString& Para
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData RfuIn;
@@ -789,10 +741,6 @@ bool FPubnubRemoveMemberships_SecondRemove_StillSucceeds::RunTest(const FString&
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData IdU;
@@ -831,10 +779,6 @@ bool FPubnubGetChannelMembers_EmptyChannel_ReturnsError::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("chmem_get_emptych_caller"));
 
 	const FPubnubChannelMembersResult R = PubnubClient->GetChannelMembers(TEXT(""));
@@ -857,10 +801,6 @@ bool FPubnubGetChannelMembers_HappyPath_AfterSetMember::RunTest(const FString& P
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UIn;
@@ -901,10 +841,6 @@ bool FPubnubGetChannelMembers_AllOptionalParameters::RunTest(const FString& Para
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData FullU;
@@ -969,10 +905,6 @@ bool FPubnubGetChannelMembers_ChannelWithNoMembers_UserNotListed::RunTest(const 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData NoLinkU;
@@ -1007,10 +939,6 @@ bool FPubnubGetChannelMembers_AfterRemove_UserNotListed::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData ArU;
@@ -1052,10 +980,6 @@ bool FPubnubSetChannelMembers_EmptyChannel_ReturnsError::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("chmem_set_emptych_caller"));
 
 	FPubnubChannelMemberInputData M;
@@ -1082,10 +1006,6 @@ bool FPubnubSetChannelMembers_HappyPath_UserIdOnly::RunTest(const FString& Param
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UIn;
@@ -1128,10 +1048,6 @@ bool FPubnubSetChannelMembers_AllInputFieldsAndListParams::RunTest(const FString
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData Su;
@@ -1195,10 +1111,6 @@ bool FPubnubSetChannelMembers_UpdateStatus_ThenGetReflects::RunTest(const FStrin
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UIn;
@@ -1251,10 +1163,6 @@ bool FPubnubRemoveChannelMembers_EmptyChannel_ReturnsError::RunTest(const FStrin
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("chmem_rm_emptych_caller"));
 
 	TArray<FString> Users;
@@ -1279,10 +1187,6 @@ bool FPubnubRemoveChannelMembers_HappyPath_ThenGetMissing::RunTest(const FString
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UIn;
@@ -1327,10 +1231,6 @@ bool FPubnubRemoveChannelMembers_AllOptionalParameters::RunTest(const FString& P
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData Ru;
@@ -1382,10 +1282,6 @@ bool FPubnubRemoveChannelMembers_SecondRemove_StillSucceeds::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData UIn;

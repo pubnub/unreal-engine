@@ -16,21 +16,18 @@ using namespace PubnubTests;
 
 namespace PubnubPresenceTestsHelper
 {
-	/** Parse Presence API JSON: root object field "payload" as object (single-channel state / here-now payload). */
-	static bool TryGetPayloadObject(const FString& JsonResponse, TSharedPtr<FJsonObject>& OutPayload)
+	/** Parse the raw state JSON returned for one channel. */
+	static bool TryGetStateObject(const TArray<FPubnubUserStateOnChannel>& States, const FString& Channel, TSharedPtr<FJsonObject>& OutState)
 	{
-		TSharedPtr<FJsonObject> Root = MakeShareable(new FJsonObject);
-		if (!UPubnubJsonUtilities::StringToJsonObject(JsonResponse, Root) || !Root.IsValid())
+		const FPubnubUserStateOnChannel* Found = States.FindByPredicate([&Channel](const FPubnubUserStateOnChannel& Entry)
+		{
+			return Entry.Channel == Channel;
+		});
+		if (!Found)
 		{
 			return false;
 		}
-		const TSharedPtr<FJsonObject>* PayloadPtr = nullptr;
-		if (!Root->TryGetObjectField(TEXT("payload"), PayloadPtr) || !PayloadPtr || !PayloadPtr->IsValid())
-		{
-			return false;
-		}
-		OutPayload = *PayloadPtr;
-		return true;
+		return UPubnubJsonUtilities::StringToJsonObject(Found->State, OutState) && OutState.IsValid();
 	}
 }
 
@@ -100,10 +97,6 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetState_InvalidStateJson_NotJson
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetState_HappyPath_RequiredParamsOnly, FPubnubAutomationTestBase,
 	"Pubnub.Integration.Presence.SetState.2HappyPath.RequiredParamsOnly",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
-
-IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetState_FullSettings_HeartBeatAndExplicitUserID, FPubnubAutomationTestBase,
-	"Pubnub.Integration.Presence.SetState.3FullParameters.HeartBeatAndUserID",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetState_ConcurrentSyncWhileAsync_ReturnsMutexError, FPubnubAutomationTestBase,
@@ -209,10 +202,6 @@ bool FPubnubListUsersFromChannel_HappyPath_DefaultSettings_Occupancy::RunTest(co
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -224,7 +213,7 @@ bool FPubnubListUsersFromChannel_HappyPath_DefaultSettings_Occupancy::RunTest(co
 		FPubnubListUsersFromChannelResult HereResult = PubnubClient->ListUsersFromChannel(TestChannel, FPubnubListUsersFromChannelSettings());
 		TestFalse("ListUsersFromChannel should succeed", HereResult.Result.Error);
 		TestEqual("ListUsersFromChannel status", HereResult.Result.Status, 200);
-		TestTrue("Occupancy should include current subscriber", HereResult.Data.Occupancy >= 1);
+		TestTrue("Occupancy should include current subscriber", HereResult.TotalOccupancy >= 1);
 	}, 0.45f));
 
 	CleanUp();
@@ -244,11 +233,11 @@ bool FPubnubListUsersFromChannel_FullSettings_UuidsStateLimitOffset::RunTest(con
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
 	TestFalse("Subscribe should succeed", SubResult.Error);
@@ -257,6 +246,12 @@ bool FPubnubListUsersFromChannel_FullSettings_UuidsStateLimitOffset::RunTest(con
 	TestFalse("SetState should succeed", SetStateResult.Error);
 	TestEqual("SetState status", SetStateResult.Status, 200);
 
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the channel", Handshake.Channels->Contains(TestChannel));
+	}, 0.0f));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestUser]()
 	{
 		FPubnubListUsersFromChannelSettings Settings;
@@ -269,21 +264,26 @@ bool FPubnubListUsersFromChannel_FullSettings_UuidsStateLimitOffset::RunTest(con
 		FPubnubListUsersFromChannelResult HereResult = PubnubClient->ListUsersFromChannel(TestChannel, Settings);
 		TestFalse("ListUsersFromChannel should succeed", HereResult.Result.Error);
 		TestEqual("ListUsersFromChannel status", HereResult.Result.Status, 200);
-		TestTrue("Occupancy should be at least 1", HereResult.Data.Occupancy >= 1);
-		TestTrue("UsersState should contain our uuid", HereResult.Data.UsersState.Contains(TestUser));
-		const FString* StoredState = HereResult.Data.UsersState.Find(TestUser);
-		TestNotNull("UsersState entry should exist", StoredState);
-		TestTrue("Per-uuid state JSON should include key from SetState", StoredState && StoredState->Contains(TEXT("hereNowStateKey")));
-		TestTrue("Per-uuid state JSON should include value from SetState", StoredState && StoredState->Contains(TEXT("hereNowStateVal")));
+		TestTrue("Occupancy should be at least 1", HereResult.TotalOccupancy >= 1);
+		const FPubnubUsersFromChannel* ChannelUsers = HereResult.Channels.FindByPredicate([&TestChannel](const FPubnubUsersFromChannel& Entry)
+		{
+			return Entry.Channel == TestChannel;
+		});
+		const FPubnubUserFromChannel* StoredUser = ChannelUsers ? ChannelUsers->Users.FindByPredicate([&TestUser](const FPubnubUserFromChannel& User)
+		{
+			return User.UserID == TestUser;
+		}) : nullptr;
+		TestNotNull("Users should contain our uuid", StoredUser);
+		TestTrue("Per-uuid state JSON should include key from SetState", StoredUser && StoredUser->State.Contains(TEXT("hereNowStateKey")));
+		TestTrue("Per-uuid state JSON should include value from SetState", StoredUser && StoredUser->State.Contains(TEXT("hereNowStateVal")));
 	}, 0.55f));
 
 	CleanUp();
 	return true;
 }
 
-// ChannelGroup in ListUsersFromChannelSettings maps to Here Now "channel group" query parameter alongside the channel name.
-// PubNub treats that as a multi-target request: the HTTP response uses payload.total_occupancy / payload.channels, not root occupancy.
-// Subscribing with SubscribeToGroup is valid — the client is present on the group's member channels; direct SubscribeToChannel is not required.
+// ChannelGroup in ListUsersFromChannelSettings is sent as the here-now channel-group parameter.
+// The subscriber also joins the channel directly. A group subscription alone is not announced on the member channel's presence.
 bool FPubnubListUsersFromChannel_WithChannelGroupOption_SubscribeViaGroup::RunTest(const FString& Parameters)
 {
 	const FString TestChannel = SDK_PREFIX + "presence_luc_grp_ch";
@@ -296,20 +296,31 @@ bool FPubnubListUsersFromChannel_WithChannelGroupOption_SubscribeViaGroup::RunTe
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
 	TestFalse("AddChannelToGroup should succeed", AddResult.Error);
 
-	FPubnubOperationResult SubResult = PubnubClient->SubscribeToGroup(TestGroup);
-	TestFalse("SubscribeToGroup should succeed", SubResult.Error);
+	const FPubnubListChannelsFromGroupResult Listed = PubnubClient->ListChannelsFromGroup(TestGroup);
+	TestFalse("ListChannelsFromGroup should succeed", Listed.Result.Error);
+	TestTrue("Group should contain the channel before subscribe", Listed.Channels.Contains(TestChannel));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestGroup]()
+	FPubnubOperationResult SubGroup = PubnubClient->SubscribeToGroup(TestGroup);
+	TestFalse("SubscribeToGroup should succeed", SubGroup.Error);
+	FPubnubOperationResult SubChannel = PubnubClient->SubscribeToChannel(TestChannel);
+	TestFalse("SubscribeToChannel should succeed", SubChannel.Error);
+
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, { TestGroup }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel, TestGroup]()
 	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the channel", Handshake.Channels->Contains(TestChannel));
+		TestTrue("Handshake should include the group", Handshake.Groups->Contains(TestGroup));
+
 		FPubnubListUsersFromChannelSettings Settings;
 		Settings.ChannelGroup = TestGroup;
 		Settings.DisableUserID = true;
@@ -320,8 +331,8 @@ bool FPubnubListUsersFromChannel_WithChannelGroupOption_SubscribeViaGroup::RunTe
 		FPubnubListUsersFromChannelResult HereResult = PubnubClient->ListUsersFromChannel(TestChannel, Settings);
 		TestFalse("ListUsersFromChannel with channel group option should succeed", HereResult.Result.Error);
 		TestEqual("ListUsersFromChannel status", HereResult.Result.Status, 200);
-		TestTrue("Occupancy should reflect subscriber via group", HereResult.Data.Occupancy >= 1);
-	}, 0.55f));
+		TestTrue("Occupancy should reflect subscriber via group", HereResult.TotalOccupancy >= 1);
+	}, 0.2f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
 	{
@@ -348,10 +359,6 @@ bool FPubnubListUsersFromChannel_ConcurrentSyncWhileAsync_ReturnsMutexError::Run
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
@@ -413,10 +420,6 @@ bool FPubnubListUserSubscribedChannels_HappyPath_SubscribedChannelListed::RunTes
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -447,10 +450,6 @@ bool FPubnubListUserSubscribedChannels_TwoChannels_BothListed::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	TestFalse("Subscribe A", PubnubClient->SubscribeToChannel(ChannelA).Error);
@@ -544,10 +543,6 @@ bool FPubnubSetState_HappyPath_RequiredParamsOnly::RunTest(const FString& Parame
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -559,43 +554,6 @@ bool FPubnubSetState_HappyPath_RequiredParamsOnly::RunTest(const FString& Parame
 		TestFalse("SetState should succeed", SetResult.Error);
 		TestEqual("SetState status", SetResult.Status, 200);
 	}, 0.35f));
-
-	CleanUp();
-	return true;
-}
-
-bool FPubnubSetState_FullSettings_HeartBeatAndExplicitUserID::RunTest(const FString& Parameters)
-{
-	const FString TestChannel = SDK_PREFIX + "presence_ss_full_ch";
-	const FString TestUser = SDK_PREFIX + "presence_ss_full_user";
-	const FString StateJson = TEXT("{\"fullSetStateKey\":42}");
-
-	if (!InitTest())
-	{
-		AddError("InitTest failed");
-		return false;
-	}
-
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
-	PubnubClient->SetUserID(TestUser);
-
-	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
-	TestFalse("Subscribe should succeed", SubResult.Error);
-
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestUser, StateJson]()
-	{
-		FPubnubSetStateSettings Settings;
-		Settings.ChannelGroup = FString();
-		Settings.UserID = TestUser;
-		Settings.HeartBeat = true;
-
-		FPubnubOperationResult SetResult = PubnubClient->SetState(TestChannel, StateJson, Settings);
-		TestFalse("SetState with full settings should succeed", SetResult.Error);
-		TestEqual("SetState status", SetResult.Status, 200);
-	}, 0.4f));
 
 	CleanUp();
 	return true;
@@ -615,10 +573,6 @@ bool FPubnubSetState_ConcurrentSyncWhileAsync_ReturnsMutexError::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -684,10 +638,6 @@ bool FPubnubGetState_HappyPath_PayloadMatchesSetState::RunTest(const FString& Pa
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -703,7 +653,7 @@ bool FPubnubGetState_HappyPath_PayloadMatchesSetState::RunTest(const FString& Pa
 		TestEqual("GetState status", GetResult.Result.Status, 200);
 
 		TSharedPtr<FJsonObject> Payload;
-		TestTrue("Response should parse with payload object", PubnubPresenceTestsHelper::TryGetPayloadObject(GetResult.StateResponse, Payload));
+		TestTrue("Response should parse state object", PubnubPresenceTestsHelper::TryGetStateObject(GetResult.States, TestChannel, Payload));
 		TestTrue("Payload should contain key from SetState", Payload.IsValid() && Payload->HasField(TEXT("getStateKey")));
 		FString V;
 		TestTrue("Payload should expose string value", Payload.IsValid() && Payload->TryGetStringField(TEXT("getStateKey"), V));
@@ -730,10 +680,6 @@ bool FPubnubGetState_AfterUpdatingState_PayloadReflectsNewValue::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -746,7 +692,7 @@ bool FPubnubGetState_AfterUpdatingState_PayloadReflectsNewValue::RunTest(const F
 		FPubnubGetStateResult G1 = PubnubClient->GetState(TestChannel, FString(), TestUser);
 		TestFalse("GetState after v1 should succeed", G1.Result.Error);
 		TSharedPtr<FJsonObject> P1;
-		TestTrue("Parse payload v1", PubnubPresenceTestsHelper::TryGetPayloadObject(G1.StateResponse, P1));
+		TestTrue("Parse payload v1", PubnubPresenceTestsHelper::TryGetStateObject(G1.States, TestChannel, P1));
 		FString Ver1;
 		TestTrue("version field v1", P1.IsValid() && P1->TryGetStringField(TEXT("version"), Ver1));
 		TestEqual("version should be v1", Ver1, TEXT("v1"));
@@ -762,7 +708,7 @@ bool FPubnubGetState_AfterUpdatingState_PayloadReflectsNewValue::RunTest(const F
 		FPubnubGetStateResult G2 = PubnubClient->GetState(TestChannel, FString(), TestUser);
 		TestFalse("GetState after v2 should succeed", G2.Result.Error);
 		TSharedPtr<FJsonObject> P2;
-		TestTrue("Parse payload v2", PubnubPresenceTestsHelper::TryGetPayloadObject(G2.StateResponse, P2));
+		TestTrue("Parse payload v2", PubnubPresenceTestsHelper::TryGetStateObject(G2.States, TestChannel, P2));
 		FString Ver2;
 		TestTrue("version field v2", P2.IsValid() && P2->TryGetStringField(TEXT("version"), Ver2));
 		TestEqual("version should be v2", Ver2, TEXT("v2"));

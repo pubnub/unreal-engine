@@ -7,28 +7,77 @@
 #include "FunctionLibraries/PubnubInternalUtilities.h"
 #include "PubnubInternalMacros.h"
 #include "PubnubInternalStructLibrary.h"
+#include "PubNub.h"
 
 void UPubnubSubscriptionBase::BeginDestroy()
 {
 	CleanUpSubscription();
-	
 	Super::BeginDestroy();
+}
+
+void UPubnubSubscriptionBase::DeliverSubscribeEvent(const FPubnubMessageData& MessageData)
+{
+	if (!IsInitialized)
+	{
+		return;
+	}
+
+	const bool bPresence = MessageData.Channel.EndsWith(TEXT("-pnpres"));
+	switch (MessageData.MessageType)
+	{
+	case EPubnubMessageType::PMT_Signal:
+		if (IsInitialized) { OnPubnubSignal.Broadcast(MessageData); }
+		if (IsInitialized) { OnPubnubSignalNative.Broadcast(MessageData); }
+		break;
+	case EPubnubMessageType::PMT_Action:
+		if (IsInitialized) { OnPubnubMessageAction.Broadcast(MessageData); }
+		if (IsInitialized) { OnPubnubMessageActionNative.Broadcast(MessageData); }
+		break;
+	case EPubnubMessageType::PMT_Objects:
+		if (IsInitialized) { OnPubnubObjectEvent.Broadcast(MessageData); }
+		if (IsInitialized) { OnPubnubObjectEventNative.Broadcast(MessageData); }
+		break;
+	case EPubnubMessageType::PMT_Files:
+		break;
+	case EPubnubMessageType::PMT_Published:
+	default:
+		if (bPresence)
+		{
+			if (IsInitialized) { OnPubnubPresenceEvent.Broadcast(MessageData); }
+			if (IsInitialized) { OnPubnubPresenceEventNative.Broadcast(MessageData); }
+		}
+		else
+		{
+			if (IsInitialized) { OnPubnubMessage.Broadcast(MessageData); }
+			if (IsInitialized) { OnPubnubMessageNative.Broadcast(MessageData); }
+		}
+		break;
+	}
+
+	if (IsInitialized)
+	{
+		FOnPubnubAnyMessageType.Broadcast(MessageData);
+	}
+	if (IsInitialized)
+	{
+		FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
+	}
 }
 
 FPubnubOperationResult UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor Cursor)
 {
 	PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
-	
-	if(!CCoreSubscription)
+
+	if (!CCoreSubscription)
 	{
 		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscription is invalid.")});
 	}
-	
+
 	if (bIsSubscribed)
 	{
 		return FPubnubOperationResult({0, true, TEXT("Subscription is already subscribed.")});
 	}
-	
+
 	return PubnubClient->SubscribeWithSubscription(this, Cursor);
 }
 
@@ -46,19 +95,19 @@ void UPubnubSubscription::SubscribeAsync(FOnPubnubSubscribeOperationResponse OnS
 void UPubnubSubscription::SubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
 	PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(NativeCallback);
-	
-	if(!CCoreSubscription)
+
+	if (!CCoreSubscription)
 	{
 		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscription is invalid."));
 		return;
 	}
-	
+
 	if (bIsSubscribed)
 	{
 		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Subscription is already subscribed."));
 		return;
 	}
-	
+
 	PubnubClient->SubscribeWithSubscriptionAsync(this, Cursor, NativeCallback);
 }
 
@@ -70,17 +119,17 @@ void UPubnubSubscription::SubscribeAsync(FPubnubSubscriptionCursor Cursor)
 FPubnubOperationResult UPubnubSubscription::Unsubscribe()
 {
 	PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
-	
-	if(!CCoreSubscription)
+
+	if (!CCoreSubscription)
 	{
 		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscription is invalid.")});
 	}
-	
+
 	if (!bIsSubscribed)
 	{
 		return FPubnubOperationResult({0, true, TEXT("Subscription is not subscribed")});
 	}
-	
+
 	return PubnubClient->UnsubscribeWithSubscription(this);
 }
 
@@ -98,13 +147,13 @@ void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponse O
 void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback)
 {
 	PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(NativeCallback);
-	
-	if(!CCoreSubscription)
+
+	if (!CCoreSubscription)
 	{
 		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscription is invalid."));
 		return;
 	}
-	
+
 	if (!bIsSubscribed)
 	{
 		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Subscription is not subscribed."));
@@ -116,25 +165,25 @@ void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNa
 
 UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription* Subscription)
 {
-	if(!IsInitialized)
+	if (!IsInitialized)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: This Subscription is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return nullptr;
 	}
 
-	if(!CCoreSubscription)
+	if (!CCoreSubscription)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: internal C-Core subscription is invalid."));
 		return nullptr;
 	}
 
-	if(!Subscription)
+	if (!Subscription)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Can't add invalid subscription."));
 		return nullptr;
 	}
 
-	if(!Subscription->CCoreSubscription)
+	if (!Subscription->CCoreSubscription)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
 		return nullptr;
@@ -142,320 +191,113 @@ UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription
 
 	UPubnubSubscriptionSet* SubscriptionSet = UPubnubInternalUtilities::SafeNewObject<UPubnubSubscriptionSet>(this);
 	SubscriptionSet->InitWithSubscriptions(PubnubClient, this, Subscription);
-	
 	return SubscriptionSet;
 }
 
 void UPubnubSubscription::InitSubscription(UPubnubClient* InPubnubClient, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings)
 {
-	if(!InPubnubClient)
+	if (!InPubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, PubnubClient is invalid."));
 		return;
 	}
-	if(!Entity)
+	if (!Entity)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, Entity is invalid."));
 		return;
 	}
+
 	PubnubClient = InPubnubClient;
-	CCoreSubscription = UPubnubInternalUtilities::EEGetSubscriptionForEntity(InPubnubClient->ctx_ee, Entity->EntityID, Entity->EntityType, InSubscribeSettings);
+	CCoreSubscription = UPubnubInternalUtilities::CreateCCoreSubscription(InPubnubClient->pubnub_context, Entity->EntityID, Entity->EntityType, InSubscribeSettings);
+	if (!CCoreSubscription)
+	{
+		return;
+	}
 
 	InternalInit();
-
-	// Register as the canonical UE wrapper for this C-Core subscription so that
-	// UPubnubClient::GetActiveSubscriptions returns this very wrapper rather
-	// than constructing a duplicate that would race for ownership at deinit.
-	InPubnubClient->RegisterManagedSubscription(CCoreSubscription, this);
+	if (IsInitialized)
+	{
+		InPubnubClient->RegisterManagedSubscription(CCoreSubscription, this);
+	}
 }
 
-void UPubnubSubscription::InitWithCCoreSubscription(UPubnubClient* InPubnubClient, pubnub_subscription_t* InCCoreSubscription)
+void UPubnubSubscription::InitWithCCoreSubscription(UPubnubClient* InPubnubClient, pubnub_subscription_t InCCoreSubscription)
 {
-	if(!InPubnubClient)
+	if (!InPubnubClient)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, PubnubClient is invalid."));
 		return;
 	}
-	if(!InCCoreSubscription)
+	if (!InCCoreSubscription)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, InCCoreSubscription is invalid."));
 		return;
 	}
+
 	PubnubClient = InPubnubClient;
 	CCoreSubscription = InCCoreSubscription;
-
 	InternalInit();
-
-	// Register as the canonical wrapper for this C-Core subscription. Today
-	// UPubnubClient::GetActiveSubscriptions only ever calls this Init path when
-	// no managed wrapper exists, so this is essentially a defensive registration
-	// for any future caller that adopts an externally produced C-Core pointer.
-	InPubnubClient->RegisterManagedSubscription(CCoreSubscription, this);
+	if (IsInitialized)
+	{
+		InPubnubClient->RegisterManagedSubscription(CCoreSubscription, this);
+	}
 }
 
 void UPubnubSubscription::InternalInit()
 {
-	// Set weak pointer to this object in the heap payload
-	FPubnubInternalSubscriptionListenerUserData* UserData = new FPubnubInternalSubscriptionListenerUserData();
-	UserData->WeakSubscription = this;
-	ListenerUserData = UserData;
-
-	// Create callbacks for each Listener type
-
-	// Messages and Presence
-	pubnub_subscribe_message_callback_t CallbackMessages = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
+	ListenerUserData = UPubnubInternalUtilities::CreateEntityListenerUserData(this, PubnubClient ? PubnubClient->pubnub_context : nullptr);
+	ListenerHandle = UPubnubInternalUtilities::AddEntitySubscriptionListener(CCoreSubscription, ListenerUserData);
+	if (ListenerHandle == PUBNUB_LISTENER_HANDLE_INVALID)
 	{
-		if(!user_data)
-		{return;}
-		
-		FPubnubInternalSubscriptionListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionListenerUserData*>(user_data);
-		TWeakObjectPtr<UPubnubSubscription> SubscriptionWeak = ListenerUserDataPtr->WeakSubscription;
-		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
-		{
-			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
-			{
-				if(!S->PubnubClient)
-				{return;}
-				// In C-Core there is no separate listener for Presence Events. They come together with published messages.
-				// So we check if it's Presence Event here and choose equivalent delegates to call
-				// Check IsInitialized before each broadcast to prevent race conditions during destruction
-				if(MessageData.Channel.Contains("-pnpres"))
-				{
-					// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast 
-					if(S->IsInitialized)
-					{
-						S->OnPubnubPresenceEvent.Broadcast(MessageData);
-					}
-					if(S->IsInitialized)
-					{
-						S->OnPubnubPresenceEventNative.Broadcast(MessageData);
-					}
-				}
-				else
-				{
-					if(S->IsInitialized)
-					{
-						S->OnPubnubMessage.Broadcast(MessageData);
-					}
-					if(S->IsInitialized)
-					{
-						S->OnPubnubMessageNative.Broadcast(MessageData);
-					}
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
-				}
-			}
-		});
-	};
+		UE_LOG(PubnubLog, Error, TEXT("Failed to register subscription listener."));
+		UPubnubInternalUtilities::DestroyEntityListenerUserData(ListenerUserData);
+		ListenerUserData = nullptr;
+		pubnub_subscription_destroy(CCoreSubscription);
+		CCoreSubscription = nullptr;
+		return;
+	}
 
-	// Signals
-	pubnub_subscribe_message_callback_t CallbackSignals = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
-	{
-		if(!user_data)
-		{return;}
-		
-		FPubnubInternalSubscriptionListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionListenerUserData*>(user_data);
-		TWeakObjectPtr<UPubnubSubscription> SubscriptionWeak = ListenerUserDataPtr->WeakSubscription;
-		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
-		{
-			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
-			{
-				if(!S->PubnubClient)
-				{return;}
-				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
-				if(S->IsInitialized)
-				{
-					S->OnPubnubSignal.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->OnPubnubSignalNative.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
-				}
-			}
-		});
-	};
-
-	// Objects (App Context)
-	pubnub_subscribe_message_callback_t CallbackObjects = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
-	{
-		if(!user_data)
-		{return;}
-		
-		FPubnubInternalSubscriptionListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionListenerUserData*>(user_data);
-		TWeakObjectPtr<UPubnubSubscription> SubscriptionWeak = ListenerUserDataPtr->WeakSubscription;
-		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
-		{
-			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
-			{
-				if(!S->PubnubClient)
-				{return;}
-				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
-				if(S->IsInitialized)
-				{
-					S->OnPubnubObjectEvent.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->OnPubnubObjectEventNative.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
-				}
-			}
-		});
-	};
-
-	// Message Actions
-	pubnub_subscribe_message_callback_t CallbackMessageActions= +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
-	{
-		if(!user_data)
-		{return;}
-		
-		FPubnubInternalSubscriptionListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionListenerUserData*>(user_data);
-		TWeakObjectPtr<UPubnubSubscription> SubscriptionWeak = ListenerUserDataPtr->WeakSubscription;
-		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
-		{
-			if (UPubnubSubscription* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
-			{
-				if(!S->PubnubClient)
-				{return;}
-				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
-				if(S->IsInitialized)
-				{
-					S->OnPubnubMessageAction.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->OnPubnubMessageActionNative.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
-				}
-			}
-		});
-	};
-
-	UserData->MessageCb = CallbackMessages;
-	UserData->SignalCb = CallbackSignals;
-	UserData->ObjectsCb = CallbackObjects;
-	UserData->MessageActionCb = CallbackMessageActions;
-
-	// Register created callback in subscription
-	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessages, EPubnubListenerType::PLT_Message, ListenerUserData);
-	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackSignals, EPubnubListenerType::PLT_Signal, ListenerUserData);
-	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackObjects, EPubnubListenerType::PLT_Objects, ListenerUserData);
-	UPubnubInternalUtilities::EEAddSubscriptionListenerOfType(CCoreSubscription, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, ListenerUserData);
-
-	// Bind to deinitialize start so subscription C-Core resources are released
 	PubnubClient->OnClientDeinitializeStart.AddDynamic(this, &UPubnubSubscription::CleanUpSubscription);
-
-	//Now we are fully initialized
 	IsInitialized = true;
 }
 
 void UPubnubSubscription::RemoveRegisteredListeners()
 {
-	if (!CCoreSubscription || !ListenerUserData)
-	{
-		return;
-	}
-
-	auto* UD = static_cast<FPubnubInternalSubscriptionListenerUserData*>(ListenerUserData);
-
-	auto TryRemove =
-		[this](EPubnubListenerType UEType, pubnub_subscribe_message_callback_t Fn)
-	{
-		if (!Fn)
-		{
-			return;
-		}
-		const pubnub_subscribe_listener_type CoreType =
-			static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(UEType));
-		pubnub_subscribe_remove_subscription_listener(CCoreSubscription, CoreType, Fn, ListenerUserData);
-	};
-
-	TryRemove(EPubnubListenerType::PLT_Message, UD->MessageCb);
-	TryRemove(EPubnubListenerType::PLT_Signal, UD->SignalCb);
-	TryRemove(EPubnubListenerType::PLT_MessageAction, UD->MessageActionCb);
-	TryRemove(EPubnubListenerType::PLT_Objects, UD->ObjectsCb);
+	UPubnubInternalUtilities::RemoveEntitySubscriptionListener(CCoreSubscription, ListenerHandle);
+	ListenerHandle = PUBNUB_LISTENER_HANDLE_INVALID;
 }
 
 void UPubnubSubscription::CleanUpSubscription()
 {
-	if(!IsInitialized) {return;}
+	if (!IsInitialized)
+	{
+		return;
+	}
 
-	// Set IsInitialized to false FIRST to prevent any pending async tasks from broadcasting
 	IsInitialized = false;
 	bIsSubscribed = false;
-
-	// Clear all delegates to prevent broadcasting during destruction
-	OnPubnubMessage.Clear();
-	OnPubnubMessageNative.Clear();
-	OnPubnubSignal.Clear();
-	OnPubnubSignalNative.Clear();
-	OnPubnubPresenceEvent.Clear();
-	OnPubnubPresenceEventNative.Clear();
-	OnPubnubObjectEvent.Clear();
-	OnPubnubObjectEventNative.Clear();
-	OnPubnubMessageAction.Clear();
-	OnPubnubMessageActionNative.Clear();
-	FOnPubnubAnyMessageType.Clear();
-	FOnPubnubAnyMessageTypeNative.Clear();
+	UPubnubInternalUtilities::ClearSubscriptionDelegates(this);
 
 	if (IsValid(PubnubClient))
 	{
 		RemoveRegisteredListeners();
 	}
 
-	// Drop the wrapper-cache entry while the C-Core address is still a valid
-	// map key. Doing this before pubnub_subscription_free guarantees the address
-	// cannot be reused by the allocator and silently collide with our cached entry.
 	if (IsValid(PubnubClient) && CCoreSubscription)
 	{
 		PubnubClient->UnregisterManagedSubscription(CCoreSubscription);
 	}
 
-	if(CCoreSubscription && IsValid(PubnubClient))
+	if (CCoreSubscription && IsValid(PubnubClient))
 	{
-		pubnub_subscription_free(&CCoreSubscription);
+		pubnub_subscription_destroy(CCoreSubscription);
 	}
 	CCoreSubscription = nullptr;
 
-	if(ListenerUserData)
-	{
-		delete static_cast<FPubnubInternalSubscriptionListenerUserData*>(ListenerUserData);
-		ListenerUserData = nullptr;
-	}
+	UPubnubInternalUtilities::DestroyEntityListenerUserData(ListenerUserData);
+	ListenerUserData = nullptr;
 
-	if(PubnubClient)
+	if (PubnubClient)
 	{
 		PubnubClient->OnClientDeinitializeStart.RemoveDynamic(this, &UPubnubSubscription::CleanUpSubscription);
 	}
@@ -465,11 +307,11 @@ FPubnubOperationResult UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCurs
 {
 	PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 
-	if(!CCoreSubscriptionSet)
+	if (!CCoreSubscriptionSet)
 	{
 		return FPubnubOperationResult({0, true, TEXT("CCoreSubscriptionSet is invalid.")});
 	}
-	
+
 	if (bIsSubscribed)
 	{
 		return FPubnubOperationResult({0, true, TEXT("SubscriptionSet is already subscribed.")});
@@ -492,19 +334,19 @@ void UPubnubSubscriptionSet::SubscribeAsync(FOnPubnubSubscribeOperationResponse 
 void UPubnubSubscriptionSet::SubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback, FPubnubSubscriptionCursor Cursor)
 {
 	PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(NativeCallback);
-	
-	if(!CCoreSubscriptionSet)
+
+	if (!CCoreSubscriptionSet)
 	{
 		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscriptionSet is invalid."));
 		return;
 	}
-	
+
 	if (bIsSubscribed)
 	{
 		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("SubscriptionSet is already subscribed."));
 		return;
 	}
-	
+
 	PubnubClient->SubscribeWithSubscriptionSetAsync(this, Cursor, NativeCallback);
 }
 
@@ -516,17 +358,17 @@ void UPubnubSubscriptionSet::SubscribeAsync(FPubnubSubscriptionCursor Cursor)
 FPubnubOperationResult UPubnubSubscriptionSet::Unsubscribe()
 {
 	PUBNUB_ENTITY_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
-	
-	if(!CCoreSubscriptionSet)
+
+	if (!CCoreSubscriptionSet)
 	{
 		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscriptionSet is invalid.")});
 	}
-	
+
 	if (!bIsSubscribed)
 	{
 		return FPubnubOperationResult({0, true, TEXT("SubscriptionSet is not subscribed")});
 	}
-	
+
 	return PubnubClient->UnsubscribeWithSubscriptionSet(this);
 }
 
@@ -544,159 +386,186 @@ void UPubnubSubscriptionSet::UnsubscribeAsync(FOnPubnubSubscribeOperationRespons
 void UPubnubSubscriptionSet::UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback)
 {
 	PUBNUB_ENTITY_ENSURE_CLIENT_INITIALIZED(NativeCallback);
-	
-	if(!CCoreSubscriptionSet)
+
+	if (!CCoreSubscriptionSet)
 	{
 		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscriptionSet is invalid."));
 		return;
 	}
-	
+
 	if (!bIsSubscribed)
 	{
 		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("SubscriptionSet is not subscribed."));
 		return;
 	}
 
-
 	PubnubClient->UnsubscribeWithSubscriptionSetAsync(this, NativeCallback);
 }
 
 void UPubnubSubscriptionSet::AddSubscription(UPubnubSubscription* Subscription)
 {
-	if(!IsInitialized)
+	if (!IsInitialized)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 
-	if(!CCoreSubscriptionSet)
+	if (!CCoreSubscriptionSet)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: internal C-Core subscription set is invalid."));
 		return;
 	}
 
-	if(!Subscription)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Can't add invalid subscription."));
-		return;
-	}
-
-	if(!Subscription->CCoreSubscription)
+	if (!Subscription || !Subscription->CCoreSubscription)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
 		return;
 	}
 
-	Subscriptions.Add(Subscription);
+	const pubnub_res_t AddResult = pubnub_subscription_set_add_subscription(CCoreSubscriptionSet, Subscription->CCoreSubscription);
+	if (AddResult != PUBNUB_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: failed to add subscription. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(AddResult)));
+		return;
+	}
 
-	pubnub_subscription_set_add(CCoreSubscriptionSet, Subscription->CCoreSubscription);
+	Subscriptions.AddUnique(Subscription);
 }
 
 void UPubnubSubscriptionSet::RemoveSubscription(UPubnubSubscription* Subscription)
 {
-	if(!IsInitialized)
+	if (!IsInitialized)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 
-	if(!CCoreSubscriptionSet)
+	if (!CCoreSubscriptionSet)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: internal C-Core subscription set is invalid."));
 		return;
 	}
 
-	if(!Subscription)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: Can't remove invalid subscription."));
-		return;
-	}
-
-	if(!Subscription->CCoreSubscription)
+	if (!Subscription || !Subscription->CCoreSubscription)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
 		return;
 	}
 
-	Subscriptions.Remove(Subscription);
+	const pubnub_res_t RemoveResult = pubnub_subscription_set_remove_subscription(CCoreSubscriptionSet, Subscription->CCoreSubscription);
+	if (RemoveResult != PUBNUB_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: failed to remove subscription. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(RemoveResult)));
+		return;
+	}
 
-	pubnub_subscription_set_remove(CCoreSubscriptionSet, &Subscription->CCoreSubscription);
+	Subscriptions.Remove(Subscription);
 }
 
 void UPubnubSubscriptionSet::AddSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet)
 {
-	if(!IsInitialized)
+	if (!IsInitialized)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 
-	if(!CCoreSubscriptionSet)
+	if (!CCoreSubscriptionSet || !SubscriptionSet || !SubscriptionSet->CCoreSubscriptionSet)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: internal C-Core subscription set is invalid."));
 		return;
 	}
 
-	if(!SubscriptionSet)
+	const pubnub_res_t AddResult = pubnub_subscription_set_add_subscription_set(CCoreSubscriptionSet, SubscriptionSet->CCoreSubscriptionSet);
+	if (AddResult != PUBNUB_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: Can't add invalid subscription set."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: failed to merge subscription set. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(AddResult)));
 		return;
 	}
 
-	if(!SubscriptionSet->CCoreSubscriptionSet)
+	for (UPubnubSubscription* Subscription : SubscriptionSet->Subscriptions)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: Provided Subscription Set's internal C-Core subscription set is invalid."));
-		return;
+		Subscriptions.AddUnique(Subscription);
 	}
-
-	pubnub_subscription_set_union(CCoreSubscriptionSet, SubscriptionSet->CCoreSubscriptionSet);
 }
 
 void UPubnubSubscriptionSet::RemoveSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet)
 {
-	if(!IsInitialized)
+	if (!IsInitialized)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: This SubscriptionSet is invalid. Probably PubnubClient was deinitialized. Initialize it again and create new subscription."));
 		return;
 	}
 
-	if(!CCoreSubscriptionSet)
+	if (!CCoreSubscriptionSet || !SubscriptionSet || !SubscriptionSet->CCoreSubscriptionSet)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: internal C-Core subscription set is invalid."));
 		return;
 	}
 
-	if(!SubscriptionSet)
+	const pubnub_res_t RemoveResult = pubnub_subscription_set_remove_subscription_set(CCoreSubscriptionSet, SubscriptionSet->CCoreSubscriptionSet);
+	if (RemoveResult != PUBNUB_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: Can't remove invalid subscription set."));
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: failed to subtract subscription set. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(RemoveResult)));
 		return;
 	}
 
-	if(!SubscriptionSet->CCoreSubscriptionSet)
+	for (UPubnubSubscription* Subscription : SubscriptionSet->Subscriptions)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: Provided Subscription Set's internal C-Core subscription set is invalid."));
-		return;
+		Subscriptions.Remove(Subscription);
 	}
-
-	pubnub_subscription_set_subtract(CCoreSubscriptionSet, SubscriptionSet->CCoreSubscriptionSet);
 }
 
 void UPubnubSubscriptionSet::InitSubscriptionSet(UPubnubClient* InPubnubClient, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings)
 {
-	if(Channels.IsEmpty() && ChannelGroups.IsEmpty())
+	InitSubscriptionSet(InPubnubClient, Channels, ChannelGroups, TArray<FString>(), TArray<FString>(), InSubscribeSettings);
+}
+
+void UPubnubSubscriptionSet::InitSubscriptionSet(UPubnubClient* InPubnubClient, TArray<FString> Channels, TArray<FString> ChannelGroups, TArray<FString> ChannelMetadataIds, TArray<FString> UserMetadataIds, FPubnubSubscribeSettings InSubscribeSettings)
+{
+	if (!InPubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, at least one Channel or ChannelGroup is needed."));
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, PubnubClient is invalid."));
 		return;
 	}
+	if (Channels.IsEmpty() && ChannelGroups.IsEmpty() && ChannelMetadataIds.IsEmpty() && UserMetadataIds.IsEmpty())
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, at least one entity is needed."));
+		return;
+	}
+
+	pubnub_subscription_set_t SubscriptionSet = UPubnubInternalUtilities::CreateCCoreSubscriptionSet(InPubnubClient->pubnub_context);
+	if (!SubscriptionSet)
+	{
+		return;
+	}
+
+	auto AddIds = [&](const TArray<FString>& Ids, EPubnubEntityType EntityType) -> bool
+	{
+		for (const FString& Id : Ids)
+		{
+			if (!UPubnubInternalUtilities::AddEntityToCCoreSubscriptionSet(InPubnubClient->pubnub_context, SubscriptionSet, Id, EntityType, InSubscribeSettings))
+			{
+				return false;
+			}
+		}
+		return true;
+	};
+
+	const bool bAdded = AddIds(Channels, EPubnubEntityType::PEnT_Channel)
+		&& AddIds(ChannelGroups, EPubnubEntityType::PEnT_ChannelGroup)
+		&& AddIds(ChannelMetadataIds, EPubnubEntityType::PEnT_ChannelMetadata)
+		&& AddIds(UserMetadataIds, EPubnubEntityType::PEnT_UserMetadata);
+	if (!bAdded)
+	{
+		pubnub_subscription_set_destroy(SubscriptionSet);
+		return;
+	}
+
 	PubnubClient = InPubnubClient;
-	CCoreSubscriptionSet = UPubnubInternalUtilities::EEGetSubscriptionSetForEntities(InPubnubClient->ctx_ee, Channels, ChannelGroups, InSubscribeSettings);
-
+	CCoreSubscriptionSet = SubscriptionSet;
 	InternalInit();
-
-	// Register as the canonical UE wrapper for this C-Core subscription set so
-	// that GetActiveSubscriptionSets returns this very wrapper rather than
-	// constructing a duplicate that would race for ownership at deinit.
-	if (IsValid(InPubnubClient))
+	if (IsInitialized)
 	{
 		InPubnubClient->RegisterManagedSubscriptionSet(CCoreSubscriptionSet, this);
 	}
@@ -704,41 +573,57 @@ void UPubnubSubscriptionSet::InitSubscriptionSet(UPubnubClient* InPubnubClient, 
 
 void UPubnubSubscriptionSet::InitWithSubscriptions(UPubnubClient* InPubnubClient, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2)
 {
-	if(!Subscription1 || !Subscription2 || !Subscription1->CCoreSubscription || !Subscription2->CCoreSubscription)
+	if (!InPubnubClient || !Subscription1 || !Subscription2 || !Subscription1->CCoreSubscription || !Subscription2->CCoreSubscription)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, One of provided subscriptions is invalid."));
 		return;
 	}
 
-	PubnubClient = InPubnubClient;
+	pubnub_subscription_set_t SubscriptionSet = UPubnubInternalUtilities::CreateCCoreSubscriptionSet(InPubnubClient->pubnub_context);
+	if (!SubscriptionSet)
+	{
+		return;
+	}
 
-	CCoreSubscriptionSet = pubnub_subscription_set_alloc_with_subscriptions(Subscription1->CCoreSubscription, Subscription2->CCoreSubscription, nullptr);
+	const pubnub_res_t FirstAdd = pubnub_subscription_set_add_subscription(SubscriptionSet, Subscription1->CCoreSubscription);
+	const pubnub_res_t SecondAdd = FirstAdd == PUBNUB_OK
+		? pubnub_subscription_set_add_subscription(SubscriptionSet, Subscription2->CCoreSubscription)
+		: FirstAdd;
+	if (SecondAdd != PUBNUB_OK)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(SecondAdd)));
+		pubnub_subscription_set_destroy(SubscriptionSet);
+		return;
+	}
+
+	PubnubClient = InPubnubClient;
+	CCoreSubscriptionSet = SubscriptionSet;
 	Subscriptions.Add(Subscription1);
 	Subscriptions.Add(Subscription2);
-
 	InternalInit();
-
-	if (IsValid(InPubnubClient))
+	if (IsInitialized)
 	{
 		InPubnubClient->RegisterManagedSubscriptionSet(CCoreSubscriptionSet, this);
 	}
 }
 
-void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubClient* InPubnubClient, pubnub_subscription_set_t* InCCoreSubscriptionSet)
+void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubClient* InPubnubClient, pubnub_subscription_set_t InCCoreSubscriptionSet)
 {
-	if(!InCCoreSubscriptionSet)
+	if (!InPubnubClient)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, PubnubClient is invalid."));
+		return;
+	}
+	if (!InCCoreSubscriptionSet)
 	{
 		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, InCCoreSubscriptionSet is invalid."));
 		return;
 	}
+
 	PubnubClient = InPubnubClient;
 	CCoreSubscriptionSet = InCCoreSubscriptionSet;
-
 	InternalInit();
-
-	// Defensive registration; today GetActiveSubscriptionSets only constructs
-	// fresh wrappers via this Init path when no canonical wrapper is cached.
-	if (IsValid(InPubnubClient))
+	if (IsInitialized)
 	{
 		InPubnubClient->RegisterManagedSubscriptionSet(CCoreSubscriptionSet, this);
 	}
@@ -746,261 +631,59 @@ void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubClient* InPubnu
 
 void UPubnubSubscriptionSet::InternalInit()
 {
-	// Set weak pointer to this object in the heap payload
-	FPubnubInternalSubscriptionSetListenerUserData* UserData = new FPubnubInternalSubscriptionSetListenerUserData();
-	UserData->WeakSubscriptionSet = this;
-	ListenerUserData = UserData;
-
-	// Create callbacks for each Listener type
-
-	// Messages and Presence
-	pubnub_subscribe_message_callback_t CallbackMessages = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
+	ListenerUserData = UPubnubInternalUtilities::CreateEntityListenerUserData(this, PubnubClient ? PubnubClient->pubnub_context : nullptr);
+	ListenerHandle = UPubnubInternalUtilities::AddEntitySubscriptionSetListener(CCoreSubscriptionSet, ListenerUserData);
+	if (ListenerHandle == PUBNUB_LISTENER_HANDLE_INVALID)
 	{
-		if(!user_data)
-		{return;}
-		
-		FPubnubInternalSubscriptionSetListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(user_data);
-		TWeakObjectPtr<UPubnubSubscriptionSet> SubscriptionWeak = ListenerUserDataPtr->WeakSubscriptionSet;
-		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
-		{
-			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
-			{
-				// In C-Core there is no separate listener for Presence Events. They come together with published messages.
-				// So we check if it's Presence Event here and choose equivalent delegates to call
-				// Check IsInitialized before each broadcast to prevent race conditions during destruction
-				if(MessageData.Channel.Contains("-pnpres"))
-				{
-					// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
-					if(S->IsInitialized)
-					{
-						S->OnPubnubPresenceEvent.Broadcast(MessageData);
-					}
-					if(S->IsInitialized)
-					{
-						S->OnPubnubPresenceEventNative.Broadcast(MessageData);
-					}
-				}
-				else
-				{
-					if(S->IsInitialized)
-					{
-						S->OnPubnubMessage.Broadcast(MessageData);
-					}
-					if(S->IsInitialized)
-					{
-						S->OnPubnubMessageNative.Broadcast(MessageData);
-					}
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
-				}
-			}
-		});
-	};
+		UE_LOG(PubnubLog, Error, TEXT("Failed to register subscription set listener."));
+		UPubnubInternalUtilities::DestroyEntityListenerUserData(ListenerUserData);
+		ListenerUserData = nullptr;
+		pubnub_subscription_set_destroy(CCoreSubscriptionSet);
+		CCoreSubscriptionSet = nullptr;
+		return;
+	}
 
-	// Signals
-	pubnub_subscribe_message_callback_t CallbackSignals = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
-	{
-		if(!user_data)
-		{return;}
-		
-		FPubnubInternalSubscriptionSetListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(user_data);
-		TWeakObjectPtr<UPubnubSubscriptionSet> SubscriptionWeak = ListenerUserDataPtr->WeakSubscriptionSet;
-		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
-		{
-			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
-			{
-				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
-				if(S->IsInitialized)
-				{
-					S->OnPubnubSignal.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->OnPubnubSignalNative.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
-				}
-			}
-		});
-	};
-
-	// Objects (App Context)
-	pubnub_subscribe_message_callback_t CallbackObjects = +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
-	{
-		if(!user_data)
-		{return;}
-		
-		FPubnubInternalSubscriptionSetListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(user_data);
-		TWeakObjectPtr<UPubnubSubscriptionSet> SubscriptionWeak = ListenerUserDataPtr->WeakSubscriptionSet;
-		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
-		{
-			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
-			{
-				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
-				if(S->IsInitialized)
-				{
-					S->OnPubnubObjectEvent.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->OnPubnubObjectEventNative.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
-				}
-			}
-		});
-	};
-
-	// Message Actions
-	pubnub_subscribe_message_callback_t CallbackMessageActions= +[](const pubnub_t* pb, struct pubnub_v2_message message, void* user_data)
-	{
-		if(!user_data)
-		{return;}
-		
-		FPubnubInternalSubscriptionSetListenerUserData* ListenerUserDataPtr = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(user_data);
-		TWeakObjectPtr<UPubnubSubscriptionSet> SubscriptionWeak = ListenerUserDataPtr->WeakSubscriptionSet;
-		FPubnubMessageData MessageData = UPubnubUtilities::UEMessageFromPubnubMessage(message); 
-		AsyncTask(ENamedThreads::GameThread, [MessageData, SubscriptionWeak]()
-		{
-			if (UPubnubSubscriptionSet* S = SubscriptionWeak.Get(); IsValid(S) && S->IsInitialized)
-			{
-				// Subscription could be deinitialized from user's logic on any of these calls, so we need to check IsInitialized for every broadcast
-				if(S->IsInitialized)
-				{
-					S->OnPubnubMessageAction.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->OnPubnubMessageActionNative.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageType.Broadcast(MessageData);
-				}
-				if(S->IsInitialized)
-				{
-					S->FOnPubnubAnyMessageTypeNative.Broadcast(MessageData);
-				}
-			}
-		});
-	};
-
-	UserData->MessageCb = CallbackMessages;
-	UserData->SignalCb = CallbackSignals;
-	UserData->ObjectsCb = CallbackObjects;
-	UserData->MessageActionCb = CallbackMessageActions;
-
-	// Register created callback in subscription set
-	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessages, EPubnubListenerType::PLT_Message, ListenerUserData);
-	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackSignals, EPubnubListenerType::PLT_Signal, ListenerUserData);
-	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackObjects, EPubnubListenerType::PLT_Objects, ListenerUserData);
-	UPubnubInternalUtilities::EEAddSubscriptionSetListenerOfType(CCoreSubscriptionSet, CallbackMessageActions, EPubnubListenerType::PLT_MessageAction, ListenerUserData);
-
-	// Bind to deinitialize start so subscription C-Core resources are released
 	PubnubClient->OnClientDeinitializeStart.AddDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
-
-	//Now we are fully initialized
 	IsInitialized = true;
 }
 
 void UPubnubSubscriptionSet::RemoveRegisteredListeners()
 {
-	if (!CCoreSubscriptionSet || !ListenerUserData)
-	{
-		return;
-	}
-
-	auto* UD = static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(ListenerUserData);
-
-	auto TryRemove =
-		[this](EPubnubListenerType UEType, pubnub_subscribe_message_callback_t Fn)
-	{
-		if (!Fn)
-		{
-			return;
-		}
-		const pubnub_subscribe_listener_type CoreType =
-			static_cast<pubnub_subscribe_listener_type>(static_cast<uint8>(UEType));
-		pubnub_subscribe_remove_subscription_set_listener(CCoreSubscriptionSet, CoreType, Fn, ListenerUserData);
-	};
-
-	TryRemove(EPubnubListenerType::PLT_Message, UD->MessageCb);
-	TryRemove(EPubnubListenerType::PLT_Signal, UD->SignalCb);
-	TryRemove(EPubnubListenerType::PLT_MessageAction, UD->MessageActionCb);
-	TryRemove(EPubnubListenerType::PLT_Objects, UD->ObjectsCb);
+	UPubnubInternalUtilities::RemoveEntitySubscriptionSetListener(CCoreSubscriptionSet, ListenerHandle);
+	ListenerHandle = PUBNUB_LISTENER_HANDLE_INVALID;
 }
 
 void UPubnubSubscriptionSet::CleanUpSubscription()
 {
-	if(!IsInitialized) {return;}
+	if (!IsInitialized)
+	{
+		return;
+	}
 
-	// Set IsInitialized to false FIRST to prevent any pending async tasks from broadcasting
 	IsInitialized = false;
 	bIsSubscribed = false;
-
-	// Clear all delegates to prevent broadcasting during destruction
-	// This must be done after setting IsInitialized = false so queued async tasks will skip broadcasting
-	OnPubnubMessage.Clear();
-	OnPubnubMessageNative.Clear();
-	OnPubnubSignal.Clear();
-	OnPubnubSignalNative.Clear();
-	OnPubnubPresenceEvent.Clear();
-	OnPubnubPresenceEventNative.Clear();
-	OnPubnubObjectEvent.Clear();
-	OnPubnubObjectEventNative.Clear();
-	OnPubnubMessageAction.Clear();
-	OnPubnubMessageActionNative.Clear();
-	FOnPubnubAnyMessageType.Clear();
-	FOnPubnubAnyMessageTypeNative.Clear();
+	UPubnubInternalUtilities::ClearSubscriptionDelegates(this);
 
 	if (IsValid(PubnubClient))
 	{
 		RemoveRegisteredListeners();
 	}
 
-	// Drop the wrapper-cache entry while the C-Core address is still a valid
-	// map key. Doing this before pubnub_subscription_set_free guarantees the
-	// address cannot be reused by the allocator and silently collide with our
-	// cached entry.
 	if (IsValid(PubnubClient) && CCoreSubscriptionSet)
 	{
 		PubnubClient->UnregisterManagedSubscriptionSet(CCoreSubscriptionSet);
 	}
 
-	if(CCoreSubscriptionSet && IsValid(PubnubClient))
+	if (CCoreSubscriptionSet && IsValid(PubnubClient))
 	{
-		pubnub_subscription_set_free(&CCoreSubscriptionSet);
+		pubnub_subscription_set_destroy(CCoreSubscriptionSet);
 	}
 	CCoreSubscriptionSet = nullptr;
 
-	if(ListenerUserData)
-	{
-		delete static_cast<FPubnubInternalSubscriptionSetListenerUserData*>(ListenerUserData);
-		ListenerUserData = nullptr;
-	}
+	UPubnubInternalUtilities::DestroyEntityListenerUserData(ListenerUserData);
+	ListenerUserData = nullptr;
 
-	if(PubnubClient)
+	if (PubnubClient)
 	{
 		PubnubClient->OnClientDeinitializeStart.RemoveDynamic(this, &UPubnubSubscriptionSet::CleanUpSubscription);
 	}

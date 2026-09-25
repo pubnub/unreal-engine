@@ -33,7 +33,7 @@ public:
 	void ListUsersFromChannelSample();
 
 	UFUNCTION()
-	void OnListUsersFromChannelResponse_Simple(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data);
+	void OnListUsersFromChannelResponse_Simple(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels);
 
 	// snippet.list_users_from_channel_with_settings
 	// blueprint._b89ktgr
@@ -41,7 +41,7 @@ public:
 	void ListUsersFromChannelWithSettingsSample();
 
 	UFUNCTION()
-	void OnListUsersFromChannelResponse_WithSettings(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data);
+	void OnListUsersFromChannelResponse_WithSettings(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels);
 
 	// snippet.list_users_from_channel_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
@@ -87,7 +87,7 @@ public:
 	void GetStateSample();
 
 	UFUNCTION()
-	void OnGetStateResponse_Simple(FPubnubOperationResult Result, FString StateResponse);
+	void OnGetStateResponse_Simple(FPubnubOperationResult Result, const TArray<FPubnubUserStateOnChannel>& States);
 	
 	// snippet.get_state_with_lambda
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")

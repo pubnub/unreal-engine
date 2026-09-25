@@ -152,7 +152,7 @@ void ASample_Configuration::ListUsersFromChannelSample()
 }
 
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-void ASample_Configuration::OnListUsersFromChannelResponse(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data)
+void ASample_Configuration::OnListUsersFromChannelResponse(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
 {
 	if(Result.Error)
 	{
@@ -160,7 +160,7 @@ void ASample_Configuration::OnListUsersFromChannelResponse(FPubnubOperationResul
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Data.Occupancy);
+		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), TotalOccupancy);
 	}
 }
 
@@ -176,7 +176,7 @@ void ASample_Configuration::ListUsersFromChannelLambdaSample()
 
 	// Bind lambda to response delegate
 	FOnPubnubListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
-	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubListUsersFromChannelWrapper& Data)
+	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
 	{
 		if(Result.Error)
 		{
@@ -184,7 +184,7 @@ void ASample_Configuration::ListUsersFromChannelLambdaSample()
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Data.Occupancy);
+			UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), TotalOccupancy);
 		}
 	});
 	

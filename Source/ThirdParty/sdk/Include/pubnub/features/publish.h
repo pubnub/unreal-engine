@@ -11,6 +11,7 @@
 #include "pubnub/error.h"
 #include "pubnub/future.h"
 #include "pubnub/providers/serialization.h"
+#include "pubnub/pubnub_compat.h"
 #include "pubnub/types.h"
 
 #include <stddef.h>
@@ -39,6 +40,19 @@ typedef enum pubnub_publish_method {
     /** Message as part of request body. */
     PUBNUB_PUBLISH_METHOD_POST
 } pubnub_publish_method_t;
+
+/** Request-body compression preference. */
+typedef enum pubnub_publish_compress {
+    /**
+     * Follow the compile-time @c PUBNUB_ENABLE_REQUEST_COMPRESSION
+     * toggle (@b default).
+     */
+    PUBNUB_PUBLISH_COMPRESS_DEFAULT = 0,
+    /** Compress the request body. */
+    PUBNUB_PUBLISH_COMPRESS_YES,
+    /** Send the request body uncompressed. */
+    PUBNUB_PUBLISH_COMPRESS_NO
+} pubnub_publish_compress_t;
 
 /**
  * @brief Options for @c pubnub_publish.
@@ -117,12 +131,55 @@ typedef struct pubnub_publish_opts {
      * With the @c PUBNUB_PUBLISH_METHOD_POST, the messages could reach the
      * PubNub message size limit only because of encryption, which makes it
      * lengthier.
-     * If the @c PUBNUB_ENABLE_COMPRESSION flag is set to @c ON, message
-     * transfer might be faster, but it will cost more CPU and memory.
+     * If the @c PUBNUB_ENABLE_REQUEST_COMPRESSION flag is set to @c ON,
+     * message transfer might be faster, but it will cost more CPU and
+     * memory.
      *
      * @b Default: @c PUBNUB_PUBLISH_METHOD_GET.
+     *
+     * @see compress
      */
     pubnub_publish_method_t method;
+
+    /**
+     * @brief Request-body compression preference.
+     *
+     * @b Default: @c PUBNUB_PUBLISH_COMPRESS_DEFAULT, which follows the
+     * compile-time @c PUBNUB_ENABLE_REQUEST_COMPRESSION toggle. Set
+     * @c PUBNUB_PUBLISH_COMPRESS_NO to opt a single request out of
+     * compression, or @c PUBNUB_PUBLISH_COMPRESS_YES to state the intent
+     * explicitly.
+     *
+     * Only requests that carry a body can be compressed, so this field
+     * takes effect only when @c method is @c PUBNUB_PUBLISH_METHOD_POST.
+     * It is ignored for @c PUBNUB_PUBLISH_METHOD_GET, which encodes the
+     * message into the URL path and therefore has no body to compress —
+     * set @c method to @c PUBNUB_PUBLISH_METHOD_POST to compress.
+     *
+     * When compression applies, the body is gzip-encoded and the request
+     * carries a @c Content-Encoding:gzip header.
+     *
+     * @note Requesting @c PUBNUB_PUBLISH_COMPRESS_YES has no effect when
+     *       the SDK is built with @c PUBNUB_ENABLE_REQUEST_COMPRESSION
+     *       disabled; the body is sent uncompressed. Publishing still
+     *       succeeds — the request is never rejected for this reason.
+     * @note Compression trades CPU and memory for a smaller request body.
+     *       It pays off for large JSON payloads and costs more than it
+     *       saves for small ones. On memory-constrained targets, prefer
+     *       @c PUBNUB_PUBLISH_COMPRESS_NO (or build with the toggle off)
+     *       unless payloads are large enough to earn back the compressor's
+     *       working buffers.
+     * @note Compression is best-effort. When every compression slot is
+     *       already in use by concurrent requests, the body is sent
+     *       uncompressed rather than failing or blocking.
+     * @note @c PUBNUB_PUBLISH_COMPRESS_YES does not switch @c method to
+     *       @c PUBNUB_PUBLISH_METHOD_POST for you. A GET publish stays a
+     *       GET publish and is sent uncompressed.
+     */
+    /* 4-byte width for API symmetry with the adjacent store/method
+     * tri-state enums; it lands in existing padding (see the size
+     * assertion below), so a narrower type would not shrink the struct. */
+    pubnub_publish_compress_t compress;
 
     /**
      * @brief Message persistence.
@@ -190,7 +247,22 @@ typedef struct pubnub_publish_opts {
     uint32_t timeout_ms;
 } pubnub_publish_opts_t;
 
-/** @brief Zero-initialize publish options with protocol-correct defaults. */
+/* Callers put this struct on the stack, so its growth is a per-call-site
+ * stack cost. 52 bytes on ILP32, 88 on LP64 — the bound is the larger of
+ * the two so a future field addition trips the build instead of silently
+ * growing caller stack. */
+PUBNUB_STATIC_ASSERT(sizeof(pubnub_publish_opts_t) <= 88U,
+                     "pubnub_publish_opts_t grew beyond its stack budget");
+
+/**
+ * @brief Zero-initialize publish options with protocol-correct defaults.
+ *
+ * Every default is the zero value, so a designated initializer such as
+ * @c &(pubnub_publish_opts_t){ .channel = "ch", .message = "1" } is
+ * equivalent. In particular @c compress defaults to
+ * @c PUBNUB_PUBLISH_COMPRESS_DEFAULT, which follows the compile-time
+ * @c PUBNUB_ENABLE_REQUEST_COMPRESSION toggle.
+ */
 #define PUBNUB_PUBLISH_OPTS_INIT {0}
 
 /**

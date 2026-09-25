@@ -10,11 +10,7 @@ UENUM(BlueprintType)
 enum class EPubnubPublishMethod : uint8
 {
 	PPM_SendViaGET				UMETA(DisplayName="SendViaGET"),
-	PPM_SendViaPOST				UMETA(DisplayName="SendViaPOST"),
-	PPM_UsePATCH				UMETA(DisplayName="UsePATCH"),
-	PPM_SendViaPOSTwithGZIP		UMETA(DisplayName="SendViaPOSTwithGZIP"),
-	PPM_UsePATCHwithGZIP		UMETA(DisplayName="UsePATCHwithGZIP"),
-	PPM_UseDELETE				UMETA(DisplayName="UseDELETE")
+	PPM_SendViaPOST				UMETA(DisplayName="SendViaPOST")
 };
 
 UENUM(BlueprintType)

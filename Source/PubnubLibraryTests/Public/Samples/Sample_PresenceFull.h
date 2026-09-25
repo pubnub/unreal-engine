@@ -28,10 +28,10 @@ public:
 	void OnSetStateResponse(FPubnubOperationResult Result);
 
 	UFUNCTION()
-	void OnListUsersFromChannelResponse(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data);
+	void OnListUsersFromChannelResponse(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels);
 
 	UFUNCTION()
-	void OnGetStateResponse(FPubnubOperationResult Result, FString StateResponse);
+	void OnGetStateResponse(FPubnubOperationResult Result, const TArray<FPubnubUserStateOnChannel>& States);
 	
 private:
 	UPROPERTY()

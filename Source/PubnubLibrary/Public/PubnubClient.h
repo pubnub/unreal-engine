@@ -7,13 +7,11 @@
 #include "PubnubStructLibrary.h"
 #include "PubnubEnumLibrary.h"
 #include "PubnubSubsystem.h"
-#include "Crypto/PubnubCryptorInterface.h"
 #include "Interfaces/PubnubLoggerInterface.h"
 #include <atomic>
 #include "PubnubClient.generated.h"
 
 class UPubnubSubsystem;
-class UPubnubCryptoBridge;
 class FPubnubFunctionThread;
 class UPubnubSubscription;
 class UPubnubSubscriptionSet;
@@ -24,16 +22,20 @@ class UPubnubChannelMetadataEntity;
 class UPubnubUserMetadataEntity;
 class UPubnubDefaultLogger;
 class UPubnubLogManager;
-struct CCoreSubscriptionCallback;
 
-struct pubnub_;
-typedef struct pubnub_ pubnub_t;
-struct pubnub_logger;
-typedef struct pubnub_logger pubnub_logger_t;
+struct pubnub_context;
+typedef struct pubnub_context pubnub_context_t;
 struct pubnub_subscription;
-typedef struct pubnub_subscription pubnub_subscription_t;
+typedef struct pubnub_subscription* pubnub_subscription_t;
 struct pubnub_subscription_set;
-typedef struct pubnub_subscription_set pubnub_subscription_set_t;
+typedef struct pubnub_subscription_set* pubnub_subscription_set_t;
+struct pubnub_subscribe_status_event;
+typedef struct pubnub_subscribe_status_event pubnub_subscribe_status_event_t;
+struct pubnub_subscribe_event;
+typedef struct pubnub_subscribe_event pubnub_subscribe_event_t;
+typedef uint16_t pubnub_listener_handle_t;
+struct pubnub_future;
+typedef struct pubnub_future pubnub_future_t;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPubnubClientDeinitialized);
@@ -62,12 +64,12 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubRemoveChannelGroupResponse, FPubnubOp
 DECLARE_DELEGATE_OneParam(FOnPubnubRemoveChannelGroupResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubListUsersSubscribedChannelsResponse, FPubnubOperationResult, Result, const TArray<FString>&, Channels);
 DECLARE_DELEGATE_TwoParams(FOnPubnubListUsersSubscribedChannelsResponseNative, const FPubnubOperationResult& Result, const TArray<FString>& Channels);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubListUsersFromChannelResponse, FPubnubOperationResult, Result, FPubnubListUsersFromChannelWrapper, Data);
-DECLARE_DELEGATE_TwoParams(FOnPubnubListUsersFromChannelResponseNative, const FPubnubOperationResult& Result, const FPubnubListUsersFromChannelWrapper& Data);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnPubnubListUsersFromChannelResponse, FPubnubOperationResult, Result, int, TotalOccupancy, int, TotalChannels, const TArray<FPubnubUsersFromChannel>&, Channels);
+DECLARE_DELEGATE_FourParams(FOnPubnubListUsersFromChannelResponseNative, const FPubnubOperationResult& Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubSetStateResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnPubnubSetStateResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubGetStateResponse, FPubnubOperationResult, Result, FString, StateResponse);
-DECLARE_DELEGATE_TwoParams(FOnPubnubGetStateResponseNative, const FPubnubOperationResult& Result, FString StateResponse);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubGetStateResponse, FPubnubOperationResult, Result, const TArray<FPubnubUserStateOnChannel>&, States);
+DECLARE_DELEGATE_TwoParams(FOnPubnubGetStateResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubUserStateOnChannel>& States);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubGrantTokenResponse, FPubnubOperationResult, Result, FString, Token);
 DECLARE_DELEGATE_TwoParams(FOnPubnubGrantTokenResponseNative, const FPubnubOperationResult& Result, FString Token);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubRevokeTokenResponse, FPubnubOperationResult, Result);
@@ -180,7 +182,7 @@ public:
 	 * @param UserID The user ID to set.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|General")
-	void SetUserID(FString UserID);
+	FPubnubOperationResult SetUserID(FString UserID);
 
 	/**
 	 * Gets the current user ID.
@@ -190,16 +192,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|General")
 	FString GetUserID();
 
-	/**
-	 * Applies the Secret Key from this client's FPubnubConfig to the underlying SDK context.
-	 * Server/admin use only — never call this in shipped game clients.
-	 * Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager|Server Only")
-	void SetSecretKey();
-
 	
-
+	
 	/* PUBSUB API */
 
 	/**
@@ -244,7 +238,7 @@ public:
 	 */
 	void PublishMessageAsync(FString Channel, FString Message, FPubnubPublishSettings PublishSettings);
 
-
+	
 	/**
 	 * Sends a signal to a specified channel synchronously.
 	 * 
@@ -286,11 +280,14 @@ public:
 	 * @param SignalSettings Optional settings for the signal operation. See FPubnubSignalSettings for more details.
 	 */
 	void SignalAsync(FString Channel, FString Message, FPubnubSignalSettings SignalSettings);
-
+	
 	
 	/**
 	 * Subscribes to a specified channel synchronously - start listening for messages on that channel.
 	 * Use OnMessageReceived Callback to get those messages.
+	 *
+	 * The returned result reports local accept (subscription registered), not handshake
+	 * completion. Connection success/failure is delivered via OnSubscriptionStatusChanged.
 	 * 
 	 * @param Channel The ID of the channel to subscribe to.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
@@ -334,8 +331,11 @@ public:
 	/**
 	 * Subscribes to a specified group synchronously - start listening for messages on that group.
 	 * Use OnMessageReceived Callback to get those messages.
+	 *
+	 * The returned result reports local accept (subscription registered), not handshake
+	 * completion. Connection success/failure is delivered via OnSubscriptionStatusChanged.
 	 * 
-	 * @param ChannelGroup The name of the channel to subscribe to.
+	 * @param ChannelGroup The name of the channel group to subscribe to.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 * @return FPubnubOperationResult containing the operation result.
 	 */
@@ -346,7 +346,7 @@ public:
 	 * Subscribes to a specified group - start listening for messages on that group.
 	 * Use OnMessageReceived Callback to get those messages.
 	 * 
-	 * @param ChannelGroup The name of the channel to subscribe to.
+	 * @param ChannelGroup The name of the channel group to subscribe to.
 	 * @param OnSubscribeToGroupResponse Optional delegate to listen for the subscribe result.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
@@ -357,7 +357,7 @@ public:
 	 * Subscribes to a specified group - start listening for messages on that group.
 	 * Use OnMessageReceived Callback to get those messages.
 	 * 
-	 * @param ChannelGroup The name of the channel to subscribe to.
+	 * @param ChannelGroup The name of the channel group to subscribe to.
 	 * @param NativeCallback Optional delegate to listen for the subscribe result. Delegate in native form that can accept lambdas.
 	 *						 Can be skipped if subscribe result is not needed.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
@@ -368,7 +368,7 @@ public:
 	 * Subscribes to a specified group - start listening for messages on that group.
 	 * Use OnMessageReceived Callback to get those messages.
 	 * 
-	 * @param ChannelGroup The name of the channel to subscribe to.
+	 * @param ChannelGroup The name of the channel group to subscribe to.
 	 * @param SubscribeSettings Optional settings for the subscribe operation. See FPubnubSubscribeSettings for more details.
 	 */
 	void SubscribeToGroupAsync(FString ChannelGroup, FPubnubSubscribeSettings SubscribeSettings);
@@ -387,7 +387,7 @@ public:
 	 * Unsubscribes from a specified channel - stop listening for messages on that channel.
 	 * 
 	 * @param Channel The ID of the channel to unsubscribe from.
-     * @param OnUnsubscribeFromChannelResponse Optional delegate to listen for the unsubscribe result.
+	 * @param OnUnsubscribeFromChannelResponse Optional delegate to listen for the unsubscribe result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe", meta = (AutoCreateRefTerm = "OnUnsubscribeFromChannelResponse"))
 	void UnsubscribeFromChannelAsync(FString Channel, FOnPubnubSubscribeOperationResponse OnUnsubscribeFromChannelResponse);
@@ -457,9 +457,8 @@ public:
 	void UnsubscribeFromAllAsync(FOnPubnubSubscribeOperationResponseNative NativeCallback = nullptr);
 
 
-	
 	/* CHANNEL GROUPS API */
-	
+
 	/**
 	 * Adds a channel to a specified channel group synchronously.
 	 * 
@@ -600,7 +599,9 @@ public:
 	 */
 	void RemoveChannelGroupAsync(FString ChannelGroup, FOnPubnubRemoveChannelGroupResponseNative NativeCallback = nullptr);
 
-	
+
+	/* PRESENCE API */
+
 	/**
 	 * Lists the users currently present on a specified channel synchronously.
 	 *
@@ -608,7 +609,7 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to list users from.
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
-	 * @return FPubnubListUsersFromChannelResult containing the operation result and user data.
+	 * @return FPubnubListUsersFromChannelResult containing the operation result and users grouped by channel.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	FPubnubListUsersFromChannelResult ListUsersFromChannel(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
@@ -636,7 +637,6 @@ public:
 	 */
 	void ListUsersFromChannelAsync(FString Channel, FOnPubnubListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
 
-	
 	/**
 	 * Lists the channels that a specified user is currently subscribed to synchronously.
 	 *
@@ -669,7 +669,6 @@ public:
 	 */
 	void ListUserSubscribedChannelsAsync(FString UserID, FOnPubnubListUsersSubscribedChannelsResponseNative NativeCallback);
 
-	
 	/**
 	 * Sets the presence state for the current user on a specified channel synchronously.
 	 *
@@ -719,7 +718,6 @@ public:
 	 */
 	void SetStateAsync(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings);
 
-	
 	/**
 	 * Gets the presence state for a specified user on a specified channel synchronously.
 	 *
@@ -728,7 +726,7 @@ public:
 	 * @param Channel The ID of the channel to get the state from.
 	 * @param ChannelGroup The name of the channel group to get the state from.
 	 * @param UserID The user ID to get the state for.
-	 * @return FPubnubGetStateResult containing the operation result and state data.
+	 * @return FPubnubGetStateResult containing the operation result and user state grouped by channel.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	FPubnubGetStateResult GetState(FString Channel, FString ChannelGroup, FString UserID);
@@ -741,7 +739,7 @@ public:
 	 * @param Channel The ID of the channel to get the state from.
 	 * @param ChannelGroup The name of the channel group to get the state from.
 	 * @param UserID The user ID to get the state for.
-	 * @param OnGetStateResponse The callback function used to handle the result in JSON format.
+	 * @param OnGetStateResponse The callback function used to handle the per-channel user state.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	void GetStateAsync(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponse OnGetStateResponse);
@@ -754,35 +752,9 @@ public:
 	 * @param Channel The ID of the channel to get the state from.
 	 * @param ChannelGroup The name of the channel group to get the state from.
 	 * @param UserID The user ID to get the state for.
-	 * @param NativeCallback The callback function used to handle the result in JSON format. Delegate in native form that can accept lambdas.
+	 * @param NativeCallback The callback function used to handle the per-channel user state. Delegate in native form that can accept lambdas.
 	 */
 	void GetStateAsync(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponseNative NativeCallback);
-
-	
-	/**
-	 * This method synchronously notifies channels and channel groups about a client's presence.
-	 * You can send heartbeats to channels you are not subscribed to.
-	 * 
-	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
-	 * 
-	 * @param Channel The ID of the channel to send the heartbeat to.
-	 * @param ChannelGroup The name of the channel group to send the heartbeat to.
-	 * @return FPubnubOperationResult containing the operation result.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	FPubnubOperationResult Heartbeat(FString Channel, FString ChannelGroup);
-
-	/**
-	 * This method notifies channels and channel groups about a client's presence.
-	 * You can send heartbeats to channels you are not subscribed to.
-	 * 
-	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
-	 * 
-	 * @param Channel The ID of the channel to send the heartbeat to.
-	 * @param ChannelGroup The name of the channel group to send the heartbeat to.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
-	void HeartbeatAsync(FString Channel, FString ChannelGroup);
 
 
 
@@ -892,8 +864,7 @@ public:
 	
 	/**
 	 * Sets the PAM v3 access token for this client on the calling thread. The underlying update is
-	 * immediate (no network call), but this variant blocks the caller until the token pointer is
-	 * swapped in both C-Core contexts.
+	 * immediate (no network call). The new C-Core copies the token into the context.
 	 * Use this in shipped game clients after your backend mints a scoped token.
 	 * 
 	 * @param Token PAM v3 access token with embedded permissions, minted server-side.
@@ -915,21 +886,21 @@ public:
 	void SetAuthTokenAsync(FString Token);
 
 	/**
-	 * Sets the origin for the PubNub client.
+	 * Sets the origin hostname for subsequent PubNub requests.
+	 * An empty Origin resets the client to the compile-time default origin.
+	 * The new C-Core copies the hostname and reports success or failure as pubnub_res_t,
+	 * so this returns FPubnubOperationResult instead of the old 0 / 1 / -1 codes.
 	 * 
-	 * @param Origin The origin string to set. If empty, null will be passed to the underlying SDK.
-	 * @return Returns the result from the underlying SDK:
-	 *         - 0: Origin set successfully
-	 *         - 1: Origin set, will be applied with new connection
-	 *         - -1: Setting origin error
+	 * @param Origin The origin hostname to set. Empty resets to the default origin.
+	 * @return FPubnubOperationResult. Status 200 and Error false on success.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Config")
-	int SetOrigin(FString Origin);
+	FPubnubOperationResult SetOrigin(FString Origin);
 
 	/**
 	 * Gets the currently set origin for the PubNub client.
 	 * 
-	 * @return The origin string that was previously set, or empty string if none was set.
+	 * @return The origin hostname currently in use, including the default when none was set.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pubnub|Config")
 	FString GetOrigin() const;
@@ -1115,7 +1086,7 @@ public:
 	void MessageCountsMultipleAsync(TArray<FString> Channels, TArray<FString> Timetokens, FOnPubnubMessageCountsMultipleResponseNative NativeCallback);
 
 	/* APP CONTEXT API */
-	
+
 	/**
 	 * Returns a paginated list of User Metadata objects synchronously, optionally including the custom data object for each.
 	 * (Generally the same as GetAllUserMetadata just using raw strings as Include and Sort inputs)
@@ -1209,7 +1180,6 @@ public:
 	 * @param Page (Optional) Pagination information. Use Page.Next to get the next page or Page.Prev to get the previous page. If both are provided, Next takes precedence.
 	 */
 	void GetAllUserMetadataAsync(FOnPubnubGetAllUserMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FPubnubPage Page = FPubnubPage());
-	
 
 	/**
 	 * Sets metadata for a specified User synchronously in the PubNub App Context.
@@ -1252,7 +1222,7 @@ public:
 	 * @param Include (Optional) A comma-separated list of property names to include in the response.
 	 */
 	void SetUserMetadataRawAsync(FString User, FString UserMetadataObj, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FString Include = "");
-	
+
 	/**
 	 * Sets metadata for a specified User synchronously in the PubNub App Context.
 	 * 
@@ -1292,7 +1262,6 @@ public:
 	 */
 	void SetUserMetadataAsync(FString User, FPubnubUserInputData UserMetadata, FOnPubnubSetUserMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
-	
 	/**
 	 * Retrieves metadata for a specified User synchronously from the PubNub App Context.
 	 * 
@@ -1340,7 +1309,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
 	FPubnubUserMetadataResult GetUserMetadata(FString User, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
-	
 	/**
 	 * Retrieves metadata for a specified User from the PubNub App Context.
 	 * 
@@ -1364,7 +1332,6 @@ public:
 	 */
 	void GetUserMetadataAsync(FString User, FOnPubnubGetUserMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
-
 	/**
 	 * Removes all metadata associated with a specified User synchronously from the PubNub App Context.
 	 * 
@@ -1374,7 +1341,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|App Context")
 	FPubnubOperationResult RemoveUserMetadata(FString User);
-	
+
 	/**
 	 * Removes all metadata associated with a specified User from the PubNub App Context.
 	 * 
@@ -1397,7 +1364,6 @@ public:
 	 */
 	void RemoveUserMetadataAsync(FString User, FOnPubnubRemoveUserMetadataResponseNative NativeCallback = nullptr);
 
-	
 	/**
 	 * Returns a paginated list of Channel Metadata objects synchronously, optionally including the custom data object for each.
 	 * (Generally the same as GetAllChannelMetadata just using raw strings as Include and Sort inputs)
@@ -1492,8 +1458,6 @@ public:
 	 */
 	void GetAllChannelMetadataAsync(FOnPubnubGetAllChannelMetadataResponseNative NativeCallback, FPubnubGetAllInclude Include = FPubnubGetAllInclude(), int Limit = 100, FString Filter = "", FPubnubGetAllSort Sort = FPubnubGetAllSort(), FPubnubPage Page = FPubnubPage());
 
-
-
 	/**
 	 * Sets metadata for a specified Channel synchronously in the PubNub App Context.
 	 * (Generally the same as SetChannelMetadata just using raw string as ChannelMetadata and Include inputs)
@@ -1575,7 +1539,6 @@ public:
 	 */
 	void SetChannelMetadataAsync(FString Channel, FPubnubChannelInputData ChannelMetadata, FOnPubnubSetChannelMetadataResponseNative NativeCallback = nullptr, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
-	
 	/**
 	 * Retrieves metadata for a specified Channel synchronously from the PubNub App Context.
 	 * 
@@ -1646,7 +1609,6 @@ public:
 	 */
 	void GetChannelMetadataAsync(FString Channel, FOnPubnubGetChannelMetadataResponseNative NativeCallback, FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude());
 
-	
 	/**
 	 * Removes all metadata synchronously associated with a specified Channel from the PubNub App Context.
 	 * 
@@ -1679,7 +1641,6 @@ public:
 	 * 						 Can be skipped if operation result is not needed.
 	 */
 	void RemoveChannelMetadataAsync(FString Channel, FOnPubnubRemoveChannelMetadataResponseNative NativeCallback = nullptr);
-
 
 	/**
 	 * Retrieves a list of memberships for a specified User synchronously in the PubNub App Context.
@@ -2348,8 +2309,6 @@ public:
 	 */
 	void RemoveChannelMembersAsync(FString Channel, TArray<FString> Users, FOnPubnubRemoveChannelMembersResponseNative NativeCallback = nullptr, FPubnubMemberInclude Include = FPubnubMemberInclude(), int Limit = 100, FString Filter = "", FPubnubMemberSort Sort = FPubnubMemberSort(), FPubnubPage Page = FPubnubPage());
 
-
-
 	/* MESSAGE ACTIONS API */
 	
 	/**
@@ -2468,21 +2427,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscribe")
 	FPubnubOperationResult DisconnectSubscriptions();
 
-	/** Sets the provider-level crypto module to use for PubNub.
-	 *
-	 * Expects an object implementing IPubnubCryptoProviderInterface.
-	 * Use UPubnubCryptoModule for default PubNub encryption implementation.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto")
-	void SetCryptoModule(TScriptInterface<IPubnubCryptoProviderInterface> CryptoModule);
-
-	/** Gets the currently configured provider-level crypto module.
-	 *
-	 * Returns the module previously set via SetCryptoModule.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Crypto")
-	TScriptInterface<IPubnubCryptoProviderInterface> GetCryptoModule();
-
 	/** Registers a custom logger instance for this client. */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Logger")
 	void AddLogger(TScriptInterface<IPubnubLoggerInterface> Logger);
@@ -2499,17 +2443,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Logger")
 	TArray<TScriptInterface<IPubnubLoggerInterface>> GetLoggers();
 
-#pragma endregion
-
-#pragma region ENTITIES
-
 	/**
 	 * Creates a PubNub Channel entity for the specified channel name.
-	 * 
-	 * The returned channel entity provides access to channel-specific operations
-	 * such as publishing messages, sending signals, and managing presence information.
-	 * It also allows creating subscriptions to receive real-time updates from the channel.
-	 * 
+	 *
 	 * @param Channel The name of the channel to create an entity for.
 	 * @return A new channel entity configured for the specified channel.
 	 */
@@ -2518,42 +2454,27 @@ public:
 
 	/**
 	 * Creates a PubNub Channel Group entity for the specified channel group name.
-	 * 
-	 * The returned channel group entity provides access to channel group-specific operations
-	 * such as adding/removing channels, listing channels in the group, and managing the
-	 * group lifecycle. It also allows creating subscriptions to receive real-time updates
-	 * from all channels in the group.
-	 * 
+	 *
 	 * @param ChannelGroup The name of the channel group to create an entity for.
 	 * @return A new channel group entity configured for the specified channel group.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
 	UPubnubChannelGroupEntity* CreateChannelGroupEntity(FString ChannelGroup);
-	
+
 	/**
 	 * Creates a PubNub Channel Metadata entity for the specified channel.
-	 * 
-	 * The returned channel metadata entity provides access to App Context operations
-	 * for managing metadata associated with the specified channel. This includes
-	 * setting, retrieving, and removing channel metadata information.
-	 * 
+	 *
 	 * @note Requires the App Context add-on to be enabled for your key in the PubNub Admin Portal.
-	 * 
 	 * @param Channel The name of the channel to create a metadata entity for.
 	 * @return A new channel metadata entity configured for the specified channel.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Entities")
 	UPubnubChannelMetadataEntity* CreateChannelMetadataEntity(FString Channel);
-	
+
 	/**
 	 * Creates a PubNub User Metadata entity for the specified user.
-	 * 
-	 * The returned user metadata entity provides access to App Context operations
-	 * for managing metadata associated with the specified user. This includes
-	 * setting, retrieving, and removing user metadata information.
-	 * 
+	 *
 	 * @note Requires the App Context add-on to be enabled for your key in the PubNub Admin Portal.
-	 * 
 	 * @param User The user identifier to create a metadata entity for.
 	 * @return A new user metadata entity configured for the specified user.
 	 */
@@ -2562,232 +2483,48 @@ public:
 
 	/**
 	 * Creates a subscription set for multiple channels and channel groups.
-	 * 
-	 * The returned subscription set allows you to manage subscriptions to multiple
-	 * entities as a single unit, enabling efficient subscribe/unsubscribe operations
-	 * across all specified channels and channel groups simultaneously.
-	 * 
+	 *
 	 * @note At least one Channel or ChannelGroup is needed to create SubscriptionSet.
-	 * 
 	 * @param Channels Array of channel names to include in the subscription set.
 	 * @param ChannelGroups Array of channel group names to include in the subscription set.
 	 * @param SubscriptionSettings Optional settings to configure the subscription behavior.
-	 * @return A new subscription set configured for the specified channels and channel groups.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	UPubnubSubscriptionSet* CreateSubscriptionSet(TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings SubscriptionSettings = FPubnubSubscribeSettings());
 
 	/**
 	 * Creates a subscription set from an array of existing PubNub entities.
-	 * 
-	 * The returned subscription set allows you to manage subscriptions to multiple
-	 * entities as a single unit. This is useful when you already have entity objects
-	 * and want to group their subscriptions together.
-	 * 
+	 *
 	 * @param Entities Array of PubNub entity objects to include in the subscription set.
 	 * @param SubscriptionSettings Optional settings to configure the subscription behavior.
-	 * @return A new subscription set configured for the specified entities.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	UPubnubSubscriptionSet* CreateSubscriptionSetFromEntities(TArray<UPubnubBaseEntity*> Entities, FPubnubSubscribeSettings SubscriptionSettings = FPubnubSubscribeSettings());
 
 	/**
-	 * Gets all currently active individual subscriptions.
-	 * 
-	 * Returns an array of all subscription objects that are currently active
-	 * and receiving real-time updates from PubNub. This includes subscriptions
-	 * created directly from entities, but excludes those managed by subscription sets.
-	 * 
-	 * @return Array of all active individual subscriptions.
+	 * Gets all currently active individual subscriptions that were created from entities.
+	 * Subscriptions owned only by SubscribeToChannel / SubscribeToGroup are not returned.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	TArray<UPubnubSubscription*> GetActiveSubscriptions();
 
-	/**
-	 * Gets all currently active subscription sets.
-	 * 
-	 * Returns an array of all subscription set objects that are currently active
-	 * and managing multiple subscriptions as a single unit. Each subscription set
-	 * may contain multiple individual subscriptions.
-	 * 
-	 * @return Array of all active subscription sets.
-	 */
+	/** Gets all currently active subscription sets. */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Subscriptions")
 	TArray<UPubnubSubscriptionSet*> GetActiveSubscriptionSets();
 
-#pragma endregion 
-	
-
-	/**
-	 * Internal native API intended for integration layers such as PubnubChat. Don't use this function directly.
-	 */
-	void SetRuntimeSdkVersionSuffix(FString Suffix);
-
-#pragma region PubnubSubscriptionCache (INTERNAL)
-
-	/**
-	 * Internal: registers a UE wrapper as the canonical wrapper for the given C-Core
-	 * subscription pointer. 
-	 */
-	void RegisterManagedSubscription(pubnub_subscription_t* CCorePtr, UPubnubSubscription* Wrapper);
-
-	/** Internal: counterpart to RegisterManagedSubscription for subscription sets. */
-	void RegisterManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr, UPubnubSubscriptionSet* Wrapper);
-
-	/**
-	 * Internal: removes the cached mapping for the given C-Core subscription pointer.
-	 * Must be called from CleanUpSubscription BEFORE pubnub_subscription_free, while the
-	 * pointer is still valid as a map key, so that the C-Core address cannot be reused
-	 * by the allocator and accidentally collide with the cached entry.
-	 */
-	void UnregisterManagedSubscription(pubnub_subscription_t* CCorePtr);
-
-	/** Internal: counterpart to UnregisterManagedSubscription for subscription sets. */
-	void UnregisterManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr);
-
-	/**
-	 * Internal: returns the live UE wrapper associated with the given C-Core subscription
-	 * pointer, or nullptr if no mapping exists or the cached wrapper has been garbage
-	 * collected. Stale (GC'd) entries are pruned during this lookup.
-	 */
-	UPubnubSubscription* FindManagedSubscription(pubnub_subscription_t* CCorePtr);
-
-	/** Internal: counterpart to FindManagedSubscription for subscription sets. */
-	UPubnubSubscriptionSet* FindManagedSubscriptionSet(pubnub_subscription_set_t* CCorePtr);
-
-#pragma endregion
-
-
 private:
 
-	/**
-	 * Maps each live C-Core subscription pointer to its single canonical UE wrapper.
-	 */
-	TMap<pubnub_subscription_t*, TWeakObjectPtr<UPubnubSubscription>> ManagedSubscriptions;
-
-	/** Counterpart to ManagedSubscriptions for subscription sets. */
-	TMap<pubnub_subscription_set_t*, TWeakObjectPtr<UPubnubSubscriptionSet>> ManagedSubscriptionSets;
-
-	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
-	FPubnubFunctionThread* PubnubCallsThread = nullptr;
-
-	//Mutex to guard all Pubnub operations. As user can call multiple operations at the same time, they need to be guarded
-	FCriticalSection PubnubOperationMutex;
-
-	//Serializes all subscribe/unsubscribe operations across all API entry points.
-	FCriticalSection SubscriptionOperationExecutionMutex;
-	//Guards pending subscription operation state used by callback completion.
-	FCriticalSection PendingSubscriptionOperationMutex;
-
-	//Pubnub context for the most of the pubnub operations
-	pubnub_t *ctx_pub = nullptr;
-	//Pubnub context for the event engine - subscribe operations
-	pubnub_t *ctx_ee = nullptr;
-
-#pragma region PUBNUB INIT
-
-	void InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubConfig InConfig, int InClientID, FString InDebugName = "");
+	bool InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubConfig InConfig, int InClientID, FString InDebugName = "");
+	bool ValidateConfig(const FPubnubConfig& InConfig);
+	void InitLoggerManager(const FPubnubConfig& InConfig);
+	bool AddSubscribeListenerToPubnubContext();
+	void OnCCoreSubscriptionStatusReceived(const pubnub_subscribe_status_event_t* StatusEvent);
+	void OnCCoreSubscribeEventReceived(const pubnub_subscribe_event_t* Event);
+	void CleanUpSubscriptions();
 	void DeinitializeClient();
 	
-	UPROPERTY()
-	TObjectPtr<UPubnubSubsystem> PubnubSubsystem = nullptr;
-	int ClientID = -1;
-	FString DebugName = "";
-	// Generic check if this client is valid and initialized
-	std::atomic<bool> IsInitialized{false};
-	bool IsUserIDSet = false;
-
-#pragma endregion
-
-#pragma region PUBNUB CRYPTO
-	
-	//CryptoBridge class that holds provided CryptoModule and inserts it into C-Core system - it keeps all required references alive
-	UPROPERTY()
-	TObjectPtr<UPubnubCryptoBridge> CryptoBridge;
-
-	void DecryptHistoryMessages(TArray<FPubnubHistoryMessageData>& Messages);
-
-#pragma endregion
-
-#pragma region PUBNUB AUTH
-
-	//Auth token has to be kept alive for the lifetime of the sdk, so this is the container for it
-	char* AuthTokenBuffer = nullptr;
-	size_t AuthTokenLength = 0;
-	//Previous auth token buffers retired after a swap; freed at deinit because ctx_ee may still read them briefly
-	TArray<char*> RetiredAuthTokenBuffers;
-
-	//Origin has to be kept alive for the lifetime of the sdk, so this is the container for it
-	char* OriginBuffer = nullptr;
-	size_t OriginLength = 0;
-
-	//Runtime SDK suffix has to be kept alive for the lifetime of the sdk, so this is the container for it
-	char* RuntimeSdkVersionSuffixBuffer = nullptr;
-	size_t RuntimeSdkVersionSuffixLength = 0;
-
-#pragma endregion 
-
-#pragma region PUBNUB CONFIG
-
-	//Container for all configuration settings
-	UPROPERTY()
-	FPubnubConfig PubnubConfig;
-
-	void SavePubnubConfig(const FPubnubConfig &InConfig);
-	
-	//Containers for keys stored from settings
-	static const int PublishKeySize = 42;
-	static const int SecretKeySize = 54;
-	char PublishKey[PublishKeySize + 1] = {};
-	char SubscribeKey[PublishKeySize + 1] = {};
-	char SecretKey[SecretKeySize + 1] = {};
-
-#pragma endregion 
-
-#pragma region PUBNUB SUBSCRIPTION
-
-	//Storage for global subscriptions (not from Entities)
-	TMap<FString, CCoreSubscriptionCallback*> ChannelSubscriptions;
-	TMap<FString, CCoreSubscriptionCallback*> ChannelGroupSubscriptions;
-
-	struct FPendingSubscriptionOperationState
-	{
-		int32 OperationId = INDEX_NONE;
-		FEvent* CompletionEvent = nullptr;
-		FPubnubOperationResult Result = FPubnubOperationResult();
-		bool bIsActive = false;
-	};
-
-	FPendingSubscriptionOperationState PendingSubscriptionOperation;
-	int32 NextSubscriptionOperationId = 0;
-	//Timeout duration for blocking subscription operations
-	FTimespan SubscriptionOperationTimeout = FTimespan::FromSeconds(30.0);
-
-	FPubnubOperationResult ExecuteSerializedSubscriptionOperation(const FString& StartFailureMessage, const FString& TimeoutMessage, TFunctionRef<bool()> StartOperation);
-	void ActivatePendingSubscriptionOperation(FEvent* CompletionEvent, int32 OperationId);
-	bool CompletePendingSubscriptionOperation(const FPubnubOperationResult& Result);
-	void ClearPendingSubscriptionOperation();
-	void CancelPendingSubscriptionOperation(const FString& CancelReason);
-
-	void OnCCoreSubscriptionStatusReceived(int StatusEnum, const void* StatusData);
-
-#pragma endregion
-	
-	//Returns FString from the pubnub_get response
-	FString GetLastResponse(pubnub_t* context);
-
-	//Special GetLastResponse for app context getters. It doesn't print 404 code as error, but debug.
-	FString GetResponseForGetObject(pubnub_t* context);
-	
-	//Returns FString from the pubnub_get_channel response
-	FString GetLastChannelResponse(pubnub_t* context);
-
-	void AttachCCoreLogger();
-	
-	void InitPubnub_priv(const FPubnubConfig& Config);
-	void SetUserID_priv(FString UserID);
+	FPubnubOperationResult SetUserID_priv(const FString &UserID);
 	FString GetUserID_priv();
-	void SetSecretKey_priv();
 	FPubnubPublishMessageResult PublishMessage_priv(FString Channel, FString Message, FPubnubPublishSettings PublishSettings = FPubnubPublishSettings());
 	FPubnubSignalResult Signal_priv(FString Channel, FString Message, FPubnubSignalSettings SignalSettings = FPubnubSignalSettings());
 	FPubnubOperationResult SubscribeToChannel_priv(FString Channel, FPubnubSubscribeSettings SubscribeSettings = FPubnubSubscribeSettings());
@@ -2795,6 +2532,8 @@ private:
 	FPubnubOperationResult UnsubscribeFromChannel_priv(FString Channel);
 	FPubnubOperationResult UnsubscribeFromGroup_priv(FString ChannelGroup);
 	FPubnubOperationResult UnsubscribeFromAll_priv();
+	FPubnubOperationResult ReconnectSubscriptions_priv(FString Timetoken);
+	FPubnubOperationResult DisconnectSubscriptions_priv();
 	FPubnubOperationResult AddChannelToGroup_priv(FString Channel, FString ChannelGroup);
 	FPubnubOperationResult RemoveChannelFromGroup_priv(FString Channel, FString ChannelGroup);
 	FPubnubListChannelsFromGroupResult ListChannelsFromGroup_priv(FString ChannelGroup);
@@ -2803,13 +2542,12 @@ private:
 	FPubnubListUsersSubscribedChannelsResult ListUserSubscribedChannels_priv(FString UserID);
 	FPubnubOperationResult SetState_priv(FString Channel, FString StateJson, FPubnubSetStateSettings SetStateSettings = FPubnubSetStateSettings());
 	FPubnubGetStateResult GetState_priv(FString Channel, FString ChannelGroup, FString UserID);
-	FPubnubOperationResult Heartbeat_priv(FString Channel, FString ChannelGroup);
-	FPubnubGrantTokenResult GrantToken_priv(FString PermissionObject);
+	FPubnubGrantTokenResult GrantToken_priv(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta);
 	FPubnubOperationResult RevokeToken_priv(FString Token);
 	FString ParseToken_priv(FString Token);
 	void SetAuthToken_priv(FString Token);
-	int SetOrigin_priv(FString Origin);
-	void SetRuntimeSdkVersionSuffix_priv(FString Suffix);
+	FPubnubOperationResult SetOrigin_priv(FString Origin);
+	FString GetOrigin_priv() const;
 	FPubnubFetchHistoryResult FetchHistory_priv(FString Channel, FPubnubFetchHistorySettings FetchHistorySettings = FPubnubFetchHistorySettings());
 	FPubnubOperationResult DeleteMessages_priv(FString Channel, FPubnubDeleteMessagesSettings DeleteMessagesSettings);
 	FPubnubMessageCountsResult MessageCounts_priv(FString Channel, FString Timetoken);
@@ -2832,6 +2570,14 @@ private:
 	FPubnubOperationResult RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
 	FPubnubGetMessageActionsResult GetMessageActions_priv(FString Channel, FString Start, FString End, int Limit);
 
+	/** Maps a C-Core subscription handle to the UE wrapper returned by GetActiveSubscriptions. */
+	void RegisterManagedSubscription(pubnub_subscription_t CCorePtr, UPubnubSubscription* Wrapper);
+	void RegisterManagedSubscriptionSet(pubnub_subscription_set_t CCorePtr, UPubnubSubscriptionSet* Wrapper);
+	void UnregisterManagedSubscription(pubnub_subscription_t CCorePtr);
+	void UnregisterManagedSubscriptionSet(pubnub_subscription_set_t CCorePtr);
+	UPubnubSubscription* FindManagedSubscription(pubnub_subscription_t CCorePtr);
+	UPubnubSubscriptionSet* FindManagedSubscriptionSet(pubnub_subscription_set_t CCorePtr);
+
 	void SubscribeWithSubscriptionAsync(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);
 	FPubnubOperationResult SubscribeWithSubscription(UPubnubSubscription* Subscription, FPubnubSubscriptionCursor Cursor);
 	void SubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* SubscriptionSet, FPubnubSubscriptionCursor Cursor, FOnPubnubSubscribeOperationResponseNative OnSubscribeResponse);
@@ -2841,16 +2587,54 @@ private:
 	void UnsubscribeWithSubscriptionSetAsync(UPubnubSubscriptionSet* SubscriptionSet, FOnPubnubSubscribeOperationResponseNative OnUnsubscribeResponse);
 	FPubnubOperationResult UnsubscribeWithSubscriptionSet(UPubnubSubscriptionSet* SubscriptionSet);
 	
-	void CleanUpAllSubscriptions();
-	void UnsubscribeAllForDeinit();
+	
+	//Container for all configuration settings
+	UPROPERTY()
+	FPubnubConfig PubnubConfig;
+	
+	//Thread for all PubNub operations, this thread will queue all PubNub calls and trigger them one by one
+	FPubnubFunctionThread* PubnubCallsThread = nullptr;
+	
+	//Mutex to guard all Pubnub operations. As user can call multiple operations at the same time, they need to be guarded
+	FCriticalSection PubnubOperationMutex;
 
+	//Guards ChannelSubscriptions / ChannelGroupSubscriptions map mutations and the matching C-Core subscribe/unsubscribe calls.
+	FCriticalSection SubscriptionsMutex;
+	
+	pubnub_context_t* pubnub_context = nullptr;
+	
+	//Handle returned by pubnub_add_listener for the context-global subscribe listener
+	//(status + data events). Equal to UINT16_MAX (= PUBNUB_LISTENER_HANDLE_INVALID) while not registered.
+	pubnub_listener_handle_t SubStatusListenerHandle = UINT16_MAX;
+
+	//Private C-Core subscription handles for SubscribeToChannel / SubscribeToGroup. Entity handles are not kept.
+	TMap<FString, pubnub_subscription_t> ChannelSubscriptions;
+	TMap<FString, pubnub_subscription_t> ChannelGroupSubscriptions;
+
+	/** Canonical UE wrapper for each entity subscription handle. */
+	TMap<pubnub_subscription_t, TWeakObjectPtr<UPubnubSubscription>> ManagedSubscriptions;
+
+	/** Canonical UE wrapper for each entity subscription set handle. */
+	TMap<pubnub_subscription_set_t, TWeakObjectPtr<UPubnubSubscriptionSet>> ManagedSubscriptionSets;
+
+	//Future to cancel in flight Pubnub calls.
+	pubnub_future_t* InFlightFuture = nullptr;
+	
+	UPROPERTY()
+	TObjectPtr<UPubnubSubsystem> PubnubSubsystem = nullptr;
+	int ClientID = -1;
+	FString DebugName = "";
+	// Generic check if this client is valid and initialized
+	std::atomic<bool> IsInitialized{false};
+	
 	UPROPERTY()
 	TObjectPtr<UPubnubLogManager> LoggerManager = nullptr;
-
+	
 	UPROPERTY()
 	TObjectPtr<UPubnubDefaultLogger> DefaultLogger = nullptr;
-
-	pubnub_logger_t* CCoreLogger = nullptr;
+	
+	
+	
 };
 
 

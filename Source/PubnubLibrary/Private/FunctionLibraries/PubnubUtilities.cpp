@@ -2,12 +2,13 @@
 
 
 #include "FunctionLibraries/PubnubUtilities.h"
-#include "Config/PubnubSettings.h"
-#include "Entities/PubnubSubscription.h"
+/*#include "Config/PubnubSettings.h"
+#include "Entities/PubnubSubscription.h"*/
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Kismet/KismetMathLibrary.h"
 
 
+/*
 FPubnubConfig UPubnubUtilities::PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings)
 {
 	FPubnubConfig Config;
@@ -120,7 +121,7 @@ bool UPubnubUtilities::SafeCopyFStringToCharBuffer(char* Destination, int DestSi
 
 	return true;
 }
-
+*/
 FString UPubnubUtilities::GetNameFromFunctionMacro(FString FunctionName)
 {
 	if(FunctionName.IsEmpty()) {return "";}
@@ -132,28 +133,6 @@ FString UPubnubUtilities::GetNameFromFunctionMacro(FString FunctionName)
 	FinalFunctionName.ReplaceInline(TEXT("_priv"), TEXT(""));
 	return FinalFunctionName;
 }
-
-FPubnubMessageData UPubnubUtilities::UEMessageFromPubnubMessage(pubnub_v2_message PubnubMessage)
-{
-	FPubnubMessageData MessageData;
-	MessageData.Message = PubnubCharMemBlockToString(PubnubMessage.payload);
-
-	//If message was just a string, we need to deserialize it
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(MessageData.Message, false))
-	{
-		MessageData.Message = UPubnubJsonUtilities::DeserializeString(MessageData.Message);
-	}
-	
-	MessageData.Channel = PubnubCharMemBlockToString(PubnubMessage.channel);
-	MessageData.UserID = PubnubCharMemBlockToString(PubnubMessage.publisher);
-	MessageData.Timetoken = PubnubCharMemBlockToString(PubnubMessage.tt);
-	MessageData.Metadata = PubnubCharMemBlockToString(PubnubMessage.metadata);
-	MessageData.MessageType = (EPubnubMessageType)(PubnubMessage.message_type);
-	MessageData.CustomMessageType = PubnubCharMemBlockToString(PubnubMessage.custom_message_type);
-	MessageData.MatchOrGroup = PubnubCharMemBlockToString(PubnubMessage.match_or_group);
-	return MessageData;
-}
-
 FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude)
 {
 	FString FinalString = "";
@@ -195,35 +174,37 @@ FString UPubnubUtilities::MemberIncludeToString(const FPubnubMemberInclude& Memb
 
 	return FinalString;
 }
-
-FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude)
+FString UPubnubUtilities::MembershipSortToString(const FPubnubMembershipSort& MemberInclude)
 {
 	FString FinalString = "";
-	if(GetAllInclude.IncludeCustom)			{FinalString.Append("custom,");}
-	if(GetAllInclude.IncludeStatus)			{FinalString.Append("status,");}
-	if(GetAllInclude.IncludeType)			{FinalString.Append("type,");}
-	//Total count is passed as a separate parameter, so it's not included directly in the final string
-
-	//If there was any include remove the last comma
-	if(!FinalString.IsEmpty())
+	//Form comma separated string of sorts
+	for(auto SingleSort : MemberInclude.MembershipSort)
 	{
-		FinalString.RemoveAt(FinalString.Len() - 1);
+		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
+		FinalString.Append(MembershipSortTypeToString(SingleSort.SortType));
+		//Default sort is ascending, so we only specify order when it's descending
+		if(SingleSort.SortOrder)
+		{
+			FinalString.Append(":desc");
+		}
 	}
 
 	return FinalString;
 }
 
-FString UPubnubUtilities::GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude)
+FString UPubnubUtilities::MemberSortToString(const FPubnubMemberSort& MemberInclude)
 {
 	FString FinalString = "";
-	if(GetMetadataInclude.IncludeCustom)			{FinalString.Append("custom,");}
-	if(GetMetadataInclude.IncludeStatus)			{FinalString.Append("status,");}
-	if(GetMetadataInclude.IncludeType)			{FinalString.Append("type,");}
-
-	//If there was any include remove the last comma
-	if(!FinalString.IsEmpty())
+	//Form comma separated string of sorts
+	for(auto SingleSort : MemberInclude.MemberSort)
 	{
-		FinalString.RemoveAt(FinalString.Len() - 1);
+		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
+		FinalString.Append(MemberSortTypeToString(SingleSort.SortType));
+		//Default sort is ascending, so we only specify order when it's descending
+		if(SingleSort.SortOrder)
+		{
+			FinalString.Append(":desc");
+		}
 	}
 
 	return FinalString;
@@ -276,6 +257,64 @@ FString UPubnubUtilities::MemberSortTypeToString(const EPubnubMemberSortType Sor
 	}
 	return "";
 }
+/*
+FPubnubMessageData UPubnubUtilities::UEMessageFromPubnubMessage(pubnub_v2_message PubnubMessage)
+{
+	FPubnubMessageData MessageData;
+	MessageData.Message = PubnubCharMemBlockToString(PubnubMessage.payload);
+
+	//If message was just a string, we need to deserialize it
+	if(!UPubnubJsonUtilities::IsCorrectJsonString(MessageData.Message, false))
+	{
+		MessageData.Message = UPubnubJsonUtilities::DeserializeString(MessageData.Message);
+	}
+	
+	MessageData.Channel = PubnubCharMemBlockToString(PubnubMessage.channel);
+	MessageData.UserID = PubnubCharMemBlockToString(PubnubMessage.publisher);
+	MessageData.Timetoken = PubnubCharMemBlockToString(PubnubMessage.tt);
+	MessageData.Metadata = PubnubCharMemBlockToString(PubnubMessage.metadata);
+	MessageData.MessageType = (EPubnubMessageType)(PubnubMessage.message_type);
+	MessageData.CustomMessageType = PubnubCharMemBlockToString(PubnubMessage.custom_message_type);
+	MessageData.MatchOrGroup = PubnubCharMemBlockToString(PubnubMessage.match_or_group);
+	return MessageData;
+}
+
+
+
+FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude)
+{
+	FString FinalString = "";
+	if(GetAllInclude.IncludeCustom)			{FinalString.Append("custom,");}
+	if(GetAllInclude.IncludeStatus)			{FinalString.Append("status,");}
+	if(GetAllInclude.IncludeType)			{FinalString.Append("type,");}
+	//Total count is passed as a separate parameter, so it's not included directly in the final string
+
+	//If there was any include remove the last comma
+	if(!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude)
+{
+	FString FinalString = "";
+	if(GetMetadataInclude.IncludeCustom)			{FinalString.Append("custom,");}
+	if(GetMetadataInclude.IncludeStatus)			{FinalString.Append("status,");}
+	if(GetMetadataInclude.IncludeType)			{FinalString.Append("type,");}
+
+	//If there was any include remove the last comma
+	if(!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
+
 
 FString UPubnubUtilities::GetAllSortTypeToString(const EPubnubGetAllSortType SortType)
 {
@@ -295,41 +334,7 @@ FString UPubnubUtilities::GetAllSortTypeToString(const EPubnubGetAllSortType Sor
 	return "";
 }
 
-FString UPubnubUtilities::MembershipSortToString(const FPubnubMembershipSort& MemberInclude)
-{
-	FString FinalString = "";
-	//Form comma separated string of sorts
-	for(auto SingleSort : MemberInclude.MembershipSort)
-	{
-		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
-		FinalString.Append(MembershipSortTypeToString(SingleSort.SortType));
-		//Default sort is ascending, so we only specify order when it's descending
-		if(SingleSort.SortOrder)
-		{
-			FinalString.Append(":desc");
-		}
-	}
 
-	return FinalString;
-}
-
-FString UPubnubUtilities::MemberSortToString(const FPubnubMemberSort& MemberInclude)
-{
-	FString FinalString = "";
-	//Form comma separated string of sorts
-	for(auto SingleSort : MemberInclude.MemberSort)
-	{
-		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
-		FinalString.Append(MemberSortTypeToString(SingleSort.SortType));
-		//Default sort is ascending, so we only specify order when it's descending
-		if(SingleSort.SortOrder)
-		{
-			FinalString.Append(":desc");
-		}
-	}
-
-	return FinalString;
-}
 
 FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllInclude)
 {
@@ -347,4 +352,78 @@ FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllIncl
 	}
 
 	return FinalString;
+}*/
+
+int UPubnubUtilities::RoundLimitForPubnubFunctions(int ProvidedLimit)
+{
+	return UKismetMathLibrary::Clamp(ProvidedLimit, 0, PUBNUB_MAX_LIMIT);
+}
+
+FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude)
+{
+	FString FinalString;
+	if (GetAllInclude.IncludeCustom) { FinalString.Append(TEXT("custom,")); }
+	if (GetAllInclude.IncludeStatus) { FinalString.Append(TEXT("status,")); }
+	if (GetAllInclude.IncludeType) { FinalString.Append(TEXT("type,")); }
+	// Total count is a separate tribool, so it is not part of the include string.
+
+	if (!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude)
+{
+	FString FinalString;
+	if (GetMetadataInclude.IncludeCustom) { FinalString.Append(TEXT("custom,")); }
+	if (GetMetadataInclude.IncludeStatus) { FinalString.Append(TEXT("status,")); }
+	if (GetMetadataInclude.IncludeType) { FinalString.Append(TEXT("type,")); }
+
+	if (!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllSort)
+{
+	FString FinalString;
+	for (const FPubnubGetAllSingleSort& SingleSort : GetAllSort.GetAllSort)
+	{
+		if (!FinalString.IsEmpty())
+		{
+			FinalString.Append(TEXT(","));
+		}
+		FinalString.Append(GetAllSortTypeToString(SingleSort.SortType));
+		// Ascending is the server default, so only descending is written out.
+		if (SingleSort.SortOrder)
+		{
+			FinalString.Append(TEXT(":desc"));
+		}
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::GetAllSortTypeToString(const EPubnubGetAllSortType SortType)
+{
+	switch (SortType)
+	{
+	case EPubnubGetAllSortType::PGAST_ID:
+		return TEXT("id");
+	case EPubnubGetAllSortType::PGAST_Name:
+		return TEXT("name");
+	case EPubnubGetAllSortType::PGAST_Updated:
+		return TEXT("updated");
+	case EPubnubGetAllSortType::PGAST_Status:
+		return TEXT("status");
+	case EPubnubGetAllSortType::PGAST_Type:
+		return TEXT("type");
+	}
+	return TEXT("");
 }

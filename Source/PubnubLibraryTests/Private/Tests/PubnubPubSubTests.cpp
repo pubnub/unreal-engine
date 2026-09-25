@@ -324,10 +324,6 @@ bool FPubnubPublishMessage_HappyPath_RequiredParamsOnly::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubPublishMessageResult Result = PubnubClient->PublishMessage(TestChannel, TestMessage);
@@ -344,7 +340,7 @@ bool FPubnubPublishMessage_HappyPath_RequiredParamsOnly::RunTest(const FString& 
 	return true;
 }
 
-// Full test of optional PublishSettings: MetaData, CustomMessageType, Ttl, StoreInHistory, Replicate, PublishMethod.
+// Full test of optional PublishSettings: MetaData, CustomMessageType, Ttl, StoreInHistory, PublishMethod.
 // Verifies returned PublishedMessage reflects MetaData and CustomMessageType; success and basic data correctness.
 bool FPubnubPublishMessage_FullPublishSettings_ReturnsCorrectData::RunTest(const FString& Parameters)
 {
@@ -360,10 +356,6 @@ bool FPubnubPublishMessage_FullPublishSettings_ReturnsCorrectData::RunTest(const
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubPublishSettings Settings;
@@ -371,7 +363,6 @@ bool FPubnubPublishMessage_FullPublishSettings_ReturnsCorrectData::RunTest(const
 	Settings.CustomMessageType = TestCustomMessageType;
 	Settings.Ttl = 24;
 	Settings.StoreInHistory = true;
-	Settings.Replicate = true;
 	Settings.PublishMethod = EPubnubPublishMethod::PPM_SendViaGET;
 
 	FPubnubPublishMessageResult Result = PubnubClient->PublishMessage(TestChannel, TestMessage, Settings);
@@ -406,10 +397,6 @@ bool FPubnubPublishMessage_ConcurrentSyncWhileAsyncInProgress_ReturnsMutexError:
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
@@ -463,14 +450,13 @@ bool FPubnubPublishMessage_VariousMessageTypes::RunTest(const FString& Parameter
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	TSharedPtr<int32> CurrentTestCaseIndex = MakeShared<int32>(-1);
 	TSharedPtr<bool> bMessageReceived = MakeShared<bool>(false);
 	TSharedPtr<FPubnubMessageData> LastReceivedMessage = MakeShared<FPubnubMessageData>();
+	FPubnubHandshakeTracker Handshake;
+	TSharedPtr<int32> HandshakeBaseline = MakeShared<int32>(0);
+	TrackHandshake(PubnubClient, Handshake);
 
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[this, TestChannel, CurrentTestCaseIndex, bMessageReceived, LastReceivedMessage](const FPubnubMessageData& ReceivedMessage)
@@ -483,12 +469,19 @@ bool FPubnubPublishMessage_VariousMessageTypes::RunTest(const FString& Parameter
 		});
 
 	// Subscribe (sync) then run each test case via latent commands.
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, Handshake, HandshakeBaseline]()
 	{
+		*HandshakeBaseline = *Handshake.Epoch;
 		FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
 		TestFalse("Subscribe should succeed", SubResult.Error);
 		TestEqual("Subscribe status", SubResult.Status, 200);
 	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed channel", Handshake.Channels->Contains(TestChannel));
+	}, 0.0f));
 
 	for (int32 i = 0; i < TestCases.Num(); ++i)
 	{
@@ -548,7 +541,8 @@ bool FPubnubPublishMessage_SubscribeThenPublish_MessageReceived::RunTest(const F
 
 	TSharedPtr<bool> bMessageReceived = MakeShared<bool>(false);
 	TSharedPtr<FPubnubMessageData> ReceivedMessage = MakeShared<FPubnubMessageData>();
-	TSharedPtr<bool> bSubscribeDone = MakeShared<bool>(false);
+	FPubnubHandshakeTracker Handshake;
+	TSharedPtr<int32> HandshakeBaseline = MakeShared<int32>(0);
 
 	if (!InitTest())
 	{
@@ -556,11 +550,8 @@ bool FPubnubPublishMessage_SubscribeThenPublish_MessageReceived::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+	TrackHandshake(PubnubClient, Handshake);
 
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[this, TestChannel, TestMessage, bMessageReceived, ReceivedMessage](const FPubnubMessageData& Msg)
@@ -572,15 +563,20 @@ bool FPubnubPublishMessage_SubscribeThenPublish_MessageReceived::RunTest(const F
 			}
 		});
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, bSubscribeDone]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, Handshake, HandshakeBaseline]()
 	{
+		*HandshakeBaseline = *Handshake.Epoch;
 		FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
-		*bSubscribeDone = true;
 		TestFalse("Subscribe should succeed", SubResult.Error);
 		TestEqual("Subscribe status", SubResult.Status, 200);
 	}, 0.1f));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeDone]() { return *bSubscribeDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed channel", Handshake.Channels->Contains(TestChannel));
+	}, 0.0f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
@@ -696,10 +692,6 @@ bool FPubnubSignal_HappyPath_RequiredParamsOnly::RunTest(const FString& Paramete
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubSignalResult Result = PubnubClient->Signal(TestChannel, TestMessage);
@@ -731,10 +723,6 @@ bool FPubnubSignal_FullSignalSettings_ReturnsCorrectData::RunTest(const FString&
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubSignalSettings Settings;
@@ -771,10 +759,6 @@ bool FPubnubSignal_ConcurrentSyncWhileAsyncInProgress_ReturnsMutexError::RunTest
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
@@ -810,7 +794,8 @@ bool FPubnubSignal_SubscribeThenSignal_MessageReceived::RunTest(const FString& P
 
 	TSharedPtr<bool> bMessageReceived = MakeShared<bool>(false);
 	TSharedPtr<FPubnubMessageData> ReceivedMessage = MakeShared<FPubnubMessageData>();
-	TSharedPtr<bool> bSubscribeDone = MakeShared<bool>(false);
+	FPubnubHandshakeTracker Handshake;
+	TSharedPtr<int32> HandshakeBaseline = MakeShared<int32>(0);
 
 	if (!InitTest())
 	{
@@ -818,11 +803,8 @@ bool FPubnubSignal_SubscribeThenSignal_MessageReceived::RunTest(const FString& P
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+	TrackHandshake(PubnubClient, Handshake);
 
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[this, TestChannel, TestMessage, bMessageReceived, ReceivedMessage](const FPubnubMessageData& Msg)
@@ -834,15 +816,20 @@ bool FPubnubSignal_SubscribeThenSignal_MessageReceived::RunTest(const FString& P
 			}
 		});
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, bSubscribeDone]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, Handshake, HandshakeBaseline]()
 	{
+		*HandshakeBaseline = *Handshake.Epoch;
 		FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
-		*bSubscribeDone = true;
 		TestFalse("Subscribe should succeed", SubResult.Error);
 		TestEqual("Subscribe status", SubResult.Status, 200);
 	}, 0.1f));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeDone]() { return *bSubscribeDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed channel", Handshake.Channels->Contains(TestChannel));
+	}, 0.0f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
@@ -930,11 +917,11 @@ bool FPubnubSubscribeToChannel_HappyPath_RequiredParamsOnly::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult Result = PubnubClient->SubscribeToChannel(TestChannel);
 
@@ -949,6 +936,12 @@ bool FPubnubSubscribeToChannel_HappyPath_RequiredParamsOnly::RunTest(const FStri
 		});
 
 	const FString TestMessage = TEXT("\"Happy path verify\"");
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed channel", Handshake.Channels->Contains(TestChannel));
+	}, 0.0f));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
 		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
@@ -979,11 +972,11 @@ bool FPubnubSubscribeToChannel_FullSubscribeSettings_ReceivePresenceEvents::RunT
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubSubscribeSettings Settings;
 	Settings.ReceivePresenceEvents = true;
@@ -999,6 +992,12 @@ bool FPubnubSubscribeToChannel_FullSubscribeSettings_ReceivePresenceEvents::RunT
 			if (Msg.Channel == TestChannel && Msg.Message == TestMessage) { *bMessageReceived = true; }
 		});
 
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed channel", Handshake.Channels->Contains(TestChannel));
+	}, 0.0f));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
 		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
@@ -1028,11 +1027,11 @@ bool FPubnubSubscribeToChannel_AlreadySubscribed_ReturnsError::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult FirstResult = PubnubClient->SubscribeToChannel(TestChannel);
 	TestFalse("First subscribe should succeed", FirstResult.Error);
@@ -1044,6 +1043,12 @@ bool FPubnubSubscribeToChannel_AlreadySubscribed_ReturnsError::RunTest(const FSt
 			if (Msg.Channel == TestChannel && Msg.Message == TestMessage) { *bMessageReceived = true; }
 		});
 
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed channel", Handshake.Channels->Contains(TestChannel));
+	}, 0.0f));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
 		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
@@ -1083,11 +1088,11 @@ bool FPubnubSubscribeToChannel_MultipleChannels_AllSucceed::RunTest(const FStrin
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	for (int32 i = 0; i < Channels.Num(); ++i)
 	{
@@ -1108,6 +1113,12 @@ bool FPubnubSubscribeToChannel_MultipleChannels_AllSucceed::RunTest(const FStrin
 	for (int32 i = 0; i < 3; ++i)
 	{
 		const int32 Idx = i;
+		ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, Channels, {}, MAX_WAIT_TIME));
+		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, Channels]()
+		{
+			TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+			TestTrue("Handshake should include every subscribed channel", HandshakeListContainsAll(*Handshake.Channels, Channels));
+		}, 0.0f));
 		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Channels, Messages, Idx]()
 		{
 			FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(Channels[Idx], Messages[Idx]);
@@ -1141,23 +1152,15 @@ bool FPubnubSubscribeToChannel_UnsubscribeThenSubscribeAgain_Succeeds::RunTest(c
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult Sub1 = PubnubClient->SubscribeToChannel(TestChannel);
 	TestFalse("First subscribe should succeed", Sub1.Error);
 	TestEqual("First subscribe status", Sub1.Status, 200);
-
-	FPubnubOperationResult Unsub = PubnubClient->UnsubscribeFromChannel(TestChannel);
-	TestFalse("Unsubscribe should succeed", Unsub.Error);
-	TestEqual("Unsubscribe status", Unsub.Status, 200);
-
-	FPubnubOperationResult Sub2 = PubnubClient->SubscribeToChannel(TestChannel);
-	TestFalse("Second subscribe (after unsubscribe) should succeed", Sub2.Error);
-	TestEqual("Second subscribe status", Sub2.Status, 200);
 
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[TestChannel, TestMessage, bMessageReceived](const FPubnubMessageData& Msg)
@@ -1168,8 +1171,34 @@ bool FPubnubSubscribeToChannel_UnsubscribeThenSubscribeAgain_Succeeds::RunTest(c
 			}
 		});
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, Handshake, HandshakeBaseline]()
 	{
+		TestFalse(FString::Printf(TEXT("First handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		*HandshakeBaseline = *Handshake.Epoch;
+		FPubnubOperationResult Unsub = PubnubClient->UnsubscribeFromChannel(TestChannel);
+		TestFalse("Unsubscribe should succeed", Unsub.Error);
+		TestEqual("Unsubscribe status", Unsub.Status, 200);
+	}, 0.1f));
+	// The last channel unsubscribe disconnects the subscribe loop. Resubscribe only after that status, or the new handshake is torn down.
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([Handshake, HandshakeBaseline, TestChannel]()
+	{
+		return *Handshake.bFailed || (*Handshake.Epoch > *HandshakeBaseline && !Handshake.Channels->Contains(TestChannel));
+	}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, Handshake, HandshakeBaseline]()
+	{
+		TestFalse(FString::Printf(TEXT("Disconnect after unsubscribe failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestFalse("Channel should be absent after unsubscribe status", Handshake.Channels->Contains(TestChannel));
+		*HandshakeBaseline = *Handshake.Epoch;
+		FPubnubOperationResult Sub2 = PubnubClient->SubscribeToChannel(TestChannel);
+		TestFalse("Second subscribe (after unsubscribe) should succeed", Sub2.Error);
+		TestEqual("Second subscribe status", Sub2.Status, 200);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel, TestMessage]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake after resubscribe failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the resubscribed channel", Handshake.Channels->Contains(TestChannel));
 		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
 		TestFalse("Publish after resubscribe should succeed", PubResult.Result.Error);
 	}, 0.1f));
@@ -1202,11 +1231,11 @@ bool FPubnubSubscribeToChannel_MultipleChannels_UnsubscribeOne_Resubscribe_Succe
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult SubA1 = PubnubClient->SubscribeToChannel(ChannelA);
 	TestFalse("Subscribe to A should succeed", SubA1.Error);
@@ -1216,14 +1245,6 @@ bool FPubnubSubscribeToChannel_MultipleChannels_UnsubscribeOne_Resubscribe_Succe
 	TestFalse("Subscribe to B should succeed", SubB.Error);
 	TestEqual("Subscribe B status", SubB.Status, 200);
 
-	FPubnubOperationResult UnsubA = PubnubClient->UnsubscribeFromChannel(ChannelA);
-	TestFalse("Unsubscribe from A should succeed", UnsubA.Error);
-	TestEqual("Unsubscribe A status", UnsubA.Status, 200);
-
-	FPubnubOperationResult SubA2 = PubnubClient->SubscribeToChannel(ChannelA);
-	TestFalse("Re-subscribe to A should succeed", SubA2.Error);
-	TestEqual("Re-subscribe A status", SubA2.Status, 200);
-
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[ChannelA, ChannelB, MessageA, MessageB, bReceivedA, bReceivedB](const FPubnubMessageData& Msg)
 		{
@@ -1231,8 +1252,24 @@ bool FPubnubSubscribeToChannel_MultipleChannels_UnsubscribeOne_Resubscribe_Succe
 			if (Msg.Channel == ChannelB && Msg.Message == MessageB) { *bReceivedB = true; }
 		});
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelA, ChannelB, MessageA, MessageB]()
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { ChannelA, ChannelB }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelA, Handshake, HandshakeBaseline]()
 	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		FPubnubOperationResult UnsubA = PubnubClient->UnsubscribeFromChannel(ChannelA);
+		TestFalse("Unsubscribe from A should succeed", UnsubA.Error);
+		TestEqual("Unsubscribe A status", UnsubA.Status, 200);
+
+		*HandshakeBaseline = *Handshake.Epoch;
+		FPubnubOperationResult SubA2 = PubnubClient->SubscribeToChannel(ChannelA);
+		TestFalse("Re-subscribe to A should succeed", SubA2.Error);
+		TestEqual("Re-subscribe A status", SubA2.Status, 200);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { ChannelA, ChannelB }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelA, ChannelB, MessageA, MessageB, Handshake]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake after resubscribe failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include A and B", Handshake.Channels->Contains(ChannelA) && Handshake.Channels->Contains(ChannelB));
 		FPubnubPublishMessageResult PubA = PubnubClient->PublishMessage(ChannelA, MessageA);
 		FPubnubPublishMessageResult PubB = PubnubClient->PublishMessage(ChannelB, MessageB);
 		TestFalse("Publish to A should succeed", PubA.Result.Error);
@@ -1258,7 +1295,8 @@ bool FPubnubSubscribeToChannel_SubscribeThenPublish_ReceivesMessage::RunTest(con
 
 	TSharedPtr<bool> bMessageReceived = MakeShared<bool>(false);
 	TSharedPtr<FPubnubMessageData> ReceivedMessage = MakeShared<FPubnubMessageData>();
-	TSharedPtr<bool> bSubscribeDone = MakeShared<bool>(false);
+	FPubnubHandshakeTracker Handshake;
+	TSharedPtr<int32> HandshakeBaseline = MakeShared<int32>(0);
 
 	if (!InitTest())
 	{
@@ -1266,11 +1304,8 @@ bool FPubnubSubscribeToChannel_SubscribeThenPublish_ReceivesMessage::RunTest(con
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+	TrackHandshake(PubnubClient, Handshake);
 
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[TestChannel, TestMessage, bMessageReceived, ReceivedMessage](const FPubnubMessageData& Msg)
@@ -1282,15 +1317,20 @@ bool FPubnubSubscribeToChannel_SubscribeThenPublish_ReceivesMessage::RunTest(con
 			}
 		});
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, bSubscribeDone]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, Handshake, HandshakeBaseline]()
 	{
+		*HandshakeBaseline = *Handshake.Epoch;
 		FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
-		*bSubscribeDone = true;
 		TestFalse("Subscribe should succeed", SubResult.Error);
 		TestEqual("Subscribe status", SubResult.Status, 200);
 	}, 0.1f));
 
-	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeDone]() { return *bSubscribeDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { TestChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestChannel]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed channel", Handshake.Channels->Contains(TestChannel));
+	}, 0.0f));
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
@@ -1374,10 +1414,6 @@ bool FPubnubUnsubscribeFromChannel_NoSuchSubscription_ReturnsError::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + "unsub_no_sub_user");
 
 	FPubnubOperationResult Result = PubnubClient->UnsubscribeFromChannel(TestChannel);
@@ -1404,10 +1440,6 @@ bool FPubnubUnsubscribeFromChannel_HappyPath_ThenMessageNotReceived::RunTest(con
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -1458,20 +1490,16 @@ bool FPubnubUnsubscribeFromChannel_UnsubscribeOneOfTwo_OnlySubscribedChannelRece
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult SubA = PubnubClient->SubscribeToChannel(ChannelA);
 	TestFalse("Subscribe to A should succeed", SubA.Error);
 	FPubnubOperationResult SubB = PubnubClient->SubscribeToChannel(ChannelB);
 	TestFalse("Subscribe to B should succeed", SubB.Error);
-
-	FPubnubOperationResult UnsubA = PubnubClient->UnsubscribeFromChannel(ChannelA);
-	TestFalse("Unsubscribe from A should succeed", UnsubA.Error);
-	TestEqual("Unsubscribe A status", UnsubA.Status, 200);
 
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[ChannelA, ChannelB, MessageA, MessageB, bReceivedA, bReceivedB](const FPubnubMessageData& Msg)
@@ -1480,8 +1508,21 @@ bool FPubnubUnsubscribeFromChannel_UnsubscribeOneOfTwo_OnlySubscribedChannelRece
 			if (Msg.Channel == ChannelB && Msg.Message == MessageB) { *bReceivedB = true; }
 		});
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelA, ChannelB, MessageA, MessageB]()
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { ChannelA, ChannelB }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelA, ChannelB, Handshake, HandshakeBaseline]()
 	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		FPubnubOperationResult UnsubA = PubnubClient->UnsubscribeFromChannel(ChannelA);
+		TestFalse("Unsubscribe from A should succeed", UnsubA.Error);
+		TestEqual("Unsubscribe A status", UnsubA.Status, 200);
+		*HandshakeBaseline = *Handshake.Epoch;
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { ChannelB }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, ChannelA, ChannelB, MessageA, MessageB, Handshake]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake after unsubscribe failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Still-subscribed channel B should be in the handshake", Handshake.Channels->Contains(ChannelB));
+		TestFalse("Unsubscribed channel A should not remain in the handshake", Handshake.Channels->Contains(ChannelA));
 		FPubnubPublishMessageResult PubA = PubnubClient->PublishMessage(ChannelA, MessageA);
 		FPubnubPublishMessageResult PubB = PubnubClient->PublishMessage(ChannelB, MessageB);
 		TestFalse("Publish to A should succeed", PubA.Result.Error);
@@ -1512,10 +1553,6 @@ bool FPubnubUnsubscribeFromChannel_UnsubscribeTwice_SecondReturnsNoSuchSubscript
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -1597,11 +1634,11 @@ bool FPubnubSubscribeToGroup_HappyPath_RequiredParamsOnly::RunTest(const FString
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
 	TestFalse("AddChannelToGroup should succeed", AddResult.Error);
@@ -1616,6 +1653,12 @@ bool FPubnubSubscribeToGroup_HappyPath_RequiredParamsOnly::RunTest(const FString
 			if (Msg.Channel == TestChannel && Msg.Message == TestMessage) { *bMessageReceived = true; }
 		});
 
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, {}, { TestGroup }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestGroup]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed group", Handshake.Groups->Contains(TestGroup));
+	}, 0.0f));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
 		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
@@ -1650,11 +1693,11 @@ bool FPubnubSubscribeToGroup_FullSubscribeSettings_ReceivePresenceEvents::RunTes
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
 	TestFalse("AddChannelToGroup should succeed", AddResult.Error);
@@ -1671,6 +1714,12 @@ bool FPubnubSubscribeToGroup_FullSubscribeSettings_ReceivePresenceEvents::RunTes
 			if (Msg.Channel == TestChannel && Msg.Message == TestMessage) { *bMessageReceived = true; }
 		});
 
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, {}, { TestGroup }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestGroup]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed group", Handshake.Groups->Contains(TestGroup));
+	}, 0.0f));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
 		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
@@ -1705,11 +1754,11 @@ bool FPubnubSubscribeToGroup_AlreadySubscribed_ReturnsError::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	const TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
 	TestFalse("AddChannelToGroup should succeed", AddResult.Error);
@@ -1724,6 +1773,12 @@ bool FPubnubSubscribeToGroup_AlreadySubscribed_ReturnsError::RunTest(const FStri
 			if (Msg.Channel == TestChannel && Msg.Message == TestMessage) { *bMessageReceived = true; }
 		});
 
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, {}, { TestGroup }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestGroup]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed group", Handshake.Groups->Contains(TestGroup));
+	}, 0.0f));
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
 	{
 		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
@@ -1766,11 +1821,11 @@ bool FPubnubSubscribeToGroup_UnsubscribeThenSubscribeAgain_ReceivesMessage::RunT
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
 	TestFalse("AddChannelToGroup should succeed", AddResult.Error);
@@ -1779,22 +1834,39 @@ bool FPubnubSubscribeToGroup_UnsubscribeThenSubscribeAgain_ReceivesMessage::RunT
 	TestFalse("First SubscribeToGroup should succeed", Sub1.Error);
 	TestEqual("First SubscribeToGroup status", Sub1.Status, 200);
 
-	FPubnubOperationResult Unsub = PubnubClient->UnsubscribeFromGroup(TestGroup);
-	TestFalse("UnsubscribeFromGroup should succeed", Unsub.Error);
-	TestEqual("UnsubscribeFromGroup status", Unsub.Status, 200);
-
-	FPubnubOperationResult Sub2 = PubnubClient->SubscribeToGroup(TestGroup);
-	TestFalse("Second SubscribeToGroup (after unsubscribe) should succeed", Sub2.Error);
-	TestEqual("Second SubscribeToGroup status", Sub2.Status, 200);
-
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[TestChannel, TestMessage, bMessageReceived](const FPubnubMessageData& Msg)
 		{
 			if (Msg.Channel == TestChannel && Msg.Message == TestMessage) { *bMessageReceived = true; }
 		});
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage]()
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, {}, { TestGroup }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, Handshake, HandshakeBaseline]()
 	{
+		TestFalse(FString::Printf(TEXT("First handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		*HandshakeBaseline = *Handshake.Epoch;
+		FPubnubOperationResult Unsub = PubnubClient->UnsubscribeFromGroup(TestGroup);
+		TestFalse("UnsubscribeFromGroup should succeed", Unsub.Error);
+		TestEqual("UnsubscribeFromGroup status", Unsub.Status, 200);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([Handshake, HandshakeBaseline, TestGroup]()
+	{
+		return *Handshake.bFailed || (*Handshake.Epoch > *HandshakeBaseline && !Handshake.Groups->Contains(TestGroup));
+	}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, Handshake, HandshakeBaseline]()
+	{
+		TestFalse(FString::Printf(TEXT("Disconnect after unsubscribe failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestFalse("Group should be absent after unsubscribe status", Handshake.Groups->Contains(TestGroup));
+		*HandshakeBaseline = *Handshake.Epoch;
+		FPubnubOperationResult Sub2 = PubnubClient->SubscribeToGroup(TestGroup);
+		TestFalse("Second SubscribeToGroup (after unsubscribe) should succeed", Sub2.Error);
+		TestEqual("Second SubscribeToGroup status", Sub2.Status, 200);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, {}, { TestGroup }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestChannel, TestMessage, Handshake, TestGroup]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake after resubscribe failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the resubscribed group", Handshake.Groups->Contains(TestGroup));
 		FPubnubPublishMessageResult PubResult = PubnubClient->PublishMessage(TestChannel, TestMessage);
 		TestFalse("Publish after resubscribe should succeed", PubResult.Result.Error);
 	}, 0.1f));
@@ -1822,7 +1894,8 @@ bool FPubnubSubscribeToGroup_AddChannelThenPublish_ReceivesMessage::RunTest(cons
 
 	TSharedPtr<bool> bMessageReceived = MakeShared<bool>(false);
 	TSharedPtr<FPubnubMessageData> ReceivedMessage = MakeShared<FPubnubMessageData>();
-	TSharedPtr<bool> bSubscribeDone = MakeShared<bool>(false);
+	FPubnubHandshakeTracker Handshake;
+	TSharedPtr<int32> HandshakeBaseline = MakeShared<int32>(0);
 
 	if (!InitTest())
 	{
@@ -1830,23 +1903,25 @@ bool FPubnubSubscribeToGroup_AddChannelThenPublish_ReceivesMessage::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
+	TrackHandshake(PubnubClient, Handshake);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
 	TestFalse("AddChannelToGroup should succeed", AddResult.Error);
 
-	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, bSubscribeDone]()
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup, Handshake, HandshakeBaseline]()
 	{
+		*HandshakeBaseline = *Handshake.Epoch;
 		FPubnubOperationResult SubResult = PubnubClient->SubscribeToGroup(TestGroup);
-		*bSubscribeDone = true;
 		TestFalse("SubscribeToGroup should succeed", SubResult.Error);
 		TestEqual("SubscribeToGroup status", SubResult.Status, 200);
 	}, 0.1f));
-	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bSubscribeDone]() { return *bSubscribeDone; }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, {}, { TestGroup }, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, TestGroup]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue("Handshake should include the subscribed group", Handshake.Groups->Contains(TestGroup));
+	}, 0.0f));
 
 	PubnubClient->OnMessageReceivedNative.AddLambda(
 		[TestChannel, TestMessage, bMessageReceived, ReceivedMessage](const FPubnubMessageData& Msg)
@@ -1942,10 +2017,6 @@ bool FPubnubUnsubscribeFromGroup_NoSuchSubscription_ReturnsError::RunTest(const 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + "unsub_grp_no_sub_user");
 
 	FPubnubOperationResult Result = PubnubClient->UnsubscribeFromGroup(TestGroup);
@@ -1973,10 +2044,6 @@ bool FPubnubUnsubscribeFromGroup_HappyPath_ThenMessageNotReceived::RunTest(const
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -2028,10 +2095,6 @@ bool FPubnubUnsubscribeFromGroup_UnsubscribeTwice_SecondReturnsNoSuchSubscriptio
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult AddResult = PubnubClient->AddChannelToGroup(TestChannel, TestGroup);
@@ -2091,10 +2154,6 @@ bool FPubnubUnsubscribeFromAll_NoSubscriptions_ReturnsSuccess::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + "unsub_all_no_sub_user");
 
 	FPubnubOperationResult Result = PubnubClient->UnsubscribeFromAll();
@@ -2120,10 +2179,6 @@ bool FPubnubUnsubscribeFromAll_SubscribedThenUnsubscribeAll_MessageNotReceived::
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubResult = PubnubClient->SubscribeToChannel(TestChannel);
@@ -2176,10 +2231,6 @@ bool FPubnubUnsubscribeFromAll_ChannelsAndGroup_UnsubscribeFromAll_NoneReceive::
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(TestUser);
 
 	FPubnubOperationResult SubA = PubnubClient->SubscribeToChannel(ChannelA);

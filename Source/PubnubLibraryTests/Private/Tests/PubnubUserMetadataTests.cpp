@@ -139,10 +139,6 @@ bool FPubnubGetAllUserMetadata_HappyPath_DefaultParams::RunTest(const FString& P
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("umeta_getall_default_caller"));
 
 	const FPubnubGetAllUserMetadataResult R = PubnubClient->GetAllUserMetadata();
@@ -166,10 +162,6 @@ bool FPubnubGetAllUserMetadata_AllOptionalParameters::RunTest(const FString& Par
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData SetInput;
@@ -210,10 +202,6 @@ bool FPubnubGetAllUserMetadata_FilterFindsCreatedUser::RunTest(const FString& Pa
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData In;
@@ -280,10 +268,6 @@ bool FPubnubSetUserMetadata_HappyPath_RequiredFieldsOnly::RunTest(const FString&
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData In;
@@ -313,10 +297,6 @@ bool FPubnubSetUserMetadata_AllInputFieldsAndInclude::RunTest(const FString& Par
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData In;
@@ -368,10 +348,6 @@ bool FPubnubSetUserMetadata_UpdateThenGetReflectsNewValues::RunTest(const FStrin
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData First;
@@ -430,10 +406,6 @@ bool FPubnubGetUserMetadata_HappyPath_AfterSet::RunTest(const FString& Parameter
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData In;
@@ -470,10 +442,6 @@ bool FPubnubGetUserMetadata_AllIncludes_ReturnsCustomStatusType::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData In;
@@ -510,10 +478,6 @@ bool FPubnubGetUserMetadata_UnknownUser_ReturnsError::RunTest(const FString& Par
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("umeta_get_unknown_caller"));
 
 	const FPubnubUserMetadataResult R = PubnubClient->GetUserMetadata(UnknownUser);
@@ -559,10 +523,6 @@ bool FPubnubRemoveUserMetadata_HappyPath_ThenGetFails::RunTest(const FString& Pa
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData In;
@@ -592,10 +552,6 @@ bool FPubnubRemoveUserMetadata_SetAfterRemove_RecreatesMetadata::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubUserInputData First;

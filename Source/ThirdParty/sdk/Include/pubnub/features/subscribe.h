@@ -12,9 +12,10 @@
  *   1. Create a subscription handle for each channel/group.
  *   2. Register typed listeners for event dispatch.
  *   3. Start the subscription — the SDK maintains the long-poll loop.
- *   4. Process events cooperatively (`pubnub_process`) or start a
- *      background thread (`pubnub_subscribe_async`) for automatic
- *      delivery via listener callbacks.
+ *      On threaded builds (PUBNUB_CFG_THREAD_SAFETY=1), a background
+ *      thread starts automatically to drive I/O and deliver listener
+ *      callbacks. On cooperative builds, call `pubnub_process(ctx)` in
+ *      your event loop.
  *
  * ## Usage (cooperative / callback)
  *
@@ -444,31 +445,6 @@ pubnub_subscription_set_remove_listener(pubnub_subscription_set_t set,
                                         pubnub_listener_handle_t  handle);
 
 /**
- * @brief Start asynchronous subscribe event delivery.
- *
- * Starts the context's background processing thread so subscribe
- * events and presence heartbeats are driven automatically. Listener
- * callbacks are invoked from the background thread.
- *
- * In cooperative mode (PUBNUB_CFG_THREAD_SAFETY=0 or platform lacks
- * thread support), returns PUBNUB_ERR_NOT_SUPPORTED — use
- * pubnub_process() in your event loop instead.
- *
- * May be called before or after configuring subscriptions. The
- * background thread processes whatever is in the subscribe event
- * queue at each tick.
- *
- * @param ctx Initialized context (@b required, @b borrowed).
- * @retval PUBNUB_OK Background thread started (or already running).
- * @retval PUBNUB_ERR_NOT_SUPPORTED Thread safety disabled or platform
- *         does not support thread creation.
- * @retval PUBNUB_ERR_NOT_INITIALIZED Context is @c NULL or not
- *         initialized.
- * @retval PUBNUB_ERR_INTERNAL Thread creation failed.
- */
-PUBNUB_API pubnub_res_t pubnub_subscribe_async(pubnub_context_t* ctx);
-
-/**
  * @brief Disconnect from all channels and stop the subscribe loop.
  *
  * If the client was actively receiving (CONNECTED state), event listeners
@@ -551,6 +527,88 @@ PUBNUB_API pubnub_res_t pubnub_subscribe_unsubscribe_all(pubnub_context_t* ctx);
  */
 PUBNUB_API pubnub_subscribe_connection_state_t
 pubnub_subscribe_state(const pubnub_context_t* ctx);
+
+/**
+ * @brief List all active subscriptions on this context.
+ *
+ * Fills @p out with handles for subscriptions currently in the
+ * subscribed state. The returned handles are borrowed -- valid until
+ * the corresponding subscription is destroyed. Handles may be passed
+ * to @c pubnub_subscription_unsubscribe, @c pubnub_entity_name, etc.
+ *
+ * Typical usage to check if a subscription is still active:
+ * @code
+ * pubnub_subscription_t active[PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS];
+ * size_t count = 0;
+ * pubnub_subscriptions(ctx, active,
+ *                      PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS, &count);
+ * @endcode
+ *
+ * @param ctx       Initialized context (@b required, @b borrowed).
+ * @param out       Caller-allocated array to receive handles
+ *                  (@b required).
+ * @param max_count Capacity of @p out.
+ * @param out_count Receives the total number of matching items, even
+ *                  when larger than @p max_count. When
+ *                  @c PUBNUB_ERR_BUFFER_TOO_SMALL is returned, use
+ *                  @c *out_count to allocate a larger buffer and retry.
+ *                  May be @c NULL.
+ * @return @c PUBNUB_OK on success, @c PUBNUB_ERR_BUFFER_TOO_SMALL if
+ *         @p max_count was insufficient (partial fill of @p out).
+ */
+PUBNUB_API pubnub_res_t pubnub_subscriptions(pubnub_context_t*      ctx,
+                                             pubnub_subscription_t* out,
+                                             size_t                 max_count,
+                                             size_t*                out_count);
+
+/**
+ * @brief List all active subscription sets on this context.
+ *
+ * @param ctx       Initialized context (@b required, @b borrowed).
+ * @param out       Caller-allocated array (@b required).
+ * @param max_count Capacity of @p out.
+ * @param out_count Receives the total number of matching items, even
+ *                  when larger than @p max_count. When
+ *                  @c PUBNUB_ERR_BUFFER_TOO_SMALL is returned, use
+ *                  @c *out_count to allocate a larger buffer and retry.
+ *                  May be @c NULL.
+ * @return @c PUBNUB_OK on success, @c PUBNUB_ERR_BUFFER_TOO_SMALL if
+ *         truncated.
+ */
+PUBNUB_API pubnub_res_t pubnub_subscription_sets(pubnub_context_t*          ctx,
+                                                 pubnub_subscription_set_t* out,
+                                                 size_t  max_count,
+                                                 size_t* out_count);
+
+/**
+ * @brief List all subscriptions within a subscription set.
+ *
+ * Returns subscription handles for all entries that are members of
+ * the set, regardless of individual subscription state (the set
+ * manages activation at the set level).
+ *
+ * @note Results are matched by underlying channel/group entry
+ *       identity, not by the subscription handle passed to
+ *       @c pubnub_subscription_set_add_subscription. If multiple
+ *       subscription handles reference the same entity, all are
+ *       returned.
+ *
+ * @param set       Subscription set to query (@b required, @b borrowed).
+ * @param out       Caller-allocated array (@b required).
+ * @param max_count Capacity of @p out.
+ * @param out_count Receives the total number of matching items, even
+ *                  when larger than @p max_count. When
+ *                  @c PUBNUB_ERR_BUFFER_TOO_SMALL is returned, use
+ *                  @c *out_count to allocate a larger buffer and retry.
+ *                  May be @c NULL.
+ * @return @c PUBNUB_OK on success, @c PUBNUB_ERR_BUFFER_TOO_SMALL if
+ *         truncated.
+ */
+PUBNUB_API pubnub_res_t
+pubnub_subscription_set_subscriptions(pubnub_subscription_set_t set,
+                                      pubnub_subscription_t*    out,
+                                      size_t                    max_count,
+                                      size_t*                   out_count);
 
 /**
  * @brief Extract a typed message event from a subscribe event.

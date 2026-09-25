@@ -148,6 +148,27 @@
 
 #define PUBNUB_CFG_ARENA_POOL_SIZE 65536
 /* #undef PUBNUB_CFG_ARENA_ALLOC_BUDGET */
+/* #undef PUBNUB_ARENA_MAX_ZONE_B_CELLS */
+
+/**
+ * @brief Enable verbose arena allocator debug output to stderr.
+ *
+ * When @c 1, @c arena_alloc prints a diagnostic line on every allocation
+ * failure (OOM) and @c arena_buf_acquire prints the in-use bitmap on
+ * backpressure. Requires stdio. Off by default; enable only for desktop
+ * development builds where stderr is available.
+ */
+#define PUBNUB_CFG_ARENA_DEBUG 0
+
+/**
+ * @brief Warn about unreleased futures at context teardown.
+ *
+ * When @c 1, @c pn_request_pool_deinit logs a @c PUBNUB_LOG_LEVEL_WARN
+ * message for every pool slot that is not idle when the context is
+ * destroyed. Helps catch missing @c pubnub_future_release calls during
+ * development. Off by default; enable only in debug builds.
+ */
+#define PUBNUB_CFG_ASSERT_POOL_CLEAN 0
 
 /**
  * 1 when the SDK statically owns the arena backing pool (hosted profiles).
@@ -177,7 +198,7 @@
  *       Use @c pubnub_context_size() for runtime size queries instead.
  */
 #if !defined(PUBNUB_SHARED_EXPORT) && !defined(PUBNUB_SHARED)
-#define PUBNUB_CONTEXT_SIZE 1280
+#define PUBNUB_CONTEXT_SIZE 1536
 #endif
 
 #define PUBNUB_CFG_MAX_LOG_MESSAGE_SIZE 512
@@ -214,6 +235,37 @@
 
 #ifndef PUBNUB_CFG_OBJECT_BUFFER_SIZE
 #define PUBNUB_CFG_OBJECT_BUFFER_SIZE 33792
+#endif
+
+/**
+ * @brief Maximum OBJ buffer (POST/PATCH body) size in bytes.
+ *
+ * Caps dynamic growth of the OBJ buffer during serialization.
+ * Set to @c 0 to disable the SDK-level cap (the allocator's own
+ * limits are then the only bound). Embedded profiles typically
+ * set this to @c 0 because the arena allocator's NULL @c buf_grow
+ * prevents any growth.
+ *
+ * Setting this smaller than @c PUBNUB_CFG_OBJECT_BUFFER_SIZE
+ * effectively disables growth (the initial buffer already exceeds
+ * the cap), which is functionally equivalent to embedded behavior.
+ */
+#ifndef PUBNUB_CFG_MAX_OBJ_BUFFER_SIZE
+#define PUBNUB_CFG_MAX_OBJ_BUFFER_SIZE 8388608
+#endif
+
+/**
+ * @brief Maximum RX buffer (response body) size in bytes.
+ *
+ * Caps dynamic growth of the response buffer, including
+ * Content-Length pre-sizing and reactive doubling. Set to @c 0
+ * to disable the SDK-level cap.
+ *
+ * Setting this smaller than @c PUBNUB_CFG_RESPONSE_BUFFER_SIZE
+ * effectively disables growth for the response buffer.
+ */
+#ifndef PUBNUB_CFG_MAX_RESPONSE_BUFFER_SIZE
+#define PUBNUB_CFG_MAX_RESPONSE_BUFFER_SIZE 16777216
 #endif
 
 #ifndef PUBNUB_CFG_SCRATCH_BUFFER_SIZE
@@ -325,6 +377,23 @@
 
 #ifndef PUBNUB_CFG_SOCKET_DECOMP_MAX_BUFFER_SIZE
 #define PUBNUB_CFG_SOCKET_DECOMP_MAX_BUFFER_SIZE 0
+#endif
+
+/**
+ * Maximum HTTP redirect hops followed per request (0..8).
+ *
+ * Set to 0 to compile the redirect path out entirely. Following a
+ * redirect requires building a second request descriptor, which costs
+ * roughly 1 KB of stack on the hop, so constrained targets that do not
+ * need redirects should keep this at 0. File download requires it
+ * (PubNub returns 307 to object storage), so leave it non-zero whenever
+ * PUBNUB_ENABLE_FILES is on.
+ *
+ * @b Default: @c 3 for hosted profiles ( @c full, @c minimal), @c 0 for
+ * @c embedded.
+ */
+#ifndef PUBNUB_CFG_SOCKET_MAX_REDIRECTS
+#define PUBNUB_CFG_SOCKET_MAX_REDIRECTS 3
 #endif
 
 #ifndef PUBNUB_CFG_MAX_DNS_RESULTS
