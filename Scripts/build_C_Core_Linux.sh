@@ -31,7 +31,7 @@ SDK_ROOT="${PLUGIN_ROOT}/Source/ThirdParty/sdk"
 # ---------------------------------------------------------------------------
 # Parameters (same names / role as build_C_Core_Windows.ps1)
 # ---------------------------------------------------------------------------
-CCORE_ROOT="${CCORE_ROOT:-${HOME}/Projects/NewCCoreGit}"
+CCORE_ROOT="${CCORE_ROOT:-${HOME}/Desktop/NewCCore}"
 OPENSSL_ROOT="${OPENSSL_ROOT:-${HOME}/Desktop/UE_5.5/Linux_Unreal_Engine_5.5.2/Engine/Source/ThirdParty/OpenSSL/1.1.1t}"
 # Optional overrides. When empty, Unreal's Unix x86_64 OpenSSL layout is used.
 OPENSSL_INCLUDE_DIR="${OPENSSL_INCLUDE_DIR:-}"
