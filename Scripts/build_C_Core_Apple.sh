@@ -41,10 +41,15 @@ CLEAN=0
 BUILD_MAC=1
 BUILD_IOS=1
 
-# Mac/iOS-specific (from BuildCCoreLibs.sh)
+# Mac/iOS-specific (from BuildCCoreLibs.sh; iOS floor raised for New C-Core)
 MAC_ARCHS="${MAC_ARCHS:-x86_64;arm64}"
 MAC_DEPLOYMENT_TARGET="${MAC_DEPLOYMENT_TARGET:-12.0}"
-IOS_ARCHS="${IOS_ARCHS:-x86_64;arm64}"
+# iphoneos only supports arm64. x86_64 belongs on iphonesimulator and triggers
+# "architecture not supported" against the device SDK (iOS 18+).
+IOS_ARCHS="${IOS_ARCHS:-arm64}"
+# New C-Core stdlib allocator uses aligned_alloc (available from iOS 13+).
+# Old c-core used 11.0; that fails here under -Werror=unguarded-availability-new.
+IOS_DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET:-13.0}"
 
 usage() {
   cat <<'EOF'
@@ -62,7 +67,7 @@ Options:
 
 Environment overrides (same as flags):
   CCORE_ROOT, OPENSSL_ROOT, OPENSSL_INCLUDE_DIR, OPENSSL_LIB_DIR,
-  MAC_ARCHS, MAC_DEPLOYMENT_TARGET, IOS_ARCHS
+  MAC_ARCHS, MAC_DEPLOYMENT_TARGET, IOS_ARCHS, IOS_DEPLOYMENT_TARGET
 EOF
 }
 
@@ -312,11 +317,13 @@ if [[ "$BUILD_IOS" -eq 1 ]]; then
   echo "iOS OpenSSL include: ${OPENSSL_INCLUDE_DIR_RESOLVED}"
   echo "iOS OpenSSL libs:    $(dirname "${OPENSSL_CRYPTO_LIB}")"
   echo "iOS archs:           ${IOS_ARCHS}"
+  echo "iOS deployment:      ${IOS_DEPLOYMENT_TARGET}"
   echo "iOS toolchain:       ${IOS_TOOLCHAIN}"
 
   build_platform "iOS" "${BUILD_DIR_IOS}" "${DEST_LIB_DIR_IOS}" \
     "-DCMAKE_TOOLCHAIN_FILE=${IOS_TOOLCHAIN}" \
-    "-DCMAKE_OSX_ARCHITECTURES=${IOS_ARCHS}"
+    "-DCMAKE_OSX_ARCHITECTURES=${IOS_ARCHS}" \
+    "-DCMAKE_OSX_DEPLOYMENT_TARGET=${IOS_DEPLOYMENT_TARGET}"
 fi
 
 echo ""
