@@ -216,6 +216,10 @@ $configureArgs = @(
     "-DPUBNUB_PROVIDER_PLATFORM=windows"
     "-DCMAKE_BUILD_TYPE=Release"
     "-DPUBNUB_PROFILE=full"
+    # Chat creates a C-Core listener and subscription object per channel, user, membership, and message.
+    # The full profile defaults (8 listeners, 64 channels) are too small for a normal chat screen.
+    "-DPUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS=256"
+    "-DPUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS=256"
     "-DPUBNUB_PROVIDER_TRANSPORT=socket"
     "-DPUBNUB_PROVIDER_LOGGER=none"
     "-DPUBNUB_ENABLE_RETRY=OFF"
