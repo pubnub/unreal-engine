@@ -882,6 +882,8 @@ public:
 	
 	/**
 	 * Parses an access token and retrieves information about its permissions.
+	 * The result describes access to channels, channel groups, and users.
+	 * When the token can list all channel or user metadata, the result also includes Categories.
 	 * 
 	 * @param Token The access token to parse.
 	 * @return Parsed token
