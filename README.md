@@ -1,3 +1,5 @@
+![PubNub Unreal Engine SDK](readme_content/unreal-engine-header.png)
+
 # PubNub Unreal Engine SDK
 
 <p align="center">

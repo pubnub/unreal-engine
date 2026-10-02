@@ -11,6 +11,7 @@
 #include "Misc/AutomationTest.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPubnubGrantTokenPermissionsStructureUnitTest, "Pubnub.aUnit.TokenUtilities.PubnubGrantTokenPermissionsStructure", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPubnubGrantTokenPermissionObjectUnitTest, "Pubnub.aUnit.TokenUtilities.PubnubGrantTokenPermissionObject", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPubnubReworkParsedTokenUnitTest, "Pubnub.aUnit.TokenUtilities.PubnubReworkParsedToken", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCalculateChannelPermissionsBitmaskUnitTest, "Pubnub.aUnit.TokenUtilities.CalculateChannelPermissionsBitmask", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCalculateChannelGroupPermissionsBitmaskUnitTest, "Pubnub.aUnit.TokenUtilities.CalculateChannelGroupPermissionsBitmask", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
@@ -207,7 +208,110 @@ bool FPubnubGrantTokenPermissionsStructureUnitTest::RunTest(const FString& Param
         TestTrue(TestDescription + " - User Pattern Update permission", Permissions.UserPatterns[0].Permissions.Update);
         TestEqual(TestDescription + " - User Pattern name", Permissions.UserPatterns[0].User, "user-pat-*");
     }
+
+    // --- Test Case 7: Category-only grant ---
+    {
+        const FString TestDescription = "Case 7: Category-only grant";
+        FPubnubGrantTokenPermissions Permissions;
+        Permissions.Categories.Channels = true;
+
+        TestFalse(TestDescription + " - Permissions should not be empty", Permissions.ArePermissionsEmpty());
+        TestTrue(TestDescription + " - Channel enumeration", Permissions.Categories.Channels);
+        TestFalse(TestDescription + " - User enumeration", Permissions.Categories.Users);
+        TestEqual(TestDescription + " - Channel count", Permissions.Channels.Num(), 0);
+    }
     
+    return true;
+}
+
+bool FPubnubGrantTokenPermissionObjectUnitTest::RunTest(const FString& Parameters)
+{
+    auto ReadCategoryValue = [](const TSharedPtr<FJsonObject>& PermissionsObject, const TCHAR* Key, int32& OutValue) -> bool
+    {
+        const TSharedPtr<FJsonObject>* CategoriesPtr = nullptr;
+        if (!PermissionsObject->TryGetObjectField(TEXT("categories"), CategoriesPtr) || !CategoriesPtr || !(*CategoriesPtr).IsValid())
+        {
+            return false;
+        }
+        double RawValue = 0.0;
+        if (!(*CategoriesPtr)->TryGetNumberField(Key, RawValue))
+        {
+            return false;
+        }
+        OutValue = static_cast<int32>(RawValue);
+        return true;
+    };
+
+    // Categories are omitted when neither flag is set, so existing grants keep the previous body.
+    {
+        FPubnubGrantTokenPermissions Permissions;
+        FChannelGrant ChannelGrant;
+        ChannelGrant.Channel = "chan1";
+        ChannelGrant.Permissions.Read = true;
+        Permissions.Channels.Add(ChannelGrant);
+
+        const FString PermissionObject = UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(60, TEXT("user-1"), Permissions);
+        TSharedPtr<FJsonObject> Root;
+        TestTrue("Resource grant should be valid JSON", UPubnubJsonUtilities::StringToJsonObject(PermissionObject, Root) && Root.IsValid());
+
+        const TSharedPtr<FJsonObject>* PermissionsPtr = nullptr;
+        TestTrue("Resource grant should have permissions", Root.IsValid() && Root->TryGetObjectField(TEXT("permissions"), PermissionsPtr) && PermissionsPtr && (*PermissionsPtr).IsValid());
+        if (PermissionsPtr && (*PermissionsPtr).IsValid())
+        {
+            TestFalse("Resource grant should not include categories", (*PermissionsPtr)->HasField(TEXT("categories")));
+        }
+    }
+
+    // A categories-only grant is valid and sends exactly the GET bit.
+    {
+        FPubnubGrantTokenPermissions Permissions;
+        Permissions.Categories.Channels = true;
+        Permissions.Categories.Users = true;
+
+        const FString PermissionObject = UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(60, TEXT("user-1"), Permissions);
+        TSharedPtr<FJsonObject> Root;
+        TestTrue("Category grant should be valid JSON", UPubnubJsonUtilities::StringToJsonObject(PermissionObject, Root) && Root.IsValid());
+
+        const TSharedPtr<FJsonObject>* PermissionsPtr = nullptr;
+        TestTrue("Category grant should have permissions", Root.IsValid() && Root->TryGetObjectField(TEXT("permissions"), PermissionsPtr) && PermissionsPtr && (*PermissionsPtr).IsValid());
+        if (PermissionsPtr && (*PermissionsPtr).IsValid())
+        {
+            int32 ChannelsValue = 0;
+            int32 UsersValue = 0;
+            TestTrue("Category grant should include channels", ReadCategoryValue(*PermissionsPtr, TEXT("channels"), ChannelsValue));
+            TestTrue("Category grant should include uuids", ReadCategoryValue(*PermissionsPtr, TEXT("uuids"), UsersValue));
+            TestEqual("Channel category should be the GET bit", ChannelsValue, 32);
+            TestEqual("User category should be the GET bit", UsersValue, 32);
+        }
+    }
+
+    // Only the enabled category is written.
+    {
+        FPubnubGrantTokenPermissions Permissions;
+        Permissions.Categories.Users = true;
+
+        const FString PermissionObject = UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(60, TEXT("user-1"), Permissions);
+        TSharedPtr<FJsonObject> Root;
+        TestTrue("User category grant should be valid JSON", UPubnubJsonUtilities::StringToJsonObject(PermissionObject, Root) && Root.IsValid());
+
+        const TSharedPtr<FJsonObject>* PermissionsPtr = nullptr;
+        TestTrue("User category grant should have permissions", Root.IsValid() && Root->TryGetObjectField(TEXT("permissions"), PermissionsPtr) && PermissionsPtr && (*PermissionsPtr).IsValid());
+        if (PermissionsPtr && (*PermissionsPtr).IsValid())
+        {
+            const TSharedPtr<FJsonObject>* CategoriesPtr = nullptr;
+            TestTrue("User category grant should include categories", (*PermissionsPtr)->TryGetObjectField(TEXT("categories"), CategoriesPtr) && CategoriesPtr && (*CategoriesPtr).IsValid());
+            if (CategoriesPtr && (*CategoriesPtr).IsValid())
+            {
+                TestFalse("User category grant should not include channels", (*CategoriesPtr)->HasField(TEXT("channels")));
+                int32 UsersValue = 0;
+                double RawValue = 0.0;
+                TestTrue("User category grant should include uuids", (*CategoriesPtr)->TryGetNumberField(TEXT("uuids"), RawValue));
+                UsersValue = static_cast<int32>(RawValue);
+                TestEqual("User category should be the GET bit", UsersValue, 32);
+            }
+        }
+    }
+
     return true;
 }
 
@@ -234,6 +338,7 @@ bool FPubnubReworkParsedTokenUnitTest::RunTest(const FString& Parameters)
             TestEqual("Version should be 2", static_cast<int>(ReworkedTokenObject->GetNumberField(TEXT("Version"))), 2);
             TestEqual("Timestamp should match", static_cast<int64>(ReworkedTokenObject->GetNumberField(TEXT("Timestamp"))), 1752219810);
             TestEqual("TTL should be 30", static_cast<int>(ReworkedTokenObject->GetNumberField(TEXT("TTL"))), 30);
+            TestFalse("Token without cat should not include Categories", ReworkedTokenObject->HasField(TEXT("Categories")));
             
             // Verify Resources structure
             const TSharedPtr<FJsonObject>* ResourcesPtr = nullptr;
@@ -347,6 +452,22 @@ bool FPubnubReworkParsedTokenUnitTest::RunTest(const FString& Parameters)
         }
     }
     
+    // Parsed token that can list all channels, but not all users.
+    {
+        FString CategoryToken = TEXT(R"({"v":2,"t":1752219810,"ttl":60,"res":{},"pat":{},"cat":{"chan":32,"uuid":1}})");
+        FString ReworkedCategoryToken = UPubnubTokenUtilities::ReworkParsedToken(CategoryToken);
+        TSharedPtr<FJsonObject> CategoryObject;
+        TestTrue("Category token should be valid JSON", UPubnubJsonUtilities::StringToJsonObject(ReworkedCategoryToken, CategoryObject) && CategoryObject.IsValid());
+
+        const TSharedPtr<FJsonObject>* CategoriesPtr = nullptr;
+        TestTrue("Parsed token should include Categories", CategoryObject.IsValid() && CategoryObject->TryGetObjectField(TEXT("Categories"), CategoriesPtr) && CategoriesPtr && (*CategoriesPtr).IsValid());
+        if (CategoriesPtr && (*CategoriesPtr).IsValid())
+        {
+            TestTrue("Channel category GET bit should be true", (*CategoriesPtr)->GetBoolField(TEXT("Channels")));
+            TestFalse("User category without the GET bit should be false", (*CategoriesPtr)->GetBoolField(TEXT("Users")));
+        }
+    }
+
     // Test with empty input
     FString EmptyResult = UPubnubTokenUtilities::ReworkParsedToken(TEXT(""));
     TestTrue("Empty input should return empty result", EmptyResult.IsEmpty());
