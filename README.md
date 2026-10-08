@@ -2,141 +2,76 @@
 
 # PubNub Unreal Engine SDK
 
-[![PubNub Unreal SDK](https://img.shields.io/badge/PubNub_Unreal-2.1.0-blue)](https://www.fab.com/listings/9501a8d6-f9e6-4cf8-8b56-d173bdb71fc4)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/pubnub/rust/master/logo.svg" alt="PubNub" width="300"/>
+</p>
 
-PubNub provides global infrastructure for real-time, interactive applications.
+[![License: custom MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pubnub/rust/LICENSE)
 
-Publish and receive messages in Unreal Engine. Use this SDK for Unreal Engine applications using Blueprints or C++.
+Welcome to the official PubNub Unreal Engine SDK repository. [PubNub](https://www.pubnub.com/) provides the infrastructure and APIs needed for the realtime communication layer of your application. You can focus on building your app's logic while PubNub ensures data is sent and received across the world in less than 100ms.
 
-[Documentation](https://www.pubnub.com/docs/sdks/unreal) · [API reference](https://www.pubnub.com/docs/sdks/unreal/api-reference/publish-and-subscribe) · [Changelog](https://www.pubnub.com/docs/sdks/unreal/changelog) · [Support](https://support.pubnub.com/)
+## Getting Started
 
-## Requirements
+Below, you will find everything you need to begin messaging!
 
-| Requirement | Supported version or setup |
-| --- | --- |
-| Unreal Engine | [Unreal Engine 5.2–5.7 through FAB; 5.0–5.7 from source](https://www.pubnub.com/docs/sdks/unreal/platform-support) |
-| Target platforms | [Windows, macOS, Linux/Unix, iOS, and Android](https://www.pubnub.com/docs/sdks/unreal/platform-support) |
-| C++ module | For C++ projects, add `"PubnubLibrary"` to `PrivateDependencyModuleNames` in the project's `.Build.cs` file. |
+### Get PubNub Keys
 
-## Installation
+You will need publish and subscribe keys to authenticate your app. Get your keys from the [Admin Portal](https://dashboard.pubnub.com/login).
 
-Install the SDK from FAB. For source installation, clone the repository into the project's `Plugins/Pubnub` directory:
+### Configure Unreal Engine
 
-```sh
-git clone https://github.com/pubnub/unreal-engine.git Plugins/Pubnub
-```
+1. Download and [install Unreal Engine](https://dev.epicgames.com/documentation/pl-pl/unreal-engine/installing-unreal-engine) version 5.0 or higher.
+2. Create a new blank Unreal project at a location of your choice.
+3. Create an empty `Plugins` folder in the location of your Unreal project.
 
-For other installation methods, see the [Unreal SDK documentation](https://www.pubnub.com/docs/sdks/unreal).
+### Download the SDK
 
-## Quickstart
+Within the `Plugins` folder of your Unreal project, clone the Unreal SDK repository: [https://github.com/pubnub/unreal-engine](https://github.com/pubnub/unreal-engine "SDK source-code repository on GitHub").
 
-This example runs in an Unreal Engine C++ project. It subscribes to `hello_world`, publishes one message, and prints the received text.
+### Blueprints and Sample Code
 
-### Get your keys
+Each PubNub API is available through Blueprints and C++ code. For further information on using and configuring the workspace and the Unreal Engine project, refer to the [PubNub Unreal SDK documentation](https://www.pubnub.com/docs/sdks/unreal).
 
-1. Open the [PubNub Admin Portal](https://admin.pubnub.com/).
-2. Create an app and a keyset for development, or select an existing development keyset.
-3. Copy its publish key and subscribe key.
+![Using docs](readme_content/using_docs.gif)
 
-For a distributed game client, obtain a scoped token from your trusted backend and call `PubnubClient->SetAuthToken(Token)` before accessing protected resources. Never ship the secret key in the game.
+You can copy the Blueprints from the docs and paste them into your Unreal Editor.
 
-### Send and receive a message
+## Security
 
-Create the PubNub client from `UPubnubSubsystem` in a GameInstance or other session-owned class. Keep the client as a `UPROPERTY()` member. Include `PubnubSubsystem.h`.
+### Keys and credentials
 
-Replace the key placeholders. Use a User ID that identifies the user or device in your app.
+PubNub provides three keys per keyset:
 
-`PubnubClient` below is a `UPROPERTY() TObjectPtr<UPubnubClient>` on that class. Call this from a context that has `GetGameInstance()`, such as `BeginPlay`.
+| Key | Safe for client builds | Purpose |
+| --- | --- | --- |
+| Publish Key | Yes | Publish messages |
+| Subscribe Key | Yes | Subscribe to channels |
+| Secret Key | **No** | Root/admin access to the entire keyset |
 
-```cpp
-UPubnubSubsystem* PubnubSubsystem = GetGameInstance()->GetSubsystem<UPubnubSubsystem>();
+The **Secret Key grants unrestricted permissions** on your keyset — publish on any channel, read history, mint or revoke PAM tokens, and modify App Context data. **Never ship a Secret Key in a game client build.**
 
-FPubnubConfig Config;
-Config.PublishKey = TEXT("YOUR_PUBLISH_KEY");
-Config.SubscribeKey = TEXT("YOUR_SUBSCRIBE_KEY");
-Config.UserID = TEXT("hello-world-user");
+Global plugin settings (`Project Settings → Pubnub SDK`) store only the Publish Key and Subscribe Key. These are safe to include in `DefaultEngine.ini` and packaged client builds.
 
-PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
+### Recommended architecture
 
-PubnubClient->OnMessageReceivedNative.AddLambda([](const FPubnubMessageData& Message)
-{
-    UE_LOG(LogTemp, Log, TEXT("%s"), *Message.Message);
-});
+**Game clients (shipped builds):**
 
-PubnubClient->SubscribeToChannel(TEXT("hello_world"));
+1. Configure only Publish Key and Subscribe Key (via plugin settings or `FPubnubConfig`).
+2. Obtain a scoped PAM v3 access token from your backend.
+3. Call `SetAuthToken` on the client before subscribing or publishing.
 
-// Subscription setup can take a moment before the client can receive messages.
-FPlatformProcess::Sleep(2.0f);
+**Dedicated servers / backend tooling:**
 
-PubnubClient->PublishMessageAsync(TEXT("hello_world"), TEXT("Hello world"));
+1. Provide the Secret Key in `FPubnubConfig` when calling `CreatePubnubClient` — not in global plugin settings.
+2. Load the Secret Key from a secure source (environment variable, server-only config, secrets manager).
+3. Use `GrantToken` / `RevokeToken` / `SetSecretKey` only in server-side code.
 
-// Give the message time to arrive, then leave the channel.
-FPlatformProcess::Sleep(2.0f);
-PubnubClient->UnsubscribeFromChannel(TEXT("hello_world"));
-```
+For more details, see the [PubNub Access Manager documentation](https://www.pubnub.com/docs/general/setup/access-manager).
 
-### Run the example
+## Support
 
-Build the project and start Play In Editor.
-
-The Unreal Output Log should show:
-
-```text
-Hello world
-```
-
-The example calls `UnsubscribeFromChannel` after the message has had time to arrive. Keep the `UPubnubClient` strongly referenced for the owning session, unsubscribe listeners and channels when they are no longer needed, and destroy the client with its owning Unreal lifecycle. Reuse one PubNub client for the user or session rather than creating a client for every operation.
-
-For a complete application, see [the getting started guide](https://www.pubnub.com/docs/sdks/unreal).
-
-## Next steps
-
-| Task | Documentation |
-| --- | --- |
-| Configure the client | [Configuration](https://www.pubnub.com/docs/sdks/unreal/api-reference/configuration) |
-| Work with subscriptions and messages | [Publish & Subscribe](https://www.pubnub.com/docs/sdks/unreal/api-reference/publish-and-subscribe) |
-| Check channel occupancy | [Presence](https://www.pubnub.com/docs/sdks/unreal/api-reference/presence) |
-| Read message history | [Message Persistence](https://www.pubnub.com/docs/sdks/unreal/api-reference/storage-and-playback) |
-
-## Build with an AI coding assistant
-
-The [PubNub MCP server](https://www.pubnub.com/docs/ai/pubnub-mcp-server) gives an AI coding assistant access to PubNub SDK documentation and PubNub APIs. Connect the assistant to the hosted server at `https://mcp.pubnub.com`, or run `npx @pubnub/mcp@latest` locally.
-
-The [server repository](https://github.com/pubnub/pubnub-mcp-server) has setup steps for VS Code, Cursor, Claude Code, Claude Desktop, Codex, Gemini CLI, and OpenCode.
-
-## Before production
-
-Use [Access Manager](https://www.pubnub.com/docs/sdks/unreal/api-reference/access-manager) to grant each client the permissions it needs. Keep the secret key on your backend. Never include it in a distributed client.
-
-Create `UPubnubClient` from `UPubnubSubsystem` and keep it for the owning game or session lifetime. Call `UnsubscribeFromChannel` when an individual channel is no longer needed, `UnsubscribeFromAll` to stop all subscriptions, and `DestroyClient` when the client itself is no longer needed. Use `SetAuthToken` with a backend-issued token in distributed clients.
-
-Live delivery through PubNub SDKs is at-most-once. A subscriber can miss messages while disconnected or if its buffer overflows. For longer-gap recovery, see [Message Persistence](https://www.pubnub.com/docs/sdks/unreal/api-reference/storage-and-playback).
-
-## Troubleshooting
-
-| Symptom | Check |
-| --- | --- |
-| C++ build cannot resolve PubNub headers or module symbols | Add `"PubnubLibrary"` to `PrivateDependencyModuleNames`, regenerate project files if necessary, and rebuild. See the [Unreal SDK](https://www.pubnub.com/docs/sdks/unreal). |
-| A publish succeeds but no message appears | Check the message handler, subscription readiness, keyset, and channel name. |
-| A packaged Blueprint project fails although it works in Editor | Follow the packaging-specific fixes in [Unreal troubleshooting](https://www.pubnub.com/docs/sdks/unreal/troubleshoot), including the documented Blueprint-only packaging requirements. |
-| Extra clients or duplicate messages during development | Own the PubNub client and listeners at GameInstance or another session-lifetime scope rather than recreating them whenever an Actor is reconstructed. |
-
-For setup help, see [troubleshooting](https://www.pubnub.com/docs/sdks/unreal/troubleshoot). Check [network status](https://status.pubnub.com/) for service incidents.
-
-## Releases
-
-Read the [changelog](https://www.pubnub.com/docs/sdks/unreal/changelog) before upgrading.
-
-For a major version change, follow the [Unreal SDK 2.x migration guide](https://www.pubnub.com/docs/sdks/unreal/migration-guides/unreal-v2-migration-guide) and review the [changelog](https://www.pubnub.com/docs/sdks/unreal/changelog).
-
-## Support and contributions
-
-For setup or account help, contact [PubNub Support](https://support.pubnub.com/).
-
-For a reproducible SDK bug, use [GitHub Issues](https://github.com/pubnub/unreal-engine/issues). Include the SDK version, runtime, and a small reproduction with credentials removed.
-
-Build and test the plugin against a supported Unreal Engine version and include a reproducible test or project for behavioral changes before opening a pull request.
+If you **need help** or have a **general question**, contact [support@pubnub.com](mailto:support@pubnub.com).
 
 ## License
 
-See the [PubNub Software Development Kit License Agreement](https://github.com/pubnub/unreal-engine/blob/master/LICENSE).
+This project is licensed under a [custom MIT license](https://github.com/pubnub/unreal/blob/master/LICENSE). For more details about the license, refer to the [License FAQ](https://www.pubnub.com/docs/sdks/license-faq).
