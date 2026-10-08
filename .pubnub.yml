@@ -3,6 +3,11 @@ schema: 1
 version: 2.2.0
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2026-10-08
+    version: 2.2.0
+    changes:
+      - type: feature
+        text: "`FPubnubGrantTokenPermissions` now includes `Categories` (`FPubnubCategoryPermissions`). Set `Channels` to allow `GetAllChannelMetadata` and `Users` to allow `GetAllUserMetadata`. These are separate from access to one named channel, channel group, or user, and a token can be granted with only these set. `ParseToken` includes `Categories` when the token can list all channel or user metadata."
   - date: 2026-06-22
     version: 2.1.0
     changes:
