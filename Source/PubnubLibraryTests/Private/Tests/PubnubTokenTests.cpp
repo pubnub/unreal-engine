@@ -91,6 +91,46 @@ namespace PubnubTokenTestsPrivate
 		}
 		return (*PerChannelPtr)->TryGetBoolField(TEXT("Read"), OutRead);
 	}
+
+	static bool GetListAllFromParsedToken(const FString& ParsedJson, bool& OutChannels, bool& OutUsers)
+	{
+		TSharedPtr<FJsonObject> Root;
+		if (!UPubnubJsonUtilities::StringToJsonObject(ParsedJson, Root) || !Root.IsValid())
+		{
+			return false;
+		}
+		const TSharedPtr<FJsonObject>* CategoriesPtr = nullptr;
+		if (!Root->TryGetObjectField(TEXT("Categories"), CategoriesPtr) || !CategoriesPtr || !(*CategoriesPtr).IsValid())
+		{
+			return false;
+		}
+		return (*CategoriesPtr)->TryGetBoolField(TEXT("Channels"), OutChannels)
+			&& (*CategoriesPtr)->TryGetBoolField(TEXT("Users"), OutUsers);
+	}
+
+	static const FPubnubUserData* FindUserInList(const TArray<FPubnubUserData>& Users, const FString& UserId)
+	{
+		for (const FPubnubUserData& User : Users)
+		{
+			if (User.UserID == UserId)
+			{
+				return &User;
+			}
+		}
+		return nullptr;
+	}
+
+	static const FPubnubChannelData* FindChannelInList(const TArray<FPubnubChannelData>& Channels, const FString& ChannelId)
+	{
+		for (const FPubnubChannelData& Channel : Channels)
+		{
+			if (Channel.ChannelID == ChannelId)
+			{
+				return &Channel;
+			}
+		}
+		return nullptr;
+	}
 }
 
 using namespace PubnubTokenTestsPrivate;
@@ -174,6 +214,10 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubToken_PublishLifecycleWithGrantAn
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubToken_PublishWrongChannel_StillDeniedWithLimitedGrant, FPubnubAutomationTestBase,
 	"Pubnub.Integration.Token.4Advanced.PublishWrongChannelDenied",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubToken_CategoryGrantListsAllMetadata, FPubnubAutomationTestBase,
+	"Pubnub.Integration.Token.4Advanced.CategoryGrantListsAllMetadata",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 bool FPubnubGrantToken_EmptyAuthorizedUser_ReturnsError::RunTest(const FString& Parameters)
@@ -653,6 +697,89 @@ bool FPubnubToken_PublishWrongChannel_StillDeniedWithLimitedGrant::RunTest(const
 	TestEqual(TEXT("Allowed channel publish status 200"), RightCh.Result.Status, 200);
 
 	PubnubSubsystem->DestroyPubnubClient(Restricted);
+
+	CleanUp();
+	return true;
+}
+
+// A secret-key client grants permission to list all users and all channels.
+// A second client, without a secret key, uses that token for both list calls.
+bool FPubnubToken_CategoryGrantListsAllMetadata::RunTest(const FString& Parameters)
+{
+	if (!InitTestWithPAM())
+	{
+		AddError(TEXT("InitTestWithPAM failed"));
+		return false;
+	}
+
+	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
+	{
+		AddError(ErrorMessage);
+	});
+
+	const FString RestrictedUser = SDK_PREFIX + TEXT("pam_listall_user");
+	const FString ListedUser = SDK_PREFIX + TEXT("pam_listall_meta_user");
+	const FString ListedChannel = SDK_PREFIX + TEXT("pam_listall_meta_ch");
+	const FString UserStatus = TEXT("pamListAllUsers");
+	const FString ChannelStatus = TEXT("pamListAllChannels");
+
+	UPubnubClient* Admin = PubnubClient;
+	Admin->SetUserID(SDK_PREFIX + TEXT("pam_listall_admin"));
+	Admin->SetSecretKey();
+
+	FPubnubUserInputData UserInput;
+	UserInput.UserName = TEXT("ListAllUser");
+	UserInput.Status = UserStatus;
+	const FPubnubUserMetadataResult SetUser = Admin->SetUserMetadata(ListedUser, UserInput);
+	TestFalse(TEXT("Admin should create the user that will be listed"), SetUser.Result.Error);
+
+	FPubnubChannelInputData ChannelInput;
+	ChannelInput.ChannelName = TEXT("ListAllChannel");
+	ChannelInput.Status = ChannelStatus;
+	const FPubnubChannelMetadataResult SetChannel = Admin->SetChannelMetadata(ListedChannel, ChannelInput);
+	TestFalse(TEXT("Admin should create the channel that will be listed"), SetChannel.Result.Error);
+
+	FPubnubGrantTokenPermissions Perms;
+	Perms.Categories.Channels = true;
+	Perms.Categories.Users = true;
+	const FPubnubGrantTokenResult Grant = Admin->GrantToken(60, RestrictedUser, Perms);
+	TestFalse(TEXT("Grant should succeed"), Grant.Result.Error);
+	TestEqual(TEXT("Grant status 200"), Grant.Result.Status, 200);
+	TestFalse(TEXT("Grant should return a token"), Grant.Token.IsEmpty());
+
+	const FString Parsed = Admin->ParseToken(Grant.Token);
+	bool bCanListChannels = false;
+	bool bCanListUsers = false;
+	TestTrue(TEXT("Parsed token should describe list-all permissions"),
+		GetListAllFromParsedToken(Parsed, bCanListChannels, bCanListUsers));
+	TestTrue(TEXT("Token should allow listing all channels"), bCanListChannels);
+	TestTrue(TEXT("Token should allow listing all users"), bCanListUsers);
+
+	UPubnubClient* Restricted = PubnubSubsystem->CreatePubnubClient(MakePamRestrictedConfig(RestrictedUser));
+	TestNotNull(TEXT("Client without a secret key should be created"), Restricted);
+	if (Restricted)
+	{
+		Restricted->SetAuthToken(Grant.Token);
+
+		FPubnubGetAllInclude Include;
+		Include.IncludeStatus = true;
+		const FString UserFilter = FString::Printf(TEXT("status=='%s'"), *UserStatus);
+		const FPubnubGetAllUserMetadataResult Users = Restricted->GetAllUserMetadata(Include, 100, UserFilter);
+		TestFalse(TEXT("GetAllUserMetadata should succeed with the granted token"), Users.Result.Error);
+		TestEqual(TEXT("GetAllUserMetadata status 200"), Users.Result.Status, 200);
+		TestNotNull(TEXT("Listed user should be returned"), FindUserInList(Users.UsersData, ListedUser));
+
+		const FString ChannelFilter = FString::Printf(TEXT("status=='%s'"), *ChannelStatus);
+		const FPubnubGetAllChannelMetadataResult Channels = Restricted->GetAllChannelMetadata(Include, 100, ChannelFilter);
+		TestFalse(TEXT("GetAllChannelMetadata should succeed with the granted token"), Channels.Result.Error);
+		TestEqual(TEXT("GetAllChannelMetadata status 200"), Channels.Result.Status, 200);
+		TestNotNull(TEXT("Listed channel should be returned"), FindChannelInList(Channels.ChannelsData, ListedChannel));
+
+		PubnubSubsystem->DestroyPubnubClient(Restricted);
+	}
+
+	Admin->RemoveUserMetadata(ListedUser);
+	Admin->RemoveChannelMetadata(ListedChannel);
 
 	CleanUp();
 	return true;

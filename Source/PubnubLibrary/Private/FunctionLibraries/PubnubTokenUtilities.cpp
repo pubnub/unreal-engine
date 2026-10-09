@@ -9,6 +9,11 @@
 #include "Dom/JsonValue.h"
 #include "pubnub/features/access.h"
 
+namespace
+{
+	/** Value written when a list-all flag is enabled, and recognized again when a token is parsed. */
+	constexpr int32 GPubnubCategoryGetPermissionBit = 32;
+}
 
 FString UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta)
 {
@@ -29,6 +34,19 @@ FString UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(int Ttl, F
 	TSharedPtr<FJsonObject> TokenStructureJsonObject = MakeShareable(new FJsonObject);
 	TokenStructureJsonObject->SetObjectField(ANSI_TO_TCHAR("resources"), ResourcesJsonObject);
 	TokenStructureJsonObject->SetObjectField(ANSI_TO_TCHAR("patterns"), PatternsJsonObject);
+	if (Permissions.Categories.Channels || Permissions.Categories.Users)
+	{
+		TSharedPtr<FJsonObject> CategoriesObject = MakeShareable(new FJsonObject);
+		if (Permissions.Categories.Channels)
+		{
+			CategoriesObject->SetNumberField(ANSI_TO_TCHAR("channels"), GPubnubCategoryGetPermissionBit);
+		}
+		if (Permissions.Categories.Users)
+		{
+			CategoriesObject->SetNumberField(ANSI_TO_TCHAR("uuids"), GPubnubCategoryGetPermissionBit);
+		}
+		TokenStructureJsonObject->SetObjectField(ANSI_TO_TCHAR("categories"), CategoriesObject);
+	}
 	if(UPubnubJsonUtilities::IsCorrectJsonString(Meta))
 	{
 		TSharedPtr<FJsonObject> MetaJsonObject = MakeShareable(new FJsonObject);
@@ -215,6 +233,27 @@ FString UPubnubTokenUtilities::ReworkParsedToken(const FString& ParsedToken)
 		{
 			ReworkedTokenObject->SetObjectField(TEXT("Patterns"), PatternsObject);
 		}
+	}
+
+	// A parsed token stores "list all channels" as cat.chan and "list all users" as cat.uuid.
+	// Surface those as Categories.Channels and Categories.Users. Access to one named resource is not included here.
+	const TSharedPtr<FJsonObject>* CategoriesObjectPtr = nullptr;
+	if (ParsedTokenObject->TryGetObjectField(TEXT("cat"), CategoriesObjectPtr) && CategoriesObjectPtr && (*CategoriesObjectPtr).IsValid())
+	{
+		const TSharedPtr<FJsonObject>& SourceCategories = *CategoriesObjectPtr;
+		TSharedPtr<FJsonObject> CategoriesObject = MakeShareable(new FJsonObject);
+
+		auto SetEnumerationFlag = [&SourceCategories, &CategoriesObject](const TCHAR* SourceKey, const TCHAR* DestKey)
+		{
+			double RawValue = 0.0;
+			const bool bCanEnumerate = SourceCategories->TryGetNumberField(SourceKey, RawValue)
+				&& (static_cast<int32>(RawValue) & GPubnubCategoryGetPermissionBit) != 0;
+			CategoriesObject->SetBoolField(DestKey, bCanEnumerate);
+		};
+
+		SetEnumerationFlag(TEXT("chan"), TEXT("Channels"));
+		SetEnumerationFlag(TEXT("uuid"), TEXT("Users"));
+		ReworkedTokenObject->SetObjectField(TEXT("Categories"), CategoriesObject);
 	}
 
 	return UPubnubJsonUtilities::JsonObjectToString(ReworkedTokenObject);

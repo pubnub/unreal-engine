@@ -352,6 +352,30 @@ struct FUserGrant
 	FPubnubUserPermissions Permissions;
 };
 
+/**
+ * Permission to list every channel or every user.
+ * This is separate from access to one named channel, channel group, or user.
+ */
+USTRUCT(BlueprintType)
+struct FPubnubCategoryPermissions
+{
+	GENERATED_BODY()
+
+	/**
+	 * When true, the granted token can list all channel metadata (GetAllChannelMetadata).
+	 * Permission to read or get a single channel does not include this.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	bool Channels = false;
+
+	/**
+	 * When true, the granted token can list all user metadata (GetAllUserMetadata).
+	 * Permission to get a single user does not include this.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	bool Users = false;
+};
+
 USTRUCT(BlueprintType)
 struct FPubnubGrantTokenPermissions
 {
@@ -399,11 +423,20 @@ struct FPubnubGrantTokenPermissions
 	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
 	TArray<FUserGrant> UserPatterns;
 
+	/**
+	 * Permission to list all channel metadata or all user metadata.
+	 * Get access on a named channel, user, or pattern does not grant this.
+	 * A token can be granted with only these permissions set.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Pubnub")
+	FPubnubCategoryPermissions Categories;
+
 	//Helper to check if Permissions struct contains at least one permission
 	bool ArePermissionsEmpty() const
 	{
 		return Channels.IsEmpty() && ChannelGroups.IsEmpty() && Users.IsEmpty() &&
-		ChannelPatterns.IsEmpty() && ChannelGroupPatterns.IsEmpty() && UserPatterns.IsEmpty();
+		ChannelPatterns.IsEmpty() && ChannelGroupPatterns.IsEmpty() && UserPatterns.IsEmpty() &&
+		!Categories.Channels && !Categories.Users;
 	}
 };
 
