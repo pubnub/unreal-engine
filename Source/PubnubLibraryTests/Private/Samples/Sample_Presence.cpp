@@ -33,7 +33,6 @@ void ASample_Presence::RunSamples()
 	SetStateWithResultLambdaSample();
 	GetStateSample();
 	GetStateWithLambdaSample();
-	GetStateFromGroupSample();
 }
 //Internal function, don't copy it with the samples
 ASample_Presence::ASample_Presence()
@@ -386,28 +385,6 @@ void ASample_Presence::GetStateWithLambdaSample()
 	//Get state for the user on a channel
 	FString Channel = TEXT("presence-channel");
 	FString ChannelGroup = TEXT("");
-	PubnubClient->GetStateAsync(Channel, ChannelGroup, UserID, OnGetStateResponse);
-}
-
-// snippet.get_state_from_group
-// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-void ASample_Presence::GetStateFromGroupSample()
-{
-	// snippet.hide
-	UPubnubClient* PubnubClient = GetPubnubClient();
-	FString UserID = TEXT("Player_001");
-	// snippet.show
-	
-	//Assumes PubnubClient is created and UserID is set
-
-	// Bind response delegate
-	// ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-	FOnPubnubGetStateResponse OnGetStateResponse;
-	OnGetStateResponse.BindDynamic(this, &ASample_Presence::OnGetStateResponse_Simple);
-
-	//Get state for the user on a channel group
-	FString Channel = TEXT("");
-	FString ChannelGroup = TEXT("presence-channel-group");
 	PubnubClient->GetStateAsync(Channel, ChannelGroup, UserID, OnGetStateResponse);
 }
 

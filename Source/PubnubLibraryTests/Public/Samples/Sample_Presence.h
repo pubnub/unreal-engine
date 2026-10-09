@@ -93,10 +93,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
 	void GetStateWithLambdaSample();
 	
-	// snippet.get_state_from_group
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Presence")
-	void GetStateFromGroupSample();
-	
 	// snippet.end
 	
 private:
