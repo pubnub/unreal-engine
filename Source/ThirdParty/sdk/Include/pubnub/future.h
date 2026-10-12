@@ -217,6 +217,11 @@ PUBNUB_API pubnub_res_t pubnub_async(pubnub_future_t   future,
  * fires (or after @c pubnub_future_is_ready returns @c true), call
  * @c pubnub_future_release to return the slot to the pool.
  *
+ * In cooperative mode (no background thread), the cancel is serviced on
+ * your next @c pubnub_process or @c pubnub_await tick: the transport
+ * teardown, terminal transition, and completion callback are all deferred
+ * to that tick, and the future stays @c PUBNUB_IN_PROGRESS until then.
+ *
  * @param future The future identifying the request to cancel.
  * @retval PUBNUB_OK                  Cancel was dispatched successfully.
  * @retval PUBNUB_ERR_INVALID_ARGUMENT @p future is invalid (NULL context

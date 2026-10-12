@@ -86,8 +86,17 @@ extern "C" {
  *             the subscribe feature enabled.
  * @param name NUL-terminated channel name (@b required, copied by the
  *             SDK). The PubNub server enforces a 2048-character limit.
- * @return Entity handle on success, or @c NULL on validation/allocation
- *         failure.
+ * @return Entity handle on success, or @c NULL when:
+ *         - @p ctx is @c NULL, or lacks a subscribe key or user ID;
+ *         - @p name is @c NULL, empty, or longer than 65535 bytes;
+ *         - the entity table is full (@c PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
+ *           distinct entities). Rebuild the SDK with a larger value;
+ *           retrying at run time cannot succeed until you destroy an
+ *           entity;
+ *         - the entity already has the maximum number of references; or
+ *         - memory allocation fails.
+ *         A full table is also reported through the logger when logging is
+ *         enabled.
  */
 PUBNUB_API pubnub_entity_t pubnub_channel(pubnub_context_t* ctx, const char* name);
 
@@ -97,7 +106,17 @@ PUBNUB_API pubnub_entity_t pubnub_channel(pubnub_context_t* ctx, const char* nam
  * @param ctx  Initialized context (@b required, @b borrowed).
  * @param name NUL-terminated channel group name (@b required, copied by
  *             the SDK). The PubNub server enforces a 92-character limit.
- * @return Entity handle on success, or @c NULL on failure.
+ * @return Entity handle on success, or @c NULL when:
+ *         - @p ctx is @c NULL, or lacks a subscribe key or user ID;
+ *         - @p name is @c NULL, empty, or longer than 65535 bytes;
+ *         - the entity table is full (@c PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
+ *           distinct entities). Rebuild the SDK with a larger value;
+ *           retrying at run time cannot succeed until you destroy an
+ *           entity;
+ *         - the entity already has the maximum number of references; or
+ *         - memory allocation fails.
+ *         A full table is also reported through the logger when logging is
+ *         enabled.
  */
 PUBNUB_API pubnub_entity_t pubnub_channel_group(pubnub_context_t* ctx,
                                                 const char*       name);
@@ -108,7 +127,17 @@ PUBNUB_API pubnub_entity_t pubnub_channel_group(pubnub_context_t* ctx,
  * @param ctx Initialized context (@b required, @b borrowed).
  * @param id  NUL-terminated metadata object identifier (@b required,
  *            copied by the SDK).
- * @return Entity handle on success, or @c NULL on failure.
+ * @return Entity handle on success, or @c NULL when:
+ *         - @p ctx is @c NULL, or lacks a subscribe key or user ID;
+ *         - @p id is @c NULL, empty, or longer than 65535 bytes;
+ *         - the entity table is full (@c PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
+ *           distinct entities). Rebuild the SDK with a larger value;
+ *           retrying at run time cannot succeed until you destroy an
+ *           entity;
+ *         - the entity already has the maximum number of references; or
+ *         - memory allocation fails.
+ *         A full table is also reported through the logger when logging is
+ *         enabled.
  */
 PUBNUB_API pubnub_entity_t pubnub_channel_metadata(pubnub_context_t* ctx,
                                                    const char*       id);
@@ -119,7 +148,17 @@ PUBNUB_API pubnub_entity_t pubnub_channel_metadata(pubnub_context_t* ctx,
  * @param ctx Initialized context (@b required, @b borrowed).
  * @param id  NUL-terminated metadata object identifier (@b required,
  *            copied by the SDK).
- * @return Entity handle on success, or @c NULL on failure.
+ * @return Entity handle on success, or @c NULL when:
+ *         - @p ctx is @c NULL, or lacks a subscribe key or user ID;
+ *         - @p id is @c NULL, empty, or longer than 65535 bytes;
+ *         - the entity table is full (@c PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
+ *           distinct entities). Rebuild the SDK with a larger value;
+ *           retrying at run time cannot succeed until you destroy an
+ *           entity;
+ *         - the entity already has the maximum number of references; or
+ *         - memory allocation fails.
+ *         A full table is also reported through the logger when logging is
+ *         enabled.
  */
 PUBNUB_API pubnub_entity_t pubnub_user_metadata(pubnub_context_t* ctx,
                                                 const char*       id);
@@ -162,19 +201,36 @@ PUBNUB_API pubnub_subscribe_entity_type_t pubnub_entity_type(pubnub_entity_t ent
  * @param opts   Subscription options (@b optional, @b borrowed). Pass @c NULL
  *               for defaults. @c with_presence is silently ignored for
  *               metadata entities.
- * @return Subscription handle on success. @c NULL on validation failure
- *         (NULL entity) or allocation failure (out of memory).
+ * @return Subscription handle, or @c PUBNUB_SUBSCRIPTION_INVALID when:
+ *         - @p entity is @c NULL;
+ *         - the entity no longer refers to a live subscribe registry entry
+ *           (for example after the context subscribe state was torn down);
+ *         - the entity already has the maximum number of references;
+ *         - the subscription table is full
+ *           (@c PUBNUB_CFG_MAX_SUBSCRIPTIONS live subscriptions). Rebuild
+ *           the SDK with a larger value; retrying at run time cannot
+ *           succeed until you destroy a subscription; or
+ *         - memory allocation fails.
+ *         A full table is also reported through the logger when logging is
+ *         enabled.
  *
  * @note The entity handle may be destroyed after creating the subscription.
+ * @note Passing an entity handle you already destroyed is undefined
+ *       behavior.
  */
 PUBNUB_API pubnub_subscription_t
 pubnub_subscription_create(pubnub_entity_t                   entity,
                            const pubnub_subscription_opts_t* opts);
 
 /**
- * @brief Destroy a subscription and release associated resources.
+ * @brief Destroy a subscription handle.
  *
- * @attention Do not use `entity` after this call.
+ * If active and not a member of subscription set, the subscription is
+ * unsubscribed first (its channels leave presence). Listeners registered
+ * on this handle are detached. Safe to call from within a listener callback.
+ *
+ * @warning The handle is invalid immediately after this call, even if it is
+ *          still a member of a set.
  *
  * @param sub Subscription handle to destroy (@b consumed). Do not use
  *            after this call.
@@ -214,8 +270,15 @@ PUBNUB_API pubnub_res_t pubnub_subscription_unsubscribe(pubnub_subscription_t su
  *                 @b borrowed — contents are copied into the SDK).
  *                 @c NULL callbacks are skipped during dispatch.
  * @return Listener handle on success, or
- *         @c PUBNUB_LISTENER_HANDLE_INVALID when the listener
- *         registry is full or arguments are invalid.
+ *         @c PUBNUB_LISTENER_HANDLE_INVALID when:
+ *         - @p ctx or @p listener is @c NULL;
+ *         - the listener registry is full
+ *           (@c PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS live listeners). Rebuild
+ *           the SDK with a larger value; retrying at run time cannot
+ *           succeed until you remove a listener; or
+ *         - memory allocation for the subscribe state fails.
+ *         A full registry is also reported through the logger when logging
+ *         is enabled.
  *
  * @note This is the only listener level that receives status events
  * (`connected`, `disconnected`, etc.) — per-subscription and per-set
@@ -242,15 +305,32 @@ PUBNUB_API void pubnub_remove_listener(pubnub_context_t*        ctx,
 /**
  * @brief Register a listener bound to a specific subscription.
  *
- * Receives data events only from the channel/group associated with
- * @p sub.
+ * Receives data events from @p sub's channel/group while @p sub is subscribed,
+ * or while a subscribed subscription set contains it — add @p sub to an
+ * already-subscribed set and its listeners begin receiving events immediately.
+ * Detached automatically when you destroy @p sub.
  *
  * @param sub      Subscription handle (@b required, @b borrowed).
  * @param listener Listener struct with typed callbacks (@b required,
  *                 @b borrowed — contents are copied into the SDK).
  *                 @c NULL callbacks are skipped during dispatch.
  * @return Listener handle on success, or
- *         @c PUBNUB_LISTENER_HANDLE_INVALID on failure.
+ *         @c PUBNUB_LISTENER_HANDLE_INVALID when:
+ *         - @p sub or @p listener is @c NULL;
+ *         - the subscription no longer refers to a live subscribe registry
+ *           entry (for example after the context subscribe state was torn
+ *           down);
+ *         - the listener registry is full
+ *           (@c PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS live listeners). Rebuild
+ *           the SDK with a larger value; retrying at run time cannot
+ *           succeed until you remove a listener; or
+ *         - memory allocation for the subscribe state fails.
+ *         A full registry is also reported through the logger when logging
+ *         is enabled.
+ *
+ * @note Does not receive status events — use @c pubnub_add_listener for those.
+ * @note Passing a subscription handle you already destroyed is undefined
+ *       behavior.
  */
 PUBNUB_API pubnub_listener_handle_t
 pubnub_subscription_add_listener(pubnub_subscription_t              sub,
@@ -279,7 +359,14 @@ PUBNUB_API void pubnub_subscription_remove_listener(pubnub_subscription_t sub,
  *
  * @param ctx Initialized context (@b required, @b borrowed).
  * @return Set handle on success, or
- *         @c PUBNUB_SUBSCRIPTION_SET_INVALID on failure.
+ *         @c PUBNUB_SUBSCRIPTION_SET_INVALID when:
+ *         - @p ctx is @c NULL;
+ *         - the set table is full (@c PUBNUB_CFG_MAX_SUBSCRIPTION_SETS live
+ *           sets). Rebuild the SDK with a larger value; retrying at run
+ *           time cannot succeed until you destroy a set; or
+ *         - memory allocation fails.
+ *         A full table is also reported through the logger when logging is
+ *         enabled.
  */
 PUBNUB_API pubnub_subscription_set_t
 pubnub_subscription_set_create(pubnub_context_t* ctx);
@@ -287,37 +374,29 @@ pubnub_subscription_set_create(pubnub_context_t* ctx);
 /**
  * @brief Add a subscription to a subscription set.
  *
- * The same subscription can be in a set AND subscribed individually.
- * The active_count on the registry entry tracks all references.
- * Presence leave is only sent when the last reference deactivates.
- *
- * If the subscription's entry is already present in the set, this is
- * a no-op returning @c PUBNUB_OK (deduplication by entry_index).
- *
- * If the set is already subscribed (activated), a newly added entry
- * is auto-activated and begins receiving events immediately.
- *
  * @param set  Set handle (@b required, @b borrowed).
  * @param sub  Subscription handle (@b required, @b borrowed). Must belong
  *             to the same context as the set.
- * @retval PUBNUB_OK on success (or already present);
+ * @retval PUBNUB_OK on success (or already a member);
  * @retval PUBNUB_ERR_INVALID_ARGUMENT if set or sub is NULL, or
  *         the subscription belongs to a different context;
- * @retval PUBNUB_ERR_QUEUE_FULL if the set is at capacity.
+ * @retval PUBNUB_ERR_LIMIT_REACHED if the set already holds
+ *         @c PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET members. Rebuild the SDK
+ *         with a larger value; retrying at run time cannot succeed;
+ * @retval PUBNUB_ERR_QUEUE_FULL for any other add failure, such as the
+ *         handle having reached its maximum reference count;
+ * @retval PUBNUB_ERR_OUT_OF_MEMORY if the subscribe state cannot be
+ *         allocated.
+ *
+ * @note If the set is already subscribed, the added member begins receiving
+ *       events immediately.
  */
 PUBNUB_API pubnub_res_t
 pubnub_subscription_set_add_subscription(pubnub_subscription_set_t set,
                                          pubnub_subscription_t     sub);
 
 /**
- * @brief Merge all entries from another subscription set.
- *
- * For each entry in @p other, if it is not already present in
- * @p target, a new reference is acquired and the entry is appended.
- * Duplicate entries (same entry_index already in target) are skipped.
- *
- * If @p target is already subscribed (activated), newly merged entries
- * are auto-activated and begin receiving events immediately.
+ * @brief Merge all members from another subscription set.
  *
  * @param target Destination set handle (@b required, @b borrowed).
  * @param other  Source set handle (@b required, @b borrowed). Must belong
@@ -325,9 +404,16 @@ pubnub_subscription_set_add_subscription(pubnub_subscription_set_t set,
  * @retval PUBNUB_OK on success;
  * @retval PUBNUB_ERR_INVALID_ARGUMENT if either set is NULL, invalid,
  *         or they belong to different contexts;
- * @retval PUBNUB_ERR_QUEUE_FULL if the target set reaches capacity
- *         during the merge (partial merge may have occurred);
+ * @retval PUBNUB_ERR_LIMIT_REACHED if the merge would push @p target past
+ *         @c PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET members. Rebuild the SDK
+ *         with a larger value; retrying at run time cannot succeed;
+ *         @p target is left unchanged (no partial merge);
+ * @retval PUBNUB_ERR_QUEUE_FULL if the merge would saturate a handle's
+ *         reference count; @p target is left unchanged (no partial merge);
  * @retval PUBNUB_ERR_NOT_INITIALIZED if subscribe is not registered.
+ *
+ * @note Members merged into an already-subscribed set begin receiving
+ *       events immediately.
  */
 PUBNUB_API pubnub_res_t
 pubnub_subscription_set_add_subscription_set(pubnub_subscription_set_t target,
@@ -336,13 +422,10 @@ pubnub_subscription_set_add_subscription_set(pubnub_subscription_set_t target,
 /**
  * @brief Remove a subscription from a subscription set.
  *
- * If the subscription's entry is not a member of the set, returns
- * PUBNUB_ERR_INVALID_ARGUMENT.
- *
- * If the set is currently subscribed, the removed entry's active_count
- * is decremented. If that was the last active reference to the entity
- * (active_count reaches 0), presence leave is triggered and the
- * subscribe loop is updated.
+ * The set drops its reference on @p sub; if it was the last reference (your
+ * own handle destroyed and no other set holds it), the handle is freed. If
+ * the set is subscribed and @p sub was its last member for the channel,
+ * presence leave is triggered.
  *
  * @param set Set handle (@b required, @b borrowed).
  * @param sub Subscription handle (@b required, @b borrowed). Must belong
@@ -357,19 +440,18 @@ pubnub_subscription_set_remove_subscription(pubnub_subscription_set_t set,
                                             pubnub_subscription_t     sub);
 
 /**
- * @brief Remove all entries found in another set from this set.
+ * @brief Remove all members found in another set from this set.
  *
- * For each entry in @p other that is also present in @p target,
- * the entry is removed from target (ref released, active_count
- * decremented if target is subscribed).
- *
- * If the target set is subscribed and any removed entry's
- * active_count reaches 0, presence leave is triggered.
+ * Each member of @p other that is also in @p target is removed from
+ * @p target, which drops its reference; a handle still referenced elsewhere
+ * is not freed. @p other is unchanged. If @p target is subscribed and a
+ * removed handle was its last member for the channel, presence leave is
+ * triggered.
  *
  * @param target Set to remove from (@b required, @b borrowed).
- * @param other  Set whose entries to remove from target (@b required,
+ * @param other  Set whose members to remove from target (@b required,
  *               @b borrowed). Must be same context. Not consumed.
- * @retval PUBNUB_OK on success (entries not found are silently skipped);
+ * @retval PUBNUB_OK on success (members not found are silently skipped);
  * @retval PUBNUB_ERR_INVALID_ARGUMENT if either set is @c NULL/invalid or
  *         different contexts;
  * @retval PUBNUB_ERR_NOT_INITIALIZED if subscribe is not registered.
@@ -399,11 +481,13 @@ PUBNUB_API pubnub_res_t pubnub_subscription_set_subscribe(pubnub_subscription_se
 PUBNUB_API pubnub_res_t pubnub_subscription_set_unsubscribe(pubnub_subscription_set_t set);
 
 /**
- * @brief Destroy a subscription set and release all its entries.
+ * @brief Destroy a subscription set and release all its members.
  *
- * If the member was active AND this set held the last active
- * reference to that subscription / entity presence leave is
- * triggered.
+ * The set drops its reference on every member handle; a handle whose last
+ * reference this was is freed. If the set was subscribed and held the last
+ * active reference to a channel, presence leave is triggered. Listeners
+ * registered on this set are detached. Safe to call from within a listener
+ * callback.
  *
  * @attention Do not use `set` after this call.
  *
@@ -414,15 +498,29 @@ PUBNUB_API void pubnub_subscription_set_destroy(pubnub_subscription_set_t set);
 /**
  * @brief Register a listener bound to a subscription set.
  *
- * Receives data events only from channels/groups that are members of
- * the specified set.
+ * Receives data events from the set's member channels/groups, but only while
+ * the set is subscribed; silent while it is unsubscribed. A member is
+ * delivered here even if that member's own subscription handle is not
+ * independently subscribed. Detached automatically when you destroy the set.
  *
  * @param set      Set handle (@b required, @b borrowed).
  * @param listener Listener struct with typed callbacks (@b required,
  *                 @b borrowed — contents are copied into the SDK). The
  *                 @c on_status field is ignored for per-set listeners.
- * @retval Listener handle on success, or
- * @retval PUBNUB_LISTENER_HANDLE_INVALID on failure.
+ * @return Listener handle on success, or
+ *         @c PUBNUB_LISTENER_HANDLE_INVALID when:
+ *         - @p set or @p listener is @c NULL;
+ *         - the set no longer refers to a live subscribe registry entry
+ *           (for example after the context subscribe state was torn down);
+ *         - the listener registry is full
+ *           (@c PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS live listeners). Rebuild
+ *           the SDK with a larger value; retrying at run time cannot
+ *           succeed until you remove a listener; or
+ *         - memory allocation for the subscribe state fails.
+ *         A full registry is also reported through the logger when logging
+ *         is enabled.
+ *
+ * @note Passing a set handle you already destroyed is undefined behavior.
  */
 PUBNUB_API pubnub_listener_handle_t pubnub_subscription_set_add_listener(
     pubnub_subscription_set_t          set,
@@ -536,12 +634,15 @@ pubnub_subscribe_state(const pubnub_context_t* ctx);
  * the corresponding subscription is destroyed. Handles may be passed
  * to @c pubnub_subscription_unsubscribe, @c pubnub_entity_name, etc.
  *
+ * Size @p out by @c PUBNUB_CFG_MAX_SUBSCRIPTIONS to never truncate; multiple
+ * handles may target one channel.
+ *
  * Typical usage to check if a subscription is still active:
  * @code
- * pubnub_subscription_t active[PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS];
+ * pubnub_subscription_t active[PUBNUB_CFG_MAX_SUBSCRIPTIONS];
  * size_t count = 0;
  * pubnub_subscriptions(ctx, active,
- *                      PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS, &count);
+ *                      PUBNUB_CFG_MAX_SUBSCRIPTIONS, &count);
  * @endcode
  *
  * @param ctx       Initialized context (@b required, @b borrowed).
@@ -564,6 +665,8 @@ PUBNUB_API pubnub_res_t pubnub_subscriptions(pubnub_context_t*      ctx,
 /**
  * @brief List all active subscription sets on this context.
  *
+ * Size @p out by @c PUBNUB_CFG_MAX_SUBSCRIPTION_SETS to never truncate.
+ *
  * @param ctx       Initialized context (@b required, @b borrowed).
  * @param out       Caller-allocated array (@b required).
  * @param max_count Capacity of @p out.
@@ -581,17 +684,7 @@ PUBNUB_API pubnub_res_t pubnub_subscription_sets(pubnub_context_t*          ctx,
                                                  size_t* out_count);
 
 /**
- * @brief List all subscriptions within a subscription set.
- *
- * Returns subscription handles for all entries that are members of
- * the set, regardless of individual subscription state (the set
- * manages activation at the set level).
- *
- * @note Results are matched by underlying channel/group entry
- *       identity, not by the subscription handle passed to
- *       @c pubnub_subscription_set_add_subscription. If multiple
- *       subscription handles reference the same entity, all are
- *       returned.
+ * @brief List the member subscriptions of a subscription set.
  *
  * @param set       Subscription set to query (@b required, @b borrowed).
  * @param out       Caller-allocated array (@b required).

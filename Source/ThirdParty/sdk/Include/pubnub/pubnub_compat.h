@@ -24,7 +24,8 @@
  *
  * Resolves to C11 @c _Static_assert when available. On C99-only toolchains
  * it falls back to a typedef'd negative-size array trick whose name is
- * disambiguated by @c __COUNTER__ (when supported) or @c __LINE__.
+ * disambiguated by @c __COUNTER__ (when supported and accepted by the
+ * compiler in the selected language mode) or @c __LINE__.
  *
  * @param cond Compile-time integer-constant expression. Asserted non-zero.
  * @param msg  Diagnostic message (used by the C11 path; ignored by the
@@ -32,14 +33,15 @@
  *             typedef names).
  *
  * @note Same-line restriction: on compilers without @c __COUNTER__
- *       (notably IAR pre-9.30 and ARMCC pre-6), two
- *       @c PUBNUB_STATIC_ASSERT invocations on the same source line will
- *       collide on the typedef name. Place each on its own line. C11 and
- *       @c __COUNTER__ paths are immune.
+ *       (notably IAR pre-9.30 and ARMCC pre-6), and on Clang in C99 mode
+ *       (where @c __COUNTER__ is rejected under strict pedantic checks),
+ *       two @c PUBNUB_STATIC_ASSERT invocations on the same source line
+ *       will collide on the typedef name. Place each on its own line. C11
+ *       and the @c __COUNTER__ path are immune.
  */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define PUBNUB_STATIC_ASSERT(cond, msg) _Static_assert((cond), msg)
-#elif defined(__COUNTER__)
+#elif defined(__COUNTER__) && !defined(__clang__)
 #define PUBNUB_STATIC_ASSERT(cond, msg) \
     typedef char PUBNUB_PASTE(pubnub_sa_, __COUNTER__)[(cond) ? 1 : -1]
 #else
@@ -59,11 +61,20 @@
  *   single-threaded or caller-serialized use — document the
  *   limitation at the call site.
  *
+ * @c PUBNUB_ATOMIC_EXCHANGE_U8 atomically stores a new value and returns
+ * the prior one. Use it to claim-and-clear a publication gate in a single
+ * step: a plain load-then-store leaves a window in which a concurrent
+ * writer can re-arm the gate between the read and the clear, silently
+ * dropping the staged data.
+ *
  * @note The GCC/Clang `__sync_fetch_and_add((p), 0)` pattern is the
  *       canonical way to emit an acquire-load without a compare-exchange
  *       on pre-C11 ABIs. The double-barrier store is conservative; a
  *       single `__sync_synchronize()` before the write suffices for
  *       release, but two barriers match what other portable SDKs use.
+ *       `__sync_lock_test_and_set` carries acquire semantics, which is
+ *       sufficient for claiming a gate whose staged data was published
+ *       with a release store.
  */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L \
     && !defined(__STDC_NO_ATOMICS__) && !defined(__ZEPHYR__)
@@ -72,6 +83,8 @@
 #define PUBNUB_ATOMIC_LOAD_U8(p) atomic_load_explicit((p), memory_order_acquire)
 #define PUBNUB_ATOMIC_STORE_U8(p, v) \
     atomic_store_explicit((p), (uint8_t)(v), memory_order_release)
+#define PUBNUB_ATOMIC_EXCHANGE_U8(p, v) \
+    atomic_exchange_explicit((p), (uint8_t)(v), memory_order_acq_rel)
 #elif defined(__GNUC__) || defined(__clang__)
 #define PUBNUB_ATOMIC_UINT8      volatile uint8_t
 #define PUBNUB_ATOMIC_LOAD_U8(p) __sync_fetch_and_add((p), 0)
@@ -81,11 +94,33 @@
         *(p) = (uint8_t)(v);         \
         __sync_synchronize();        \
     } while (0)
+#define PUBNUB_ATOMIC_EXCHANGE_U8(p, v) \
+    __sync_lock_test_and_set((p), (uint8_t)(v))
 #else
 /* Non-atomic fallback: single-threaded or caller-serialized contexts only. */
 #define PUBNUB_ATOMIC_UINT8          volatile uint8_t
 #define PUBNUB_ATOMIC_LOAD_U8(p)     (*(p))
 #define PUBNUB_ATOMIC_STORE_U8(p, v) (*(p) = (uint8_t)(v))
+#define PUBNUB_ATOMIC_EXCHANGE_U8(p, v) \
+    pubnub_atomic_exchange_u8_((p), (uint8_t)(v))
+
+/**
+ * @brief Serialized-context exchange helper for the non-atomic fallback tier.
+ *
+ * Reads the current value, stores @p v, and returns the prior value. Safe
+ * only for single-threaded or caller-serialized use — matches the ordering
+ * guarantees (none) of the fallback load/store macros.
+ *
+ * @param p Pointer to the byte to exchange. Must not be NULL.
+ * @param v New value to store.
+ * @return The value held before the store.
+ */
+static inline uint8_t pubnub_atomic_exchange_u8_(volatile uint8_t* p, uint8_t v)
+{
+    uint8_t old = *p;
+    *p          = v;
+    return old;
+}
 #endif
 
 /**

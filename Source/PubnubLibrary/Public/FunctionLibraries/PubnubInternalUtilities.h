@@ -279,17 +279,19 @@ public:
 
 	/**
 	 * Splits a set-user JSON object into C-Core fields.
-	 * Returns false and sets Out.Error when the JSON is not an object or a field has the wrong type.
+	 * JSON null on a supported field is a clear. Returns false and sets Out.Error when the JSON
+	 * is not an object or a field has the wrong type.
 	 */
 	static bool ParseUserMetadataObject(const FString& Json, FParsedUserMetadataObject& Out);
 
 	/** Splits a set-channel JSON object into C-Core fields. Same failure rules as ParseUserMetadataObject. */
 	static bool ParseChannelMetadataObject(const FString& Json, FParsedChannelMetadataObject& Out);
 
-	/** Error text for string fields that were JSON null. The new C-Core set API cannot send those. */
-	static FString MetadataNullFieldError(const TArray<FString>& Fields);
-
-	/** Holder pointer when the field was present, otherwise nullptr so C-Core omits it. */
+	/**
+	 * C-Core pointer for a parsed field.
+	 * PUBNUB_CLEAR_VALUE when the JSON value was null, the holder when a value was present,
+	 * otherwise nullptr so C-Core omits the field.
+	 */
 	static const char* OptionalMetadataString(const FMetadataStringField& Field, const FUTF8StringHolder& Holder);
 
 	/**
@@ -354,8 +356,8 @@ public:
 
 private:
 
-	static bool ReadOptionalMetadataString(const TSharedPtr<FJsonObject>& Object, const TCHAR* Key, FMetadataStringField& Out, TArray<FString>& NullFields, FString& Error);
-	static bool ReadMetadataCustom(const TSharedPtr<FJsonObject>& Object, FString& OutJson, bool& bHasCustom, FString& Error);
+	static bool ReadOptionalMetadataString(const TSharedPtr<FJsonObject>& Object, const TCHAR* Key, FMetadataStringField& Out, FString& Error);
+	static bool ReadMetadataCustom(const TSharedPtr<FJsonObject>& Object, FMetadataStringField& Out, FString& Error);
 	static void CollectUnknownMetadataFields(const TSharedPtr<FJsonObject>& Object, const TArray<FString>& KnownKeys, TArray<FString>& OutUnknown);
 	static FString AppContextJsonObjectToString(pubnub_serialization_provider_t* Serial, const pubnub_json_value_t* Value);
 	static FPubnubUserData UserDataFromUuidMetadata(pubnub_serialization_provider_t* Serial, const pubnub_uuid_metadata_t& Metadata);

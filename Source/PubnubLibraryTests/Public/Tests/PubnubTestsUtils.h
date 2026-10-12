@@ -150,8 +150,13 @@ public:
 	//Initializes systems required by the test. This has to be called at the beginning of every test.
 	bool InitTest();
 	
-	//Initializes systems required by the test using PAM keysets. This (or InitTest) has to be called at the beginning of every test.
-	bool InitTestWithPAM();
+	/**
+	 * Initializes systems required by the test using PAM keysets.
+	 * SecretKey is omitted unless bUseSecretKey is true. Pass true for admin APIs
+	 * (GrantToken, RevokeToken, App Context writes). Client tests should leave it false
+	 * and use a PAM token instead.
+	 */
+	bool InitTestWithPAM(bool bUseSecretKey = false);
 	/** Destroys the current client and creates another. Crypto is fixed at creation. */
 	bool RecreateClient(UPubnubCryptoModule* CryptoModule, bool bUsePamKeys = false, bool bIncludeSecretKey = true);
 	//Cleans up test systems. Call this at the end of every test

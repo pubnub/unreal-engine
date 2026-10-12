@@ -91,6 +91,10 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetUserMetadata_UpdateThenGetRefl
 	"Pubnub.Integration.UserMetadata.SetUserMetadata.4Advanced.UpdateOverwritesPreviousName",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetUserMetadata_ForceSetClearsEmptyFields, FPubnubAutomationTestBase,
+	"Pubnub.Integration.UserMetadata.SetUserMetadata.4Advanced.ForceSetClearsEmptyFields",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
 // ---------------------------------------------------------------------------
 // UPubnubClient::GetUserMetadata
 // ---------------------------------------------------------------------------
@@ -363,6 +367,57 @@ bool FPubnubSetUserMetadata_UpdateThenGetReflectsNewValues::RunTest(const FStrin
 	const FPubnubUserMetadataResult GetR = PubnubClient->GetUserMetadata(MetaUser);
 	TestFalse(TEXT("GetUserMetadata should succeed"), GetR.Result.Error);
 	TestEqual(TEXT("Get should return updated UserName"), GetR.UserData.UserName, Second.UserName);
+
+	const FPubnubOperationResult RemoveR = PubnubClient->RemoveUserMetadata(MetaUser);
+	TestFalse(TEXT("RemoveUserMetadata cleanup should succeed"), RemoveR.Error);
+
+	CleanUp();
+	return true;
+}
+
+// Empty fields with ForceSet send JSON null, which C-Core clears via PUBNUB_CLEAR_VALUE. Unflagged fields stay.
+bool FPubnubSetUserMetadata_ForceSetClearsEmptyFields::RunTest(const FString& Parameters)
+{
+	const FString MetaUser = SDK_PREFIX + TEXT("umeta_set_clear_user");
+	const FString Caller = SDK_PREFIX + TEXT("umeta_set_clear_caller");
+
+	if (!InitTest())
+	{
+		AddError(TEXT("InitTest failed"));
+		return false;
+	}
+
+	PubnubClient->SetUserID(Caller);
+
+	FPubnubUserInputData Initial;
+	Initial.UserName = TEXT("ClearName");
+	Initial.Email = TEXT("clear@example.com");
+	Initial.ExternalID = TEXT("clear-ext");
+	Initial.ProfileUrl = TEXT("https://example.com/clear");
+	Initial.Custom = TEXT("{\"tier\":\"gold\"}");
+	Initial.Status = TEXT("umetaClearStatus");
+	Initial.Type = TEXT("umetaClearType");
+	const FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
+	TestFalse(TEXT("Initial SetUserMetadata should succeed"), PubnubClient->SetUserMetadata(MetaUser, Initial, Include).Result.Error);
+
+	FPubnubUserInputData ClearEmailAndCustom;
+	ClearEmailAndCustom.ForceSetEmail = true;
+	ClearEmailAndCustom.ForceSetCustom = true;
+	const FPubnubUserMetadataResult Cleared = PubnubClient->SetUserMetadata(MetaUser, ClearEmailAndCustom, Include);
+	TestFalse(TEXT("ForceSet clear should succeed"), Cleared.Result.Error);
+	TestEqual(TEXT("Cleared response should keep UserName"), Cleared.UserData.UserName, Initial.UserName);
+	TestTrue(TEXT("Cleared response Email should be empty"), Cleared.UserData.Email.IsEmpty());
+	TestTrue(TEXT("Cleared response Custom should be empty"), Cleared.UserData.Custom.IsEmpty());
+
+	const FPubnubUserMetadataResult GetR = PubnubClient->GetUserMetadata(MetaUser, Include);
+	TestFalse(TEXT("GetUserMetadata should succeed"), GetR.Result.Error);
+	TestEqual(TEXT("Get should keep UserName"), GetR.UserData.UserName, Initial.UserName);
+	TestEqual(TEXT("Get should keep ExternalID"), GetR.UserData.ExternalID, Initial.ExternalID);
+	TestEqual(TEXT("Get should keep ProfileUrl"), GetR.UserData.ProfileUrl, Initial.ProfileUrl);
+	TestEqual(TEXT("Get should keep Status"), GetR.UserData.Status, Initial.Status);
+	TestEqual(TEXT("Get should keep Type"), GetR.UserData.Type, Initial.Type);
+	TestTrue(TEXT("Get Email should be cleared"), GetR.UserData.Email.IsEmpty());
+	TestTrue(TEXT("Get Custom should be cleared"), GetR.UserData.Custom.IsEmpty());
 
 	const FPubnubOperationResult RemoveR = PubnubClient->RemoveUserMetadata(MetaUser);
 	TestFalse(TEXT("RemoveUserMetadata cleanup should succeed"), RemoveR.Error);

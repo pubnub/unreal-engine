@@ -73,6 +73,11 @@ typedef enum pubnub_res {
     /** Maximum in-flight or pending request limit reached. */
     PUBNUB_ERR_QUEUE_FULL = 34,
 
+    /** A compile-time capacity limit (a @c PUBNUB_CFG_MAX_* value) was
+     *  reached. Retrying at run time cannot succeed; rebuild the SDK with a
+     *  larger limit. */
+    PUBNUB_ERR_LIMIT_REACHED = 35,
+
     /* 48..63 : timing */
 
     /** Request timed out. */

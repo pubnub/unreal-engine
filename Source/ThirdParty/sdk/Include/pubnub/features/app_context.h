@@ -32,29 +32,29 @@ extern "C" {
  */
 /** @{ */
 /** Include custom data object for the entity. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM (1u << 0)
+#define PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM (1u << 0u)
 /** Include type field. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_TYPE (1u << 1)
+#define PUBNUB_APP_CONTEXT_INCLUDE_TYPE (1u << 1u)
 /** Include status field. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_STATUS (1u << 2)
+#define PUBNUB_APP_CONTEXT_INCLUDE_STATUS (1u << 2u)
 /** Request total count in paginated responses. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_TOTAL_COUNT (1u << 3)
+#define PUBNUB_APP_CONTEXT_INCLUDE_TOTAL_COUNT (1u << 3u)
 /** Include UUID metadata on membership/member results. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_UUID (1u << 4)
+#define PUBNUB_APP_CONTEXT_INCLUDE_UUID (1u << 4u)
 /** Include UUID custom data on membership/member results. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_UUID_CUSTOM (1u << 5)
+#define PUBNUB_APP_CONTEXT_INCLUDE_UUID_CUSTOM (1u << 5u)
 /** Include UUID type on membership/member results. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_UUID_TYPE (1u << 6)
+#define PUBNUB_APP_CONTEXT_INCLUDE_UUID_TYPE (1u << 6u)
 /** Include UUID status on membership/member results. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_UUID_STATUS (1u << 7)
+#define PUBNUB_APP_CONTEXT_INCLUDE_UUID_STATUS (1u << 7u)
 /** Include channel metadata on membership/member results. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_CHANNEL (1u << 8)
+#define PUBNUB_APP_CONTEXT_INCLUDE_CHANNEL (1u << 8u)
 /** Include channel custom data on membership/member results. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_CHANNEL_CUSTOM (1u << 9)
+#define PUBNUB_APP_CONTEXT_INCLUDE_CHANNEL_CUSTOM (1u << 9u)
 /** Include channel type on membership/member results. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_CHANNEL_TYPE (1u << 10)
+#define PUBNUB_APP_CONTEXT_INCLUDE_CHANNEL_TYPE (1u << 10u)
 /** Include channel status on membership/member results. */
-#define PUBNUB_APP_CONTEXT_INCLUDE_CHANNEL_STATUS (1u << 11)
+#define PUBNUB_APP_CONTEXT_INCLUDE_CHANNEL_STATUS (1u << 11u)
 
 /** @} */
 
@@ -197,16 +197,43 @@ typedef struct pubnub_app_context_page {
 typedef struct pubnub_membership_input {
     /** Channel identifier (@b required, NUL-terminated). */
     const char* channel_id;
-    /** Optional status label (NULL to omit). */
+
+    /**
+     * @brief Optional status label (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* status;
-    /** Optional type label (NULL to omit). */
+
+    /**
+     * @brief Optional type label (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* type;
-    /** Optional raw JSON custom data (NULL to omit). */
+
+    /**
+     * @brief Optional raw JSON custom data (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * Used by @c set entries only; ignored in @c remove entries.
+     *
+     * @b Default: @c NULL (omitted).
+     *
+     * @note  Must be a valid JSON object when non-NULL.
+     */
     const char* custom;
     /**
      * @brief Length of @c custom in bytes.
      *
      * @b Default: @c 0 means "call strlen" when @c custom is non-NULL.
+     *
+     * @note Ignored when @c custom is @c PUBNUB_CLEAR_VALUE.
      */
     size_t custom_len;
 
@@ -218,10 +245,23 @@ typedef struct pubnub_membership_input {
      * access or free it afterward. Build with helpers from
      * @c json_macros.h.
      *
+     * @note    Applies to entries of the @c set array only. In a
+     *          @c remove entry this field is ignored and the tree stays
+     *          yours.
+     *
      * @warning Unlike @c pubnub_publish, @c pubnub_signal, and
      *          @c pubnub_set_state which @b borrow the JSON tree,
-     *          App Context @b transfers ownership here. Do not
-     *          access or free the tree after the call returns.
+     *          App Context @b transfers ownership here. The SDK
+     *          frees the tree in every case, including when the call
+     *          fails or is rejected. Never free it after the call
+     *          returns. The only exception is a @c NULL or invalid
+     *          context, or a serializer without @c value_destroy:
+     *          the SDK cannot free the tree then and you keep
+     *          ownership. The SDK consumes the tree while it builds
+     *          the request, before anything is sent. Automatic retries
+     *          re-send the already serialized body and never use your
+     *          tree. To resubmit after a failed call, pass a newly
+     *          built tree; never reuse the pointer you passed before.
      *
      * @attention Setting both @c custom and @c custom_value is an
      *            error (@c PUBNUB_ERR_INVALID_ARGUMENT).
@@ -238,16 +278,44 @@ typedef struct pubnub_membership_input {
 typedef struct pubnub_member_input {
     /** UUID identifier (@b required, NUL-terminated). */
     const char* uuid_id;
-    /** Optional status label (NULL to omit). */
+
+    /**
+     * @brief Optional status label (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* status;
-    /** Optional type label (NULL to omit). */
+
+    /**
+     * @brief Optional type label (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* type;
-    /** Optional raw JSON custom data (NULL to omit). */
+
+    /**
+     * @brief Optional raw JSON custom data (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * Used by @c set entries only; ignored in @c remove entries.
+     *
+     * @b Default: @c NULL (omitted).
+     *
+     * @note  Must be a valid JSON object when non-NULL.
+     */
     const char* custom;
+
     /**
      * @brief Length of @c custom in bytes.
      *
      * @b Default: @c 0 means "call strlen" when @c custom is non-NULL.
+     *
+     * @note Ignored when @c custom is @c PUBNUB_CLEAR_VALUE.
      */
     size_t custom_len;
 
@@ -259,10 +327,23 @@ typedef struct pubnub_member_input {
      * access or free it afterward. Build with helpers from
      * @c json_macros.h.
      *
+     * @note    Applies to entries of the @c set array only. In a
+     *          @c remove entry this field is ignored and the tree stays
+     *          yours.
+     *
      * @warning Unlike @c pubnub_publish, @c pubnub_signal, and
      *          @c pubnub_set_state which @b borrow the JSON tree,
-     *          App Context @b transfers ownership here. Do not
-     *          access or free the tree after the call returns.
+     *          App Context @b transfers ownership here. The SDK
+     *          frees the tree in every case, including when the call
+     *          fails or is rejected. Never free it after the call
+     *          returns. The only exception is a @c NULL or invalid
+     *          context, or a serializer without @c value_destroy:
+     *          the SDK cannot free the tree then and you keep
+     *          ownership. The SDK consumes the tree while it builds
+     *          the request, before anything is sent. Automatic retries
+     *          re-send the already serialized body and never use your
+     *          tree. To resubmit after a failed call, pass a newly
+     *          built tree; never reuse the pointer you passed before.
      *
      * @attention Setting both @c custom and @c custom_value is an
      *            error (@c PUBNUB_ERR_INVALID_ARGUMENT).
@@ -389,28 +470,68 @@ typedef struct pubnub_set_uuid_metadata_opts {
      */
     const char* uuid;
 
-    /** Display name (NULL to omit / leave unchanged). */
+    /**
+     * @brief Display name (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* name;
 
-    /** External identifier (NULL to omit). */
+    /**
+     * @brief External identifier (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* external_id;
 
-    /** Profile URL (NULL to omit). */
+    /**
+     * @brief Profile URL (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* profile_url;
 
-    /** Email address (NULL to omit). */
+    /**
+     * @brief Email address (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* email;
 
-    /** Type label (NULL to omit). */
+    /**
+     * @brief Type label (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* type;
 
-    /** Status label (NULL to omit). */
+    /**
+     * @brief Status label (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* status;
 
     /**
-     * @brief Raw JSON custom data (NULL to omit).
+     * @brief Raw JSON custom data (NULL to omit / leave unchanged).
      *
-     * Must be a valid JSON object when non-NULL.
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     *
+     * @note  Must be a valid JSON object when non-NULL.
      */
     const char* custom;
 
@@ -418,6 +539,8 @@ typedef struct pubnub_set_uuid_metadata_opts {
      * @brief Length of @c custom in bytes.
      *
      * @b Default: @c 0 means "call strlen" when @c custom is non-NULL.
+     *
+     * @note Ignored when @c custom is @c PUBNUB_CLEAR_VALUE.
      */
     size_t custom_len;
 
@@ -431,8 +554,10 @@ typedef struct pubnub_set_uuid_metadata_opts {
      *
      * @warning Unlike @c pubnub_publish, @c pubnub_signal, and
      *          @c pubnub_set_state which @b borrow the JSON tree,
-     *          App Context @b transfers ownership here. Do not
-     *          access or free the tree after the call returns.
+     *          App Context @b transfers ownership here. The SDK
+     *          frees the tree in every case, including when the call
+     *          fails or is rejected. Never free it after the call
+     *          returns.
      *
      * @attention Setting both @c custom and @c custom_value is an
      *            error (@c PUBNUB_ERR_INVALID_ARGUMENT).
@@ -604,22 +729,50 @@ typedef struct pubnub_set_channel_metadata_opts {
      */
     const char* channel;
 
-    /** Display name (NULL to omit / leave unchanged). */
+    /**
+     * @brief Display name (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* name;
 
-    /** Description text (NULL to omit). */
+    /**
+     * @brief Description text (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* description;
 
-    /** Type label (NULL to omit). */
+    /**
+     * @brief Type label (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* type;
 
-    /** Status label (NULL to omit). */
+    /**
+     * @brief Status label (NULL to omit / leave unchanged).
+     *
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     */
     const char* status;
 
     /**
-     * @brief Raw JSON custom data (NULL to omit).
+     * @brief Raw JSON custom data (NULL to omit / leave unchanged).
      *
-     * Must be a valid JSON object when non-NULL.
+     * Pass @c PUBNUB_CLEAR_VALUE to clear field value.
+     *
+     * @b Default: @c NULL (omitted).
+     *
+     * @note  Must be a valid JSON object when non-NULL.
      */
     const char* custom;
 
@@ -627,6 +780,8 @@ typedef struct pubnub_set_channel_metadata_opts {
      * @brief Length of @c custom in bytes.
      *
      * @b Default: @c 0 means "call strlen" when @c custom is non-NULL.
+     *
+     * @note Ignored when @c custom is @c PUBNUB_CLEAR_VALUE.
      */
     size_t custom_len;
 
@@ -640,8 +795,9 @@ typedef struct pubnub_set_channel_metadata_opts {
      *
      * @warning Unlike @c pubnub_publish, @c pubnub_signal, and
      *          @c pubnub_set_state which @b borrow the JSON tree,
-     *          App Context @b transfers ownership here. Do not
-     *          access or free the tree after the call returns.
+     *          App Context @b transfers ownership here. The SDK
+     *          frees the tree in every case, including when the call
+     *          fails or is rejected.
      *
      * @attention Setting both @c custom and @c custom_value is an
      *            error (@c PUBNUB_ERR_INVALID_ARGUMENT).
@@ -801,7 +957,8 @@ typedef struct pubnub_set_memberships_opts {
     /**
      * @brief Array of memberships to remove (borrowed).
      *
-     * Only the @c channel_id field is used for removal.
+     * Only the ID is used; all other fields, including @c custom and
+     * @c custom_value, are ignored and never freed by the SDK.
      *
      * @b Default: @c NULL (no removals).
      */
@@ -965,7 +1122,8 @@ typedef struct pubnub_set_channel_members_opts {
     /**
      * @brief Array of members to remove (borrowed).
      *
-     * Only the @c uuid_id field is used for removal.
+     * Only the ID is used; all other fields, including @c custom and
+     * @c custom_value, are ignored and never freed by the SDK.
      *
      * @b Default: @c NULL (no removals).
      */

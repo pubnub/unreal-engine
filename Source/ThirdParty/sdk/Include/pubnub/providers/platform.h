@@ -16,7 +16,8 @@
  * - Thread: thread_create, thread_join. If thread_create is non-NULL,
  *   thread_join must also be non-NULL.
  *
- * **Standalone optional:** secure_zero, file_load (may be @c NULL independently).
+ * **Standalone optional:** secure_zero, file_load, thread_is_current
+ * (may be @c NULL independently).
  */
 
 #ifndef PUBNUB_PROVIDER_PLATFORM_H
@@ -235,6 +236,27 @@ typedef struct pubnub_platform_provider {
     void (*thread_join)(struct pubnub_platform_provider*  self,
                         struct pubnub_allocator_provider* allocator,
                         void*                             thread_handle);
+
+    /**
+     * @brief Report whether @p thread_handle refers to the calling thread.
+     *
+     * Lets the SDK avoid a self-join during teardown: joining the calling
+     * thread returns @c EDEADLK on POSIX (silently doing nothing) and
+     * deadlocks on Windows/Zephyr. Called before thread_join() when a
+     * context is torn down.
+     *
+     * Standalone optional: may be @c NULL even when thread_create and
+     * thread_join are provided. When @c NULL the SDK skips the self-join
+     * check and joins unconditionally (the pre-existing behavior).
+     *
+     * @param self          Pointer to this provider instance.
+     * @param thread_handle Handle returned by thread_create().
+     * @retval non-zero @p thread_handle is the calling thread.
+     * @retval 0        @p thread_handle is a different thread, or is
+     *                  @c NULL.
+     */
+    int (*thread_is_current)(struct pubnub_platform_provider* self,
+                             void*                            thread_handle);
 
     /**
      * @brief Load entire file content into an allocator-owned buffer.

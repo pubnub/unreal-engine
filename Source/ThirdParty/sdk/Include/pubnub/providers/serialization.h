@@ -93,6 +93,26 @@ typedef struct pubnub_json_iter {
 } pubnub_json_iter_t;
 
 /**
+ * @brief Opaque iterator for array element walks.
+ *
+ * Caller-owned POD struct, stack-allocatable. The provider fills the
+ * opaque storage in @c array_iter_init. The 16-byte payload is sized
+ * to accommodate various backend state representations and is verified
+ * by each backend via `PUBNUB_STATIC_ASSERT` to ensure it fits.
+ *
+ * @note Iterators are invalidated by ANY mutation of the underlying
+ *       array. The SDK does not enforce this at runtime; document
+ *       and rely on caller discipline.
+ *
+ * @note Do not access @c opaque directly. The contents are private
+ *       to the provider that initialized the iterator.
+ */
+typedef struct pubnub_json_array_iter {
+    /** Provider-private storage; do not access directly. */
+    uint8_t opaque[16];
+} pubnub_json_array_iter_t;
+
+/**
  * @brief Serialization provider function table.
  *
  * Per-context provider: SDK calls init/deinit during context lifecycle.
@@ -547,6 +567,43 @@ typedef struct pubnub_serialization_provider {
                             const char**          out_key,
                             size_t*               out_key_len,
                             pubnub_json_value_t** out_value);
+
+    /**
+     * @brief Initialize an iterator over the elements of a JSON array.
+     *
+     * The iterator captures the current state of @p arr. ANY
+     * subsequent mutation of @p arr invalidates the iterator;
+     * iteration after mutation is undefined. Prefer this over repeated
+     * @c array_get calls when walking every element: backends may
+     * implement @c array_get as an O(n) traversal, making an
+     * index-driven loop O(n^2), whereas the iterator advances in O(1)
+     * per step.
+     *
+     * Optional: a backend that does not implement array iteration
+     * leaves this @c NULL. Callers MUST NULL-check before use.
+     *
+     * @param arr  Array node.
+     * @param iter Iterator storage to initialize. Required.
+     * @return 1 if @p arr is a non-empty array and the iterator is
+     *         positioned before the first element,
+     *         0 if @p arr is empty / not an array / @p iter is @c NULL
+     *         (in which case @c array_iter_next will also return 0).
+     */
+    int (*array_iter_init)(const pubnub_json_value_t* arr,
+                           pubnub_json_array_iter_t*  iter);
+
+    /**
+     * @brief Advance an iterator to the next array element.
+     *
+     * @param iter      Iterator initialized via @c array_iter_init.
+     * @param out_value On a valid step, receives a borrowed pointer to
+     *                  the element subtree. May be @c NULL if the
+     *                  caller does not need the value.
+     * @return 1 on a valid step (out_value populated when non-NULL),
+     *         0 on exhaustion (out_value untouched).
+     */
+    int (*array_iter_next)(pubnub_json_array_iter_t* iter,
+                           pubnub_json_value_t**     out_value);
 } pubnub_serialization_provider_t;
 
 #ifdef __cplusplus

@@ -62,8 +62,10 @@ PUBNUB_API pubnub_future_t pubnub_time(pubnub_context_t* ctx);
 /**
  * @brief Current server timetoken from a completed time request.
  *
- * The returned view aliases the RX buffer and is valid until
- * @c pubnub_future_release is called on the same future.
+ * The returned view points into storage owned by the future and stays
+ * valid until you call @c pubnub_future_release on the same future. It
+ * does not alias any transport buffer, so it remains valid even after
+ * the connection is closed and its receive buffer is reclaimed.
  *
  * @param future Future returned from @c pubnub_time.
  * @return Timetoken view on success; a zero-initialised view

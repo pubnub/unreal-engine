@@ -689,7 +689,7 @@ uint32 UPubnubInternalUtilities::MetadataListIncludeMask(const FString& Include,
 	return Mask;
 }
 
-bool UPubnubInternalUtilities::ReadOptionalMetadataString(const TSharedPtr<FJsonObject>& Object, const TCHAR* Key, FMetadataStringField& Out, TArray<FString>& NullFields, FString& Error)
+bool UPubnubInternalUtilities::ReadOptionalMetadataString(const TSharedPtr<FJsonObject>& Object, const TCHAR* Key, FMetadataStringField& Out, FString& Error)
 {
 	if (!Object->HasField(Key))
 	{
@@ -699,7 +699,7 @@ bool UPubnubInternalUtilities::ReadOptionalMetadataString(const TSharedPtr<FJson
 	const TSharedPtr<FJsonValue> Field = Object->TryGetField(Key);
 	if (!Field.IsValid() || Field->Type == EJson::Null)
 	{
-		NullFields.Add(Key);
+		Out.bClear = true;
 		return true;
 	}
 	if (Field->Type != EJson::String)
@@ -713,7 +713,7 @@ bool UPubnubInternalUtilities::ReadOptionalMetadataString(const TSharedPtr<FJson
 	return true;
 }
 
-bool UPubnubInternalUtilities::ReadMetadataCustom(const TSharedPtr<FJsonObject>& Object, FString& OutJson, bool& bHasCustom, FString& Error)
+bool UPubnubInternalUtilities::ReadMetadataCustom(const TSharedPtr<FJsonObject>& Object, FMetadataStringField& Out, FString& Error)
 {
 	if (!Object->HasField(TEXT("custom")))
 	{
@@ -723,9 +723,7 @@ bool UPubnubInternalUtilities::ReadMetadataCustom(const TSharedPtr<FJsonObject>&
 	const TSharedPtr<FJsonValue> Field = Object->TryGetField(TEXT("custom"));
 	if (!Field.IsValid() || Field->Type == EJson::Null)
 	{
-		// Raw JSON null is accepted by pubnub_set_*_metadata custom and clears the object.
-		OutJson = TEXT("null");
-		bHasCustom = true;
+		Out.bClear = true;
 		return true;
 	}
 	if (Field->Type != EJson::Object)
@@ -734,8 +732,8 @@ bool UPubnubInternalUtilities::ReadMetadataCustom(const TSharedPtr<FJsonObject>&
 		return false;
 	}
 
-	OutJson = UPubnubJsonUtilities::JsonObjectToString(Field->AsObject());
-	bHasCustom = !OutJson.IsEmpty();
+	Out.Value = UPubnubJsonUtilities::JsonObjectToString(Field->AsObject());
+	Out.bSet = !Out.Value.IsEmpty();
 	return true;
 }
 
@@ -759,13 +757,13 @@ bool UPubnubInternalUtilities::ParseUserMetadataObject(const FString& Json, FPar
 		return false;
 	}
 
-	if (!ReadOptionalMetadataString(Object, TEXT("name"), Out.Name, Out.NullStringFields, Out.Error)
-		|| !ReadOptionalMetadataString(Object, TEXT("externalId"), Out.ExternalId, Out.NullStringFields, Out.Error)
-		|| !ReadOptionalMetadataString(Object, TEXT("profileUrl"), Out.ProfileUrl, Out.NullStringFields, Out.Error)
-		|| !ReadOptionalMetadataString(Object, TEXT("email"), Out.Email, Out.NullStringFields, Out.Error)
-		|| !ReadOptionalMetadataString(Object, TEXT("status"), Out.Status, Out.NullStringFields, Out.Error)
-		|| !ReadOptionalMetadataString(Object, TEXT("type"), Out.Type, Out.NullStringFields, Out.Error)
-		|| !ReadMetadataCustom(Object, Out.CustomJson, Out.bHasCustom, Out.Error))
+	if (!ReadOptionalMetadataString(Object, TEXT("name"), Out.Name, Out.Error)
+		|| !ReadOptionalMetadataString(Object, TEXT("externalId"), Out.ExternalId, Out.Error)
+		|| !ReadOptionalMetadataString(Object, TEXT("profileUrl"), Out.ProfileUrl, Out.Error)
+		|| !ReadOptionalMetadataString(Object, TEXT("email"), Out.Email, Out.Error)
+		|| !ReadOptionalMetadataString(Object, TEXT("status"), Out.Status, Out.Error)
+		|| !ReadOptionalMetadataString(Object, TEXT("type"), Out.Type, Out.Error)
+		|| !ReadMetadataCustom(Object, Out.Custom, Out.Error))
 	{
 		return false;
 	}
@@ -786,11 +784,11 @@ bool UPubnubInternalUtilities::ParseChannelMetadataObject(const FString& Json, F
 		return false;
 	}
 
-	if (!ReadOptionalMetadataString(Object, TEXT("name"), Out.Name, Out.NullStringFields, Out.Error)
-		|| !ReadOptionalMetadataString(Object, TEXT("description"), Out.Description, Out.NullStringFields, Out.Error)
-		|| !ReadOptionalMetadataString(Object, TEXT("status"), Out.Status, Out.NullStringFields, Out.Error)
-		|| !ReadOptionalMetadataString(Object, TEXT("type"), Out.Type, Out.NullStringFields, Out.Error)
-		|| !ReadMetadataCustom(Object, Out.CustomJson, Out.bHasCustom, Out.Error))
+	if (!ReadOptionalMetadataString(Object, TEXT("name"), Out.Name, Out.Error)
+		|| !ReadOptionalMetadataString(Object, TEXT("description"), Out.Description, Out.Error)
+		|| !ReadOptionalMetadataString(Object, TEXT("status"), Out.Status, Out.Error)
+		|| !ReadOptionalMetadataString(Object, TEXT("type"), Out.Type, Out.Error)
+		|| !ReadMetadataCustom(Object, Out.Custom, Out.Error))
 	{
 		return false;
 	}
@@ -802,15 +800,12 @@ bool UPubnubInternalUtilities::ParseChannelMetadataObject(const FString& Json, F
 	return true;
 }
 
-FString UPubnubInternalUtilities::MetadataNullFieldError(const TArray<FString>& Fields)
-{
-	return FString::Printf(
-		TEXT("Cannot clear metadata fields with JSON null (%s). The new C-Core set API can omit a field or set a string, but it cannot send JSON null for string fields."),
-		*FString::Join(Fields, TEXT(", ")));
-}
-
 const char* UPubnubInternalUtilities::OptionalMetadataString(const FMetadataStringField& Field, const FUTF8StringHolder& Holder)
 {
+	if (Field.bClear)
+	{
+		return PUBNUB_CLEAR_VALUE;
+	}
 	return Field.bSet ? Holder.Get() : nullptr;
 }
 
@@ -936,17 +931,12 @@ bool UPubnubInternalUtilities::ParseRelationSetList(const FString& Json, const T
 			return false;
 		}
 
-		TArray<FString> ItemNullFields;
-		if (!ReadOptionalMetadataString(Item, TEXT("status"), Parsed.Status, ItemNullFields, Out.Error)
-			|| !ReadOptionalMetadataString(Item, TEXT("type"), Parsed.Type, ItemNullFields, Out.Error)
-			|| !ReadMetadataCustom(Item, Parsed.CustomJson, Parsed.bHasCustom, Out.Error))
+		if (!ReadOptionalMetadataString(Item, TEXT("status"), Parsed.Status, Out.Error)
+			|| !ReadOptionalMetadataString(Item, TEXT("type"), Parsed.Type, Out.Error)
+			|| !ReadMetadataCustom(Item, Parsed.Custom, Out.Error))
 		{
 			Out.Error = FString::Printf(TEXT("%s item %d: %s"), JsonName, Index, *Out.Error);
 			return false;
-		}
-		for (const FString& NullField : ItemNullFields)
-		{
-			Out.NullStringFields.AddUnique(NullField);
 		}
 
 		TArray<FString> KnownItemKeys = {FString(IdObjectKey), TEXT("custom"), TEXT("status"), TEXT("type")};
@@ -1035,6 +1025,19 @@ bool UPubnubInternalUtilities::ParseMemberRemoveList(const FString& Json, FParse
 	return ParseRelationRemoveList(Json, TEXT("uuid"), TEXT("RemoveObj"), Out);
 }
 
+namespace
+{
+	template<typename BatchType>
+	const char* HoldOrClearMetadataField(const FMetadataStringField& Field, BatchType& Batch)
+	{
+		if (Field.bClear)
+		{
+			return PUBNUB_CLEAR_VALUE;
+		}
+		return Field.bSet ? Batch.Hold(Field.Value) : nullptr;
+	}
+}
+
 void UPubnubInternalUtilities::BuildMembershipInputs(const FParsedRelationList& Parsed, FMembershipInputBatch& Out)
 {
 	const TArray<FParsedRelationInput>& Items = Parsed.Items;
@@ -1044,12 +1047,9 @@ void UPubnubInternalUtilities::BuildMembershipInputs(const FParsedRelationList& 
 	{
 		pubnub_membership_input_t Input = {};
 		Input.channel_id = Out.Hold(Item.Id);
-		Input.status = Item.Status.bSet ? Out.Hold(Item.Status.Value) : nullptr;
-		Input.type = Item.Type.bSet ? Out.Hold(Item.Type.Value) : nullptr;
-		if (Item.bHasCustom)
-		{
-			Input.custom = Out.Hold(Item.CustomJson);
-		}
+		Input.status = HoldOrClearMetadataField(Item.Status, Out);
+		Input.type = HoldOrClearMetadataField(Item.Type, Out);
+		Input.custom = HoldOrClearMetadataField(Item.Custom, Out);
 		Out.Items.Add(Input);
 	}
 }
@@ -1063,12 +1063,9 @@ void UPubnubInternalUtilities::BuildMemberInputs(const FParsedRelationList& Pars
 	{
 		pubnub_member_input_t Input = {};
 		Input.uuid_id = Out.Hold(Item.Id);
-		Input.status = Item.Status.bSet ? Out.Hold(Item.Status.Value) : nullptr;
-		Input.type = Item.Type.bSet ? Out.Hold(Item.Type.Value) : nullptr;
-		if (Item.bHasCustom)
-		{
-			Input.custom = Out.Hold(Item.CustomJson);
-		}
+		Input.status = HoldOrClearMetadataField(Item.Status, Out);
+		Input.type = HoldOrClearMetadataField(Item.Type, Out);
+		Input.custom = HoldOrClearMetadataField(Item.Custom, Out);
 		Out.Items.Add(Input);
 	}
 }

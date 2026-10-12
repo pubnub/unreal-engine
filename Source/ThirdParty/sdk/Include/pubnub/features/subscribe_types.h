@@ -95,7 +95,7 @@ typedef struct pubnub_subscribe_event {
     pubnub_subscribe_message_type_t type;
     /** Channel the message arrived on (minus `-pnpres` suffix). */
     pubnub_string_view_t channel;
-    /** Subscription match pattern (wildcard or channel group name). */
+    /** Subscription match as received from the server. */
     pubnub_string_view_t subscription;
     /** Publisher UUID (may be empty for system events). */
     pubnub_string_view_t publisher;
@@ -214,6 +214,14 @@ typedef void (*pubnub_subscribe_file_cb_t)(const pubnub_subscribe_event_t* event
  * filtering), or @c pubnub_subscription_set_add_listener (for
  * per-set filtering).
  *
+ * Delivery scope depends on where you register:
+ *  - Context-global: every event from all active subscriptions, including
+ *    status events (the only level that receives them).
+ *  - Per-subscription: data events only while the bound subscription is
+ *    subscribed; detached when it is destroyed.
+ *  - Per-set: data events only while the bound set is subscribed; detached
+ *    when the set is destroyed.
+ *
  * All callback fields are optional (NULL = not interested in that
  * event type). The SDK dispatches received events to the matching
  * typed callback.
@@ -300,7 +308,7 @@ typedef struct pubnub_entity* pubnub_entity_t;
  * @see pubnub_subscription_create
  */
 typedef struct pubnub_subscription_opts {
-    /** 1 = also subscribe to presence events (<channel>-pnpres).
+    /** 1 = also receive presence events (<channel>-pnpres).
      *  Silently ignored for metadata entities. */
     uint8_t with_presence;
 } pubnub_subscription_opts_t;
@@ -316,6 +324,9 @@ typedef struct pubnub_subscription_opts {
  * @c pubnub_subscription_destroy when no longer needed.
  */
 typedef struct pubnub_subscription* pubnub_subscription_t;
+
+/** Sentinel for an invalid subscription handle. */
+#define PUBNUB_SUBSCRIPTION_INVALID ((pubnub_subscription_t)NULL)
 
 /**
  * @brief Opaque subscription set handle.

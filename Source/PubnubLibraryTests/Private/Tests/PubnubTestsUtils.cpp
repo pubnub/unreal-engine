@@ -158,7 +158,7 @@ bool FPubnubAutomationTestBase::InitTest()
 	return true;
 }
 
-bool FPubnubAutomationTestBase::InitTestWithPAM()
+bool FPubnubAutomationTestBase::InitTestWithPAM(bool bUseSecretKey)
 {
 	//Initialize GameInstance and PubnubSubsystem
 	GameInstance = NewObject<UGameInstance>(GEngine);
@@ -176,7 +176,10 @@ bool FPubnubAutomationTestBase::InitTestWithPAM()
 	Config.UserID = "UE_SDK_Test_User";
 	Config.PublishKey = PubnubTests::GetTestPublishKeyWithPAM();
 	Config.SubscribeKey = PubnubTests::GetTestSubscribeKeyWithPAM();
-	Config.SecretKey = PubnubTests::GetTestSecretKeyWithPAM();
+	if (bUseSecretKey)
+	{
+		Config.SecretKey = PubnubTests::GetTestSecretKeyWithPAM();
+	}
 	
 	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
 	

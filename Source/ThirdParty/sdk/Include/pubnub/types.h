@@ -12,6 +12,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "pubnub/pubnub_compat.h"
+
 #ifdef __cplusplus
 // clang-format off
 extern "C" {
@@ -70,6 +72,20 @@ typedef struct pubnub_string_view {
  * as NUL-terminated @c const @c char* strings.
  */
 typedef pubnub_string_view_t pubnub_timetoken_t;
+
+/**
+ * @brief Marker for string fields: clears the value on the server.
+ *
+ * Pass in place of a string to send an explicit JSON null instead of
+ * omitting the field. Compared by address; never dereferenced as
+ * user text. Only accepted by fields documented to support it.
+ *
+ * @note On Windows DLL builds (@c PUBNUB_SHARED, dllimport) this macro is
+ *       not a constant expression; assign it at run time, not in a static
+ *       initializer.
+ */
+PUBNUB_API extern const char pubnub_clear_value_marker[];
+#define PUBNUB_CLEAR_VALUE (pubnub_clear_value_marker)
 
 /**
  * @brief Event type discriminator shared across subscribe and history.

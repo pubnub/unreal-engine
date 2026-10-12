@@ -48,33 +48,33 @@ extern "C" {
 #endif
 
 /**
- * @brief Access permission bitmask values.
+ * @brief Access permission bitmask type.
  *
- * Values match the PubNub wire format so grant body builders can
- * use them directly without translation. Combine with bitwise OR.
+ * Holds a combination of the @c PUBNUB_ACCESS_* flags below. Flag values
+ * match the PubNub wire format, so combine them with bitwise OR.
  *
  * @code
- * uint32_t perms = PUBNUB_ACCESS_READ | PUBNUB_ACCESS_WRITE;
+ * pubnub_access_permission_t perms = PUBNUB_ACCESS_READ | PUBNUB_ACCESS_WRITE;
  * @endcode
  */
-typedef enum pubnub_access_permission {
-    /** Read messages and presence events. */
-    PUBNUB_ACCESS_READ = 1,
-    /** Publish messages. */
-    PUBNUB_ACCESS_WRITE = 2,
-    /** Add/remove channels in channel groups. */
-    PUBNUB_ACCESS_MANAGE = 4,
-    /** Delete messages from history. */
-    PUBNUB_ACCESS_DELETE = 8,
-    /** Create resources (Objects). */
-    PUBNUB_ACCESS_CREATE = 16,
-    /** Read resource metadata (Objects). */
-    PUBNUB_ACCESS_GET = 32,
-    /** Update resource metadata (Objects). */
-    PUBNUB_ACCESS_UPDATE = 64,
-    /** Join a channel (presence). */
-    PUBNUB_ACCESS_JOIN = 128
-} pubnub_access_permission_t;
+typedef uint32_t pubnub_access_permission_t;
+
+/** Read messages and presence events. */
+#define PUBNUB_ACCESS_READ 1U
+/** Publish messages. */
+#define PUBNUB_ACCESS_WRITE 2U
+/** Add/remove channels in channel groups. */
+#define PUBNUB_ACCESS_MANAGE 4U
+/** Delete messages from history. */
+#define PUBNUB_ACCESS_DELETE 8U
+/** Create resources (Objects). */
+#define PUBNUB_ACCESS_CREATE 16U
+/** Read resource metadata (Objects). */
+#define PUBNUB_ACCESS_GET 32U
+/** Update resource metadata (Objects). */
+#define PUBNUB_ACCESS_UPDATE 64U
+/** Join a channel (presence). */
+#define PUBNUB_ACCESS_JOIN 128U
 
 /** A resource name paired with its permission bitmask. */
 typedef struct pubnub_access_resource_permission {
@@ -97,8 +97,8 @@ typedef struct pubnub_access_resource_permission {
  * Initialize with @c PUBNUB_GRANT_TOKEN_OPTS_INIT (zero-init
  * produces valid defaults for all optional fields).
  *
- * @note At least one resource or pattern permission must be
- *       specified; otherwise the request fails with
+ * @note At least one resource, pattern, or category permission must
+ *       be specified; otherwise the request fails with
  *       @c PUBNUB_ERR_INVALID_ARGUMENT.
  *
  * @see pubnub_grant_token
@@ -175,6 +175,28 @@ typedef struct pubnub_grant_token_opts {
 
     /** Number of entries in @c uuid_patterns. */
     size_t uuid_pattern_count;
+
+    /**
+     * @brief Category-level permission for all channels (@b optional).
+     *
+     * Grants enumeration permission for channel metadata on the subscribe key
+     * with App Context. Set to 0 (default) to not grant category permission.
+     * If non-zero, only @c PUBNUB_ACCESS_GET is allowed; any other value
+     * causes @c pubnub_grant_token to return a future with
+     * @c PUBNUB_ERR_INVALID_ARGUMENT.
+     */
+    uint32_t channels_category_permissions;
+
+    /**
+     * @brief Category-level permission for all UUIDs (@b optional).
+     *
+     * Grants enumeration permission for UUID metadata on the subscribe key
+     * with App Context. Set to 0 (default) to not grant category permission.
+     * If non-zero, only @c PUBNUB_ACCESS_GET is allowed; any other value
+     * causes @c pubnub_grant_token to return a future with
+     * @c PUBNUB_ERR_INVALID_ARGUMENT.
+     */
+    uint32_t uuids_category_permissions;
 
     /**
      * @brief Restrict token to this UUID (@b optional, @b borrowed,
@@ -340,6 +362,22 @@ typedef struct pubnub_parsed_token {
 
     /** Number of pattern-based UUID permissions. */
     uint32_t uuid_pattern_count;
+
+    /**
+     * @brief Category-level permission for all channels.
+     *
+     * When the token carries the category permission for channels,
+     * this field is set to @c PUBNUB_ACCESS_GET; otherwise 0.
+     */
+    uint32_t channels_category_permissions;
+
+    /**
+     * @brief Category-level permission for all UUIDs.
+     *
+     * When the token carries the category permission for UUIDs,
+     * this field is set to @c PUBNUB_ACCESS_GET; otherwise 0.
+     */
+    uint32_t uuids_category_permissions;
 } pubnub_parsed_token_t;
 
 /**
@@ -368,9 +406,10 @@ typedef struct pubnub_parsed_token {
  * @endcode
  *
  * On validation failure (zero TTL, no permissions specified,
- * missing @c secret_key or @c subscribe_key, queue full) the returned
- * future carries an immediate error code readable via
- * @c pubnub_future_status.
+ * invalid category permission bits, missing @c secret_key or
+ * @c subscribe_key, queue full) the returned future carries an immediate
+ * error code readable via @c pubnub_future_status. "No permissions" means
+ * no resource, pattern, or category permission was specified.
  *
  * @param ctx  Initialized context (@b borrowed).
  * @param opts Grant-token options struct (@b borrowed).

@@ -5,10 +5,10 @@
 #ifndef PUBNUB_CONFIG_H
 #define PUBNUB_CONFIG_H
 
-#define PUBNUB_SDK_VERSION_MAJOR 0
-#define PUBNUB_SDK_VERSION_MINOR 1
+#define PUBNUB_SDK_VERSION_MAJOR 1
+#define PUBNUB_SDK_VERSION_MINOR 0
 #define PUBNUB_SDK_VERSION_PATCH 0
-#define PUBNUB_SDK_VERSION       "0.1.0"
+#define PUBNUB_SDK_VERSION       "1.0.0"
 
 /**
  * @brief Platform identifier injected at configure time.
@@ -48,7 +48,6 @@
 #define PUBNUB_ENABLE_PUSH_NOTIFICATIONS 1
 #define PUBNUB_ENABLE_RETRY 0
 #define PUBNUB_ENABLE_SECURE_TRANSPORT 1
-#define PUBNUB_ENABLE_CPP_WRAPPER 0
 
 /* When 1, pubnub_create()/pubnub_destroy() are unavailable;
    only pubnub_init()/pubnub_deinit() with caller-provided memory work. */
@@ -62,11 +61,11 @@
  */
 
 #ifndef PUBNUB_CFG_MAX_IN_FLIGHT_REQUESTS
-#define PUBNUB_CFG_MAX_IN_FLIGHT_REQUESTS 4
+#define PUBNUB_CFG_MAX_IN_FLIGHT_REQUESTS 16
 #endif
 
 #ifndef PUBNUB_CFG_MAX_PENDING_REQUESTS
-#define PUBNUB_CFG_MAX_PENDING_REQUESTS 8
+#define PUBNUB_CFG_MAX_PENDING_REQUESTS 32
 #endif
 
 #ifndef PUBNUB_CFG_REQUEST_BUFFER_SIZE
@@ -81,14 +80,35 @@
 #define PUBNUB_CFG_URL_BUFFER_SIZE 2048
 #endif
 
-#define PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS 64
+#define PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS 256
 
 #ifndef PUBNUB_CFG_SUBSCRIBE_MAX_BATCH_SIZE
 #define PUBNUB_CFG_SUBSCRIBE_MAX_BATCH_SIZE 100
 #endif
 
 #ifndef PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS
-#define PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS 8
+#define PUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS 256
+#endif
+
+#ifndef PUBNUB_CFG_MAX_SUBSCRIPTIONS
+#define PUBNUB_CFG_MAX_SUBSCRIPTIONS 128
+#endif
+#if !defined(PUBNUB_CFG_MAX_SUBSCRIPTIONS) && defined(PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS)
+#define PUBNUB_CFG_MAX_SUBSCRIPTIONS PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
+#endif
+
+#ifndef PUBNUB_CFG_MAX_SUBSCRIPTION_SETS
+#define PUBNUB_CFG_MAX_SUBSCRIPTION_SETS 16
+#endif
+#if !defined(PUBNUB_CFG_MAX_SUBSCRIPTION_SETS) && defined(PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS)
+#define PUBNUB_CFG_MAX_SUBSCRIPTION_SETS PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
+#endif
+
+#ifndef PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET
+#define PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET 32
+#endif
+#if !defined(PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET) && defined(PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS)
+#define PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
 #endif
 
 /**
@@ -126,6 +146,10 @@
 
 #ifndef PUBNUB_CFG_RETRY_MAX_DELAY_MS
 #define PUBNUB_CFG_RETRY_MAX_DELAY_MS 150000
+#endif
+
+#ifndef PUBNUB_CFG_RETRY_MAX_RETRY_AFTER_MS
+#define PUBNUB_CFG_RETRY_MAX_RETRY_AFTER_MS 30000
 #endif
 
 #ifndef PUBNUB_CFG_LINEAR_MAX_RETRIES
@@ -225,6 +249,10 @@
 #define PUBNUB_CFG_HTTP_MAX_RESP_HEADERS 8
 #endif
 
+#ifndef PUBNUB_CFG_MAX_HEADER_BYTES
+#define PUBNUB_CFG_MAX_HEADER_BYTES 16384
+#endif
+
 #ifndef PUBNUB_CFG_HTTP_SCRATCH_SIZE
 #define PUBNUB_CFG_HTTP_SCRATCH_SIZE 32768
 #endif
@@ -317,7 +345,8 @@
  * leaks; tree construction APIs that would push past the limit fail
  * the same way.
  *
- * @b Default: @c 16 (hosted profiles), reduced in the bare-metal profile.
+ * @b Default: @c 16 (full, minimal), lowered on the embedded profile;
+ * override lower still on the most stack-constrained targets.
  */
 #ifndef PUBNUB_CFG_JSON_MAX_NESTING_DEPTH
 #define PUBNUB_CFG_JSON_MAX_NESTING_DEPTH 16
@@ -351,12 +380,34 @@
  * literals encountered during parse fall back to backend-defined
  * handling (typically: best-effort int conversion or parse failure).
  *
- * @b Default: @c ON for hosted profiles ( @c full, @c minimal) and the
- * embedded profile (most RTOS targets have soft-float support). @c OFF
- * for the bare-metal profile (Cortex-M0/M0+ without an FPU), where
- * the libc double-formatting code is itself prohibitively large.
+ * @b Default: @c ON for the @c full, @c minimal, and @c embedded profiles
+ * (most RTOS targets have soft-float support). Override to @c OFF on
+ * FPU-less targets (e.g. Cortex-M0/M0+), where the libc double-formatting
+ * code is itself prohibitively large.
  */
 #define PUBNUB_CFG_JSON_DOUBLE 1
+
+/**
+ * @brief Maximum origin hostname length in bytes (including terminator).
+ *
+ * The context stores the origin hostname regardless of the selected
+ * transport, so this bound is always defined.
+ */
+#ifndef PUBNUB_CFG_MAX_HOSTNAME_LEN
+#define PUBNUB_CFG_MAX_HOSTNAME_LEN 256
+#endif
+
+/**
+ * @brief 1 when the socket transport provider is selected.
+ *
+ * The socket and DNS tunables below are read only by the socket transport
+ * implementation. Under any other transport (e.g. curl) they would be inert
+ * macros that no compiled code reads, so they are defined only when this is
+ * @c 1.
+ */
+#define PUBNUB_TRANSPORT_SOCKET 1
+
+#if PUBNUB_TRANSPORT_SOCKET
 
 /* Socket transport configuration */
 #ifndef PUBNUB_CFG_SOCKET_HEADER_BUF_SIZE
@@ -376,7 +427,7 @@
 #endif
 
 #ifndef PUBNUB_CFG_SOCKET_DECOMP_MAX_BUFFER_SIZE
-#define PUBNUB_CFG_SOCKET_DECOMP_MAX_BUFFER_SIZE 0
+#define PUBNUB_CFG_SOCKET_DECOMP_MAX_BUFFER_SIZE 4194304
 #endif
 
 /**
@@ -408,10 +459,6 @@
 #define PUBNUB_CFG_MAX_DNS_SERVERS 8
 #endif
 
-#ifndef PUBNUB_CFG_MAX_HOSTNAME_LEN
-#define PUBNUB_CFG_MAX_HOSTNAME_LEN 256
-#endif
-
 #ifndef PUBNUB_CFG_DNS_PLATFORM_STATE_SIZE
 #define PUBNUB_CFG_DNS_PLATFORM_STATE_SIZE 512
 #endif
@@ -427,6 +474,33 @@
 #ifndef PUBNUB_CFG_DNS_MAX_TTL_SEC
 #define PUBNUB_CFG_DNS_MAX_TTL_SEC 300
 #endif
+
+#if PUBNUB_CFG_DNS_MAX_TTL_SEC < 1 || PUBNUB_CFG_DNS_MAX_TTL_SEC > 86400
+  #error "PUBNUB_CFG_DNS_MAX_TTL_SEC must be between 1 and 86400 seconds"
+#endif
+
+/**
+ * @brief Number of TLS session cache entries per transport context (0 = disabled).
+ *
+ * When greater than 0, the socket transport TLS backends cache session objects
+ * indexed by hostname. Subsequent connections to the same host skip the full
+ * handshake, reducing latency by one round-trip for TLS 1.2.
+ *
+ * Note: TLS 1.2 session resumption reduces forward secrecy — resumed sessions
+ * share the master secret from the original handshake. Set to 0 when
+ * per-connection forward secrecy is required.
+ *
+ * @b Default: @c 4 for hosted profiles, @c 2 for @c embedded.
+ */
+#ifndef PUBNUB_CFG_TLS_SESSION_CACHE_SIZE
+#define PUBNUB_CFG_TLS_SESSION_CACHE_SIZE 4
+#endif
+
+#if (PUBNUB_CFG_TLS_SESSION_CACHE_SIZE + 0) < 0 || (PUBNUB_CFG_TLS_SESSION_CACHE_SIZE + 0) > 64
+  #error "PUBNUB_CFG_TLS_SESSION_CACHE_SIZE must be between 0 and 64"
+#endif
+
+#endif /* PUBNUB_TRANSPORT_SOCKET */
 
 #define PUBNUB_ENABLE_CUSTOM_DNS 1
 #define PUBNUB_ENABLE_COMPRESSION 1
@@ -453,8 +527,30 @@
 #endif
 
 #ifdef PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS
-  #if PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS < 1
-    #error "PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS must be >= 1"
+  #if PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS < 1 || PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS > 65535
+    #error "PUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS must be in [1, 65535]"
+  #endif
+#endif
+
+#ifdef PUBNUB_CFG_MAX_SUBSCRIPTIONS
+  #if PUBNUB_CFG_MAX_SUBSCRIPTIONS < 1 || PUBNUB_CFG_MAX_SUBSCRIPTIONS > 65535
+    #error "PUBNUB_CFG_MAX_SUBSCRIPTIONS must be in [1, 65535]"
+  #endif
+#endif
+
+#ifdef PUBNUB_CFG_MAX_SUBSCRIPTION_SETS
+  #if PUBNUB_CFG_MAX_SUBSCRIPTION_SETS < 1 || PUBNUB_CFG_MAX_SUBSCRIPTION_SETS > 65535
+    #error "PUBNUB_CFG_MAX_SUBSCRIPTION_SETS must be in [1, 65535]"
+  #endif
+#endif
+
+#ifdef PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET
+  #if PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET < 1 || PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET > 65535
+    #error "PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET must be in [1, 65535]"
+  #endif
+  #if defined(PUBNUB_CFG_MAX_SUBSCRIPTIONS) \
+      && PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET > PUBNUB_CFG_MAX_SUBSCRIPTIONS
+    #error "PUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET must be <= PUBNUB_CFG_MAX_SUBSCRIPTIONS"
   #endif
 #endif
 
@@ -482,6 +578,10 @@
 
 #if PUBNUB_CFG_RETRY_MAX_DELAY_MS < PUBNUB_CFG_RETRY_DELAY_MS
   #error "PUBNUB_CFG_RETRY_MAX_DELAY_MS must be >= PUBNUB_CFG_RETRY_DELAY_MS"
+#endif
+
+#if PUBNUB_CFG_RETRY_MAX_RETRY_AFTER_MS < PUBNUB_CFG_RETRY_DELAY_MS
+  #error "PUBNUB_CFG_RETRY_MAX_RETRY_AFTER_MS must be >= PUBNUB_CFG_RETRY_DELAY_MS"
 #endif
 
 #ifdef PUBNUB_CFG_ARENA_POOL_SIZE
@@ -521,6 +621,10 @@
   #error "PUBNUB_CFG_HTTP_SCRATCH_SIZE must be >= 32"
 #endif
 
+#if PUBNUB_CFG_MAX_HEADER_BYTES < 1024
+  #error "PUBNUB_CFG_MAX_HEADER_BYTES must be >= 1024"
+#endif
+
 #if PUBNUB_CFG_PIPELINE_MAX_MIDDLEWARES < (3 + PUBNUB_ENABLE_PAM + PUBNUB_ENABLE_RETRY + PUBNUB_ENABLE_REQUEST_COMPRESSION)
   #error "PUBNUB_CFG_PIPELINE_MAX_MIDDLEWARES is too small for the enabled middleware set"
 #endif
@@ -531,10 +635,6 @@
 
 #if PUBNUB_CFG_MAX_POLL_MS < 1 || PUBNUB_CFG_MAX_POLL_MS > 5000
   #error "PUBNUB_CFG_MAX_POLL_MS must be in [1, 5000]"
-#endif
-
-#if PUBNUB_CFG_DNS_MAX_TTL_SEC < 1 || PUBNUB_CFG_DNS_MAX_TTL_SEC > 86400
-  #error "PUBNUB_CFG_DNS_MAX_TTL_SEC must be between 1 and 86400 seconds"
 #endif
 
 

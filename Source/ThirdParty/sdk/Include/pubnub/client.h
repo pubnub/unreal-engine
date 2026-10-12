@@ -158,6 +158,20 @@ typedef struct pubnub_retry_configuration {
     unsigned int maximum_retry;
 
     /**
+     * @brief Upper bound on a server-provided @c Retry-After delay
+     *        (milliseconds).
+     *
+     * A @c 429 or @c 503 response may carry a @c Retry-After header asking
+     * you to wait an arbitrary number of seconds. Without a cap, a hostile
+     * or misconfigured server could stall a request for hours. The SDK
+     * clamps the honored @c Retry-After delay to this value.
+     *
+     * @c 0 - use compile-time default
+     *        (@c PUBNUB_CFG_RETRY_MAX_RETRY_AFTER_MS).
+     */
+    unsigned int maximum_retry_after_ms;
+
+    /**
      * @brief Bitmask of endpoint groups excluded from retry.
      *
      * Use bitwise OR of @c pubnub_endpoint_group_t values.
@@ -746,19 +760,25 @@ PUBNUB_API pubnub_res_t pubnub_set_tls_ca_bundle(pubnub_context_t* ctx,
                                                  const char*       ca_pem);
 
 /**
- * @brief Enable or disable TLS peer certificate verification.
+ * @brief Skip (disable) TLS peer certificate verification.
  *
- * @warning Disabling verification exposes connections to MITM attacks.
- *          Only use in development and testing -- never in production.
+ * Pass a non-zero @p skip_verify to disable peer certificate
+ * verification; pass zero to re-enable it (the secure default).
+ *
+ * @warning Disabling verification exposes connections to
+ *          man-in-the-middle attacks. Only use in development and
+ *          testing -- never in production.
  *
  * @param ctx         Initialized context (@b borrowed).
- * @param skip_verify Non-zero to disable verification; zero to
- *                    re-enable.
+ * @param skip_verify Non-zero to skip (disable) verification; zero to
+ *                    re-enable it.
  * @return @c PUBNUB_OK on success.
  * @retval PUBNUB_ERR_NOT_INITIALIZED if @p ctx is uninitialized.
+ * @retval PUBNUB_ERR_NOT_SUPPORTED if the active transport does not
+ *         support toggling TLS verification.
  */
-PUBNUB_API pubnub_res_t pubnub_set_tls_verify(pubnub_context_t* ctx,
-                                              uint8_t           skip_verify);
+PUBNUB_API pubnub_res_t pubnub_set_tls_skip_verify(pubnub_context_t* ctx,
+                                                   uint8_t skip_verify);
 
 /**
  * @brief Pump the context event loop one non-blocking tick.

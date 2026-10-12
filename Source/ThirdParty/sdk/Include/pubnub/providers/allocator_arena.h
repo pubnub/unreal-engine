@@ -158,6 +158,18 @@ typedef struct pubnub_arena_allocator {
      * reclaim.
      */
     uint8_t cell_count[PUBNUB_ARENA_MAX_ZONE_B_CELLS];
+
+    /**
+     * @brief Init reference count for multi-context sharing.
+     *
+     * Incremented by the vtable @c init and decremented by @c deinit.
+     * When a single arena instance backs several concurrently-live
+     * contexts, the tracking arrays are cleared only when the last
+     * context deinits (count reaches 0), so one context's teardown does
+     * not corrupt another's live allocations. Reset to 0 by
+     * @c pubnub_arena_allocator_init.
+     */
+    uint8_t ref_count;
 } pubnub_arena_allocator_t;
 
 /**

@@ -316,7 +316,7 @@ bool FPubnubGrantToken_WithoutSetSecretKey_ReturnsError::RunTest(const FString& 
 
 bool FPubnubGrantToken_HappyPath_RequiredParamsOnly::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -341,7 +341,7 @@ bool FPubnubGrantToken_HappyPath_RequiredParamsOnly::RunTest(const FString& Para
 
 bool FPubnubGrantToken_WithMetaAndExtendedPermissions::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -389,7 +389,7 @@ bool FPubnubGrantToken_WithMetaAndExtendedPermissions::RunTest(const FString& Pa
 // ParseToken should expose the same channel-level Read/Write flags we encoded in the grant.
 bool FPubnubGrantToken_ParseTokenReflectsGrantedChannelPermissions::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -440,7 +440,7 @@ bool FPubnubGrantToken_ParseTokenReflectsGrantedChannelPermissions::RunTest(cons
 
 bool FPubnubGrantToken_ConcurrentSyncWhileAsyncInProgress_ReturnsMutexOrSucceeds::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -525,7 +525,7 @@ bool FPubnubRevokeToken_ClientNotInitialized_ReturnsError::RunTest(const FString
 
 bool FPubnubRevokeToken_AfterGrantToken_Succeeds::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -551,7 +551,7 @@ bool FPubnubRevokeToken_AfterGrantToken_Succeeds::RunTest(const FString& Paramet
 
 bool FPubnubRevokeToken_InvalidToken_ReturnsError::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -586,7 +586,7 @@ bool FPubnubSetAuthToken_ClientNotInitialized_NoCrash::RunTest(const FString& Pa
 
 bool FPubnubSetAuthToken_EmptyString_ClearsAuthPublishFailsUnderPAM::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -624,7 +624,7 @@ bool FPubnubSetAuthToken_EmptyString_ClearsAuthPublishFailsUnderPAM::RunTest(con
 
 bool FPubnubToken_PublishLifecycleWithGrantAndRevoke::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -667,7 +667,7 @@ bool FPubnubToken_PublishLifecycleWithGrantAndRevoke::RunTest(const FString& Par
 // Grant write only on channel A; publishing to B must still fail even after SetAuthToken.
 bool FPubnubToken_PublishWrongChannel_StillDeniedWithLimitedGrant::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
@@ -706,16 +706,11 @@ bool FPubnubToken_PublishWrongChannel_StillDeniedWithLimitedGrant::RunTest(const
 // A second client, without a secret key, uses that token for both list calls.
 bool FPubnubToken_CategoryGrantListsAllMetadata::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
-
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	const FString RestrictedUser = SDK_PREFIX + TEXT("pam_listall_user");
 	const FString ListedUser = SDK_PREFIX + TEXT("pam_listall_meta_user");
@@ -725,7 +720,6 @@ bool FPubnubToken_CategoryGrantListsAllMetadata::RunTest(const FString& Paramete
 
 	UPubnubClient* Admin = PubnubClient;
 	Admin->SetUserID(SDK_PREFIX + TEXT("pam_listall_admin"));
-	Admin->SetSecretKey();
 
 	FPubnubUserInputData UserInput;
 	UserInput.UserName = TEXT("ListAllUser");

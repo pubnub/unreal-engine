@@ -3433,10 +3433,6 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 	{
 		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring metadata JSON fields the new C-Core set API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
 	}
-	if (!Parsed.NullStringFields.IsEmpty())
-	{
-		PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(false, *UPubnubInternalUtilities::MetadataNullFieldError(Parsed.NullStringFields), FinalResult);
-	}
 
 	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
@@ -3449,9 +3445,10 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 	FUTF8StringHolder EmailHolder(Parsed.Email.Value);
 	FUTF8StringHolder StatusHolder(Parsed.Status.Value);
 	FUTF8StringHolder TypeHolder(Parsed.Type.Value);
-	FUTF8StringHolder CustomHolder(Parsed.CustomJson);
+	FUTF8StringHolder CustomHolder(Parsed.Custom.Value);
 
 	// Zero-init keeps include empty. The C-Core single-entity default would otherwise request custom.
+	// JSON null fields are sent as PUBNUB_CLEAR_VALUE so ForceSet can clear them on the server.
 	opts.uuid = UserHolder.Get();
 	opts.include = UPubnubInternalUtilities::AppContextIncludeMaskFromString(Include, UnknownInclude);
 	opts.name = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Name, NameHolder);
@@ -3460,10 +3457,7 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 	opts.email = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Email, EmailHolder);
 	opts.status = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Status, StatusHolder);
 	opts.type = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Type, TypeHolder);
-	if (Parsed.bHasCustom)
-	{
-		opts.custom = CustomHolder.Get();
-	}
+	opts.custom = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Custom, CustomHolder);
 
 	if (!UnknownInclude.IsEmpty())
 	{
@@ -3628,10 +3622,6 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 	{
 		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring metadata JSON fields the new C-Core set API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
 	}
-	if (!Parsed.NullStringFields.IsEmpty())
-	{
-		PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(false, *UPubnubInternalUtilities::MetadataNullFieldError(Parsed.NullStringFields), FinalResult);
-	}
 
 	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
 
@@ -3642,19 +3632,17 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 	FUTF8StringHolder DescriptionHolder(Parsed.Description.Value);
 	FUTF8StringHolder StatusHolder(Parsed.Status.Value);
 	FUTF8StringHolder TypeHolder(Parsed.Type.Value);
-	FUTF8StringHolder CustomHolder(Parsed.CustomJson);
+	FUTF8StringHolder CustomHolder(Parsed.Custom.Value);
 
 	// Zero-init keeps include empty. The C-Core single-entity default would otherwise request custom.
+	// JSON null fields are sent as PUBNUB_CLEAR_VALUE so ForceSet can clear them on the server.
 	opts.channel = ChannelHolder.Get();
 	opts.include = UPubnubInternalUtilities::AppContextIncludeMaskFromString(Include, UnknownInclude);
 	opts.name = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Name, NameHolder);
 	opts.description = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Description, DescriptionHolder);
 	opts.status = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Status, StatusHolder);
 	opts.type = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Type, TypeHolder);
-	if (Parsed.bHasCustom)
-	{
-		opts.custom = CustomHolder.Get();
-	}
+	opts.custom = UPubnubInternalUtilities::OptionalMetadataString(Parsed.Custom, CustomHolder);
 
 	if (!UnknownInclude.IsEmpty())
 	{
@@ -3827,10 +3815,6 @@ FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FStrin
 	if (!Parsed.UnknownFields.IsEmpty())
 	{
 		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring membership JSON fields the new C-Core set API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
-	}
-	if (!Parsed.NullStringFields.IsEmpty())
-	{
-		PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(false, *UPubnubInternalUtilities::MetadataNullFieldError(Parsed.NullStringFields), FinalResult);
 	}
 
 	FMembershipInputBatch Inputs;
@@ -4033,10 +4017,6 @@ FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channe
 	if (!Parsed.UnknownFields.IsEmpty())
 	{
 		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring member JSON fields the new C-Core set API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
-	}
-	if (!Parsed.NullStringFields.IsEmpty())
-	{
-		PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS(false, *UPubnubInternalUtilities::MetadataNullFieldError(Parsed.NullStringFields), FinalResult);
 	}
 
 	FMemberInputBatch Inputs;

@@ -70,11 +70,16 @@ private:
 	bool bLocked;
 };
 
-/** One string field from a set-metadata JSON object. bSet is false when the field was absent. */
+/**
+ * One App Context field from a set-metadata JSON object.
+ * An absent field leaves both flags false so C-Core omits it.
+ * A JSON string sets bSet. JSON null sets bClear, which the wrapper sends as PUBNUB_CLEAR_VALUE.
+ */
 struct FMetadataStringField
 {
 	FString Value;
 	bool bSet = false;
+	bool bClear = false;
 };
 
 /** User metadata JSON split into the fields pubnub_set_uuid_metadata accepts. */
@@ -86,9 +91,7 @@ struct FParsedUserMetadataObject
 	FMetadataStringField Email;
 	FMetadataStringField Status;
 	FMetadataStringField Type;
-	FString CustomJson;
-	bool bHasCustom = false;
-	TArray<FString> NullStringFields;
+	FMetadataStringField Custom;
 	TArray<FString> UnknownFields;
 	FString Error;
 };
@@ -100,9 +103,7 @@ struct FParsedChannelMetadataObject
 	FMetadataStringField Description;
 	FMetadataStringField Status;
 	FMetadataStringField Type;
-	FString CustomJson;
-	bool bHasCustom = false;
-	TArray<FString> NullStringFields;
+	FMetadataStringField Custom;
 	TArray<FString> UnknownFields;
 	FString Error;
 };
@@ -120,15 +121,13 @@ struct FParsedRelationInput
 	FString Id;
 	FMetadataStringField Status;
 	FMetadataStringField Type;
-	FString CustomJson;
-	bool bHasCustom = false;
+	FMetadataStringField Custom;
 };
 
 /** Parsed set or remove JSON array. Error is set when parsing fails. */
 struct FParsedRelationList
 {
 	TArray<FParsedRelationInput> Items;
-	TArray<FString> NullStringFields;
 	TArray<FString> UnknownFields;
 	FString Error;
 };
