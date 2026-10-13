@@ -9,6 +9,85 @@
 #include "PubnubInternalStructLibrary.h"
 #include "PubNub.h"
 
+namespace
+{
+	struct FDeferredSubscriptionDestroy
+	{
+		pubnub_context_t* Context = nullptr;
+		pubnub_subscription_t Subscription = nullptr;
+		pubnub_subscription_set_t SubscriptionSet = nullptr;
+	};
+
+	TArray<FDeferredSubscriptionDestroy> DeferredSubscriptionDestroys;
+	FDelegateHandle PostGarbageCollectHandle;
+
+	void DrainDeferredSubscriptionDestroys()
+	{
+		if (DeferredSubscriptionDestroys.IsEmpty())
+		{
+			return;
+		}
+
+		TArray<FDeferredSubscriptionDestroy> Pending = MoveTemp(DeferredSubscriptionDestroys);
+		for (const FDeferredSubscriptionDestroy& PendingDestroy : Pending)
+		{
+			if (PendingDestroy.Subscription)
+			{
+				pubnub_subscription_destroy(PendingDestroy.Subscription);
+			}
+			if (PendingDestroy.SubscriptionSet)
+			{
+				pubnub_subscription_set_destroy(PendingDestroy.SubscriptionSet);
+			}
+		}
+	}
+
+	void DestroySubscriptionNowOrAfterGC(bool bFromBeginDestroy, pubnub_context_t* Context, pubnub_subscription_t Subscription, pubnub_subscription_set_t SubscriptionSet)
+	{
+		if (!Context || (!Subscription && !SubscriptionSet))
+		{
+			return;
+		}
+
+		if (!bFromBeginDestroy)
+		{
+			if (Subscription)
+			{
+				pubnub_subscription_destroy(Subscription);
+			}
+			else
+			{
+				pubnub_subscription_set_destroy(SubscriptionSet);
+			}
+			return;
+		}
+
+		if (!PostGarbageCollectHandle.IsValid())
+		{
+			PostGarbageCollectHandle = FCoreUObjectDelegates::GetPostGarbageCollect().AddStatic(&DrainDeferredSubscriptionDestroys);
+		}
+
+		FDeferredSubscriptionDestroy PendingDestroy;
+		PendingDestroy.Context = Context;
+		PendingDestroy.Subscription = Subscription;
+		PendingDestroy.SubscriptionSet = SubscriptionSet;
+		DeferredSubscriptionDestroys.Add(PendingDestroy);
+	}
+}
+
+void UPubnubInternalUtilities::DiscardDeferredSubscriptionDestroys(pubnub_context_t* Context)
+{
+	if (!Context)
+	{
+		return;
+	}
+
+	DeferredSubscriptionDestroys.RemoveAll([Context](const FDeferredSubscriptionDestroy& PendingDestroy)
+	{
+		return PendingDestroy.Context == Context;
+	});
+}
+
 void UPubnubSubscriptionBase::BeginDestroy()
 {
 	CleanUpSubscription();
@@ -288,9 +367,10 @@ void UPubnubSubscription::CleanUpSubscription()
 		PubnubClient->UnregisterManagedSubscription(CCoreSubscription);
 	}
 
+	// BeginDestroy runs inside garbage collection. Destroy the C-Core handle after GC instead.
 	if (CCoreSubscription && IsValid(PubnubClient))
 	{
-		pubnub_subscription_destroy(CCoreSubscription);
+		DestroySubscriptionNowOrAfterGC(HasAnyFlags(RF_BeginDestroyed), PubnubClient->pubnub_context, CCoreSubscription, nullptr);
 	}
 	CCoreSubscription = nullptr;
 
@@ -674,9 +754,10 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 		PubnubClient->UnregisterManagedSubscriptionSet(CCoreSubscriptionSet);
 	}
 
+	// BeginDestroy runs inside garbage collection. Destroy the C-Core handle after GC instead.
 	if (CCoreSubscriptionSet && IsValid(PubnubClient))
 	{
-		pubnub_subscription_set_destroy(CCoreSubscriptionSet);
+		DestroySubscriptionNowOrAfterGC(HasAnyFlags(RF_BeginDestroyed), PubnubClient->pubnub_context, nullptr, CCoreSubscriptionSet);
 	}
 	CCoreSubscriptionSet = nullptr;
 

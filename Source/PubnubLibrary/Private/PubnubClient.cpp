@@ -2264,6 +2264,9 @@ void UPubnubClient::DeinitializeClient()
 			SubStatusListenerHandle = PUBNUB_LISTENER_HANDLE_INVALID;
 		}
 
+		// Handles queued from BeginDestroy are freed by pubnub_destroy below.
+		UPubnubInternalUtilities::DiscardDeferredSubscriptionDestroys(pubnub_context);
+
 		//Destroy the C-Core context.
 		pubnub_destroy(pubnub_context);
 		pubnub_context = nullptr;
@@ -3053,7 +3056,7 @@ FPubnubGrantTokenResult UPubnubClient::GrantToken_priv(int Ttl, FString Authoriz
 
 	FPubnubGrantTokenResult FinalResult;
 
-	// Same local rejects the old permission-object builder used before calling C-Core.
+	// Local verifications of data
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((Ttl > 0), TEXT("Ttl must be greater than 0."), FinalResult);
 	PUBNUB_RETURN_WRAPPER_IF_FIELD_EMPTY(AuthorizedUser, FinalResult);
 	PUBNUB_RETURN_WRAPPER_IF_CONDITION_FAILS((!Permissions.ArePermissionsEmpty()), TEXT("Permissions can't be empty."), FinalResult);

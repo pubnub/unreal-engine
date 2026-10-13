@@ -145,6 +145,12 @@ public:
 
 	static void RemoveEntitySubscriptionSetListener(pubnub_subscription_set_t SubscriptionSet, pubnub_listener_handle_t Handle);
 
+	/**
+	 * Drops handles that were queued from BeginDestroy for this context.
+	 * Call before pubnub_destroy. Context teardown frees them.
+	 */
+	static void DiscardDeferredSubscriptionDestroys(pubnub_context_t* Context);
+
 	/** Fills Out with subscribed handles. Out is empty when the query fails. */
 	static void ListActiveCCoreSubscriptions(pubnub_context_t* Context, TArray<pubnub_subscription_t>& Out);
 
