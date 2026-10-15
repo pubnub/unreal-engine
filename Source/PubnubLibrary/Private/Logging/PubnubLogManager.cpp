@@ -1,6 +1,7 @@
 // Copyright 2026 PubNub Inc. All Rights Reserved.
 
 #include "Logging/PubnubLogManager.h"
+#include "PubnubClient.h"
 
 #include <pubnub/providers/logger.h>
 
@@ -272,12 +273,23 @@ static FString NormalizeCCoreEmitterID(const char* RawID)
 	return Parsed.StartsWith(TEXT("PubNub")) ? Parsed : FString::Printf(TEXT("PubNub-%s"), *Parsed);
 }
 
-void UPubnubLogManager::BeginDestroy()
+void UPubnubLogManager::ReleaseCCoreLoggerBridge()
 {
 	if (CCoreLoggerBridge)
 	{
 		delete CCoreLoggerBridge;
 		CCoreLoggerBridge = nullptr;
+	}
+}
+
+void UPubnubLogManager::BeginDestroy()
+{
+	// pubnub_deinit logs through this bridge. Garbage collection can BeginDestroy
+	// the log manager before the client, so keep the bridge until the context is gone.
+	const UPubnubClient* Client = Cast<UPubnubClient>(GetOuter());
+	if (!Client || !Client->pubnub_context)
+	{
+		ReleaseCCoreLoggerBridge();
 	}
 
 	Super::BeginDestroy();

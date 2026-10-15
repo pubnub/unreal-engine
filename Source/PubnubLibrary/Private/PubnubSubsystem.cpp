@@ -13,6 +13,17 @@ void UPubnubSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UPubnubSubsystem::Deinitialize()
 {
+	// Game instance shutdown does not garbage-collect clients immediately.
+	// Destroy them here so a later GC pass does not pubnub_destroy a live context
+	// after sibling objects (logger bridge, crypto) have already been freed.
+	TArray<TObjectPtr<UPubnubClient>> Clients;
+	PubnubClients.GenerateValueArray(Clients);
+	for (UPubnubClient* Client : Clients)
+	{
+		DestroyPubnubClient(Client);
+	}
+	PubnubClients.Empty();
+
 	Super::Deinitialize();
 }
 

@@ -2267,9 +2267,15 @@ void UPubnubClient::DeinitializeClient()
 		// Handles queued from BeginDestroy are freed by pubnub_destroy below.
 		UPubnubInternalUtilities::DiscardDeferredSubscriptionDestroys(pubnub_context);
 
-		//Destroy the C-Core context.
+		//Destroy the C-Core context. The logger bridge must still be alive:
+		//pubnub_deinit logs "PubNub context releasing" through it.
 		pubnub_destroy(pubnub_context);
 		pubnub_context = nullptr;
+	}
+
+	if (LoggerManager)
+	{
+		LoggerManager->ReleaseCCoreLoggerBridge();
 	}
 	
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core context destroyed."));

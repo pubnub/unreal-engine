@@ -411,16 +411,28 @@ bool FPubnubGrantToken_ParseTokenReflectsGrantedChannelPermissions::RunTest(cons
 	const int32 TtlMinutes = 90;
 	const FPubnubGrantTokenResult GrantRes = PubnubClient->GrantToken(TtlMinutes, AuthUser, Perms);
 
-	TestFalse(TEXT("GrantToken should succeed"), GrantRes.Result.Error);
-	TestEqual(TEXT("HTTP 200"), GrantRes.Result.Status, 200);
+	const bool bNoError = TestFalse(TEXT("GrantToken should succeed"), GrantRes.Result.Error);
+	const bool bHttpOk = TestEqual(TEXT("HTTP 200"), GrantRes.Result.Status, 200);
+	const bool bHasToken = TestTrue(TEXT("Granted token should be non-empty"), !GrantRes.Token.IsEmpty());
+	if (!bNoError || !bHttpOk || !bHasToken)
+	{
+		AddError(FString::Printf(TEXT("GrantToken did not return a token. Status=%d Message=%s"),
+			GrantRes.Result.Status, *GrantRes.Result.ErrorMessage));
+		CleanUp();
+		return false;
+	}
 
 	// C-Core parse payload does not expose aud as AuthorizedUuid in the reworked JSON; validate TTL + channel permissions only.
 	const FString Parsed = PubnubClient->ParseToken(GrantRes.Token);
-	TestFalse(TEXT("ParseToken should return non-empty JSON"), Parsed.IsEmpty());
-
 	TSharedPtr<FJsonObject> Root;
-	TestTrue(TEXT("Parsed token should be valid JSON object"),
-		UPubnubJsonUtilities::StringToJsonObject(Parsed, Root) && Root.IsValid());
+	const bool bParsed = TestFalse(TEXT("ParseToken should return non-empty JSON"), Parsed.IsEmpty())
+		&& TestTrue(TEXT("Parsed token should be valid JSON object"),
+			UPubnubJsonUtilities::StringToJsonObject(Parsed, Root) && Root.IsValid());
+	if (!bParsed)
+	{
+		CleanUp();
+		return false;
+	}
 
 	double ParsedTtl = 0.0;
 	TestTrue(TEXT("Parsed token should include TTL"), Root->TryGetNumberField(TEXT("TTL"), ParsedTtl));

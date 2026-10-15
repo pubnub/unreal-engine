@@ -137,6 +137,7 @@ class PUBNUBLIBRARY_API UPubnubClient : public UObject
 	friend class UPubnubSubsystem;
 	friend class UPubnubSubscription;
 	friend class UPubnubSubscriptionSet;
+	friend class UPubnubLogManager;
 
 public:
 	

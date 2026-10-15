@@ -223,7 +223,6 @@ private:
 	void InternalInit();
 
 	/**
-	/**
 	 * Unregisters the C-Core listener attached to this subscription.
 	 * Must run before ListenerUserData is freed so PubNub cannot invoke the callback
 	 * with a dangling user_data pointer.
@@ -382,7 +381,6 @@ private:
 	void InitWithCCoreSubscriptionSet(UPubnubClient* InPubnubClient, pubnub_subscription_set_t InCCoreSubscriptionSet);
 	void InternalInit();
 
-	/**
 	/**
 	 * Unregisters the C-Core listener attached to this set.
 	 * Must run before ListenerUserData is freed so PubNub cannot invoke the callback

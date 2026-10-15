@@ -41,6 +41,7 @@ public class PubNubModule : ModuleRules
 		else if (Target.Platform == UnrealTargetPlatform.Mac)
 		{
 			PublicAdditionalLibraries.Add(Path.Combine(SDKPath, "lib", "MacOS", "libpubnub.a"));
+			AddAppleCCoreSystemLibraries();
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Android)
 		{
@@ -49,6 +50,7 @@ public class PubNubModule : ModuleRules
 		else if (Target.Platform == UnrealTargetPlatform.IOS)
 		{
 			PublicAdditionalLibraries.Add(Path.Combine(SDKPath, "lib", "ios", "libpubnub.a"));
+			AddAppleCCoreSystemLibraries();
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Linux)
 		{
@@ -58,5 +60,15 @@ public class PubNubModule : ModuleRules
 		{
 			System.Console.WriteLine("Error - this target platform is not supported");
 		}
+	}
+
+	// libpubnub.a is a static archive of C-Core objects. CMake usage requirements
+	// are not stored in the archive, so Apple consumers must link the same
+	// system libraries the socket transport build used
+	private void AddAppleCCoreSystemLibraries()
+	{
+		PublicSystemLibraries.Add("resolv");
+		PublicFrameworks.Add("CoreFoundation");
+		PublicFrameworks.Add("CFNetwork");
 	}
 }

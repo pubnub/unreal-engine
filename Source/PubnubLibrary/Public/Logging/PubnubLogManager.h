@@ -22,6 +22,9 @@ class PUBNUBLIBRARY_API UPubnubLogManager : public UObject
 public:
 	virtual void BeginDestroy() override;
 
+	/** Frees the C-Core logger bridge. Call only after pubnub_destroy, which logs through it. */
+	void ReleaseCCoreLoggerBridge();
+
 	void AddLogger(const TScriptInterface<IPubnubLoggerInterface>& Logger);
 	void RemoveLogger(const TScriptInterface<IPubnubLoggerInterface>& Logger);
 	void ClearLoggers();
