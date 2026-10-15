@@ -49,29 +49,6 @@ class PUBNUBLIBRARY_API UPubnubUtilities : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 public:
 
-	/*static FPubnubConfig PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings);
-	static FString PubnubGetLastServerHttpResponse(pubnub_t* Context);
-
-	//Sets limit to be between 0 and PUBNUB_MAX_LIMIT. Prevents C-Core crash on providing incorrect limit.
-	static int RoundLimitForPubnubFunctions(int ProvidedLimit);
-	
-	/* STRING OPERATIONS #1#
-	
-	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
-	static FString RemoveOuterQuotesFromString(const FString InString);
-	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
-	static FString ArrayOfStringsToCommaSeparatedString(const TArray<FString> ArrayOfStrings);
-
-	/**
-	 * Safely copies an FString to a char buffer with proper bounds checking and null termination.
-	 * @param Destination The destination char buffer
-	 * @param DestSize The size of the destination buffer (including space for null terminator)
-	 * @param Source The source FString to copy
-	 * @param KeyName Optional name for logging purposes (defaults to "String")
-	 * @return true if copy was successful, false if conversion failed
-	 #1#
-	static bool SafeCopyFStringToCharBuffer(char* Destination, int DestSize, const FString& Source, const TCHAR* KeyName = TEXT("String"));
-*/
 	//This is to remove class name and "_priv" from __FUNCTION__ macro output
 	static FString GetNameFromFunctionMacro(FString FunctionName);
 
@@ -99,22 +76,6 @@ public:
 	static FString MembershipSortTypeToString(const EPubnubMembershipSortType SortType);
 	static FString MemberSortTypeToString(const EPubnubMemberSortType SortType);
 	
-/*
-	static FPubnubMessageData UEMessageFromPubnubMessage(pubnub_v2_message PubnubMessage);
-
-	/* CONVERTING INCLUDES #1#
-	
-
-	static FString GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude);
-	static FString GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude);
-
-	/* CONVERTING SORTS #1#
-	
-
-	static FString GetAllSortTypeToString(const EPubnubGetAllSortType SortType);
-
-	static FString GetAllSortToString(const FPubnubGetAllSort& GetAllInclude);
-	*/
 	/* TEMPLATES TO CALL PUBNUB DELEGATES */
 
 	//Template to call any Delegate in case of providing incorrect parameters. Provide error message and FPubnubOperationResult will be made out of it
