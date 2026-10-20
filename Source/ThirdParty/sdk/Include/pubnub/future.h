@@ -17,6 +17,8 @@
  * (@c PUBNUB_CFG_MAX_IN_FLIGHT_REQUESTS), failing to release exhausts
  * the pool.
  *
+ * Release failed futures too. They keep their pool slot until released.
+ *
  * Result data (@c pubnub_*_result_* accessors, @c pubnub_response_body,
  * etc.) is valid from the moment the future is ready until
  * @c pubnub_future_release is called. After release, all accessors
@@ -27,6 +29,15 @@
  * ```
  * issue → wait/poll → [check status] → [read result] → release
  * ```
+ *
+ * Releasing a future whose request is still queued cancels it: the request
+ * is never sent, and its @c pubnub_async callback (if any) fires with
+ * @c PUBNUB_ERR_CANCELLED. Releasing an in-flight request does not abort it;
+ * the slot is reclaimed when the operation completes.
+ *
+ * A released future is stale. @c pubnub_future_status returns
+ * @c PUBNUB_ERR_INVALID_ARGUMENT for it, and result accessors return empty
+ * values.
  *
  * Three consumption styles are supported:
  *
@@ -82,7 +93,9 @@ typedef struct pubnub_future {
     /** Slot index, or PUBNUB_SLOT_ID_INVALID if never bound. */
     uint16_t slot_id;
     /** Generation counter stamped at acquisition; mismatches indicate
-     *  a stale future referencing a recycled slot (ABA protection). */
+     *  a stale future referencing a recycled slot (ABA protection). For a
+     *  request issued while every in-flight slot was busy, it identifies the
+     *  queued request instead. */
     uint16_t generation;
     /** PUBNUB_IN_PROGRESS while active; immediate error if slot
      *  acquisition failed. */
@@ -149,13 +162,13 @@ PUBNUB_API pubnub_res_t pubnub_future_status(pubnub_future_t future);
 /**
  * @brief Release the slot referenced by @p future back to the pool.
  *
- * Call exactly once after reading result data. Safe to call from
- * inside a completion callback (release is deferred until after the
- * callback returns). Also safe to call on an in-flight future; the
- * slot is not reset while the transport is active — reclamation is
- * deferred until the operation completes and the next process tick
- * runs. Invalid futures and pending-queue futures are handled
- * gracefully.
+ * Call exactly once after reading result data. Safe to call from a
+ * completion callback. Invalid and already released futures are ignored.
+ *
+ * Releasing a queued request cancels it (see the lifecycle notes above).
+ * With a background thread, the call returns before the slot is reclaimed,
+ * so read the results first. A request issued right after a release may
+ * fail with @c PUBNUB_ERR_QUEUE_FULL until the slot is reclaimed.
  *
  * @param future Future to release.
  */
@@ -206,12 +219,10 @@ PUBNUB_API pubnub_res_t pubnub_async(pubnub_future_t   future,
 /**
  * @brief Cancel a pending or in-flight request.
  *
- * If the future is pending (waiting in the queue), it is removed and
- * the completion callback (if any) is invoked with
- * @c PUBNUB_ERR_CANCELLED. If the future is in-flight, the transport
- * is signalled to cancel; the completion callback fires when
- * cancellation is confirmed. Safe to call from within a completion
- * callback.
+ * A queued request is removed and its completion callback (if any) fires
+ * with @c PUBNUB_ERR_CANCELLED. An in-flight request is cancelled, and the
+ * callback fires once cancellation is confirmed. Safe to call from a
+ * completion callback.
  *
  * The slot is NOT released by this call. After the completion callback
  * fires (or after @c pubnub_future_is_ready returns @c true), call

@@ -15,38 +15,36 @@
 
 #include <stdint.h>
 
-/* Two-level paste so __LINE__ / __COUNTER__ expand inside ## . */
 #define PUBNUB_PASTE_(a, b) a##b // NOLINT(readability-identifier-naming)
 #define PUBNUB_PASTE(a, b)  PUBNUB_PASTE_(a, b)
 
 /**
  * @brief Compile-time assertion macro.
  *
- * Resolves to C11 @c _Static_assert when available. On C99-only toolchains
- * it falls back to a typedef'd negative-size array trick whose name is
- * disambiguated by @c __COUNTER__ (when supported and accepted by the
- * compiler in the selected language mode) or @c __LINE__.
+ * Usable at file and block scope; invoke it with a trailing semicolon.
+ * Uses @c static_assert in C++11 and later, @c _Static_assert in C11 and
+ * later, and a negative-size extern array in C99.
  *
- * @param cond Compile-time integer-constant expression. Asserted non-zero.
- * @param msg  Diagnostic message (used by the C11 path; ignored by the
- *             typedef fallback because C99 forbids string literals in
- *             typedef names).
+ * @note In C99 with GCC or Clang, @c -Wredundant-decls and
+ *       @c -Wnested-externs (both opt-in) fire on the fallback. Build with
+ *       @c -Wno-redundant-decls and @c -Wno-nested-externs when combining
+ *       them with @c -Werror.
  *
- * @note Same-line restriction: on compilers without @c __COUNTER__
- *       (notably IAR pre-9.30 and ARMCC pre-6), and on Clang in C99 mode
- *       (where @c __COUNTER__ is rejected under strict pedantic checks),
- *       two @c PUBNUB_STATIC_ASSERT invocations on the same source line
- *       will collide on the typedef name. Place each on its own line. C11
- *       and the @c __COUNTER__ path are immune.
+ * @param cond Compile-time integer-constant expression. Must be non-zero.
+ * @param msg  Diagnostic message for the @c static_assert and
+ *             @c _Static_assert paths. The C99 fallback ignores it.
  */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#if defined(__cplusplus) \
+    && (__cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1600))
+#define PUBNUB_STATIC_ASSERT(cond, msg) static_assert((cond), msg)
+#elif !defined(__cplusplus) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define PUBNUB_STATIC_ASSERT(cond, msg) _Static_assert((cond), msg)
-#elif defined(__COUNTER__) && !defined(__clang__)
+#elif defined(__GNUC__)
 #define PUBNUB_STATIC_ASSERT(cond, msg) \
-    typedef char PUBNUB_PASTE(pubnub_sa_, __COUNTER__)[(cond) ? 1 : -1]
+    extern char pubnub_static_assert_[(cond) ? 1 : -1] __attribute__((unused))
 #else
 #define PUBNUB_STATIC_ASSERT(cond, msg) \
-    typedef char PUBNUB_PASTE(pubnub_sa_, __LINE__)[(cond) ? 1 : -1]
+    extern char pubnub_static_assert_[(cond) ? 1 : -1]
 #endif
 
 /**

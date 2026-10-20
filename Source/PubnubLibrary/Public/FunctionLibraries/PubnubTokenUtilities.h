@@ -42,14 +42,15 @@ enum class EParsedTokenResourceKind : uint8
 struct FGrantResourcePermissions;
 
 /**
- * All six grant-token resource lists. Name strings stay alive for as long as this object does.
+ * All six grant-token resource lists plus category permission bits.
+ * Name strings stay alive for as long as this object does.
  * Defined in the utilities cpp so the reflected header does not include the C-Core access types.
  */
 struct FPubnubGrantTokenResourceStorage;
 
 struct FPubnubGrantTokenResourceStorageDeleter
 {
-	void operator()(FPubnubGrantTokenResourceStorage* Storage) const;
+	PUBNUBLIBRARY_API void operator()(FPubnubGrantTokenResourceStorage* Storage) const;
 };
 
 /**
@@ -83,6 +84,7 @@ public:
 	 * Builds the same human-readable JSON that ReworkParsedToken produces, from
 	 * already-decoded resource names and permission bitmasks.
 	 * Empty resource lists are omitted. An empty AuthorizedUuid is omitted.
+	 * Categories is omitted when both list-all flags are false.
 	 */
 	static FString BuildReworkedParsedToken(
 		int32 Version,
@@ -94,17 +96,19 @@ public:
 		const TArray<TPair<FString, int32>>& Users,
 		const TArray<TPair<FString, int32>>& ChannelPatterns,
 		const TArray<TPair<FString, int32>>& ChannelGroupPatterns,
-		const TArray<TPair<FString, int32>>& UserPatterns);
+		const TArray<TPair<FString, int32>>& UserPatterns,
+		bool bListAllChannels,
+		bool bListAllUsers);
 
-	/** Builds C-Core resource lists for every grant field. The returned storage must outlive the grant call. */
+	/** Builds C-Core resource lists and category permission bits for every grant field. The returned storage must outlive the grant call. */
 	static TUniquePtr<FPubnubGrantTokenResourceStorage, FPubnubGrantTokenResourceStorageDeleter> BuildGrantTokenResourceStorage(const FPubnubGrantTokenPermissions& Permissions);
 
-	/** Writes borrowed resource pointers from Storage into Opts. Does not set ttl, authorized_uuid, or meta. */
+	/** Writes borrowed resource pointers and category permission bits from Storage into Opts. Does not set ttl, authorized_uuid, or meta. */
 	static void ApplyGrantTokenResourceStorage(const FPubnubGrantTokenResourceStorage& Storage, pubnub_grant_token_opts_t& Opts);
 
 	/**
 	 * Copies resources off the context's last parse and returns the same JSON as BuildReworkedParsedToken.
-	 * Resource views are only valid until the next pubnub_parse_token on this context.
+	 * Category bits are read from the parsed token. Resource views are only valid until the next pubnub_parse_token on this context.
 	 */
 	static FString BuildReworkedParsedToken(pubnub_context_t* Context, const pubnub_parsed_token_t& ParsedToken);
 	

@@ -416,6 +416,12 @@
 #define PUBNUB_CFG_SOCKET_HEADER_BUF_SIZE @PUBNUB_CFG_SOCKET_HEADER_BUF_SIZE@
 #endif
 
+/**
+ * Per-attempt TCP connect timeout in milliseconds. The TLS handshake gets its
+ * own window of the same length.
+ *
+ * @note Keep this value at or below the transaction timeout.
+ */
 #ifndef PUBNUB_CFG_SOCKET_CONNECT_TIMEOUT_MS
 #define PUBNUB_CFG_SOCKET_CONNECT_TIMEOUT_MS @PUBNUB_CFG_SOCKET_CONNECT_TIMEOUT_MS@
 #endif

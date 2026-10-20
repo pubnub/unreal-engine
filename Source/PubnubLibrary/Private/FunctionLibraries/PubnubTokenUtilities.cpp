@@ -11,8 +11,13 @@
 
 namespace
 {
-	/** Value written when a list-all flag is enabled, and recognized again when a token is parsed. */
-	constexpr int32 GPubnubCategoryGetPermissionBit = 32;
+	/** PUBNUB_ACCESS_GET. Written when a list-all flag is enabled, and recognized again when a token is parsed. */
+	constexpr int32 GPubnubCategoryGetPermissionBit = static_cast<int32>(PUBNUB_ACCESS_GET);
+
+	bool CategoryPermissionAllowsListAll(uint32 Permissions)
+	{
+		return (Permissions & PUBNUB_ACCESS_GET) != 0;
+	}
 }
 
 FString UPubnubTokenUtilities::CreateGrantTokenPermissionObjectString(int Ttl, FString AuthorizedUser, const FPubnubGrantTokenPermissions& Permissions, FString Meta)
@@ -247,7 +252,7 @@ FString UPubnubTokenUtilities::ReworkParsedToken(const FString& ParsedToken)
 		{
 			double RawValue = 0.0;
 			const bool bCanEnumerate = SourceCategories->TryGetNumberField(SourceKey, RawValue)
-				&& (static_cast<int32>(RawValue) & GPubnubCategoryGetPermissionBit) != 0;
+				&& CategoryPermissionAllowsListAll(static_cast<uint32>(static_cast<int32>(RawValue)));
 			CategoriesObject->SetBoolField(DestKey, bCanEnumerate);
 		};
 
@@ -325,7 +330,9 @@ FString UPubnubTokenUtilities::BuildReworkedParsedToken(pubnub_context_t* Contex
 		Users,
 		ChannelPatterns,
 		ChannelGroupPatterns,
-		UserPatterns);
+		UserPatterns,
+		CategoryPermissionAllowsListAll(ParsedToken.channels_category_permissions),
+		CategoryPermissionAllowsListAll(ParsedToken.uuids_category_permissions));
 }
 
 template<typename MakePermissionsFunc>
@@ -349,7 +356,9 @@ FString UPubnubTokenUtilities::BuildReworkedParsedToken(
 	const TArray<TPair<FString, int32>>& Users,
 	const TArray<TPair<FString, int32>>& ChannelPatterns,
 	const TArray<TPair<FString, int32>>& ChannelGroupPatterns,
-	const TArray<TPair<FString, int32>>& UserPatterns)
+	const TArray<TPair<FString, int32>>& UserPatterns,
+	bool bListAllChannels,
+	bool bListAllUsers)
 {
 	TSharedPtr<FJsonObject> ReworkedTokenObject = MakeShareable(new FJsonObject);
 	ReworkedTokenObject->SetNumberField(TEXT("Version"), Version);
@@ -412,6 +421,15 @@ FString UPubnubTokenUtilities::BuildReworkedParsedToken(
 	if (PatternsObject->Values.Num() > 0)
 	{
 		ReworkedTokenObject->SetObjectField(TEXT("Patterns"), PatternsObject);
+	}
+
+	// Same shape as ReworkParsedToken: present only when the token carries a category permission.
+	if (bListAllChannels || bListAllUsers)
+	{
+		TSharedPtr<FJsonObject> CategoriesObject = MakeShareable(new FJsonObject);
+		CategoriesObject->SetBoolField(TEXT("Channels"), bListAllChannels);
+		CategoriesObject->SetBoolField(TEXT("Users"), bListAllUsers);
+		ReworkedTokenObject->SetObjectField(TEXT("Categories"), CategoriesObject);
 	}
 
 	return UPubnubJsonUtilities::JsonObjectToString(ReworkedTokenObject);
@@ -567,6 +585,9 @@ struct FPubnubGrantTokenResourceStorage
 	FGrantResourcePermissions ChannelPatterns;
 	FGrantResourcePermissions ChannelGroupPatterns;
 	FGrantResourcePermissions UserPatterns;
+	/** C-Core category bits. PUBNUB_ACCESS_GET when list-all is granted, otherwise 0. */
+	uint32 ChannelsCategoryPermissions = 0;
+	uint32 UuidsCategoryPermissions = 0;
 };
 
 void FPubnubGrantTokenResourceStorageDeleter::operator()(FPubnubGrantTokenResourceStorage* Storage) const
@@ -641,6 +662,9 @@ TUniquePtr<FPubnubGrantTokenResourceStorage, FPubnubGrantTokenResourceStorageDel
 	FillChannelGrantPermissions(Permissions.ChannelPatterns, Storage->ChannelPatterns);
 	FillChannelGroupGrantPermissions(Permissions.ChannelGroupPatterns, Storage->ChannelGroupPatterns);
 	FillUserGrantPermissions(Permissions.UserPatterns, Storage->UserPatterns);
+	// C-Core accepts only PUBNUB_ACCESS_GET for a category. Any other non-zero value is rejected.
+	Storage->ChannelsCategoryPermissions = Permissions.Categories.Channels ? PUBNUB_ACCESS_GET : 0;
+	Storage->UuidsCategoryPermissions = Permissions.Categories.Users ? PUBNUB_ACCESS_GET : 0;
 	return Storage;
 }
 
@@ -652,4 +676,6 @@ void UPubnubTokenUtilities::ApplyGrantTokenResourceStorage(const FPubnubGrantTok
 	ApplyGrantResourceList(Storage.ChannelPatterns, Opts.channel_patterns, Opts.channel_pattern_count);
 	ApplyGrantResourceList(Storage.ChannelGroupPatterns, Opts.group_patterns, Opts.group_pattern_count);
 	ApplyGrantResourceList(Storage.UserPatterns, Opts.uuid_patterns, Opts.uuid_pattern_count);
+	Opts.channels_category_permissions = Storage.ChannelsCategoryPermissions;
+	Opts.uuids_category_permissions = Storage.UuidsCategoryPermissions;
 }

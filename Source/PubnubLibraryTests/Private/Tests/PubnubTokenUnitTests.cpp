@@ -5,6 +5,7 @@
 #include "FunctionLibraries/PubnubTokenUtilities.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Dom/JsonObject.h"
+#include "pubnub/features/access.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -16,6 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPubnubReworkParsedTokenUnitTest, "Pubnub.aUnit
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCalculateChannelPermissionsBitmaskUnitTest, "Pubnub.aUnit.TokenUtilities.CalculateChannelPermissionsBitmask", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCalculateChannelGroupPermissionsBitmaskUnitTest, "Pubnub.aUnit.TokenUtilities.CalculateChannelGroupPermissionsBitmask", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCalculateUserPermissionsBitmaskUnitTest, "Pubnub.aUnit.TokenUtilities.CalculateUserPermissionsBitmask", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPubnubCategoryPermissionsCCoreUnitTest, "Pubnub.aUnit.TokenUtilities.CategoryPermissionsCCore", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter);
 
 
 bool FPubnubGrantTokenPermissionsStructureUnitTest::RunTest(const FString& Parameters)
@@ -691,6 +693,104 @@ bool FCalculateUserPermissionsBitmaskUnitTest::RunTest(const FString& Parameters
         TestEqual("All user permissions should give bitmask 104", UPubnubTokenUtilities::CalculateUserPermissionsBitmask(Permissions), 104);
     }
     
+    return true;
+}
+
+bool FPubnubCategoryPermissionsCCoreUnitTest::RunTest(const FString& Parameters)
+{
+    auto ReadParsedCategories = [](const FString& ReworkedToken, bool& bOutChannels, bool& bOutUsers) -> bool
+    {
+        TSharedPtr<FJsonObject> Root;
+        if (!UPubnubJsonUtilities::StringToJsonObject(ReworkedToken, Root) || !Root.IsValid())
+        {
+            return false;
+        }
+        const TSharedPtr<FJsonObject>* CategoriesPtr = nullptr;
+        if (!Root->TryGetObjectField(TEXT("Categories"), CategoriesPtr) || !CategoriesPtr || !(*CategoriesPtr).IsValid())
+        {
+            return false;
+        }
+        return (*CategoriesPtr)->TryGetBoolField(TEXT("Channels"), bOutChannels)
+            && (*CategoriesPtr)->TryGetBoolField(TEXT("Users"), bOutUsers);
+    };
+
+    // A resource grant leaves both C-Core category fields at 0.
+    {
+        FPubnubGrantTokenPermissions Permissions;
+        FChannelGrant ChannelGrant;
+        ChannelGrant.Channel = TEXT("chan1");
+        ChannelGrant.Permissions.Read = true;
+        Permissions.Channels.Add(ChannelGrant);
+
+        const TUniquePtr<FPubnubGrantTokenResourceStorage, FPubnubGrantTokenResourceStorageDeleter> Storage =
+            UPubnubTokenUtilities::BuildGrantTokenResourceStorage(Permissions);
+        pubnub_grant_token_opts_t Opts = PUBNUB_GRANT_TOKEN_OPTS_INIT;
+        UPubnubTokenUtilities::ApplyGrantTokenResourceStorage(*Storage, Opts);
+
+        TestEqual(TEXT("Resource grant should not set channel category"), static_cast<int32>(Opts.channels_category_permissions), 0);
+        TestEqual(TEXT("Resource grant should not set user category"), static_cast<int32>(Opts.uuids_category_permissions), 0);
+        TestEqual(TEXT("Resource grant should still pass the channel"), static_cast<int32>(Opts.channel_count), 1);
+    }
+
+    // Category flags become PUBNUB_ACCESS_GET, which is the only value C-Core accepts.
+    {
+        FPubnubGrantTokenPermissions Permissions;
+        Permissions.Categories.Channels = true;
+        Permissions.Categories.Users = true;
+
+        const TUniquePtr<FPubnubGrantTokenResourceStorage, FPubnubGrantTokenResourceStorageDeleter> Storage =
+            UPubnubTokenUtilities::BuildGrantTokenResourceStorage(Permissions);
+        pubnub_grant_token_opts_t Opts = PUBNUB_GRANT_TOKEN_OPTS_INIT;
+        UPubnubTokenUtilities::ApplyGrantTokenResourceStorage(*Storage, Opts);
+
+        TestEqual(TEXT("Channel category should be PUBNUB_ACCESS_GET"), static_cast<int32>(Opts.channels_category_permissions), static_cast<int32>(PUBNUB_ACCESS_GET));
+        TestEqual(TEXT("User category should be PUBNUB_ACCESS_GET"), static_cast<int32>(Opts.uuids_category_permissions), static_cast<int32>(PUBNUB_ACCESS_GET));
+        TestEqual(TEXT("Category-only grant should not add channels"), static_cast<int32>(Opts.channel_count), 0);
+        TestTrue(TEXT("Category-only grant should not borrow a channel list"), Opts.channels == nullptr);
+    }
+
+    // Only the enabled category is written.
+    {
+        FPubnubGrantTokenPermissions Permissions;
+        Permissions.Categories.Users = true;
+
+        const TUniquePtr<FPubnubGrantTokenResourceStorage, FPubnubGrantTokenResourceStorageDeleter> Storage =
+            UPubnubTokenUtilities::BuildGrantTokenResourceStorage(Permissions);
+        pubnub_grant_token_opts_t Opts = PUBNUB_GRANT_TOKEN_OPTS_INIT;
+        UPubnubTokenUtilities::ApplyGrantTokenResourceStorage(*Storage, Opts);
+
+        TestEqual(TEXT("Disabled channel category should stay 0"), static_cast<int32>(Opts.channels_category_permissions), 0);
+        TestEqual(TEXT("Enabled user category should be PUBNUB_ACCESS_GET"), static_cast<int32>(Opts.uuids_category_permissions), static_cast<int32>(PUBNUB_ACCESS_GET));
+    }
+
+    // Counts are zero, so the parse helper never touches the context.
+    {
+        pubnub_parsed_token_t ParsedToken = {};
+        ParsedToken.version = 2;
+        ParsedToken.timestamp = 1752219810;
+        ParsedToken.ttl = 60;
+        ParsedToken.channels_category_permissions = PUBNUB_ACCESS_GET;
+        ParsedToken.uuids_category_permissions = PUBNUB_ACCESS_READ;
+
+        const FString ReworkedToken = UPubnubTokenUtilities::BuildReworkedParsedToken(nullptr, ParsedToken);
+        bool bCanListChannels = false;
+        bool bCanListUsers = true;
+        TestTrue(TEXT("Parsed C-Core token should include Categories"), ReadParsedCategories(ReworkedToken, bCanListChannels, bCanListUsers));
+        TestTrue(TEXT("Channel category GET bit should be true"), bCanListChannels);
+        TestFalse(TEXT("User category without the GET bit should be false"), bCanListUsers);
+    }
+
+    {
+        pubnub_parsed_token_t ParsedToken = {};
+        ParsedToken.version = 2;
+        ParsedToken.ttl = 30;
+
+        const FString ReworkedToken = UPubnubTokenUtilities::BuildReworkedParsedToken(nullptr, ParsedToken);
+        TSharedPtr<FJsonObject> Root;
+        TestTrue(TEXT("Token without category bits should be valid JSON"), UPubnubJsonUtilities::StringToJsonObject(ReworkedToken, Root) && Root.IsValid());
+        TestFalse(TEXT("Token without category bits should not include Categories"), Root.IsValid() && Root->HasField(TEXT("Categories")));
+    }
+
     return true;
 }
 

@@ -467,6 +467,9 @@ PUBNUB_API pubnub_future_t pubnub_revoke_token(pubnub_context_t* ctx,
  * @note Calling @c pubnub_parse_token again on the same context
  * replaces the previously cached parse result.
  *
+ * @note Not thread-safe against @c pubnub_parse_token on the same context.
+ *       Parsed views are invalidated by the next parse.
+ *
  * Example
  * @code
  * pubnub_parsed_token_t tok = {0};
@@ -511,6 +514,8 @@ PUBNUB_API pubnub_res_t pubnub_parse_token(pubnub_context_t* ctx,
  * @return Resource permission entry, or zero-initialized if
  *         @p index is out of range or no token has been parsed.
  *
+ * @note Not thread-safe against @c pubnub_parse_token on the same context.
+ *
  * @see pubnub_parsed_token_resource_t
  * @see pubnub_context_t
  */
@@ -525,6 +530,8 @@ pubnub_parsed_token_channel_at(pubnub_context_t* ctx, size_t index);
  * @param index Group index in [0, @c group_count].
  * @return Resource permission entry, or zero-initialized if
  *         @p index is out of range or no token has been parsed.
+ *
+ * @note Not thread-safe against @c pubnub_parse_token on the same context.
  *
  * @see pubnub_parsed_token_resource_t
  * @see pubnub_context_t
@@ -541,6 +548,8 @@ pubnub_parsed_token_group_at(pubnub_context_t* ctx, size_t index);
  * @return Resource permission entry, or zero-initialized if
  *         @p index is out of range or no token has been parsed.
  *
+ * @note Not thread-safe against @c pubnub_parse_token on the same context.
+ *
  * @see pubnub_parsed_token_resource_t
  * @see pubnub_context_t
  */
@@ -555,6 +564,8 @@ pubnub_parsed_token_uuid_at(pubnub_context_t* ctx, size_t index);
  * @param index Pattern index in [0, @c channel_pattern_count].
  * @return Resource permission entry, or zero-initialized if
  *         @p index is out of range or no token has been parsed.
+ *
+ * @note Not thread-safe against @c pubnub_parse_token on the same context.
  *
  * @see pubnub_parsed_token_resource_t
  * @see pubnub_context_t
@@ -572,6 +583,8 @@ pubnub_parsed_token_channel_pattern_at(pubnub_context_t* ctx, size_t index);
  * @return Resource permission entry, or zero-initialized if
  *         @p index is out of range or no token has been parsed.
  *
+ * @note Not thread-safe against @c pubnub_parse_token on the same context.
+ *
  * @see pubnub_parsed_token_resource_t
  * @see pubnub_context_t
  */
@@ -583,9 +596,11 @@ pubnub_parsed_token_group_pattern_at(pubnub_context_t* ctx, size_t index);
  *
  * @param ctx   Context that holds the parsed token state (@b required,
  *              @b borrowed).
- * @param index Pattern index in [0, @c uuid_pattern_count).
+ * @param index Pattern index in [0, @c uuid_pattern_count].
  * @return Resource permission entry, or zero-initialized if
  *         @p index is out of range or no token has been parsed.
+ *
+ * @note Not thread-safe against @c pubnub_parse_token on the same context.
  *
  * @see pubnub_parsed_token_resource_t
  * @see pubnub_context_t

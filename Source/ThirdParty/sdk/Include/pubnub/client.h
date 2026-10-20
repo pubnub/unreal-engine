@@ -119,6 +119,11 @@ typedef enum pubnub_endpoint_group {
  *
  * @attention All time values are in milliseconds, consistent with timeout
  *            fields elsewhere in @c pubnub_config_t.
+ *
+ * @note A config from @c pubnub_config_defaults() excludes every endpoint
+ *       group except subscribe. A config built any other way starts with
+ *       @c excluded_endpoints == 0 and retries every group once a policy
+ *       is set.
  */
 typedef struct pubnub_retry_configuration {
     /**
@@ -479,6 +484,10 @@ PUBNUB_API pubnub_config_t pubnub_config_defaults(void);
  * Allocates the context struct from @c config->allocator (or from
  * @c pn_allocator_default() when @c config->allocator is @c NULL).
  * Returns @c NULL when the allocator cannot satisfy the allocation.
+ * Also returns @c NULL when a provider is incomplete (see the
+ * @c PUBNUB_ERR_PROVIDER_MISSING case in @c pubnub_init()). Because
+ * this function has no error-code return, the reason is reported only
+ * through the logger.
  *
  * Not available when @c PUBNUB_CFG_NO_HEAP is @c 1. Use
  * @c pubnub_init() with a caller-provided buffer instead.
@@ -523,6 +532,8 @@ PUBNUB_API void pubnub_destroy(pubnub_context_t* ctx);
  * @param config Client configuration (@b required, @b borrowed). Strings are
  *               borrowed; keep them valid for the context lifetime.
  * @return @c PUBNUB_OK on success, or an error code.
+ * @retval PUBNUB_ERR_PROVIDER_MISSING A provider is incomplete. Exact reason
+ *         is logged at WARNING level.
  *
  * @see pubnub_context_t
  * @see pubnub_config_t
@@ -660,9 +671,24 @@ PUBNUB_API pubnub_res_t pubnub_set_log_level(pubnub_context_t* ctx,
 /**
  * @brief Set the PubNub origin (hostname) for subsequent requests.
  *
- * Copies the origin string into an internal fixed-size buffer. The new
- * origin takes effect on the next request dispatch. Requests already
- * in-flight are unaffected (they hold their own copy of the host).
+ * Copies the origin into an internal buffer. The new origin applies to the
+ * next request dispatch.
+ *
+ * A live subscription follows the new origin: a dropped or failed handshake
+ * or receive is re-sent there from the same position, without a status event.
+ * A healthy long-poll finishes on the old origin. A subscription stopped with
+ * @c pubnub_subscribe_disconnect stays stopped.
+ *
+ * Presence heartbeats are not re-sent on an origin change. A failed heartbeat
+ * stays failed until @c pubnub_subscribe_reconnect is called.
+ *
+ * Other requests in flight at the change:
+ * - A retry waiting out its backoff fails with @c PUBNUB_ERR_TRANSPORT. It is
+ *   not sent to the old origin.
+ * - An attempt already in flight is not retried if it fails later.
+ * - Queued or already built requests keep the host they were built with.
+ *
+ * Requests with retries disabled, or on excluded endpoints, are unaffected.
  *
  * Pass NULL or an empty string to reset to the compile-time default
  * (@c PUBNUB_CFG_ORIGIN).

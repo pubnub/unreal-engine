@@ -10,11 +10,16 @@
  *
  * **Mandatory methods:** monotonic_ms, wall_clock_ms, sleep_ms, random_bytes.
  *
- * **Optional method groups (all-or-nothing):**
+ * **Optional method groups (all-or-nothing):** enforced at context init
+ * when PUBNUB_CFG_THREAD_SAFETY is 1. When it is 0 the groups are ignored.
  * - Lock: lock_size, lock_init, lock_destroy, lock_acquire,
- *   lock_release. If any is non-NULL, all five must be non-NULL.
- * - Thread: thread_create, thread_join. If thread_create is non-NULL,
- *   thread_join must also be non-NULL.
+ *   lock_release. If any is non-NULL, all five must be non-NULL and
+ *   lock_size() must return a non-zero size.
+ * - Thread: thread_create, thread_join. If either is non-NULL, both
+ *   must be non-NULL.
+ *
+ * A group violation makes context init fail with
+ * @c PUBNUB_ERR_PROVIDER_MISSING; the reason is logged at WARNING level.
  *
  * **Standalone optional:** secure_zero, file_load, thread_is_current
  * (may be @c NULL independently).
@@ -136,9 +141,10 @@ typedef struct pubnub_platform_provider {
      * the resulting memory to lock_init(). The returned size must
      * be stable for the lifetime of the provider instance.
      *
-     * Optional: may be @c NULL. When @c NULL (or when
-     * PUBNUB_CFG_THREAD_SAFETY is 0), no lock is created and
-     * same-context thread safety is the caller's responsibility.
+     * Optional lock group member (see the group rule in the file
+     * header). When @c NULL, no lock is created and same-context thread
+     * safety is the caller's responsibility. When non-NULL, the returned
+     * size must be non-zero. Not called when PUBNUB_CFG_THREAD_SAFETY is 0.
      *
      * @param self Pointer to this provider instance.
      * @return Size in bytes required by the platform lock implementation.
@@ -197,9 +203,10 @@ typedef struct pubnub_platform_provider {
     /**
      * @brief Create a new thread executing @p fn(arg).
      *
-     * Optional: may be @c NULL on cooperative-only targets. When @c NULL,
-     * pubnub_async degrades to callback-registration-only (user must
-     * drive pubnub_process manually).
+     * Optional thread group member, paired with thread_join (see the
+     * group rule in the file header). May be @c NULL on cooperative-only
+     * targets. When @c NULL, pubnub_async degrades to
+     * callback-registration-only (user must drive pubnub_process manually).
      *
      * @note The allocator's free() may be invoked from the spawned
      *       thread to release internal bookkeeping. Ensure the
@@ -225,8 +232,9 @@ typedef struct pubnub_platform_provider {
      *        its resources.
      *
      * Blocks until the thread terminates. Must be called exactly once
-     * per successful thread_create(). May be @c NULL only when
-     * thread_create is also @c NULL.
+     * per successful thread_create(). Must be non-NULL whenever
+     * thread_create is non-NULL, and vice versa (see the group rule in
+     * the file header).
      *
      * @param self          Pointer to this provider instance.
      * @param allocator     Allocator used in thread_create (borrowed,

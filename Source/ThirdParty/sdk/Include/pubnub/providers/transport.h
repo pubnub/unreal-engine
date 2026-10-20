@@ -58,6 +58,12 @@ typedef void pubnub_transport_handle_t;
  * Implementation-specific state (connection pools, TLS contexts,
  * etc.) should be stored in an extended struct with this vtable as
  * the first member.
+ *
+ * @warning With a background thread, send(), poll() and cancel() run only on
+ *          that thread, so the provider needs no internal locking. Without one,
+ *          the application must serialize all calls on a context. In both cases
+ *          only wake() and the TLS / DNS setters may be called from another
+ *          thread during poll().
  */
 typedef struct pubnub_transport_provider {
     /**
@@ -106,10 +112,14 @@ typedef struct pubnub_transport_provider {
     int (*poll)(struct pubnub_transport_provider* self, unsigned int timeout_ms);
 
     /**
-     * @brief Cancel a pending request.
+     * @brief Cancel a pending request, or release a completed one.
      *
      * After cancel returns, the transport handle is invalid and
      * the associated response descriptor will not be written.
+     *
+     * Releasing a completed request frees its per-request resources only.
+     * The connection may stay open for reuse, so response data that aliases
+     * transport buffers is invalid after this call.
      *
      * @param self             Pointer to this provider instance.
      * @param transport_handle Handle returned by send().
