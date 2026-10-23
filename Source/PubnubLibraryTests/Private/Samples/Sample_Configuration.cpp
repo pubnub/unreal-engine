@@ -152,15 +152,15 @@ void ASample_Configuration::ListUsersFromChannelSample()
 }
 
 // ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
-void ASample_Configuration::OnListUsersFromChannelResponse(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
+void ASample_Configuration::OnListUsersFromChannelResponse(FPubnubListUsersFromChannelResult Result)
 {
-	if(Result.Error)
+	if(Result.Result.Error)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), TotalOccupancy);
+		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Result.TotalOccupancy);
 	}
 }
 
@@ -176,15 +176,15 @@ void ASample_Configuration::ListUsersFromChannelLambdaSample()
 
 	// Bind lambda to response delegate
 	FOnPubnubListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
-	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
+	OnListUsersFromChannelResponse.BindLambda([](const FPubnubListUsersFromChannelResult& Result)
 	{
-		if(Result.Error)
+		if(Result.Result.Error)
 		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+			UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), TotalOccupancy);
+			UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Result.TotalOccupancy);
 		}
 	});
 	

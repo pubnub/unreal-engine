@@ -208,9 +208,13 @@ configure_args=(
   "-DCMAKE_BUILD_TYPE=Release"
   "-DPUBNUB_PROFILE=full"
   # Chat creates a C-Core listener and subscription object per channel, user, membership, and message.
-  # The full profile defaults (8 listeners, 64 channels) are too small for a normal chat screen.
-  "-DPUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS=256"
+  # Full-profile defaults are too small for a normal chat screen.
   "-DPUBNUB_CFG_MAX_SUBSCRIBE_CHANNELS=256"
+  "-DPUBNUB_CFG_MAX_SUBSCRIPTIONS=128"
+  "-DPUBNUB_CFG_MAX_SUBSCRIPTION_SETS=128"
+  "-DPUBNUB_CFG_MAX_SUBSCRIPTIONS_PER_SET=128"
+  "-DPUBNUB_CFG_MAX_SUBSCRIBE_LISTENERS=1024"
+  "-DPUBNUB_CFG_MAX_PENDING_REQUESTS=16"
   "-DPUBNUB_PROVIDER_PLATFORM=posix"
   "-DPUBNUB_PROVIDER_TRANSPORT=socket"
   "-DPUBNUB_PROVIDER_LOGGER=none"

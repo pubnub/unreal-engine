@@ -315,14 +315,13 @@ void UPubnubInternalUtilities::GetStateFromFuture(pubnub_future_t Future, FPubnu
 	for (uint32_t ChannelIndex = 0; ChannelIndex < Summary.channel_count; ++ChannelIndex)
 	{
 		const pubnub_get_state_channel_result_t Entry = pubnub_get_state_result_channel_at(Future, ChannelIndex);
-		FPubnubUserStateOnChannel UserState;
-		UserState.Channel = PubnubStringViewToString(Entry.channel);
-		if (UserState.Channel.IsEmpty())
+		const FString ChannelName = PubnubStringViewToString(Entry.channel);
+		if (ChannelName.IsEmpty())
 		{
 			continue;
 		}
-		UserState.State = PubnubJsonValueToFString(Serial, Entry.state);
-		OutResult.States.Add(MoveTemp(UserState));
+		// Empty JSON still occupies the key, so "no state" stays distinct from "channel not returned".
+		OutResult.States.Add(ChannelName, PubnubJsonValueToFString(Serial, Entry.state));
 	}
 }
 
@@ -349,9 +348,12 @@ void UPubnubInternalUtilities::ListUsersFromChannelFromFuture(pubnub_future_t Fu
 	for (uint32_t ChannelIndex = 0; ChannelIndex < Summary.channel_count; ++ChannelIndex)
 	{
 		const pubnub_here_now_channel_result_t ChannelResult = pubnub_here_now_result_channel_at(Future, ChannelIndex);
-		FPubnubUsersFromChannel ChannelUsers;
-		ChannelUsers.Channel = PubnubStringViewToString(ChannelResult.name);
+		// A single-channel body can omit the name. Keep that entry under an empty key so the caller can rekey it.
+		const FString ChannelName = PubnubStringViewToString(ChannelResult.name);
+		FPubnubUsersFromChannel& ChannelUsers = OutResult.Channels.FindOrAdd(ChannelName);
+		ChannelUsers.Channel = ChannelName;
 		ChannelUsers.Occupancy = static_cast<int>(ChannelResult.occupancy);
+		ChannelUsers.Users.Reset();
 		ChannelUsers.Users.Reserve(static_cast<int32>(ChannelResult.occupant_count));
 
 		for (uint32_t OccupantIndex = 0; OccupantIndex < ChannelResult.occupant_count; ++OccupantIndex)
@@ -366,8 +368,6 @@ void UPubnubInternalUtilities::ListUsersFromChannelFromFuture(pubnub_future_t Fu
 			User.State = PubnubStringViewToString(Occupant.state);
 			ChannelUsers.Users.Add(MoveTemp(User));
 		}
-
-		OutResult.Channels.Add(MoveTemp(ChannelUsers));
 	}
 }
 

@@ -17,17 +17,14 @@ using namespace PubnubTests;
 namespace PubnubPresenceTestsHelper
 {
 	/** Parse the raw state JSON returned for one channel. */
-	static bool TryGetStateObject(const TArray<FPubnubUserStateOnChannel>& States, const FString& Channel, TSharedPtr<FJsonObject>& OutState)
+	static bool TryGetStateObject(const TMap<FString, FString>& States, const FString& Channel, TSharedPtr<FJsonObject>& OutState)
 	{
-		const FPubnubUserStateOnChannel* Found = States.FindByPredicate([&Channel](const FPubnubUserStateOnChannel& Entry)
-		{
-			return Entry.Channel == Channel;
-		});
-		if (!Found)
+		const FString* StateJson = States.Find(Channel);
+		if (!StateJson)
 		{
 			return false;
 		}
-		return UPubnubJsonUtilities::StringToJsonObject(Found->State, OutState) && OutState.IsValid();
+		return UPubnubJsonUtilities::StringToJsonObject(*StateJson, OutState) && OutState.IsValid();
 	}
 }
 
@@ -265,10 +262,7 @@ bool FPubnubListUsersFromChannel_FullSettings_UuidsStateLimitOffset::RunTest(con
 		TestFalse("ListUsersFromChannel should succeed", HereResult.Result.Error);
 		TestEqual("ListUsersFromChannel status", HereResult.Result.Status, 200);
 		TestTrue("Occupancy should be at least 1", HereResult.TotalOccupancy >= 1);
-		const FPubnubUsersFromChannel* ChannelUsers = HereResult.Channels.FindByPredicate([&TestChannel](const FPubnubUsersFromChannel& Entry)
-		{
-			return Entry.Channel == TestChannel;
-		});
+		const FPubnubUsersFromChannel* ChannelUsers = HereResult.Channels.Find(TestChannel);
 		const FPubnubUserFromChannel* StoredUser = ChannelUsers ? ChannelUsers->Users.FindByPredicate([&TestUser](const FPubnubUserFromChannel& User)
 		{
 			return User.UserID == TestUser;

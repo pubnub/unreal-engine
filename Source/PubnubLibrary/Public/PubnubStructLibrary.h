@@ -1145,8 +1145,8 @@ struct FPubnubListUsersFromChannelResult
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalOccupancy = 0;
 	/** Channels reported by the server. Channels.Num() is how many detailed entries were returned. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalChannels = 0;
-	/** Users grouped by channel. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUsersFromChannel> Channels;
+	/** Users present on each returned channel, keyed by channel name. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FPubnubUsersFromChannel> Channels;
 };
 
 USTRUCT(BlueprintType)
@@ -1160,18 +1160,6 @@ struct FPubnubListUsersSubscribedChannelsResult
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FString> Channels;
 };
 
-/** One user's state on one channel, as returned by GetState. */
-USTRUCT(BlueprintType)
-struct FPubnubUserStateOnChannel
-{
-	GENERATED_BODY()
-
-	/** Channel this state applies to. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Channel;
-	/** Raw state JSON. Empty when this user has no state on the channel. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString State;
-};
-
 USTRUCT(BlueprintType)
 struct FPubnubGetStateResult
 {
@@ -1179,8 +1167,8 @@ struct FPubnubGetStateResult
 	
 	/** Status and error information for this operation */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
-	/** User state grouped by channel. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserStateOnChannel> States;
+	/** Raw state JSON keyed by channel name. Empty when the user has no state on that channel. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FString> States;
 };
 
 USTRUCT(BlueprintType)

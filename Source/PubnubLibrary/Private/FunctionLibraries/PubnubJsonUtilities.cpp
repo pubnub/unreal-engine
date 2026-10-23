@@ -274,7 +274,7 @@ void UPubnubJsonUtilities::ListUserSubscribedChannelsJsonToData(FString Response
 	}
 }
 
-void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, int& TotalOccupancy, int& TotalChannels, TArray<FPubnubUsersFromChannel>& Channels)
+void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, int& TotalOccupancy, int& TotalChannels, TMap<FString, FPubnubUsersFromChannel>& Channels)
 {
 	TotalOccupancy = 0;
 	TotalChannels = 0;
@@ -323,7 +323,8 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 		}
 	};
 
-	// Single-target response: occupancy and uuids at the root. The channel name is not in that body.
+	// Single-target response: occupancy and uuids at the root. The channel name is not in that body,
+	// so the only entry is stored under an empty key.
 	if (JsonObject->HasField(ANSI_TO_TCHAR("occupancy")) || JsonObject->HasField(ANSI_TO_TCHAR("uuids")))
 	{
 		FPubnubUsersFromChannel ChannelUsers;
@@ -336,9 +337,9 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 		{
 			AppendUsers(JsonObject->GetArrayField(ANSI_TO_TCHAR("uuids")), ChannelUsers.Users);
 		}
-		Channels.Add(ChannelUsers);
 		TotalOccupancy = ChannelUsers.Occupancy;
 		TotalChannels = 1;
+		Channels.Add(FString(), MoveTemp(ChannelUsers));
 	}
 
 	// Multi-target response: payload.total_occupancy and payload.channels.{channelName}.{occupancy,uuids}.
@@ -371,8 +372,14 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 						continue;
 					}
 
-					FPubnubUsersFromChannel ChannelUsers;
+					if (ChannelKvp.Key.IsEmpty())
+					{
+						continue;
+					}
+
+					FPubnubUsersFromChannel& ChannelUsers = Channels.FindOrAdd(ChannelKvp.Key);
 					ChannelUsers.Channel = ChannelKvp.Key;
+					ChannelUsers.Users.Reset();
 					double ChOcc = 0;
 					if (ChannelEntry->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), ChOcc))
 					{
@@ -383,7 +390,6 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 					{
 						AppendUsers(ChannelEntry->GetArrayField(ANSI_TO_TCHAR("uuids")), ChannelUsers.Users);
 					}
-					Channels.Add(ChannelUsers);
 				}
 
 				if (TotalOccupancy == 0 && SummedOccupancy > 0)

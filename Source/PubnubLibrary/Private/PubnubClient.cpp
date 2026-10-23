@@ -546,9 +546,9 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel(FString Ch
 void UPubnubClient::ListUsersFromChannelAsync(FString Channel, FOnPubnubListUsersFromChannelResponse ListUsersFromChannelResponse, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
 	FOnPubnubListUsersFromChannelResponseNative NativeCallback;
-	NativeCallback.BindLambda([ListUsersFromChannelResponse](const FPubnubOperationResult& Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
+	NativeCallback.BindLambda([ListUsersFromChannelResponse](const FPubnubListUsersFromChannelResult& Result)
 	{
-		ListUsersFromChannelResponse.ExecuteIfBound(Result, TotalOccupancy, TotalChannels, Channels);
+		ListUsersFromChannelResponse.ExecuteIfBound(Result);
 	});
 
 	ListUsersFromChannelAsync(Channel, NativeCallback, ListUsersFromChannelSettings);
@@ -556,7 +556,24 @@ void UPubnubClient::ListUsersFromChannelAsync(FString Channel, FOnPubnubListUser
 
 void UPubnubClient::ListUsersFromChannelAsync(FString Channel, FOnPubnubListUsersFromChannelResponseNative NativeCallback, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings)
 {
-	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, 0, 0, TArray<FPubnubUsersFromChannel>{});
+	if (!IsInitialized)
+	{
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
+		FPubnubListUsersFromChannelResult ErrorResult;
+		ErrorResult.Result.Error = true;
+		ErrorResult.Result.ErrorMessage = TEXT("PubnubClient is not initialized.");
+		UPubnubUtilities::CallPubnubDelegate(NativeCallback, ErrorResult);
+		return;
+	}
+	if (!PubnubCallsThread)
+	{
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
+		FPubnubListUsersFromChannelResult ErrorResult;
+		ErrorResult.Result.Error = true;
+		ErrorResult.Result.ErrorMessage = TEXT("PubnubCallsThread is invalid.");
+		UPubnubUtilities::CallPubnubDelegate(NativeCallback, ErrorResult);
+		return;
+	}
 	
 	TWeakObjectPtr<UPubnubClient> WeakThis = MakeWeakObjectPtr<UPubnubClient>(this);
 
@@ -568,7 +585,7 @@ void UPubnubClient::ListUsersFromChannelAsync(FString Channel, FOnPubnubListUser
 		FPubnubListUsersFromChannelResult Result = WeakThis.Get()->ListUsersFromChannel_priv(Channel, ListUsersFromChannelSettings);
 		
 		//Execute provided delegate with results
-		UPubnubUtilities::CallPubnubDelegate(NativeCallback, Result.Result, Result.TotalOccupancy, Result.TotalChannels, Result.Channels);
+		UPubnubUtilities::CallPubnubDelegate(NativeCallback, Result);
 	});
 }
 
@@ -673,9 +690,9 @@ FPubnubGetStateResult UPubnubClient::GetState(FString Channel, FString ChannelGr
 void UPubnubClient::GetStateAsync(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponse OnGetStateResponse)
 {
 	FOnPubnubGetStateResponseNative NativeCallback;
-	NativeCallback.BindLambda([OnGetStateResponse](const FPubnubOperationResult& Result, const TArray<FPubnubUserStateOnChannel>& States)
+	NativeCallback.BindLambda([OnGetStateResponse](const FPubnubGetStateResult& Result)
 	{
-		OnGetStateResponse.ExecuteIfBound(Result, States);
+		OnGetStateResponse.ExecuteIfBound(Result);
 	});
 
 	GetStateAsync(Channel, ChannelGroup, UserID, NativeCallback);
@@ -683,7 +700,24 @@ void UPubnubClient::GetStateAsync(FString Channel, FString ChannelGroup, FString
 
 void UPubnubClient::GetStateAsync(FString Channel, FString ChannelGroup, FString UserID, FOnPubnubGetStateResponseNative NativeCallback)
 {
-	PUBNUB_ENSURE_CLIENT_INITIALIZED(NativeCallback, TArray<FPubnubUserStateOnChannel>{});
+	if (!IsInitialized)
+	{
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("[%s]: PubnubClient is not initialized. Aborting operation. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
+		FPubnubGetStateResult ErrorResult;
+		ErrorResult.Result.Error = true;
+		ErrorResult.Result.ErrorMessage = TEXT("PubnubClient is not initialized.");
+		UPubnubUtilities::CallPubnubDelegate(NativeCallback, ErrorResult);
+		return;
+	}
+	if (!PubnubCallsThread)
+	{
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("[%s]: PubnubCallsThread is invalid. This client was already destroyed or was not initialized correctly."), *UPubnubUtilities::GetNameFromFunctionMacro(ANSI_TO_TCHAR(__FUNCTION__))));
+		FPubnubGetStateResult ErrorResult;
+		ErrorResult.Result.Error = true;
+		ErrorResult.Result.ErrorMessage = TEXT("PubnubCallsThread is invalid.");
+		UPubnubUtilities::CallPubnubDelegate(NativeCallback, ErrorResult);
+		return;
+	}
 
 	TWeakObjectPtr<UPubnubClient> WeakThis = MakeWeakObjectPtr<UPubnubClient>(this);
 
@@ -695,7 +729,7 @@ void UPubnubClient::GetStateAsync(FString Channel, FString ChannelGroup, FString
 		FPubnubGetStateResult Result = WeakThis.Get()->GetState_priv(Channel, ChannelGroup, UserID);
 
 		//Execute provided delegate with results
-		UPubnubUtilities::CallPubnubDelegate(NativeCallback, Result.Result, Result.States);
+		UPubnubUtilities::CallPubnubDelegate(NativeCallback, Result);
 	});
 }
 
@@ -2910,10 +2944,16 @@ FPubnubListUsersFromChannelResult UPubnubClient::ListUsersFromChannel_priv(FStri
 	{
 		//Parse the future into the result
 		UPubnubInternalUtilities::ListUsersFromChannelFromFuture(operation_future, FinalResult);
-		// A single-channel here-now body has no channel name. Keep the requested channel so callers can match it.
-		if (FinalResult.Channels.Num() == 1 && FinalResult.Channels[0].Channel.IsEmpty())
+		// A single-channel here-now body has no channel name. Key it by the requested channel so callers can Find it.
+		if (FinalResult.Channels.Num() == 1)
 		{
-			FinalResult.Channels[0].Channel = Channel;
+			if (FPubnubUsersFromChannel* Nameless = FinalResult.Channels.Find(FString()))
+			{
+				FPubnubUsersFromChannel Users = MoveTemp(*Nameless);
+				FinalResult.Channels.Empty();
+				Users.Channel = Channel;
+				FinalResult.Channels.Add(Channel, MoveTemp(Users));
+			}
 		}
 	}
 	pubnub_future_release(operation_future);

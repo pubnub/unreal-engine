@@ -105,7 +105,7 @@ public:
 	 * @Note Requires the *Presence* add-on to be enabled for your key in the PubNub Admin Portal.
 	 * 
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
-	 * @return Result structure containing operation status and list of users.
+	 * @return Result structure containing operation status and users keyed by channel name.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	FPubnubListUsersFromChannelResult ListUsersFromChannel(FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());

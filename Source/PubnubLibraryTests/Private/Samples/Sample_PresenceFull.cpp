@@ -75,27 +75,28 @@ void ASample_PresenceFull::OnSetStateResponse(FPubnubOperationResult Result)
 	}
 }
 
-void ASample_PresenceFull::OnListUsersFromChannelResponse(FPubnubOperationResult Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels)
+void ASample_PresenceFull::OnListUsersFromChannelResponse(FPubnubListUsersFromChannelResult Result)
 {
-	if (!Result.Error)
+	if (!Result.Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully listed users. Occupancy: %d"), TotalOccupancy);
+		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully listed users. Occupancy: %d"), Result.TotalOccupancy);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Presence example: failed to list users. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Presence example: failed to list users. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 	}
 }
 
-void ASample_PresenceFull::OnGetStateResponse(FPubnubOperationResult Result, const TArray<FPubnubUserStateOnChannel>& States)
+void ASample_PresenceFull::OnGetStateResponse(FPubnubGetStateResult Result)
 {
-	if (!Result.Error)
+	if (!Result.Result.Error)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully got state: %s"), *(States.Num() > 0 ? States[0].State : FString()));
+		const FString* State = Result.States.Find(TEXT("presence-channel-full"));
+		UE_LOG(LogTemp, Log, TEXT("Presence example: successfully got state: %s"), State ? **State : TEXT(""));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Presence example: failed to get state. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Presence example: failed to get state. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 	}
 }
 

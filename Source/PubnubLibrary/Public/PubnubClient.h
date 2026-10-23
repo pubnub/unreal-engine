@@ -64,12 +64,12 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubRemoveChannelGroupResponse, FPubnubOp
 DECLARE_DELEGATE_OneParam(FOnPubnubRemoveChannelGroupResponseNative, const FPubnubOperationResult& Result);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubListUsersSubscribedChannelsResponse, FPubnubOperationResult, Result, const TArray<FString>&, Channels);
 DECLARE_DELEGATE_TwoParams(FOnPubnubListUsersSubscribedChannelsResponseNative, const FPubnubOperationResult& Result, const TArray<FString>& Channels);
-DECLARE_DYNAMIC_DELEGATE_FourParams(FOnPubnubListUsersFromChannelResponse, FPubnubOperationResult, Result, int, TotalOccupancy, int, TotalChannels, const TArray<FPubnubUsersFromChannel>&, Channels);
-DECLARE_DELEGATE_FourParams(FOnPubnubListUsersFromChannelResponseNative, const FPubnubOperationResult& Result, int TotalOccupancy, int TotalChannels, const TArray<FPubnubUsersFromChannel>& Channels);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubListUsersFromChannelResponse, FPubnubListUsersFromChannelResult, Result);
+DECLARE_DELEGATE_OneParam(FOnPubnubListUsersFromChannelResponseNative, const FPubnubListUsersFromChannelResult& Result);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubSetStateResponse, FPubnubOperationResult, Result);
 DECLARE_DELEGATE_OneParam(FOnPubnubSetStateResponseNative, const FPubnubOperationResult& Result);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubGetStateResponse, FPubnubOperationResult, Result, const TArray<FPubnubUserStateOnChannel>&, States);
-DECLARE_DELEGATE_TwoParams(FOnPubnubGetStateResponseNative, const FPubnubOperationResult& Result, const TArray<FPubnubUserStateOnChannel>& States);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubGetStateResponse, FPubnubGetStateResult, Result);
+DECLARE_DELEGATE_OneParam(FOnPubnubGetStateResponseNative, const FPubnubGetStateResult& Result);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnPubnubGrantTokenResponse, FPubnubOperationResult, Result, FString, Token);
 DECLARE_DELEGATE_TwoParams(FOnPubnubGrantTokenResponseNative, const FPubnubOperationResult& Result, FString Token);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPubnubRevokeTokenResponse, FPubnubOperationResult, Result);
@@ -610,7 +610,7 @@ public:
 	 * 
 	 * @param Channel The ID of the channel to list users from.
 	 * @param ListUsersFromChannelSettings Optional settings for the list users operation. See FPubnubListUsersFromChannelSettings for more details.
-	 * @return FPubnubListUsersFromChannelResult containing the operation result and users grouped by channel.
+	 * @return FPubnubListUsersFromChannelResult containing the operation result and users keyed by channel name.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	FPubnubListUsersFromChannelResult ListUsersFromChannel(FString Channel, FPubnubListUsersFromChannelSettings ListUsersFromChannelSettings = FPubnubListUsersFromChannelSettings());
@@ -727,7 +727,7 @@ public:
 	 * @param Channel The ID of the channel to get the state from.
 	 * @param ChannelGroup The name of the channel group to get the state from.
 	 * @param UserID The user ID to get the state for.
-	 * @return FPubnubGetStateResult containing the operation result and user state grouped by channel.
+	 * @return FPubnubGetStateResult containing the operation result and raw state JSON keyed by channel name.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Presence")
 	FPubnubGetStateResult GetState(FString Channel, FString ChannelGroup, FString UserID);

@@ -144,6 +144,7 @@ bool FPubnubAutomationTestBase::InitTest()
 	
 	FPubnubConfig Config;
 	Config.LoggerConfig.DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Debug;
+	Config.LoggerConfig.DefaultLoggerMinCCoreLevel = EPubnubLogLevel::PLL_Debug;
 	Config.UserID = "UE_SDK_Test_User";
 	Config.PublishKey = PubnubTests::GetTestPublishKey();
 	Config.SubscribeKey = PubnubTests::GetTestSubscribeKey();

@@ -508,11 +508,11 @@ bool FListUserSubscribedChannelsJsonToDataUnitTest::RunTest(const FString& Param
 
 bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 {
-	auto FindUser = [](const TArray<FPubnubUsersFromChannel>& Channels, const FString& UserID) -> const FPubnubUserFromChannel*
+	auto FindUser = [](const TMap<FString, FPubnubUsersFromChannel>& Channels, const FString& UserID) -> const FPubnubUserFromChannel*
 	{
-		for (const FPubnubUsersFromChannel& ChannelUsers : Channels)
+		for (const TPair<FString, FPubnubUsersFromChannel>& ChannelEntry : Channels)
 		{
-			const FPubnubUserFromChannel* User = ChannelUsers.Users.FindByPredicate([&UserID](const FPubnubUserFromChannel& Entry)
+			const FPubnubUserFromChannel* User = ChannelEntry.Value.Users.FindByPredicate([&UserID](const FPubnubUserFromChannel& Entry)
 			{
 				return Entry.UserID == UserID;
 			});
@@ -524,18 +524,31 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 		return nullptr;
 	};
 
+	auto UserCount = [](const TMap<FString, FPubnubUsersFromChannel>& Channels) -> int32
+	{
+		if (Channels.Num() != 1)
+		{
+			return -1;
+		}
+		for (const TPair<FString, FPubnubUsersFromChannel>& ChannelEntry : Channels)
+		{
+			return ChannelEntry.Value.Users.Num();
+		}
+		return -1;
+	};
+
 	FString TestBasicJson = "{\"status\": 200, \"message\": \"OK\", \"occupancy\": 2, \"uuids\": [\"User2\", \"User1\"], \"service\": \"Presence\"}";
 	FPubnubOperationResult Result;
 	int TotalOccupancy = 0;
 	int TotalChannels = 0;
-	TArray<FPubnubUsersFromChannel> Channels;
+	TMap<FString, FPubnubUsersFromChannel> Channels;
 
 	UPubnubJsonUtilities::ListUsersFromChannelJsonToData(TestBasicJson, Result, TotalOccupancy, TotalChannels, Channels);
 
 	TestEqual("Status code should be 200 for basic response", Result.Status, 200);
 	TestEqual("Message should be 'OK' for basic response", Result.ErrorMessage, "OK");
 	TestEqual("Occupancy should be 2 for basic response", TotalOccupancy, 2);
-	TestEqual("Users should have 2 elements for basic response", Channels.Num() == 1 ? Channels[0].Users.Num() : 0, 2);
+	TestEqual("Users should have 2 elements for basic response", UserCount(Channels), 2);
 	TestNotNull("Users should contain User1", FindUser(Channels, "User1"));
 	TestNotNull("Users should contain User2", FindUser(Channels, "User2"));
 	TestEqual("User1 should have empty state", FindUser(Channels, "User1") ? FindUser(Channels, "User1")->State : TEXT("missing"), "");
@@ -552,7 +565,7 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 	TestEqual("Status code should be 200 for states response", Result.Status, 200);
 	TestEqual("Message should be 'OK' for states response", Result.ErrorMessage, "OK");
 	TestEqual("Occupancy should be 2 for states response", TotalOccupancy, 2);
-	TestEqual("Users should have 2 elements for states response", Channels.Num() == 1 ? Channels[0].Users.Num() : 0, 2);
+	TestEqual("Users should have 2 elements for states response", UserCount(Channels), 2);
 	TestEqual("User1 should have 'new state'", FindUser(Channels, "User1") ? FindUser(Channels, "User1")->State : TEXT(""), "{\"state\":\"new state\"}");
 	TestEqual("User2 should have empty state", FindUser(Channels, "User2") ? FindUser(Channels, "User2")->State : TEXT("missing"), "");
 
@@ -566,7 +579,7 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 
 	TestEqual("Status code should be 200 for disabled UUIDs response", Result.Status, 200);
 	TestEqual("Occupancy should be 2 for disabled UUIDs response", TotalOccupancy, 2);
-	TestEqual("Users should be empty for disabled UUIDs response", Channels.Num() == 1 ? Channels[0].Users.Num() : -1, 0);
+	TestEqual("Users should be empty for disabled UUIDs response", UserCount(Channels), 0);
 
 	FString TestErrorJson = "{\"status\": 400, \"message\": \"Bad Request\", \"occupancy\": 0, \"service\": \"Presence\"}";
 	Result = FPubnubOperationResult();

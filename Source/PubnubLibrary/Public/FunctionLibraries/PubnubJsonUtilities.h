@@ -70,7 +70,7 @@ public:
 	/**
 	 * Converter from ListUsersFromChannel_Json response to actual types
 	 */
-	static void ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, int& TotalOccupancy, int& TotalChannels, TArray<FPubnubUsersFromChannel>& Channels);
+	static void ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, int& TotalOccupancy, int& TotalChannels, TMap<FString, FPubnubUsersFromChannel>& Channels);
 
 	/**
 	 * Converter from FetchHistory_Json response to actual types
