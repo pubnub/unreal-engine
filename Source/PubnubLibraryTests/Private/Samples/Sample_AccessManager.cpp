@@ -532,7 +532,7 @@ void ASample_AccessManager::ParseTokenCategoriesSample()
 
 	//Parse the token
 	// ACTION REQUIRED: Replace with a token returned from GrantToken method that was granted with Categories
-	FString TokenToParse = TEXT("qGF2AmF0GmVT8QBjdHRsGDxjcmVzpGRjaGFuoGNncnCgY3VzcqBkdXVpZKBjcGF0pGRjaGFuoGNncnCgY3VzcqBkdXVpZKBkbWV0YaBjY2F0omRjaGFuGCBkdXVpZBggY3NpZ1ggAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8");
+	FString TokenToParse = TEXT("qWF2AmF0GmVT8QBjdHRsGDxjcmVzpGRjaGFuoGNncnCgY3VzcqBkdXVpZKBjcGF0pGRjaGFuoGNncnCgY3VzcqBkdXVpZKBkbWV0YaBjY2F0omRjaGFuGCBkdXVpZBggZHV1aWRndXNlci14eGNzaWdYIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f");
 	FString ParsedToken = PubnubClient->ParseToken(TokenToParse);
 
 	//If parsed token is empty it means that something went wrong. Check Output Log for more details.
