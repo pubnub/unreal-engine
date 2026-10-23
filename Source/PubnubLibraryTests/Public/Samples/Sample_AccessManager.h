@@ -65,6 +65,13 @@ public:
 
 	UFUNCTION()
 	void OnGrantTokenResponse_Complex(FPubnubOperationResult Result, FString Token);
+
+	// snippet.grant_token_categories
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Access Manager")
+	void GrantTokenCategoriesSample();
+
+	UFUNCTION()
+	void OnGrantTokenResponse_Categories(FPubnubOperationResult Result, FString Token);
 	
 	// snippet.revoke_token
 	// blueprint.pkctxqyv
@@ -87,6 +94,10 @@ public:
 	// blueprint.3y5pxgqf
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Access Manager")
 	void ParseTokenSample();
+
+	// snippet.parse_token_categories
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Access Manager")
+	void ParseTokenCategoriesSample();
 
 	// snippet.set_auth_token
 	// blueprint.4gkh9q7x
