@@ -4,6 +4,8 @@
 #include "Samples/Sample_AccessManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
 
 /**
  * NOTE: Each sample is designed to be fully self-contained and portable. 
@@ -31,10 +33,12 @@ void ASample_AccessManager::RunSamples()
 	GrantTokenVariousResourcesSample();
 	GrantTokenRegexSample();
 	GrantTokenComplexSample();
+	GrantTokenCategoriesSample();
 	RevokeTokenSample();
 	RevokeTokenWithResultSample();
 	RevokeTokenWithResultLambdaSample();
 	ParseTokenSample();
+	ParseTokenCategoriesSample();
 	SetAuthTokenSample();
 }
 //Internal function, don't copy it with the samples
@@ -350,6 +354,52 @@ void ASample_AccessManager::OnGrantTokenResponse_Complex(FPubnubOperationResult 
 	}
 }
 
+// snippet.grant_token_categories
+// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+void ASample_AccessManager::GrantTokenCategoriesSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
+
+	// SERVER ONLY: SetSecretKey and GrantToken require a Secret Key and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint Access Manager v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
+	PubnubClient->SetSecretKey();
+
+	// Create the permissions structure
+	FPubnubGrantTokenPermissions Permissions;
+
+	//Allow listing all channel metadata and all user metadata. No channel, group or user resources are needed.
+	Permissions.Categories.Channels = true;
+	Permissions.Categories.Users = true;
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+	FOnPubnubGrantTokenResponse OnGrantTokenResponse;
+	OnGrantTokenResponse.BindDynamic(this, &ASample_AccessManager::OnGrantTokenResponse_Categories);
+	
+	// Request the token from the server
+	int TTLMinutes = 60;
+	FString AuthorizedUser = TEXT("my-authorized-user-id");
+	PubnubClient->GrantTokenAsync(TTLMinutes, AuthorizedUser, Permissions, OnGrantTokenResponse);
+}
+
+// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+void ASample_AccessManager::OnGrantTokenResponse_Categories(FPubnubOperationResult Result, FString Token)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to Grant Token. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Grant Token Success. The Token: %s"), *Token);
+	}
+}
+
 // snippet.revoke_token
 // ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
 void ASample_AccessManager::RevokeTokenSample()
@@ -467,6 +517,57 @@ void ASample_AccessManager::ParseTokenSample()
 	else
 	{
 		UE_LOG(LogTemp, Log, TEXT("Parsed Token: %s."), *ParsedToken);
+	}
+}
+
+// snippet.parse_token_categories
+// ACTION REQUIRED: Replace ASample_AccessManager with name of your Actor class
+void ASample_AccessManager::ParseTokenCategoriesSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
+
+	//Parse the token
+	// ACTION REQUIRED: Replace with a token returned from GrantToken method that was granted with Categories
+	FString TokenToParse = TEXT("qGF2AmF0GmVT8QBjdHRsGDxjcmVzpGRjaGFuoGNncnCgY3VzcqBkdXVpZKBjcGF0pGRjaGFuoGNncnCgY3VzcqBkdXVpZKBkbWV0YaBjY2F0omRjaGFuGCBkdXVpZBggY3NpZ1ggAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8");
+	FString ParsedToken = PubnubClient->ParseToken(TokenToParse);
+
+	//If parsed token is empty it means that something went wrong. Check Output Log for more details.
+	if(ParsedToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Parsing Token failed."));
+		return;
+	}
+
+	//The parsed token is a JSON string. Read it with Unreal's JSON classes.
+	//Requires "Json" in the dependency modules of your project and these includes:
+	//#include "Dom/JsonObject.h"
+	//#include "Serialization/JsonSerializer.h"
+	TSharedPtr<FJsonObject> ParsedTokenObject;
+	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(ParsedToken);
+	if(!FJsonSerializer::Deserialize(JsonReader, ParsedTokenObject) || !ParsedTokenObject.IsValid())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Parsed Token is not a valid JSON."));
+		return;
+	}
+
+	//Categories is present only when the token has category permissions
+	const TSharedPtr<FJsonObject>* CategoriesObject = nullptr;
+	if(ParsedTokenObject->TryGetObjectField(TEXT("Categories"), CategoriesObject) && CategoriesObject)
+	{
+		bool bCanListAllChannels = false;
+		bool bCanListAllUsers = false;
+		(*CategoriesObject)->TryGetBoolField(TEXT("Channels"), bCanListAllChannels);
+		(*CategoriesObject)->TryGetBoolField(TEXT("Users"), bCanListAllUsers);
+		UE_LOG(LogTemp, Log, TEXT("Can list all channel metadata: %s, can list all user metadata: %s."),
+			bCanListAllChannels ? TEXT("true") : TEXT("false"), bCanListAllUsers ? TEXT("true") : TEXT("false"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Token has no category permissions."));
 	}
 }
 
