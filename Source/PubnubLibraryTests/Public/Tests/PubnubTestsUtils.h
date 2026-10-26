@@ -162,6 +162,11 @@ public:
 	//Cleans up test systems. Call this at the end of every test
 	void CleanUp();
 
+	// Intentional SDK failures must not fail the test. These are virtuals
+	// on UE 5.2; the bSuppressLog* statics arrived in UE 5.4.
+	virtual bool SuppressLogErrors() override { return true; }
+	virtual bool SuppressLogWarnings() override { return true; }
+
 	UPubnubSubsystem* PubnubSubsystem = nullptr;
 	UGameInstance* GameInstance = nullptr;
 	UPubnubClient* PubnubClient = nullptr;

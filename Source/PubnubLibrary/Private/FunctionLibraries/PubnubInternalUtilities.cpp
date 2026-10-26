@@ -739,11 +739,12 @@ bool UPubnubInternalUtilities::ReadMetadataCustom(const TSharedPtr<FJsonObject>&
 
 void UPubnubInternalUtilities::CollectUnknownMetadataFields(const TSharedPtr<FJsonObject>& Object, const TArray<FString>& KnownKeys, TArray<FString>& OutUnknown)
 {
-	for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : Object->Values)
+	for (const auto& Pair : Object->Values)
 	{
-		if (!KnownKeys.Contains(Pair.Key))
+		const FString Key = PubnubCopyJsonKey(Pair.Key);
+		if (!KnownKeys.Contains(Key))
 		{
-			OutUnknown.Add(Pair.Key);
+			OutUnknown.Add(Key);
 		}
 	}
 }

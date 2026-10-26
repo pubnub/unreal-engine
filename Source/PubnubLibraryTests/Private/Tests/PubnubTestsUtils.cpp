@@ -151,10 +151,6 @@ bool FPubnubAutomationTestBase::InitTest()
 	Config.SecretKey = PubnubTests::GetTestSecretKey();
 	
 	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
-	
-	// We need to disable logs, because they would make tests fail during intentional errors
-	bSuppressLogErrors = true;
-	bSuppressLogWarnings = true;
 
 	return true;
 }
@@ -183,10 +179,6 @@ bool FPubnubAutomationTestBase::InitTestWithPAM(bool bUseSecretKey)
 	}
 	
 	PubnubClient = PubnubSubsystem->CreatePubnubClient(Config);
-	
-	// We need to disable logs, because they would make tests fail during intentional errors
-	bSuppressLogErrors = true;
-	bSuppressLogWarnings = true;
 
 	return true;
 }

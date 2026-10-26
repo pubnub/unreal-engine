@@ -530,11 +530,7 @@ bool FListUsersFromChannelJsonToDataUnitTest::RunTest(const FString& Parameters)
 		{
 			return -1;
 		}
-		for (const TPair<FString, FPubnubUsersFromChannel>& ChannelEntry : Channels)
-		{
-			return ChannelEntry.Value.Users.Num();
-		}
-		return -1;
+		return Channels.CreateConstIterator().Value().Users.Num();
 	};
 
 	FString TestBasicJson = "{\"status\": 200, \"message\": \"OK\", \"occupancy\": 2, \"uuids\": [\"User2\", \"User1\"], \"service\": \"Presence\"}";

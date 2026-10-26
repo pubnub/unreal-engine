@@ -185,23 +185,35 @@ bool UPubnubJsonUtilities::AreJsonObjectStringsEqual(const FString JsonString1, 
 	{return false;}
 
 	//Sort keys from both Json objects and compare if there is the same amount of them
-	TArray<FString> Keys1;
-	JsonObject1->Values.GetKeys(Keys1);
-	Keys1.Sort();
+	auto CollectFields = [](const TSharedPtr<FJsonObject>& JsonObject, TArray<TPair<FString, TSharedPtr<FJsonValue>>>& OutFields)
+	{
+		OutFields.Reserve(JsonObject->Values.Num());
+		for (const auto& Pair : JsonObject->Values)
+		{
+			TPair<FString, TSharedPtr<FJsonValue>>& Field = OutFields.AddDefaulted_GetRef();
+			Field.Key = PubnubCopyJsonKey(Pair.Key);
+			Field.Value = Pair.Value;
+		}
+		OutFields.Sort([](const TPair<FString, TSharedPtr<FJsonValue>>& Left, const TPair<FString, TSharedPtr<FJsonValue>>& Right)
+		{
+			return Left.Key < Right.Key;
+		});
+	};
 
-	TArray<FString> Keys2;
-	JsonObject2->Values.GetKeys(Keys2);
-	Keys2.Sort();
+	TArray<TPair<FString, TSharedPtr<FJsonValue>>> Fields1;
+	TArray<TPair<FString, TSharedPtr<FJsonValue>>> Fields2;
+	CollectFields(JsonObject1, Fields1);
+	CollectFields(JsonObject2, Fields2);
 
-	if(Keys1.Num() != Keys2.Num())
+	if(Fields1.Num() != Fields2.Num())
 	{return false;}
 
 	//Compare if all keys and all values are the same
-	for(int i = 0; i < Keys1.Num(); i++)
+	for(int i = 0; i < Fields1.Num(); i++)
 	{
-		if(Keys1[i] != Keys2[i])
+		if(Fields1[i].Key != Fields2[i].Key)
 		{return false;}
-		if(*JsonObject1->Values[Keys1[i]] != *JsonObject2->Values[Keys2[i]])
+		if(*Fields1[i].Value != *Fields2[i].Value)
 		{return false;}
 	}
 
@@ -377,8 +389,9 @@ void UPubnubJsonUtilities::ListUsersFromChannelJsonToData(FString ResponseJson, 
 						continue;
 					}
 
-					FPubnubUsersFromChannel& ChannelUsers = Channels.FindOrAdd(ChannelKvp.Key);
-					ChannelUsers.Channel = ChannelKvp.Key;
+					const FString ChannelName = PubnubCopyJsonKey(ChannelKvp.Key);
+					FPubnubUsersFromChannel& ChannelUsers = Channels.FindOrAdd(ChannelName);
+					ChannelUsers.Channel = ChannelName;
 					ChannelUsers.Users.Reset();
 					double ChOcc = 0;
 					if (ChannelEntry->TryGetNumberField(ANSI_TO_TCHAR("occupancy"), ChOcc))
@@ -430,16 +443,18 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, FPubnubO
 	}
 
 	TSharedPtr<FJsonObject> ChannelsJsonObject = JsonObject->GetObjectField(ANSI_TO_TCHAR("channels"));
-	
-	for(auto Iterator = ChannelsJsonObject->Values.CreateIterator(); Iterator; ++Iterator)
+
+	//At the moment C-Core and UE SDK support Fetching history from one channel.
+	auto ChannelIterator = ChannelsJsonObject->Values.CreateIterator();
+	if (ChannelIterator)
 	{
-		TSharedPtr<FJsonValue> ChannelJsonValue = Iterator.Value();
+		TSharedPtr<FJsonValue> ChannelJsonValue = ChannelIterator.Value();
 		
 		//Iterate through all messages from the response
 		for(auto MessageValue : ChannelJsonValue->AsArray())
 		{
 			FPubnubHistoryMessageData CurrentMessage;
-			CurrentMessage.Channel = Iterator.Key();
+			CurrentMessage.Channel = ChannelIterator.Key();
 			if(!MessageValue->AsObject()->TryGetStringField(ANSI_TO_TCHAR("message"), CurrentMessage.Message))
 			{
 				const TSharedPtr<FJsonObject>* MetaJsonObject = nullptr;
@@ -485,8 +500,6 @@ void UPubnubJsonUtilities::FetchHistoryJsonToData(FString ResponseJson, FPubnubO
 
 			Messages.Add(CurrentMessage);
 		}
-		//At the moment C-Core and UE SDK support Fetching history from one channel. 
-		break;
 	}
 }
 

@@ -10,6 +10,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+#include "Engine/GameInstance.h"
 #include "Tests/PubnubTestsUtils.h"
 #include "Misc/AutomationTest.h"
 

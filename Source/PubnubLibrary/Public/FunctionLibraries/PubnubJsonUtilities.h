@@ -10,6 +10,15 @@
 class FJsonObject;
 class FJsonValue;
 
+//Copies a JSON object key into an FString
+template <typename JsonKeyType>
+FORCEINLINE FString PubnubCopyJsonKey(const JsonKeyType& Key)
+{
+	FString Copy;
+	Copy = Key;
+	return Copy;
+}
+
 /**
  * 
  */
