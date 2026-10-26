@@ -162,19 +162,7 @@ typedef struct pubnub_send_file_opts {
  * @see pubnub_send_file
  */
 #define PUBNUB_SEND_FILE_OPTS_INIT \
-    {.channel             = NULL,  \
-     .file_name           = NULL,  \
-     .data                = NULL,  \
-     .data_len            = 0,     \
-     .content_type        = NULL,  \
-     .message             = NULL,  \
-     .meta                = NULL,  \
-     .custom_message_type = NULL,  \
-     .store               = 1,     \
-     .ttl                 = 0,     \
-     .upload_timeout_ms   = 0,     \
-     .timeout_ms          = 0,     \
-     .file_path           = NULL}
+    {NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 1, 0, 0, 0, NULL}
 
 /**
  * @brief Options for @c pubnub_list_files.
@@ -386,15 +374,7 @@ typedef struct pubnub_publish_file_message_opts {
  * Sets @c store to 1 (the REST API default is to store).
  */
 #define PUBNUB_PUBLISH_FILE_MESSAGE_OPTS_INIT \
-    {.channel             = NULL,             \
-     .file_id             = NULL,             \
-     .file_name           = NULL,             \
-     .message             = NULL,             \
-     .meta                = NULL,             \
-     .custom_message_type = NULL,             \
-     .store               = 1,                \
-     .ttl                 = 0,                \
-     .timeout_ms          = 0}
+    {NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0}
 
 /**
  * @brief Options for @c pubnub_get_file_url.

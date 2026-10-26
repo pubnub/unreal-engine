@@ -108,10 +108,10 @@ typedef struct pubnub_future {
 /** @brief Sentinel for validation failures (is_ready = true, status =
  * INVALID_ARGUMENT). */
 #define PUBNUB_FUTURE_INVALID                                \
-    ((pubnub_future_t){.ctx        = NULL,                   \
-                       .slot_id    = PUBNUB_SLOT_ID_INVALID, \
-                       .generation = 0,                      \
-                       .status     = PUBNUB_ERR_INVALID_ARGUMENT})
+    ((pubnub_future_t){NULL,                                 \
+                       PUBNUB_SLOT_ID_INVALID,               \
+                       0,                                    \
+                       PUBNUB_ERR_INVALID_ARGUMENT})
 
 /**
  * @brief Callback type for asynchronous future completion.

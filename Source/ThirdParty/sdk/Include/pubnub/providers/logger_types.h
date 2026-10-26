@@ -198,6 +198,8 @@ typedef struct pubnub_log_value {
     struct pubnub_log_value* next;
 } pubnub_log_value_t;
 
+#ifndef __cplusplus
+
 /** Initialize a null log value. */
 #define PUBNUB_LOG_VALUE_NULL_INIT() {PUBNUB_LOG_VALUE_NULL, {0}, NULL}
 
@@ -240,6 +242,8 @@ typedef struct pubnub_log_value {
 #define PUBNUB_LOG_MAP_ENTRY(k, v, next_ptr) \
     {PUBNUB_LOG_VALUE_MAP, {.map_val = {(k), (v)}}, (next_ptr)}
 
+#endif /* !__cplusplus */
+
 /**
  * @brief Append a value node to the end of an array's linked list.
  *
@@ -279,7 +283,7 @@ static inline void pubnub_log_map_prepend(pubnub_log_value_t** map_head,
  */
 static inline pubnub_log_value_t pubnub_log_value_null(void)
 {
-    pubnub_log_value_t v = (pubnub_log_value_t)PUBNUB_LOG_VALUE_NULL_INIT();
+    pubnub_log_value_t v = {PUBNUB_LOG_VALUE_NULL, {0}, NULL};
     return v;
 }
 
@@ -291,7 +295,9 @@ static inline pubnub_log_value_t pubnub_log_value_null(void)
  */
 static inline pubnub_log_value_t pubnub_log_value_bool(int b)
 {
-    pubnub_log_value_t v = (pubnub_log_value_t)PUBNUB_LOG_VALUE_BOOL_INIT(b);
+    pubnub_log_value_t v = {PUBNUB_LOG_VALUE_NULL, {0}, NULL};
+    v.type               = PUBNUB_LOG_VALUE_BOOL;
+    v.data.bool_val      = b;
     return v;
 }
 
@@ -305,7 +311,9 @@ static inline pubnub_log_value_t pubnub_log_value_bool(int b)
  */
 static inline pubnub_log_value_t pubnub_log_value_number(int64_t n)
 {
-    pubnub_log_value_t v = (pubnub_log_value_t)PUBNUB_LOG_VALUE_NUM_INIT(n);
+    pubnub_log_value_t v = {PUBNUB_LOG_VALUE_NULL, {0}, NULL};
+    v.type               = PUBNUB_LOG_VALUE_NUMBER;
+    v.data.number_val    = n;
     return v;
 }
 
@@ -319,7 +327,10 @@ static inline pubnub_log_value_t pubnub_log_value_number(int64_t n)
  */
 static inline pubnub_log_value_t pubnub_log_value_string(const char* s)
 {
-    pubnub_log_value_t v = (pubnub_log_value_t)PUBNUB_LOG_VALUE_STR_INIT(s);
+    pubnub_log_value_t v    = {PUBNUB_LOG_VALUE_NULL, {0}, NULL};
+    v.type                  = PUBNUB_LOG_VALUE_STRING;
+    v.data.string_val.ptr   = s;
+    v.data.string_val.len   = 0;
     return v;
 }
 
@@ -334,7 +345,24 @@ static inline pubnub_log_value_t pubnub_log_value_string(const char* s)
  */
 static inline pubnub_log_value_t pubnub_log_value_string_n(const char* s, size_t len)
 {
-    pubnub_log_value_t v = (pubnub_log_value_t)PUBNUB_LOG_VALUE_STRN_INIT(s, len);
+    pubnub_log_value_t v    = {PUBNUB_LOG_VALUE_NULL, {0}, NULL};
+    v.type                  = PUBNUB_LOG_VALUE_STRING;
+    v.data.string_val.ptr   = s;
+    v.data.string_val.len   = len;
+    return v;
+}
+
+/**
+ * @brief Create an array container value.
+ *
+ * @param head_ptr First element, or @c NULL for an empty array.
+ * @return Stack-allocated array log value.
+ */
+static inline pubnub_log_value_t pubnub_log_value_array_make(pubnub_log_value_t* head_ptr)
+{
+    pubnub_log_value_t v    = {PUBNUB_LOG_VALUE_NULL, {0}, NULL};
+    v.type                  = PUBNUB_LOG_VALUE_ARRAY;
+    v.data.array_val.head   = head_ptr;
     return v;
 }
 
@@ -345,9 +373,68 @@ static inline pubnub_log_value_t pubnub_log_value_string_n(const char* s, size_t
  */
 static inline pubnub_log_value_t pubnub_log_value_array_init(void)
 {
-    pubnub_log_value_t v = (pubnub_log_value_t)PUBNUB_LOG_VALUE_ARRAY_INIT(NULL);
+    return pubnub_log_value_array_make(NULL);
+}
+
+/**
+ * @brief Create a map entry node.
+ *
+ * @param key       NUL-terminated key string (borrowed).
+ * @param value     Value node. Must stay alive for the log call.
+ * @param next_ptr  Next map entry, or @c NULL.
+ * @return Stack-allocated map entry.
+ */
+static inline pubnub_log_value_t pubnub_log_map_entry_make(const char* key,
+                                                          pubnub_log_value_t* value,
+                                                          pubnub_log_value_t* next_ptr)
+{
+    pubnub_log_value_t v    = {PUBNUB_LOG_VALUE_NULL, {0}, NULL};
+    v.type                  = PUBNUB_LOG_VALUE_MAP;
+    v.data.map_val.key      = key;
+    v.data.map_val.value    = value;
+    v.next                  = next_ptr;
     return v;
 }
+
+#ifdef __cplusplus
+/** Initialize a null log value. */
+#define PUBNUB_LOG_VALUE_NULL_INIT() (pubnub_log_value_null())
+
+/** Initialize a boolean log value. */
+#define PUBNUB_LOG_VALUE_BOOL_INIT(b) (pubnub_log_value_bool(b))
+
+/** Initialize an integer number log value (int64_t). */
+#define PUBNUB_LOG_VALUE_NUM_INIT(n) (pubnub_log_value_number((int64_t)(n)))
+
+/**
+ * Initialize a string log value from a NUL-terminated C string.
+ * The string is borrowed, not copied.
+ * Sets len=0 to signal the provider should use strlen(ptr).
+ */
+#define PUBNUB_LOG_VALUE_STR_INIT(s) (pubnub_log_value_string(s))
+
+/**
+ * Initialize a string log value with explicit length (non-NUL-terminated OK).
+ * The string is borrowed, not copied.
+ */
+#define PUBNUB_LOG_VALUE_STRN_INIT(s, l) \
+    (pubnub_log_value_string_n((s), (size_t)(l)))
+
+/**
+ * Initialize an array head node.
+ * @param head_ptr  Pointer to the first element (pubnub_log_value_t*), or @c NULL.
+ */
+#define PUBNUB_LOG_VALUE_ARRAY_INIT(head_ptr) (pubnub_log_value_array_make(head_ptr))
+
+/**
+ * Initialize a map entry node.
+ * @param k         NUL-terminated key string (borrowed).
+ * @param v         Pointer to value node (pubnub_log_value_t*).
+ * @param next_ptr  Pointer to next map entry, or @c NULL.
+ */
+#define PUBNUB_LOG_MAP_ENTRY(k, v, next_ptr) \
+    (pubnub_log_map_entry_make((k), (v), (next_ptr)))
+#endif /* __cplusplus */
 
 /**
  * @brief Initialize a map head pointer to empty (NULL).

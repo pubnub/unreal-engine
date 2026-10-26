@@ -134,7 +134,7 @@ typedef struct pubnub_fetch_messages_opts {
  * defaults). All other fields zero-initialize.
  */
 #define PUBNUB_FETCH_MESSAGES_OPTS_INIT \
-    {.include_uuid = 1, .include_message_type = 1}
+    {NULL, NULL, NULL, 0, 0, 0, 1, 1}
 
 /**
  * @brief Options for @c pubnub_delete_messages.

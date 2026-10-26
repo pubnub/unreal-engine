@@ -89,7 +89,7 @@ typedef struct pubnub_here_now_opts {
 } pubnub_here_now_opts_t;
 
 /** @brief Zero-initialize here-now options with include_uuids enabled. */
-#define PUBNUB_HERE_NOW_OPTS_INIT {.include_uuids = 1}
+#define PUBNUB_HERE_NOW_OPTS_INIT {NULL, NULL, 1}
 
 PUBNUB_STATIC_ASSERT(
     sizeof(pubnub_here_now_opts_t) <= 2U * sizeof(const char*) + 16U,
