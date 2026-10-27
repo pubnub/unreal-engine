@@ -8,6 +8,9 @@
 #include "Misc/AutomationTest.h"
 #include "Templates/Function.h"
 #include "PubnubSubsystem.h"
+#include "PubnubClient.h"
+#include "PubnubEnumLibrary.h"
+#include "PubnubStructLibrary.h"
 
 
 class UPubnubSubsystem;
@@ -52,7 +55,58 @@ namespace PubnubTests
 	 * Falls back to "demo" if not set
 	 */
 	FString GetTestSecretKeyWithPAM();
+
+	/**
+	 * Subscribe returns when the subscription is registered locally. The handshake
+	 * finishes later and is reported on OnSubscriptionStatusChangedNative.
+	 * Tests that publish must wait for PSS_Connected or PSS_SubscriptionChanged
+	 * that lists the target channel or group.
+	 */
+	struct FPubnubHandshakeTracker
+	{
+		TSharedPtr<int32> Epoch = MakeShared<int32>(0);
+		TSharedPtr<TArray<FString>> Channels = MakeShared<TArray<FString>>();
+		TSharedPtr<TArray<FString>> Groups = MakeShared<TArray<FString>>();
+		TSharedPtr<bool> bFailed = MakeShared<bool>(false);
+		TSharedPtr<FString> FailureReason = MakeShared<FString>();
+	};
+
+	bool HandshakeListContainsAll(const TArray<FString>& Have, const TArray<FString>& Need);
+	bool IsHandshakeReady(const FPubnubHandshakeTracker& Tracker, const TSharedPtr<int32>& Baseline, const TArray<FString>& ExpectedChannels, const TArray<FString>& ExpectedGroups);
+	void TrackHandshake(UPubnubClient* Client, const FPubnubHandshakeTracker& Tracker);
+	TSharedPtr<int32> SnapshotHandshakeEpoch(const FPubnubHandshakeTracker& Tracker);
 }
+
+class FWaitForPubnubHandshakeCommand : public IAutomationLatentCommand
+{
+public:
+	FWaitForPubnubHandshakeCommand(PubnubTests::FPubnubHandshakeTracker InTracker, TSharedPtr<int32> InBaseline, TArray<FString> InChannels, TArray<FString> InGroups, float InTimeoutSeconds)
+		: Tracker(MoveTemp(InTracker))
+		, Baseline(MoveTemp(InBaseline))
+		, ExpectedChannels(MoveTemp(InChannels))
+		, ExpectedGroups(MoveTemp(InGroups))
+		, TimeoutSeconds(InTimeoutSeconds)
+		, ElapsedTime(0.0f)
+	{}
+
+	virtual bool Update() override
+	{
+		ElapsedTime += FApp::GetDeltaTime();
+		if (*Tracker.bFailed || PubnubTests::IsHandshakeReady(Tracker, Baseline, ExpectedChannels, ExpectedGroups))
+		{
+			return true;
+		}
+		return ElapsedTime >= TimeoutSeconds;
+	}
+
+private:
+	PubnubTests::FPubnubHandshakeTracker Tracker;
+	TSharedPtr<int32> Baseline;
+	TArray<FString> ExpectedChannels;
+	TArray<FString> ExpectedGroups;
+	float TimeoutSeconds;
+	float ElapsedTime;
+};
 
 
 class FWaitUntilLatentCommand : public IAutomationLatentCommand
@@ -96,10 +150,22 @@ public:
 	//Initializes systems required by the test. This has to be called at the beginning of every test.
 	bool InitTest();
 	
-	//Initializes systems required by the test using PAM keysets. This (or InitTest) has to be called at the beginning of every test.
-	bool InitTestWithPAM();
+	/**
+	 * Initializes systems required by the test using PAM keysets.
+	 * SecretKey is omitted unless bUseSecretKey is true. Pass true for admin APIs
+	 * (GrantToken, RevokeToken, App Context writes). Client tests should leave it false
+	 * and use a PAM token instead.
+	 */
+	bool InitTestWithPAM(bool bUseSecretKey = false);
+	/** Destroys the current client and creates another. Crypto is fixed at creation. */
+	bool RecreateClient(UPubnubCryptoModule* CryptoModule, bool bUsePamKeys = false, bool bIncludeSecretKey = true);
 	//Cleans up test systems. Call this at the end of every test
 	void CleanUp();
+
+	// Intentional SDK failures must not fail the test. These are virtuals
+	// on UE 5.2; the bSuppressLog* statics arrived in UE 5.4.
+	virtual bool SuppressLogErrors() override { return true; }
+	virtual bool SuppressLogWarnings() override { return true; }
 
 	UPubnubSubsystem* PubnubSubsystem = nullptr;
 	UGameInstance* GameInstance = nullptr;

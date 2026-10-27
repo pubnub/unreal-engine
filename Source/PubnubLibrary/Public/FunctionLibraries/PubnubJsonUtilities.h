@@ -10,6 +10,15 @@
 class FJsonObject;
 class FJsonValue;
 
+//Copies a JSON object key into an FString
+template <typename JsonKeyType>
+FORCEINLINE FString PubnubCopyJsonKey(const JsonKeyType& Key)
+{
+	FString Copy;
+	Copy = Key;
+	return Copy;
+}
+
 /**
  * 
  */
@@ -70,7 +79,7 @@ public:
 	/**
 	 * Converter from ListUsersFromChannel_Json response to actual types
 	 */
-	static void ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, FPubnubListUsersFromChannelWrapper &Data);
+	static void ListUsersFromChannelJsonToData(FString ResponseJson, FPubnubOperationResult& Result, int& TotalOccupancy, int& TotalChannels, TMap<FString, FPubnubUsersFromChannel>& Channels);
 
 	/**
 	 * Converter from FetchHistory_Json response to actual types

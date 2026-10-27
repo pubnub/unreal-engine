@@ -25,7 +25,7 @@ void UPubnubBaseEntity::InitEntity(UPubnubClient* InPubnubClient)
 {
 	if(!InPubnubClient)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Init Entity failed, PubnubSubsystem is invalid"));
+		UE_LOG(PubnubLog, Error, TEXT("Init Entity failed, PubnubClient is invalid"));
 		return;
 	}
 

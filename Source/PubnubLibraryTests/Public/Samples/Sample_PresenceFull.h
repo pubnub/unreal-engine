@@ -28,10 +28,10 @@ public:
 	void OnSetStateResponse(FPubnubOperationResult Result);
 
 	UFUNCTION()
-	void OnListUsersFromChannelResponse(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data);
+	void OnListUsersFromChannelResponse(FPubnubListUsersFromChannelResult Result);
 
 	UFUNCTION()
-	void OnGetStateResponse(FPubnubOperationResult Result, FString StateResponse);
+	void OnGetStateResponse(FPubnubGetStateResult Result);
 	
 private:
 	UPROPERTY()

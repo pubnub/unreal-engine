@@ -31,6 +31,12 @@ struct FUTF8StringHolder
 	{
 		return Converter.Get();
 	}
+
+	/** Same as Get(), but returns nullptr when the source FString was empty. Use for optional C-Core char* fields. */
+	const char* GetOrNull() const
+	{
+		return Converter.Length() == 0 ? nullptr : Converter.Get();
+	}
 };
 
 
@@ -43,49 +49,32 @@ class PUBNUBLIBRARY_API UPubnubUtilities : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 public:
 
-	static FPubnubConfig PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings);
-	static FString PubnubGetLastServerHttpResponse(pubnub_t* Context);
-
-	//Sets limit to be between 0 and PUBNUB_MAX_LIMIT. Prevents C-Core crash on providing incorrect limit.
-	static int RoundLimitForPubnubFunctions(int ProvidedLimit);
-	
-	/* STRING OPERATIONS */
-	
-	static FString AddQuotesToString(const FString InString, bool SkipIfHasQuotes = true);
-	static FString RemoveOuterQuotesFromString(const FString InString);
-	static FString PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar);
-	static FString ArrayOfStringsToCommaSeparatedString(const TArray<FString> ArrayOfStrings);
-
-	/**
-	 * Safely copies an FString to a char buffer with proper bounds checking and null termination.
-	 * @param Destination The destination char buffer
-	 * @param DestSize The size of the destination buffer (including space for null terminator)
-	 * @param Source The source FString to copy
-	 * @param KeyName Optional name for logging purposes (defaults to "String")
-	 * @return true if copy was successful, false if conversion failed
-	 */
-	static bool SafeCopyFStringToCharBuffer(char* Destination, int DestSize, const FString& Source, const TCHAR* KeyName = TEXT("String"));
-
 	//This is to remove class name and "_priv" from __FUNCTION__ macro output
 	static FString GetNameFromFunctionMacro(FString FunctionName);
 
-	static FPubnubMessageData UEMessageFromPubnubMessage(pubnub_v2_message PubnubMessage);
+	/** Clamps a list limit to 0..PUBNUB_MAX_LIMIT. 0 means "server default". */
+	static int RoundLimitForPubnubFunctions(int ProvidedLimit);
 
-	/* CONVERTING INCLUDES */
+	/** Comma-separated include list for GetAll user/channel metadata. Total count is not included. */
+	static FString GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude);
+
+	/** Comma-separated include list for Get/Set user or channel metadata. */
+	static FString GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude);
+
+	/** Comma-separated sort expression. Descending entries are suffixed with ":desc". */
+	static FString GetAllSortToString(const FPubnubGetAllSort& GetAllSort);
+
+	/** Sort field name used by GetAllSortToString. */
+	static FString GetAllSortTypeToString(const EPubnubGetAllSortType SortType);
 	
 	static FString MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude);
 	static FString MemberIncludeToString(const FPubnubMemberInclude& MemberInclude);
-	static FString GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude);
-	static FString GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude);
-
-	/* CONVERTING SORTS */
+	
+	static FString MembershipSortToString(const FPubnubMembershipSort& MemberInclude);
+	static FString MemberSortToString(const FPubnubMemberSort& MemberInclude);
 	
 	static FString MembershipSortTypeToString(const EPubnubMembershipSortType SortType);
 	static FString MemberSortTypeToString(const EPubnubMemberSortType SortType);
-	static FString GetAllSortTypeToString(const EPubnubGetAllSortType SortType);
-	static FString MembershipSortToString(const FPubnubMembershipSort& MemberInclude);
-	static FString MemberSortToString(const FPubnubMemberSort& MemberInclude);
-	static FString GetAllSortToString(const FPubnubGetAllSort& GetAllInclude);
 	
 	/* TEMPLATES TO CALL PUBNUB DELEGATES */
 

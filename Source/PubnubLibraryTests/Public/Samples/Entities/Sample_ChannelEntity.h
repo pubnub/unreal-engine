@@ -77,14 +77,14 @@ public:
 	void ListUsersFromChannelSample();
 
 	UFUNCTION()
-	void OnListUsersFromChannelResponse_Simple(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data);
+	void OnListUsersFromChannelResponse_Simple(FPubnubListUsersFromChannelResult Result);
 
 	// snippet.list_users_from_channel_with_settings_entity
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|ChannelEntity")
 	void ListUsersFromChannelWithSettingsSample();
 
 	UFUNCTION()
-	void OnListUsersFromChannelResponse_WithSettings(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data);
+	void OnListUsersFromChannelResponse_WithSettings(FPubnubListUsersFromChannelResult Result);
 
 	// snippet.list_users_from_channel_with_lambda_entity
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|ChannelEntity")

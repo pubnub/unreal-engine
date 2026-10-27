@@ -25,7 +25,6 @@ namespace PubnubTokenTestsPrivate
 		Config.PublishKey = PubnubTests::GetTestPublishKeyWithPAM();
 		Config.SubscribeKey = PubnubTests::GetTestSubscribeKeyWithPAM();
 		Config.SecretKey = FString();
-		Config.SetSecretKeyAutomatically = false;
 		return Config;
 	}
 
@@ -229,7 +228,6 @@ bool FPubnubGrantToken_EmptyAuthorizedUser_ReturnsError::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubClient->SetSecretKey();
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_grant_empty_auth"));
 
 	FPubnubGrantTokenPermissions Perms;
@@ -253,7 +251,6 @@ bool FPubnubGrantToken_EmptyPermissions_ReturnsError::RunTest(const FString& Par
 		return false;
 	}
 
-	PubnubClient->SetSecretKey();
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_grant_empty_perms"));
 
 	const FPubnubGrantTokenPermissions EmptyPerms;
@@ -298,12 +295,17 @@ bool FPubnubGrantToken_WithoutSetSecretKey_ReturnsError::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_grant_no_secret_call"));
+	UPubnubClient* Restricted = PubnubSubsystem->CreatePubnubClient(MakePamRestrictedConfig(SDK_PREFIX + TEXT("pam_grant_no_secret_call")));
+	if (!TestNotNull(TEXT("Client without secret key should be created"), Restricted))
+	{
+		CleanUp();
+		return false;
+	}
 
 	FPubnubGrantTokenPermissions Perms;
 	BuildMinimalChannelWritePermissions(SDK_PREFIX + TEXT("pam_ch_ns"), Perms);
 
-	const FPubnubGrantTokenResult R = PubnubClient->GrantToken(60, SDK_PREFIX + TEXT("pam_target_user"), Perms);
+	const FPubnubGrantTokenResult R = Restricted->GrantToken(60, SDK_PREFIX + TEXT("pam_target_user"), Perms);
 
 	TestTrue(TEXT("GrantToken without SetSecretKey should fail against PAM"), R.Result.Error);
 	TestTrue(TEXT("Token should be empty on failure"), R.Token.IsEmpty());
@@ -314,20 +316,15 @@ bool FPubnubGrantToken_WithoutSetSecretKey_ReturnsError::RunTest(const FString& 
 
 bool FPubnubGrantToken_HappyPath_RequiredParamsOnly::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	const FString AuthUser = SDK_PREFIX + TEXT("pam_grant_happy_user");
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_grant_happy_admin"));
-	PubnubClient->SetSecretKey();
 
 	FPubnubGrantTokenPermissions Perms;
 	BuildMinimalChannelWritePermissions(SDK_PREFIX + TEXT("pam_grant_happy_ch"), Perms);
@@ -344,16 +341,12 @@ bool FPubnubGrantToken_HappyPath_RequiredParamsOnly::RunTest(const FString& Para
 
 bool FPubnubGrantToken_WithMetaAndExtendedPermissions::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	const FString AuthUser = SDK_PREFIX + TEXT("pam_grant_full_user");
 	const FString ChannelName = SDK_PREFIX + TEXT("pam_grant_full_ch");
@@ -361,7 +354,6 @@ bool FPubnubGrantToken_WithMetaAndExtendedPermissions::RunTest(const FString& Pa
 	const FString UserRes = SDK_PREFIX + TEXT("pam_grant_full_ures");
 
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_grant_full_admin"));
-	PubnubClient->SetSecretKey();
 
 	FPubnubGrantTokenPermissions Perms;
 
@@ -397,22 +389,17 @@ bool FPubnubGrantToken_WithMetaAndExtendedPermissions::RunTest(const FString& Pa
 // ParseToken should expose the same channel-level Read/Write flags we encoded in the grant.
 bool FPubnubGrantToken_ParseTokenReflectsGrantedChannelPermissions::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	const FString AuthUser = SDK_PREFIX + TEXT("pam_parse_user");
 	const FString ChannelName = SDK_PREFIX + TEXT("pam_parse_ch");
 
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_parse_admin"));
-	PubnubClient->SetSecretKey();
 
 	FPubnubGrantTokenPermissions Perms;
 	FChannelGrant Ch;
@@ -424,16 +411,28 @@ bool FPubnubGrantToken_ParseTokenReflectsGrantedChannelPermissions::RunTest(cons
 	const int32 TtlMinutes = 90;
 	const FPubnubGrantTokenResult GrantRes = PubnubClient->GrantToken(TtlMinutes, AuthUser, Perms);
 
-	TestFalse(TEXT("GrantToken should succeed"), GrantRes.Result.Error);
-	TestEqual(TEXT("HTTP 200"), GrantRes.Result.Status, 200);
+	const bool bNoError = TestFalse(TEXT("GrantToken should succeed"), GrantRes.Result.Error);
+	const bool bHttpOk = TestEqual(TEXT("HTTP 200"), GrantRes.Result.Status, 200);
+	const bool bHasToken = TestTrue(TEXT("Granted token should be non-empty"), !GrantRes.Token.IsEmpty());
+	if (!bNoError || !bHttpOk || !bHasToken)
+	{
+		AddError(FString::Printf(TEXT("GrantToken did not return a token. Status=%d Message=%s"),
+			GrantRes.Result.Status, *GrantRes.Result.ErrorMessage));
+		CleanUp();
+		return false;
+	}
 
 	// C-Core parse payload does not expose aud as AuthorizedUuid in the reworked JSON; validate TTL + channel permissions only.
 	const FString Parsed = PubnubClient->ParseToken(GrantRes.Token);
-	TestFalse(TEXT("ParseToken should return non-empty JSON"), Parsed.IsEmpty());
-
 	TSharedPtr<FJsonObject> Root;
-	TestTrue(TEXT("Parsed token should be valid JSON object"),
-		UPubnubJsonUtilities::StringToJsonObject(Parsed, Root) && Root.IsValid());
+	const bool bParsed = TestFalse(TEXT("ParseToken should return non-empty JSON"), Parsed.IsEmpty())
+		&& TestTrue(TEXT("Parsed token should be valid JSON object"),
+			UPubnubJsonUtilities::StringToJsonObject(Parsed, Root) && Root.IsValid());
+	if (!bParsed)
+	{
+		CleanUp();
+		return false;
+	}
 
 	double ParsedTtl = 0.0;
 	TestTrue(TEXT("Parsed token should include TTL"), Root->TryGetNumberField(TEXT("TTL"), ParsedTtl));
@@ -453,14 +452,13 @@ bool FPubnubGrantToken_ParseTokenReflectsGrantedChannelPermissions::RunTest(cons
 
 bool FPubnubGrantToken_ConcurrentSyncWhileAsyncInProgress_ReturnsMutexOrSucceeds::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_grant_mutex_admin"));
-	PubnubClient->SetSecretKey();
 
 	FPubnubGrantTokenPermissions Perms;
 	BuildMinimalChannelWritePermissions(SDK_PREFIX + TEXT("pam_mutex_ch"), Perms);
@@ -505,7 +503,6 @@ bool FPubnubRevokeToken_EmptyToken_ReturnsError::RunTest(const FString& Paramete
 		return false;
 	}
 
-	PubnubClient->SetSecretKey();
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_revoke_empty"));
 
 	const FPubnubOperationResult R = PubnubClient->RevokeToken(FString());
@@ -540,19 +537,14 @@ bool FPubnubRevokeToken_ClientNotInitialized_ReturnsError::RunTest(const FString
 
 bool FPubnubRevokeToken_AfterGrantToken_Succeeds::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_revoke_ok_admin"));
-	PubnubClient->SetSecretKey();
 
 	FPubnubGrantTokenPermissions Perms;
 	BuildMinimalChannelWritePermissions(SDK_PREFIX + TEXT("pam_revoke_ok_ch"), Perms);
@@ -571,14 +563,13 @@ bool FPubnubRevokeToken_AfterGrantToken_Succeeds::RunTest(const FString& Paramet
 
 bool FPubnubRevokeToken_InvalidToken_ReturnsError::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("pam_revoke_bad_admin"));
-	PubnubClient->SetSecretKey();
 
 	const FPubnubOperationResult R = PubnubClient->RevokeToken(TEXT("definitely_not_a_valid_pubnub_v3_token"));
 
@@ -607,23 +598,18 @@ bool FPubnubSetAuthToken_ClientNotInitialized_NoCrash::RunTest(const FString& Pa
 
 bool FPubnubSetAuthToken_EmptyString_ClearsAuthPublishFailsUnderPAM::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	const FString RestrictedUser = SDK_PREFIX + TEXT("pam_clear_auth_user");
 	const FString ChannelName = SDK_PREFIX + TEXT("pam_clear_auth_ch");
 
 	UPubnubClient* Admin = PubnubClient;
 	Admin->SetUserID(SDK_PREFIX + TEXT("pam_clear_auth_admin"));
-	Admin->SetSecretKey();
 
 	FPubnubGrantTokenPermissions Perms;
 	BuildMinimalChannelWritePermissions(ChannelName, Perms);
@@ -650,23 +636,18 @@ bool FPubnubSetAuthToken_EmptyString_ClearsAuthPublishFailsUnderPAM::RunTest(con
 
 bool FPubnubToken_PublishLifecycleWithGrantAndRevoke::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	const FString RestrictedUser = SDK_PREFIX + TEXT("pam_pubcycle_user");
 	const FString ChannelName = SDK_PREFIX + TEXT("pam_pubcycle_ch");
 
 	UPubnubClient* Admin = PubnubClient;
 	Admin->SetUserID(SDK_PREFIX + TEXT("pam_pubcycle_admin"));
-	Admin->SetSecretKey();
 
 	UPubnubClient* Restricted = PubnubSubsystem->CreatePubnubClient(MakePamRestrictedConfig(RestrictedUser));
 	TestNotNull(TEXT("Restricted client exists"), Restricted);
@@ -698,16 +679,12 @@ bool FPubnubToken_PublishLifecycleWithGrantAndRevoke::RunTest(const FString& Par
 // Grant write only on channel A; publishing to B must still fail even after SetAuthToken.
 bool FPubnubToken_PublishWrongChannel_StillDeniedWithLimitedGrant::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	const FString RestrictedUser = SDK_PREFIX + TEXT("pam_wrongch_user");
 	const FString AllowedChannel = SDK_PREFIX + TEXT("pam_wrongch_allowed");
@@ -715,7 +692,6 @@ bool FPubnubToken_PublishWrongChannel_StillDeniedWithLimitedGrant::RunTest(const
 
 	UPubnubClient* Admin = PubnubClient;
 	Admin->SetUserID(SDK_PREFIX + TEXT("pam_wrongch_admin"));
-	Admin->SetSecretKey();
 
 	FPubnubGrantTokenPermissions Perms;
 	BuildMinimalChannelWritePermissions(AllowedChannel, Perms);
@@ -742,16 +718,11 @@ bool FPubnubToken_PublishWrongChannel_StillDeniedWithLimitedGrant::RunTest(const
 // A second client, without a secret key, uses that token for both list calls.
 bool FPubnubToken_CategoryGrantListsAllMetadata::RunTest(const FString& Parameters)
 {
-	if (!InitTestWithPAM())
+	if (!InitTestWithPAM(true))
 	{
 		AddError(TEXT("InitTestWithPAM failed"));
 		return false;
 	}
-
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 
 	const FString RestrictedUser = SDK_PREFIX + TEXT("pam_listall_user");
 	const FString ListedUser = SDK_PREFIX + TEXT("pam_listall_meta_user");
@@ -761,7 +732,6 @@ bool FPubnubToken_CategoryGrantListsAllMetadata::RunTest(const FString& Paramete
 
 	UPubnubClient* Admin = PubnubClient;
 	Admin->SetUserID(SDK_PREFIX + TEXT("pam_listall_admin"));
-	Admin->SetSecretKey();
 
 	FPubnubUserInputData UserInput;
 	UserInput.UserName = TEXT("ListAllUser");

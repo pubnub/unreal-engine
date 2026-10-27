@@ -64,15 +64,15 @@ void ASample_Presence::ListUsersFromChannelSample()
 }
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-void ASample_Presence::OnListUsersFromChannelResponse_Simple(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data)
+void ASample_Presence::OnListUsersFromChannelResponse_Simple(FPubnubListUsersFromChannelResult Result)
 {
-	if(Result.Error)
+	if(Result.Result.Error)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Data.Occupancy);
+		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Result.TotalOccupancy);
 	}
 }
 
@@ -102,19 +102,22 @@ void ASample_Presence::ListUsersFromChannelWithSettingsSample()
 }
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-void ASample_Presence::OnListUsersFromChannelResponse_WithSettings(FPubnubOperationResult Result, FPubnubListUsersFromChannelWrapper Data)
+void ASample_Presence::OnListUsersFromChannelResponse_WithSettings(FPubnubListUsersFromChannelResult Result)
 {
-	if(Result.Error)
+	if(Result.Result.Error)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Total occupancy: %d"), Data.Occupancy);
+		UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Total occupancy: %d"), Result.TotalOccupancy);
 		//List all users with theirs states
-		for (auto const& [UserID, UserState] : Data.UsersState)
+		for (const TPair<FString, FPubnubUsersFromChannel>& ChannelEntry : Result.Channels)
 		{
-			UE_LOG(LogTemp, Log, TEXT("UserID: %s, User State: %s"), *UserID, *UserState);
+			for (const FPubnubUserFromChannel& User : ChannelEntry.Value.Users)
+			{
+				UE_LOG(LogTemp, Log, TEXT("Channel: %s, UserID: %s, User State: %s"), *ChannelEntry.Key, *User.UserID, *User.State);
+			}
 		}
 	}
 }
@@ -131,15 +134,15 @@ void ASample_Presence::ListUsersFromChannelWithLambdaSample()
 
 	// Bind lambda to response delegate
 	FOnPubnubListUsersFromChannelResponseNative OnListUsersFromChannelResponse;
-	OnListUsersFromChannelResponse.BindLambda([](const FPubnubOperationResult& Result, const FPubnubListUsersFromChannelWrapper& Data)
+	OnListUsersFromChannelResponse.BindLambda([](const FPubnubListUsersFromChannelResult& Result)
 	{
-		if(Result.Error)
+		if(Result.Result.Error)
 		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+			UE_LOG(LogTemp, Error, TEXT("Failed to list users from channel. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Data.Occupancy);
+			UE_LOG(LogTemp, Log, TEXT("Users successfully listed from channel. Occupancy: %d"), Result.TotalOccupancy);
 		}
 	});
 	
@@ -253,7 +256,6 @@ void ASample_Presence::SetStateWithSettingsSample()
 	// Create additional settings
 	FPubnubSetStateSettings Settings;
 	Settings.ChannelGroup = TEXT("all-presence-channels");
-	Settings.UserID = TEXT("Player_005");
 	
 	PubnubClient->SetStateAsync(Channel, StateJson, Settings);
 }
@@ -345,15 +347,16 @@ void ASample_Presence::GetStateSample()
 }
 
 // ACTION REQUIRED: Replace ASample_Presence with name of your Actor class
-void ASample_Presence::OnGetStateResponse_Simple(FPubnubOperationResult Result, FString StateResponse)
+void ASample_Presence::OnGetStateResponse_Simple(FPubnubGetStateResult Result)
 {
-	if(Result.Error)
+	if(Result.Result.Error)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to get state. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+		UE_LOG(LogTemp, Error, TEXT("Failed to get state. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Successfully got state: %s"), *StateResponse);
+		const FString* State = Result.States.Find(TEXT("presence-channel"));
+		UE_LOG(LogTemp, Log, TEXT("Successfully got state: %s"), State ? **State : TEXT(""));
 	}
 }
 
@@ -370,15 +373,16 @@ void ASample_Presence::GetStateWithLambdaSample()
 
 	// Bind lambda to response delegate
 	FOnPubnubGetStateResponseNative OnGetStateResponse;
-	OnGetStateResponse.BindLambda([](const FPubnubOperationResult& Result, FString StateResponse)
+	OnGetStateResponse.BindLambda([](const FPubnubGetStateResult& Result)
 	{
-		if(Result.Error)
+		if(Result.Result.Error)
 		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get state. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+			UE_LOG(LogTemp, Error, TEXT("Failed to get state. Status: %d, Reason: %s"), Result.Result.Status, *Result.Result.ErrorMessage);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("Successfully got state: %s"), *StateResponse);
+			const FString* State = Result.States.Find(TEXT("presence-channel"));
+			UE_LOG(LogTemp, Log, TEXT("Successfully got state: %s"), State ? **State : TEXT(""));
 		}
 	});
 	

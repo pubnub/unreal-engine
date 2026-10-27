@@ -51,6 +51,31 @@ namespace PubnubChannelMetadataTestsPrivate
 		}
 		return nullptr;
 	}
+
+	// PubNub App Context reads are eventually consistent. A get issued immediately
+	// after set-following-delete can still observe the removal for about a second.
+	FPubnubChannelMetadataResult GetChannelMetadataAfterRecreate(UPubnubClient* Client, const FString& ChannelId, const FString& ExpectedName)
+	{
+		FPubnubChannelMetadataResult Result;
+		const double DeadlineSeconds = FPlatformTime::Seconds() + 5.0;
+		for (;;)
+		{
+			Result = Client->GetChannelMetadata(ChannelId);
+			if (!Result.Result.Error && Result.ChannelData.ChannelName == ExpectedName)
+			{
+				return Result;
+			}
+			if (FPlatformTime::Seconds() >= DeadlineSeconds)
+			{
+				return Result;
+			}
+			if (Result.Result.Error && Result.Result.Status != 404)
+			{
+				return Result;
+			}
+			FPlatformProcess::Sleep(0.25f);
+		}
+	}
 }
 
 using namespace PubnubChannelMetadataTestsPrivate;
@@ -89,6 +114,10 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMetadata_AllInputFields
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMetadata_UpdateThenGetReflectsNewValues, FPubnubAutomationTestBase,
 	"Pubnub.Integration.ChannelMetadata.SetChannelMetadata.4Advanced.UpdateOverwritesPreviousName",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubSetChannelMetadata_ForceSetClearsEmptyFields, FPubnubAutomationTestBase,
+	"Pubnub.Integration.ChannelMetadata.SetChannelMetadata.4Advanced.ForceSetClearsEmptyFields",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // ---------------------------------------------------------------------------
@@ -139,10 +168,6 @@ bool FPubnubGetAllChannelMetadata_HappyPath_DefaultParams::RunTest(const FString
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("cmeta_getall_default_caller"));
 
 	const FPubnubGetAllChannelMetadataResult R = PubnubClient->GetAllChannelMetadata();
@@ -166,10 +191,6 @@ bool FPubnubGetAllChannelMetadata_AllOptionalParameters::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData SetInput;
@@ -210,10 +231,6 @@ bool FPubnubGetAllChannelMetadata_FilterFindsCreatedChannel::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -280,10 +297,6 @@ bool FPubnubSetChannelMetadata_HappyPath_RequiredFieldsOnly::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -313,10 +326,6 @@ bool FPubnubSetChannelMetadata_AllInputFieldsAndInclude::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -362,10 +371,6 @@ bool FPubnubSetChannelMetadata_UpdateThenGetReflectsNewValues::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData First;
@@ -381,6 +386,53 @@ bool FPubnubSetChannelMetadata_UpdateThenGetReflectsNewValues::RunTest(const FSt
 	const FPubnubChannelMetadataResult GetR = PubnubClient->GetChannelMetadata(ChannelId);
 	TestFalse(TEXT("GetChannelMetadata should succeed"), GetR.Result.Error);
 	TestEqual(TEXT("Get should return updated ChannelName"), GetR.ChannelData.ChannelName, Second.ChannelName);
+
+	const FPubnubOperationResult RemoveR = PubnubClient->RemoveChannelMetadata(ChannelId);
+	TestFalse(TEXT("RemoveChannelMetadata cleanup should succeed"), RemoveR.Error);
+
+	CleanUp();
+	return true;
+}
+
+// Empty fields with ForceSet send JSON null, which C-Core clears via PUBNUB_CLEAR_VALUE. Unflagged fields stay.
+bool FPubnubSetChannelMetadata_ForceSetClearsEmptyFields::RunTest(const FString& Parameters)
+{
+	const FString ChannelId = SDK_PREFIX + TEXT("cmeta_set_clear_ch");
+	const FString Caller = SDK_PREFIX + TEXT("cmeta_set_clear_caller");
+
+	if (!InitTest())
+	{
+		AddError(TEXT("InitTest failed"));
+		return false;
+	}
+
+	PubnubClient->SetUserID(Caller);
+
+	FPubnubChannelInputData Initial;
+	Initial.ChannelName = TEXT("ClearChannelName");
+	Initial.Description = TEXT("Description that should be cleared");
+	Initial.Custom = TEXT("{\"tier\":\"gold\"}");
+	Initial.Status = TEXT("chmetaClearStatus");
+	Initial.Type = TEXT("chmetaClearType");
+	const FPubnubGetMetadataInclude Include = FPubnubGetMetadataInclude::FromValue(true);
+	TestFalse(TEXT("Initial SetChannelMetadata should succeed"), PubnubClient->SetChannelMetadata(ChannelId, Initial, Include).Result.Error);
+
+	FPubnubChannelInputData ClearDescriptionAndCustom;
+	ClearDescriptionAndCustom.ForceSetDescription = true;
+	ClearDescriptionAndCustom.ForceSetCustom = true;
+	const FPubnubChannelMetadataResult Cleared = PubnubClient->SetChannelMetadata(ChannelId, ClearDescriptionAndCustom, Include);
+	TestFalse(TEXT("ForceSet clear should succeed"), Cleared.Result.Error);
+	TestEqual(TEXT("Cleared response should keep ChannelName"), Cleared.ChannelData.ChannelName, Initial.ChannelName);
+	TestTrue(TEXT("Cleared response Description should be empty"), Cleared.ChannelData.Description.IsEmpty());
+	TestTrue(TEXT("Cleared response Custom should be empty"), Cleared.ChannelData.Custom.IsEmpty());
+
+	const FPubnubChannelMetadataResult GetR = PubnubClient->GetChannelMetadata(ChannelId, Include);
+	TestFalse(TEXT("GetChannelMetadata should succeed"), GetR.Result.Error);
+	TestEqual(TEXT("Get should keep ChannelName"), GetR.ChannelData.ChannelName, Initial.ChannelName);
+	TestEqual(TEXT("Get should keep Status"), GetR.ChannelData.Status, Initial.Status);
+	TestEqual(TEXT("Get should keep Type"), GetR.ChannelData.Type, Initial.Type);
+	TestTrue(TEXT("Get Description should be cleared"), GetR.ChannelData.Description.IsEmpty());
+	TestTrue(TEXT("Get Custom should be cleared"), GetR.ChannelData.Custom.IsEmpty());
 
 	const FPubnubOperationResult RemoveR = PubnubClient->RemoveChannelMetadata(ChannelId);
 	TestFalse(TEXT("RemoveChannelMetadata cleanup should succeed"), RemoveR.Error);
@@ -424,10 +476,6 @@ bool FPubnubGetChannelMetadata_HappyPath_AfterSet::RunTest(const FString& Parame
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -464,10 +512,6 @@ bool FPubnubGetChannelMetadata_AllIncludes_ReturnsCustomStatusType::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -504,10 +548,6 @@ bool FPubnubGetChannelMetadata_UnknownChannel_ReturnsError::RunTest(const FStrin
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("cmeta_get_unknown_caller"));
 
 	const FPubnubChannelMetadataResult R = PubnubClient->GetChannelMetadata(UnknownChannel);
@@ -553,10 +593,6 @@ bool FPubnubRemoveChannelMetadata_HappyPath_ThenGetFails::RunTest(const FString&
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData In;
@@ -586,10 +622,6 @@ bool FPubnubRemoveChannelMetadata_SetAfterRemove_RecreatesMetadata::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	FPubnubChannelInputData First;
@@ -605,7 +637,7 @@ bool FPubnubRemoveChannelMetadata_SetAfterRemove_RecreatesMetadata::RunTest(cons
 	TestFalse(TEXT("SetChannelMetadata after remove should succeed"), SetAgain.Result.Error);
 	TestEqual(TEXT("Set response should carry new name"), SetAgain.ChannelData.ChannelName, Second.ChannelName);
 
-	const FPubnubChannelMetadataResult GetR = PubnubClient->GetChannelMetadata(ChannelId);
+	const FPubnubChannelMetadataResult GetR = GetChannelMetadataAfterRecreate(PubnubClient, ChannelId, Second.ChannelName);
 	TestFalse(TEXT("GetChannelMetadata should succeed after recreate"), GetR.Result.Error);
 	TestEqual(TEXT("Get should return recreated ChannelName"), GetR.ChannelData.ChannelName, Second.ChannelName);
 
