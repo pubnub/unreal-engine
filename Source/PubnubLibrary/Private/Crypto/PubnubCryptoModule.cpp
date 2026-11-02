@@ -32,6 +32,12 @@ namespace
 
 bool UPubnubCryptoModule::InitCryptoModule(const TScriptInterface<IPubnubCryptorInterface>& InDefaultCryptor, const TArray<TScriptInterface<IPubnubCryptorInterface>>& InAdditionalCryptors)
 {
+	if (ClientBorrowCount > 0)
+	{
+		UE_LOG(PubnubLog, Error, TEXT("InitCryptoModule refused. A live client still uses this crypto module."));
+		return false;
+	}
+
 	pubnub_crypto_provider_t* DefaultNative = MaterializeBuiltin(InDefaultCryptor.GetObject());
 	if (!DefaultNative)
 	{
@@ -106,8 +112,30 @@ bool UPubnubCryptoModule::InitCryptoModule(const TScriptInterface<IPubnubCryptor
 
 void UPubnubCryptoModule::BeginDestroy()
 {
-	DestroyCCoreModule();
+	// pubnub_create borrows this pointer for the life of the context. Client BeginDestroy
+	// can run after this one, so leave the module until that client releases it.
+	if (ClientBorrowCount == 0)
+	{
+		DestroyCCoreModule();
+	}
 	Super::BeginDestroy();
+}
+
+void UPubnubCryptoModule::AddClientBorrow()
+{
+	++ClientBorrowCount;
+}
+
+void UPubnubCryptoModule::RemoveClientBorrow()
+{
+	if (ClientBorrowCount > 0)
+	{
+		--ClientBorrowCount;
+	}
+	if (ClientBorrowCount == 0 && HasAnyFlags(RF_BeginDestroyed))
+	{
+		DestroyCCoreModule();
+	}
 }
 
 void UPubnubCryptoModule::DestroyCCoreModule()

@@ -3,6 +3,8 @@
 #include "Logging/PubnubLogManager.h"
 #include "PubnubClient.h"
 
+#include "Async/Async.h"
+
 #include <pubnub/providers/logger.h>
 
 // Bridge structure that embeds the new C-Core `pubnub_logger_provider_t` as its
@@ -13,7 +15,9 @@
 struct FPubnubCCoreLoggerBridge
 {
 	pubnub_logger_provider_t Base;
-	UPubnubLogManager* Manager;
+	// Captured when the bridge is created. The log callback only copies this;
+	// resolving it happens on the game thread.
+	TWeakObjectPtr<UPubnubLogManager> Manager;
 };
 
 static const TArray<FString> FalseCCoreLogPhrases = {
@@ -247,22 +251,6 @@ static FString BuildCCoreLogMessage(const pubnub_log_entry_t* Entry)
 	}
 }
 
-// Single log callback for the new C-Core provider. Dispatched by the C-Core's
-// internal mux, which already enriches the entry with context_id and timestamp_ms.
-static void ForwardCCoreLog(pubnub_logger_provider_t* Self, const pubnub_log_entry_t* Entry)
-{
-	if (!Self || !Entry)
-	{
-		return;
-	}
-
-	FPubnubCCoreLoggerBridge* Bridge = reinterpret_cast<FPubnubCCoreLoggerBridge*>(Self);
-	if (Bridge && Bridge->Manager)
-	{
-		Bridge->Manager->HandleCCoreLog(Entry);
-	}
-}
-
 static FString NormalizeCCoreEmitterID(const char* RawID)
 {
 	const FString Parsed = UTF8_TO_TCHAR(RawID ? RawID : "");
@@ -271,6 +259,76 @@ static FString NormalizeCCoreEmitterID(const char* RawID)
 		return TEXT("PubNub-unknown");
 	}
 	return Parsed.StartsWith(TEXT("PubNub")) ? Parsed : FString::Printf(TEXT("PubNub-%s"), *Parsed);
+}
+
+// Builds an owned message from a borrowed C-Core entry. Every string and value
+// pointer in the entry is valid only for the log callback, so this must finish
+// before that callback returns. Does not touch logger UObjects.
+static bool TryBuildCCoreLogMessage(const pubnub_log_entry_t* Entry, FPubnubLogMessage& OutMessage)
+{
+	if (!Entry)
+	{
+		return false;
+	}
+
+	const FString MessageText = BuildCCoreLogMessage(Entry);
+	if (ShouldCCoreLogBeSkipped(MessageText))
+	{
+		return false;
+	}
+
+	OutMessage.LogLevel = ConvertCCoreLogLevel(Entry->level);
+	OutMessage.Source = EPubnubLogSource::PLS_CCore;
+	OutMessage.Message = MessageText;
+	OutMessage.Callsite = BuildCCoreCallsite(Entry);
+	OutMessage.PubnubInstanceID = NormalizeCCoreEmitterID(Entry->context_id);
+
+	if (Entry->timestamp_ms > 0)
+	{
+		OutMessage.TimestampUtc = FDateTime::FromUnixTimestamp(static_cast<int64>(Entry->timestamp_ms / 1000))
+			+ FTimespan::FromMilliseconds(static_cast<int64>(Entry->timestamp_ms % 1000));
+	}
+	else
+	{
+		OutMessage.TimestampUtc = FDateTime::UtcNow();
+	}
+
+	return true;
+}
+
+// Queues logger delivery. AsyncTask does not run the delegate inline, including
+// when the caller is already the game thread, so this returns while the C-Core
+// context mutex may still be held.
+static void EnqueueLogDispatch(TWeakObjectPtr<UPubnubLogManager> Manager, FPubnubLogMessage&& Message)
+{
+	AsyncTask(ENamedThreads::GameThread, [Manager, Message = MoveTemp(Message)]()
+	{
+		if (UPubnubLogManager* LogManager = Manager.Get())
+		{
+			LogManager->DispatchMessage(Message);
+		}
+	});
+}
+
+// C-Core log callback. The provider header says log() may run on another thread
+// while the per-context mutex is held, and that the callback must only enqueue.
+// The mux stamps context_id and timestamp_ms before this runs.
+static void ForwardCCoreLog(pubnub_logger_provider_t* Self, const pubnub_log_entry_t* Entry)
+{
+	if (!Self || !Entry)
+	{
+		return;
+	}
+
+	const FPubnubCCoreLoggerBridge* Bridge = reinterpret_cast<const FPubnubCCoreLoggerBridge*>(Self);
+
+	FPubnubLogMessage Message;
+	if (!TryBuildCCoreLogMessage(Entry, Message))
+	{
+		return;
+	}
+
+	EnqueueLogDispatch(Bridge->Manager, MoveTemp(Message));
 }
 
 void UPubnubLogManager::ReleaseCCoreLoggerBridge()
@@ -407,35 +465,13 @@ void UPubnubLogManager::DispatchMessage(const FPubnubLogMessage& Message)
 
 void UPubnubLogManager::HandleCCoreLog(const pubnub_log_entry_t* Entry)
 {
-	if (!Entry)
+	FPubnubLogMessage Message;
+	if (!TryBuildCCoreLogMessage(Entry, Message))
 	{
 		return;
 	}
 
-	const FString MessageText = BuildCCoreLogMessage(Entry);
-	if (ShouldCCoreLogBeSkipped(MessageText))
-	{
-		return;
-	}
-
-	FPubnubLogMessage PubnubLogMessage;
-	PubnubLogMessage.LogLevel = ConvertCCoreLogLevel(Entry->level);
-	PubnubLogMessage.Source = EPubnubLogSource::PLS_CCore;
-	PubnubLogMessage.Message = MessageText;
-	PubnubLogMessage.Callsite = BuildCCoreCallsite(Entry);
-	PubnubLogMessage.PubnubInstanceID = NormalizeCCoreEmitterID(Entry->context_id);
-
-	if (Entry->timestamp_ms > 0)
-	{
-		PubnubLogMessage.TimestampUtc = FDateTime::FromUnixTimestamp(static_cast<int64>(Entry->timestamp_ms / 1000))
-			+ FTimespan::FromMilliseconds(static_cast<int64>(Entry->timestamp_ms % 1000));
-	}
-	else
-	{
-		PubnubLogMessage.TimestampUtc = FDateTime::UtcNow();
-	}
-
-	DispatchMessage(PubnubLogMessage);
+	EnqueueLogDispatch(this, MoveTemp(Message));
 }
 
 pubnub_logger_provider_t* UPubnubLogManager::GetCCoreLoggerProvider()

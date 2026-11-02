@@ -32,6 +32,12 @@ public:
 	void SetUESdkEmitterID(const FString& InEmitterID);
 
 	void Log(EPubnubLogLevel Level, EPubnubLogSource Source, const FString& Message, const FString& Callsite = TEXT(""));
+
+	/**
+	 * Copies a C-Core log entry and dispatches it on the game thread.
+	 * The entry and every pointer it borrows are valid only for this call.
+	 * Logger UObjects are not touched until the game thread runs.
+	 */
 	void HandleCCoreLog(const pubnub_log_entry_t* Entry);
 
 	pubnub_logger_provider_t* GetCCoreLoggerProvider();

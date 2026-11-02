@@ -2525,6 +2525,7 @@ private:
 	void OnCCoreSubscribeEventReceived(const pubnub_subscribe_event_t* Event);
 	void CleanUpSubscriptions();
 	void DeinitializeClient();
+	void ReleaseBorrowedCryptoModule();
 	
 	FPubnubOperationResult SetUserID_priv(const FString &UserID);
 	FString GetUserID_priv();
@@ -2605,6 +2606,9 @@ private:
 	FCriticalSection SubscriptionsMutex;
 	
 	pubnub_context_t* pubnub_context = nullptr;
+
+	/** True while this client is using CryptoModule, until the client context is destroyed. */
+	bool bBorrowedCryptoModule = false;
 	
 	//Handle returned by pubnub_add_listener for the context-global subscribe listener
 	//(status + data events). Equal to UINT16_MAX (= PUBNUB_LISTENER_HANDLE_INVALID) while not registered.

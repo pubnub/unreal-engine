@@ -1979,12 +1979,18 @@ bool UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 			LoggerManager = nullptr;
 			return false;
 		}
+
+		// Borrow before pubnub_create so a re-entrant InitCryptoModule cannot free the pointer
+		// the new context is about to store.
+		InConfig.CryptoModule->AddClientBorrow();
+		bBorrowedCryptoModule = true;
 	}
 
 	pubnub_context = pubnub_create(&config);
 	
 	if (!pubnub_context)
 	{
+		ReleaseBorrowedCryptoModule();
 		delete InFlightFuture;
 		InFlightFuture = nullptr;
 		DefaultLogger = nullptr;
@@ -1998,6 +2004,7 @@ bool UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 		PUBNUB_LOG_FUNCTION_ERROR(TEXT("failed to register subscription listener. Aborting client initialization."));
 		pubnub_destroy(pubnub_context);
 		pubnub_context = nullptr;
+		ReleaseBorrowedCryptoModule();
 		delete InFlightFuture;
 		InFlightFuture = nullptr;
 		DefaultLogger = nullptr;
@@ -2257,6 +2264,20 @@ void UPubnubClient::CleanUpSubscriptions()
 	DestroySubscriptionMap(ChannelGroupSubscriptions);
 }
 
+void UPubnubClient::ReleaseBorrowedCryptoModule()
+{
+	if (!bBorrowedCryptoModule)
+	{
+		return;
+	}
+
+	bBorrowedCryptoModule = false;
+	if (PubnubConfig.CryptoModule)
+	{
+		PubnubConfig.CryptoModule->RemoveClientBorrow();
+	}
+}
+
 void UPubnubClient::DeinitializeClient()
 {
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
@@ -2303,9 +2324,12 @@ void UPubnubClient::DeinitializeClient()
 
 		//Destroy the C-Core context. The logger bridge must still be alive:
 		//pubnub_deinit logs "PubNub context releasing" through it.
+		//The crypto module stays borrowed until pubnub_destroy returns.
 		pubnub_destroy(pubnub_context);
 		pubnub_context = nullptr;
 	}
+
+	ReleaseBorrowedCryptoModule();
 
 	if (LoggerManager)
 	{
