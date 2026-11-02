@@ -340,7 +340,8 @@ bool FPubnubPublishMessage_HappyPath_RequiredParamsOnly::RunTest(const FString& 
 	return true;
 }
 
-// Full test of optional PublishSettings: MetaData, CustomMessageType, Ttl, StoreInHistory, PublishMethod.
+// Full test of optional PublishSettings: MetaData, CustomMessageType, Ttl, StoreInHistory, PublishMethod, Compress.
+// POST plus Compress=Yes is the combination C-Core actually gzips. GET ignores compress.
 // Verifies returned PublishedMessage reflects MetaData and CustomMessageType; success and basic data correctness.
 bool FPubnubPublishMessage_FullPublishSettings_ReturnsCorrectData::RunTest(const FString& Parameters)
 {
@@ -363,7 +364,8 @@ bool FPubnubPublishMessage_FullPublishSettings_ReturnsCorrectData::RunTest(const
 	Settings.CustomMessageType = TestCustomMessageType;
 	Settings.Ttl = 24;
 	Settings.StoreInHistory = true;
-	Settings.PublishMethod = EPubnubPublishMethod::PPM_SendViaGET;
+	Settings.PublishMethod = EPubnubPublishMethod::PPM_SendViaPOST;
+	Settings.Compress = EPubnubPublishCompress::PPC_Yes;
 
 	FPubnubPublishMessageResult Result = PubnubClient->PublishMessage(TestChannel, TestMessage, Settings);
 

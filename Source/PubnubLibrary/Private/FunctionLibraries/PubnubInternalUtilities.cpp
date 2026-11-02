@@ -52,11 +52,37 @@ FString UPubnubInternalUtilities::PubnubStringViewToString(pubnub_string_view_t 
 	return FString(Converter.Length(), Converter.Get());
 }
 
+static pubnub_publish_method_t ToCCorePublishMethod(EPubnubPublishMethod Method)
+{
+	switch (Method)
+	{
+	case EPubnubPublishMethod::PPM_SendViaPOST:
+		return PUBNUB_PUBLISH_METHOD_POST;
+	case EPubnubPublishMethod::PPM_SendViaGET:
+	default:
+		return PUBNUB_PUBLISH_METHOD_GET;
+	}
+}
+
+static pubnub_publish_compress_t ToCCorePublishCompress(EPubnubPublishCompress Compress)
+{
+	switch (Compress)
+	{
+	case EPubnubPublishCompress::PPC_Yes:
+		return PUBNUB_PUBLISH_COMPRESS_YES;
+	case EPubnubPublishCompress::PPC_No:
+	default:
+		return PUBNUB_PUBLISH_COMPRESS_NO;
+	}
+}
+
 void UPubnubInternalUtilities::PublishUESettingsToPubnubPublishOptions(const FPubnubPublishSettings &PublishSettings, pubnub_publish_opts_t& PubnubPublishOptions)
 {
-	PublishSettings.StoreInHistory ? PubnubPublishOptions.store = PUBNUB_PUBLISH_STORE_YES : PubnubPublishOptions.store = PUBNUB_PUBLISH_STORE_NO;
+	PubnubPublishOptions.store = PublishSettings.StoreInHistory ? PUBNUB_PUBLISH_STORE_YES : PUBNUB_PUBLISH_STORE_NO;
 	PubnubPublishOptions.ttl = PublishSettings.Ttl;
-	PubnubPublishOptions.method = static_cast<pubnub_publish_method_t>(static_cast<uint8>(PublishSettings.PublishMethod));
+	PubnubPublishOptions.method = ToCCorePublishMethod(PublishSettings.PublishMethod);
+	// C-Core ignores compress on GET and does not promote GET to POST.
+	PubnubPublishOptions.compress = ToCCorePublishCompress(PublishSettings.Compress);
 }
 
 FString UPubnubInternalUtilities::PubnubJsonValueToFString(pubnub_serialization_provider_t* Serial, const pubnub_json_value_t* Value)

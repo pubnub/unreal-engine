@@ -101,16 +101,23 @@ struct FPubnubPublishSettings
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StoreInHistory = true;
 	//An optional JSON object, used to send additional (meta) data about the message, which can be used for stream filtering.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MetaData = "";
-	//Defines the method by which publish transaction will be performed. Can be HTTP GET or POST. If using POST, content can be GZIP compressed.
+	/**
+	 * HTTP method for this publish.
+	 * GET puts the message in the URL path and cannot be compressed.
+	 * POST puts the message in the request body. Set this to POST to compress.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishMethod PublishMethod = EPubnubPublishMethod::PPM_SendViaGET;
+	/**
+	 * Gzip preference for the request body. No sends the body uncompressed. Yes asks for gzip.
+	 * C-Core applies this only when PublishMethod is POST. Yes does not switch a GET publish to POST.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishCompress Compress = EPubnubPublishCompress::PPC_No;
 	//For how many hours message should be kept and available with history API. If 0, server default will be used.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Ttl = 0;
 	/** User-specified message type.
 	Important: String limited by **3**-**50** case-sensitive alphanumeric characters with only `-` and `_` special characters allowed.
 	*/
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString CustomMessageType = "";
-	//When compression applies, the body is gzip-encoded. Only requests that carry a body can be compressed.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Compress = false;
 };
 
 USTRUCT(BlueprintType)
