@@ -7,12 +7,14 @@
 #include "FunctionLibraries/PubnubInternalUtilities.h"
 #include "PubnubInternalMacros.h"
 #include "PubnubInternalStructLibrary.h"
+#include "Misc/ScopeLock.h"
 #include "PubNub.h"
 
 namespace
 {
 	struct FDeferredSubscriptionDestroy
 	{
+		FCriticalSection* Mutex = nullptr;
 		pubnub_context_t* Context = nullptr;
 		pubnub_subscription_t Subscription = nullptr;
 		pubnub_subscription_set_t SubscriptionSet = nullptr;
@@ -20,6 +22,8 @@ namespace
 
 	TArray<FDeferredSubscriptionDestroy> DeferredSubscriptionDestroys;
 	FDelegateHandle PostGarbageCollectHandle;
+
+	void DestroySubscriptionHandles(FCriticalSection* Mutex, pubnub_subscription_t Subscription, pubnub_subscription_set_t SubscriptionSet);
 
 	void DrainDeferredSubscriptionDestroys()
 	{
@@ -31,18 +35,35 @@ namespace
 		TArray<FDeferredSubscriptionDestroy> Pending = MoveTemp(DeferredSubscriptionDestroys);
 		for (const FDeferredSubscriptionDestroy& PendingDestroy : Pending)
 		{
-			if (PendingDestroy.Subscription)
-			{
-				pubnub_subscription_destroy(PendingDestroy.Subscription);
-			}
-			if (PendingDestroy.SubscriptionSet)
-			{
-				pubnub_subscription_set_destroy(PendingDestroy.SubscriptionSet);
-			}
+			DestroySubscriptionHandles(PendingDestroy.Mutex, PendingDestroy.Subscription, PendingDestroy.SubscriptionSet);
 		}
 	}
 
-	void DestroySubscriptionNowOrAfterGC(bool bFromBeginDestroy, pubnub_context_t* Context, pubnub_subscription_t Subscription, pubnub_subscription_set_t SubscriptionSet)
+	void DestroySubscriptionHandles(FCriticalSection* Mutex, pubnub_subscription_t Subscription, pubnub_subscription_set_t SubscriptionSet)
+	{
+		auto Destroy = [Subscription, SubscriptionSet]()
+		{
+			if (Subscription)
+			{
+				pubnub_subscription_destroy(Subscription);
+			}
+			if (SubscriptionSet)
+			{
+				pubnub_subscription_set_destroy(SubscriptionSet);
+			}
+		};
+
+		// The calls thread holds this lock for the whole subscribe or unsubscribe call.
+		if (Mutex)
+		{
+			FScopeLock Lock(Mutex);
+			Destroy();
+			return;
+		}
+		Destroy();
+	}
+
+	void DestroySubscriptionNowOrAfterGC(bool bFromBeginDestroy, FCriticalSection* Mutex, pubnub_context_t* Context, pubnub_subscription_t Subscription, pubnub_subscription_set_t SubscriptionSet)
 	{
 		if (!Context || (!Subscription && !SubscriptionSet))
 		{
@@ -51,14 +72,7 @@ namespace
 
 		if (!bFromBeginDestroy)
 		{
-			if (Subscription)
-			{
-				pubnub_subscription_destroy(Subscription);
-			}
-			else
-			{
-				pubnub_subscription_set_destroy(SubscriptionSet);
-			}
+			DestroySubscriptionHandles(Mutex, Subscription, SubscriptionSet);
 			return;
 		}
 
@@ -68,10 +82,29 @@ namespace
 		}
 
 		FDeferredSubscriptionDestroy PendingDestroy;
+		PendingDestroy.Mutex = Mutex;
 		PendingDestroy.Context = Context;
 		PendingDestroy.Subscription = Subscription;
 		PendingDestroy.SubscriptionSet = SubscriptionSet;
 		DeferredSubscriptionDestroys.Add(PendingDestroy);
+	}
+
+	void ReleaseEntityListenerUserData(pubnub_context_t* Context, void*& UserData)
+	{
+		if (!UserData)
+		{
+			return;
+		}
+
+		if (Context)
+		{
+			UPubnubInternalUtilities::RetireEntityListenerUserData(Context, UserData);
+		}
+		else
+		{
+			UPubnubInternalUtilities::DestroyEntityListenerUserData(UserData);
+		}
+		UserData = nullptr;
 	}
 }
 
@@ -149,7 +182,7 @@ FPubnubOperationResult UPubnubSubscription::Subscribe(FPubnubSubscriptionCursor 
 
 	if (!CCoreSubscription)
 	{
-		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscription is invalid.")});
+		return FPubnubOperationResult({0, true, TEXT("Subscription is not initialized.")});
 	}
 
 	if (bIsSubscribed)
@@ -177,7 +210,7 @@ void UPubnubSubscription::SubscribeAsync(FOnPubnubSubscribeOperationResponseNati
 
 	if (!CCoreSubscription)
 	{
-		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscription is invalid."));
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Subscription is not initialized."));
 		return;
 	}
 
@@ -201,7 +234,7 @@ FPubnubOperationResult UPubnubSubscription::Unsubscribe()
 
 	if (!CCoreSubscription)
 	{
-		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscription is invalid.")});
+		return FPubnubOperationResult({0, true, TEXT("Subscription is not initialized.")});
 	}
 
 	if (!bIsSubscribed)
@@ -229,7 +262,7 @@ void UPubnubSubscription::UnsubscribeAsync(FOnPubnubSubscribeOperationResponseNa
 
 	if (!CCoreSubscription)
 	{
-		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscription is invalid."));
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Subscription is not initialized."));
 		return;
 	}
 
@@ -252,7 +285,7 @@ UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription
 
 	if (!CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: internal C-Core subscription is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: internal subscription is invalid."));
 		return nullptr;
 	}
 
@@ -264,7 +297,7 @@ UPubnubSubscriptionSet* UPubnubSubscription::AddSubscription(UPubnubSubscription
 
 	if (!Subscription->CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Provided Subscription's internal subscription is invalid."));
 		return nullptr;
 	}
 
@@ -309,7 +342,7 @@ void UPubnubSubscription::InitWithCCoreSubscription(UPubnubClient* InPubnubClien
 	}
 	if (!InCCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, InCCoreSubscription is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription, the subscription handle is invalid."));
 		return;
 	}
 
@@ -353,29 +386,37 @@ void UPubnubSubscription::CleanUpSubscription()
 		return;
 	}
 
+	// The public deinit delegate runs before the calls thread stops. Handle teardown is a direct call after that.
+	if (PubnubClient && PubnubClient->bDeferSubscriptionCleanup && !HasAnyFlags(RF_BeginDestroyed))
+	{
+		return;
+	}
+
 	IsInitialized = false;
 	bIsSubscribed = false;
 	UPubnubInternalUtilities::ClearSubscriptionDelegates(this);
 
-	if (IsValid(PubnubClient))
+	// IsValid is already false during client destruction, while the context is still live.
+	pubnub_context_t* Context = PubnubClient ? PubnubClient->pubnub_context : nullptr;
+
+	if (Context)
 	{
 		RemoveRegisteredListeners();
 	}
 
-	if (IsValid(PubnubClient) && CCoreSubscription)
+	if (PubnubClient && CCoreSubscription)
 	{
 		PubnubClient->UnregisterManagedSubscription(CCoreSubscription);
 	}
 
-	// BeginDestroy runs inside garbage collection. Destroy the C-Core handle after GC instead.
-	if (CCoreSubscription && IsValid(PubnubClient))
+	// BeginDestroy runs inside garbage collection. Destroy the handle after GC instead.
+	if (CCoreSubscription && Context)
 	{
-		DestroySubscriptionNowOrAfterGC(HasAnyFlags(RF_BeginDestroyed), PubnubClient->pubnub_context, CCoreSubscription, nullptr);
+		DestroySubscriptionNowOrAfterGC(HasAnyFlags(RF_BeginDestroyed), PubnubClient ? &PubnubClient->SubscriptionsMutex : nullptr, Context, CCoreSubscription, nullptr);
 	}
 	CCoreSubscription = nullptr;
 
-	UPubnubInternalUtilities::DestroyEntityListenerUserData(ListenerUserData);
-	ListenerUserData = nullptr;
+	ReleaseEntityListenerUserData(Context, ListenerUserData);
 
 	if (PubnubClient)
 	{
@@ -389,7 +430,7 @@ FPubnubOperationResult UPubnubSubscriptionSet::Subscribe(FPubnubSubscriptionCurs
 
 	if (!CCoreSubscriptionSet)
 	{
-		return FPubnubOperationResult({0, true, TEXT("CCoreSubscriptionSet is invalid.")});
+		return FPubnubOperationResult({0, true, TEXT("Subscription set is not initialized.")});
 	}
 
 	if (bIsSubscribed)
@@ -417,7 +458,7 @@ void UPubnubSubscriptionSet::SubscribeAsync(FOnPubnubSubscribeOperationResponseN
 
 	if (!CCoreSubscriptionSet)
 	{
-		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscriptionSet is invalid."));
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Subscription set is not initialized."));
 		return;
 	}
 
@@ -441,7 +482,7 @@ FPubnubOperationResult UPubnubSubscriptionSet::Unsubscribe()
 
 	if (!CCoreSubscriptionSet)
 	{
-		return FPubnubOperationResult({0, true, TEXT("Internal CCoreSubscriptionSet is invalid.")});
+		return FPubnubOperationResult({0, true, TEXT("Subscription set is not initialized.")});
 	}
 
 	if (!bIsSubscribed)
@@ -469,7 +510,7 @@ void UPubnubSubscriptionSet::UnsubscribeAsync(FOnPubnubSubscribeOperationRespons
 
 	if (!CCoreSubscriptionSet)
 	{
-		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Internal CCoreSubscriptionSet is invalid."));
+		UPubnubUtilities::CallPubnubDelegateWithInvalidArgumentResult(NativeCallback, TEXT("Subscription set is not initialized."));
 		return;
 	}
 
@@ -492,13 +533,13 @@ void UPubnubSubscriptionSet::AddSubscription(UPubnubSubscription* Subscription)
 
 	if (!CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: internal C-Core subscription set is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: internal subscription set is invalid."));
 		return;
 	}
 
 	if (!Subscription || !Subscription->CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscription]: Provided Subscription's internal subscription is invalid."));
 		return;
 	}
 
@@ -522,13 +563,13 @@ void UPubnubSubscriptionSet::RemoveSubscription(UPubnubSubscription* Subscriptio
 
 	if (!CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: internal C-Core subscription set is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: internal subscription set is invalid."));
 		return;
 	}
 
 	if (!Subscription || !Subscription->CCoreSubscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: Provided Subscription's internal C-Core subscription is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscription]: Provided Subscription's internal subscription is invalid."));
 		return;
 	}
 
@@ -552,7 +593,7 @@ void UPubnubSubscriptionSet::AddSubscriptionSet(UPubnubSubscriptionSet* Subscrip
 
 	if (!CCoreSubscriptionSet || !SubscriptionSet || !SubscriptionSet->CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: internal C-Core subscription set is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[AddSubscriptionSet]: internal subscription set is invalid."));
 		return;
 	}
 
@@ -579,7 +620,7 @@ void UPubnubSubscriptionSet::RemoveSubscriptionSet(UPubnubSubscriptionSet* Subsc
 
 	if (!CCoreSubscriptionSet || !SubscriptionSet || !SubscriptionSet->CCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: internal C-Core subscription set is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("[RemoveSubscriptionSet]: internal subscription set is invalid."));
 		return;
 	}
 
@@ -696,7 +737,7 @@ void UPubnubSubscriptionSet::InitWithCCoreSubscriptionSet(UPubnubClient* InPubnu
 	}
 	if (!InCCoreSubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Can't initialize SubscriptionSet, InCCoreSubscriptionSet is invalid."));
+		UE_LOG(PubnubLog, Error, TEXT("Can't initialize subscription set, the subscription set handle is invalid."));
 		return;
 	}
 
@@ -740,29 +781,37 @@ void UPubnubSubscriptionSet::CleanUpSubscription()
 		return;
 	}
 
+	// The public deinit delegate runs before the calls thread stops. Handle teardown is a direct call after that.
+	if (PubnubClient && PubnubClient->bDeferSubscriptionCleanup && !HasAnyFlags(RF_BeginDestroyed))
+	{
+		return;
+	}
+
 	IsInitialized = false;
 	bIsSubscribed = false;
 	UPubnubInternalUtilities::ClearSubscriptionDelegates(this);
 
-	if (IsValid(PubnubClient))
+	// IsValid is already false during client destruction, while the context is still live.
+	pubnub_context_t* Context = PubnubClient ? PubnubClient->pubnub_context : nullptr;
+
+	if (Context)
 	{
 		RemoveRegisteredListeners();
 	}
 
-	if (IsValid(PubnubClient) && CCoreSubscriptionSet)
+	if (PubnubClient && CCoreSubscriptionSet)
 	{
 		PubnubClient->UnregisterManagedSubscriptionSet(CCoreSubscriptionSet);
 	}
 
-	// BeginDestroy runs inside garbage collection. Destroy the C-Core handle after GC instead.
-	if (CCoreSubscriptionSet && IsValid(PubnubClient))
+	// BeginDestroy runs inside garbage collection. Destroy the handle after GC instead.
+	if (CCoreSubscriptionSet && Context)
 	{
-		DestroySubscriptionNowOrAfterGC(HasAnyFlags(RF_BeginDestroyed), PubnubClient->pubnub_context, nullptr, CCoreSubscriptionSet);
+		DestroySubscriptionNowOrAfterGC(HasAnyFlags(RF_BeginDestroyed), PubnubClient ? &PubnubClient->SubscriptionsMutex : nullptr, Context, nullptr, CCoreSubscriptionSet);
 	}
 	CCoreSubscriptionSet = nullptr;
 
-	UPubnubInternalUtilities::DestroyEntityListenerUserData(ListenerUserData);
-	ListenerUserData = nullptr;
+	ReleaseEntityListenerUserData(Context, ListenerUserData);
 
 	if (PubnubClient)
 	{

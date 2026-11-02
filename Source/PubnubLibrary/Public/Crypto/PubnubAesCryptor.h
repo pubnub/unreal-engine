@@ -11,7 +11,7 @@ struct pubnub_crypto_provider;
 /**
  * AES-256-CBC cryptor (identifier "ACRH").
  *
- * Wraps pubnub_cryptor_aes_cbc_create. The cipher key is hashed with SHA-256.
+ * The cipher key is hashed with SHA-256.
  * Each encrypt uses a random 16-byte IV, returned as metadata.
  * Call SetCipherKey before Encrypt, Decrypt, or UPubnubCryptoModule::InitCryptoModule.
  */
@@ -31,7 +31,7 @@ public:
 
 	virtual void BeginDestroy() override;
 
-	/** Borrowed C-Core cryptor. Null until the key has been applied. */
+	/** Native cryptor. Null until the key has been applied. */
 	pubnub_crypto_provider* GetNativeCryptor();
 
 	/** Stops further key changes. Called when a crypto module takes this cryptor. */

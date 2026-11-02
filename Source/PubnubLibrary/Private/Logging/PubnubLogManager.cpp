@@ -299,7 +299,7 @@ static bool TryBuildCCoreLogMessage(const pubnub_log_entry_t* Entry, FPubnubLogM
 // Queues logger delivery. AsyncTask does not run the delegate inline, including
 // when the caller is already the game thread, so this returns while the C-Core
 // context mutex may still be held.
-static void EnqueueLogDispatch(TWeakObjectPtr<UPubnubLogManager> Manager, FPubnubLogMessage&& Message)
+void UPubnubLogManager::EnqueueLogDispatch(TWeakObjectPtr<UPubnubLogManager> Manager, FPubnubLogMessage&& Message)
 {
 	AsyncTask(ENamedThreads::GameThread, [Manager, Message = MoveTemp(Message)]()
 	{
@@ -313,7 +313,7 @@ static void EnqueueLogDispatch(TWeakObjectPtr<UPubnubLogManager> Manager, FPubnu
 // C-Core log callback. The provider header says log() may run on another thread
 // while the per-context mutex is held, and that the callback must only enqueue.
 // The mux stamps context_id and timestamp_ms before this runs.
-static void ForwardCCoreLog(pubnub_logger_provider_t* Self, const pubnub_log_entry_t* Entry)
+void UPubnubLogManager::ForwardCCoreLog(pubnub_logger_provider_t* Self, const pubnub_log_entry_t* Entry)
 {
 	if (!Self || !Entry)
 	{
@@ -479,7 +479,7 @@ pubnub_logger_provider_t* UPubnubLogManager::GetCCoreLoggerProvider()
 	if (!CCoreLoggerBridge)
 	{
 		CCoreLoggerBridge = new FPubnubCCoreLoggerBridge();
-		CCoreLoggerBridge->Base.log = &ForwardCCoreLog;
+		CCoreLoggerBridge->Base.log = &UPubnubLogManager::ForwardCCoreLog;
 		CCoreLoggerBridge->Base.set_level = nullptr;
 		CCoreLoggerBridge->Manager = this;
 	}

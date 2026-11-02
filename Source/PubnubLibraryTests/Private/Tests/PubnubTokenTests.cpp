@@ -307,7 +307,7 @@ bool FPubnubGrantToken_WithoutSetSecretKey_ReturnsError::RunTest(const FString& 
 
 	const FPubnubGrantTokenResult R = Restricted->GrantToken(60, SDK_PREFIX + TEXT("pam_target_user"), Perms);
 
-	TestTrue(TEXT("GrantToken without SetSecretKey should fail against PAM"), R.Result.Error);
+	TestTrue(TEXT("GrantToken without a secret key should fail against PAM"), R.Result.Error);
 	TestTrue(TEXT("Token should be empty on failure"), R.Token.IsEmpty());
 
 	CleanUp();

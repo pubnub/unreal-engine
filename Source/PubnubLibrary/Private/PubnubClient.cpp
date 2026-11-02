@@ -1972,7 +1972,7 @@ bool UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 		config.crypto_module = InConfig.CryptoModule->GetCCoreModule();
 		if (!config.crypto_module)
 		{
-			UE_LOG(PubnubLog, Error, TEXT("CryptoModule is set but InitCryptoModule has not created a C-Core module."));
+			UE_LOG(PubnubLog, Error, TEXT("CryptoModule is set but InitCryptoModule has not created a module."));
 			delete InFlightFuture;
 			InFlightFuture = nullptr;
 			DefaultLogger = nullptr;
@@ -1995,7 +1995,7 @@ bool UPubnubClient::InitWithConfig(UPubnubSubsystem* InPubnubSubsystem, FPubnubC
 		InFlightFuture = nullptr;
 		DefaultLogger = nullptr;
 		LoggerManager = nullptr;
-		UE_LOG(PubnubLog, Error, TEXT("Creating C-Core context failed."));
+		UE_LOG(PubnubLog, Error, TEXT("Creating the PubNub client failed."));
 		return false;
 	}
 
@@ -2285,17 +2285,19 @@ void UPubnubClient::DeinitializeClient()
 	{return;}
 
 	PUBNUB_LOG_FUNCTION_INFO(TEXT("deinitializing pubnub client."));
-	OnClientDeinitializeStart.Broadcast();
 
-	//Mark deinitializing FIRST so new public API calls short-circuit via PUBNUB_RETURN_*_IF_NOT_INITIALIZED before reaching the C-Core contexts.
+	// Listeners on this delegate can still call the client. Subscription objects
+	// skip handle teardown while the flag is set, because the calls thread is still running.
+	bDeferSubscriptionCleanup = true;
+	OnClientDeinitializeStart.Broadcast();
+	bDeferSubscriptionCleanup = false;
+
 	IsInitialized.store(false, std::memory_order_release);
 
-	//Stop all current Pubnub calls on the queuing thread.
 	if(PubnubCallsThread)
 	{
 		PubnubCallsThread->Stop();
-		
-		//Cancel if there is any ongoing Pubnub operation
+
 		if(InFlightFuture && InFlightFuture->ctx)
 		{
 			pubnub_future_cancel(*InFlightFuture);
@@ -2305,6 +2307,34 @@ void UPubnubClient::DeinitializeClient()
 			PubnubCallsThread->Thread->WaitForCompletion();
 		}
 		PUBNUB_LOG_FUNCTION_TRACE(TEXT("pubnub calls thread stopped."));
+	}
+
+	TArray<UPubnubSubscription*> SubscriptionsToClean;
+	SubscriptionsToClean.Reserve(ManagedSubscriptions.Num());
+	for (const TPair<pubnub_subscription_t, TWeakObjectPtr<UPubnubSubscription>>& Pair : ManagedSubscriptions)
+	{
+		if (UPubnubSubscription* Subscription = Pair.Value.Get())
+		{
+			SubscriptionsToClean.Add(Subscription);
+		}
+	}
+	for (UPubnubSubscription* Subscription : SubscriptionsToClean)
+	{
+		Subscription->CleanUpSubscription();
+	}
+
+	TArray<UPubnubSubscriptionSet*> SubscriptionSetsToClean;
+	SubscriptionSetsToClean.Reserve(ManagedSubscriptionSets.Num());
+	for (const TPair<pubnub_subscription_set_t, TWeakObjectPtr<UPubnubSubscriptionSet>>& Pair : ManagedSubscriptionSets)
+	{
+		if (UPubnubSubscriptionSet* SubscriptionSet = Pair.Value.Get())
+		{
+			SubscriptionSetsToClean.Add(SubscriptionSet);
+		}
+	}
+	for (UPubnubSubscriptionSet* SubscriptionSet : SubscriptionSetsToClean)
+	{
+		SubscriptionSet->CleanUpSubscription();
 	}
 
 	PubnubSubsystem = nullptr;
@@ -2322,11 +2352,13 @@ void UPubnubClient::DeinitializeClient()
 		// Handles queued from BeginDestroy are freed by pubnub_destroy below.
 		UPubnubInternalUtilities::DiscardDeferredSubscriptionDestroys(pubnub_context);
 
-		//Destroy the C-Core context. The logger bridge must still be alive:
-		//pubnub_deinit logs "PubNub context releasing" through it.
-		//The crypto module stays borrowed until pubnub_destroy returns.
+		// The logger bridge must still be alive: teardown logs through it.
+		// The crypto module stays borrowed until pubnub_destroy returns.
+		// Destroy joins the subscribe thread, so retired listener blocks are freed only after it returns.
+		pubnub_context_t* DestroyedContext = pubnub_context;
 		pubnub_destroy(pubnub_context);
 		pubnub_context = nullptr;
+		UPubnubInternalUtilities::ReleaseRetiredEntityListenerUserData(DestroyedContext);
 	}
 
 	ReleaseBorrowedCryptoModule();
@@ -2336,7 +2368,7 @@ void UPubnubClient::DeinitializeClient()
 		LoggerManager->ReleaseCCoreLoggerBridge();
 	}
 	
-	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("C-Core context destroyed."));
+	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(TEXT("PubNub client destroyed."));
 
 	delete PubnubCallsThread;
 	PubnubCallsThread = nullptr;
@@ -2536,8 +2568,8 @@ FPubnubOperationResult UPubnubClient::SubscribeToChannel_priv(FString Channel, F
 	pubnub_subscription_t Subscription = UPubnubInternalUtilities::CreateCCoreSubscription(pubnub_context, Channel, EPubnubEntityType::PEnT_Channel, SubscribeSettings);
 	if(!Subscription)
 	{
-		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to subscribe to channel '%s'. C-Core subscription was not created."), *Channel));
-		FPubnubOperationResult Result({0, true, TEXT("Failed to subscribe to channel. C-Core subscription was not created.")});
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to subscribe to channel '%s'. The subscription could not be created."), *Channel));
+		FPubnubOperationResult Result({0, true, TEXT("Failed to subscribe to channel. The subscription could not be created.")});
 		PUBNUB_LOG_OPERATION_RESULT(Result);
 		return Result;
 	}
@@ -2587,8 +2619,8 @@ FPubnubOperationResult UPubnubClient::SubscribeToGroup_priv(FString ChannelGroup
 	pubnub_subscription_t Subscription = UPubnubInternalUtilities::CreateCCoreSubscription(pubnub_context, ChannelGroup, EPubnubEntityType::PEnT_ChannelGroup, SubscribeSettings);
 	if(!Subscription)
 	{
-		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to subscribe to channel group '%s'. C-Core subscription was not created."), *ChannelGroup));
-		FPubnubOperationResult Result({0, true, TEXT("Failed to subscribe to channel group. C-Core subscription was not created.")});
+		PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("Failed to subscribe to channel group '%s'. The subscription could not be created."), *ChannelGroup));
+		FPubnubOperationResult Result({0, true, TEXT("Failed to subscribe to channel group. The subscription could not be created.")});
 		PUBNUB_LOG_OPERATION_RESULT(Result);
 		return Result;
 	}
@@ -2685,7 +2717,30 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
 	PUBNUB_LOG_FUNCTION_CALLED_TRACE();
 	FScopeLock SubscriptionsLock(&SubscriptionsMutex);
 
-	if(ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty())
+	bool bHasEntitySubscription = false;
+	for (const TPair<pubnub_subscription_t, TWeakObjectPtr<UPubnubSubscription>>& Pair : ManagedSubscriptions)
+	{
+		const UPubnubSubscription* Subscription = Pair.Value.Get();
+		if (IsValid(Subscription) && Subscription->bIsSubscribed)
+		{
+			bHasEntitySubscription = true;
+			break;
+		}
+	}
+	if (!bHasEntitySubscription)
+	{
+		for (const TPair<pubnub_subscription_set_t, TWeakObjectPtr<UPubnubSubscriptionSet>>& Pair : ManagedSubscriptionSets)
+		{
+			const UPubnubSubscriptionSet* SubscriptionSet = Pair.Value.Get();
+			if (IsValid(SubscriptionSet) && SubscriptionSet->bIsSubscribed)
+			{
+				bHasEntitySubscription = true;
+				break;
+			}
+		}
+	}
+
+	if (ChannelSubscriptions.IsEmpty() && ChannelGroupSubscriptions.IsEmpty() && !bHasEntitySubscription)
 	{
 		PUBNUB_LOG_FUNCTION_WARNING(TEXT("unsubscribe all requested but there are no active subscriptions."));
 		FPubnubOperationResult Result({200, false, TEXT("")});
@@ -2700,16 +2755,71 @@ FPubnubOperationResult UPubnubClient::UnsubscribeFromAll_priv()
 		return Result;
 	}
 
-	const pubnub_res_t UnsubscribeAllResult = pubnub_subscribe_unsubscribe_all(pubnub_context);
-	if(UnsubscribeAllResult != PUBNUB_OK)
+	// unsubscribe_all stops the loop but leaves each handle's subscribed flag set.
+	// Clear that flag here, or the next Subscribe on the same object does nothing.
+	pubnub_res_t FirstError = PUBNUB_OK;
+	for (const TPair<pubnub_subscription_t, TWeakObjectPtr<UPubnubSubscription>>& Pair : ManagedSubscriptions)
 	{
-		FPubnubOperationResult Result({0, true, FString::Printf(TEXT("Failed to unsubscribe all. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(UnsubscribeAllResult)))});
+		UPubnubSubscription* Subscription = Pair.Value.Get();
+		if (!IsValid(Subscription) || !Subscription->bIsSubscribed)
+		{
+			continue;
+		}
+
+		const pubnub_res_t UnsubscribeResult = Subscription->CCoreSubscription
+			? pubnub_subscription_unsubscribe(Subscription->CCoreSubscription)
+			: PUBNUB_OK;
+		if (UnsubscribeResult != PUBNUB_OK)
+		{
+			if (FirstError == PUBNUB_OK)
+			{
+				FirstError = UnsubscribeResult;
+			}
+			continue;
+		}
+		Subscription->bIsSubscribed = false;
+	}
+	for (const TPair<pubnub_subscription_set_t, TWeakObjectPtr<UPubnubSubscriptionSet>>& Pair : ManagedSubscriptionSets)
+	{
+		UPubnubSubscriptionSet* SubscriptionSet = Pair.Value.Get();
+		if (!IsValid(SubscriptionSet) || !SubscriptionSet->bIsSubscribed)
+		{
+			continue;
+		}
+
+		const pubnub_res_t UnsubscribeResult = SubscriptionSet->CCoreSubscriptionSet
+			? pubnub_subscription_set_unsubscribe(SubscriptionSet->CCoreSubscriptionSet)
+			: PUBNUB_OK;
+		if (UnsubscribeResult != PUBNUB_OK)
+		{
+			if (FirstError == PUBNUB_OK)
+			{
+				FirstError = UnsubscribeResult;
+			}
+			continue;
+		}
+		SubscriptionSet->bIsSubscribed = false;
+	}
+
+	// Leave channel and group subscriptions in place when an entity unsubscribe failed.
+	// The error then means those subscriptions are still active, and UnsubscribeFromAll can be retried.
+	if (FirstError != PUBNUB_OK)
+	{
+		FPubnubOperationResult Result({0, true, FString::Printf(TEXT("Failed to unsubscribe all. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(FirstError)))});
 		PUBNUB_LOG_OPERATION_RESULT(Result);
 		return Result;
 	}
 
 	DestroySubscriptionMap(ChannelSubscriptions);
 	DestroySubscriptionMap(ChannelGroupSubscriptions);
+
+	const pubnub_res_t UnsubscribeAllResult = pubnub_subscribe_unsubscribe_all(pubnub_context);
+	if (UnsubscribeAllResult != PUBNUB_OK)
+	{
+		FPubnubOperationResult Result({0, true, FString::Printf(TEXT("Failed to unsubscribe all. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(UnsubscribeAllResult)))});
+		PUBNUB_LOG_OPERATION_RESULT(Result);
+		return Result;
+	}
 
 	FPubnubOperationResult Result({200, false, TEXT("")});
 	PUBNUB_LOG_OPERATION_RESULT(Result);
@@ -3217,7 +3327,7 @@ void UPubnubClient::SetAuthToken_priv(FString Token)
 {
 	PUBNUB_LOG_FUNCTION_DEBUG_TEXT(FString::Printf(TEXT("set auth token called. TokenLength=%d"), Token.Len()));
 
-	// NULL clears the token. An empty string is not a clear.
+	// An empty FString has no separate null. Pass NULL so the stored token is cleared.
 	FUTF8StringHolder TokenHolder(Token);
 	const pubnub_res_t Response = pubnub_set_auth_token(pubnub_context, TokenHolder.GetOrNull());
 	if (Response != PUBNUB_OK)
@@ -3504,7 +3614,7 @@ FPubnubUserMetadataResult UPubnubClient::SetUserMetadata_priv(FString User, FStr
 	}
 	if (!Parsed.UnknownFields.IsEmpty())
 	{
-		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring metadata JSON fields the new C-Core set API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
+		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring metadata JSON fields this call does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
 	}
 
 	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
@@ -3693,7 +3803,7 @@ FPubnubChannelMetadataResult UPubnubClient::SetChannelMetadata_priv(FString Chan
 	}
 	if (!Parsed.UnknownFields.IsEmpty())
 	{
-		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring metadata JSON fields the new C-Core set API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
+		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring metadata JSON fields this call does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
 	}
 
 	PUBNUB_TRY_LOCK_MUTEX_RETURN_WRAPPER_IF_LOCKED(FinalResult);
@@ -3887,7 +3997,7 @@ FPubnubMembershipsResult UPubnubClient::SetMemberships_priv(FString User, FStrin
 	}
 	if (!Parsed.UnknownFields.IsEmpty())
 	{
-		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring membership JSON fields the new C-Core set API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
+		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring membership JSON fields this call does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
 	}
 
 	FMembershipInputBatch Inputs;
@@ -3960,7 +4070,7 @@ FPubnubMembershipsResult UPubnubClient::RemoveMemberships_priv(FString User, FSt
 	}
 	if (!Parsed.UnknownFields.IsEmpty())
 	{
-		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring membership JSON fields the new C-Core remove API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
+		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring membership JSON fields this call does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
 	}
 
 	FMembershipInputBatch Inputs;
@@ -4089,7 +4199,7 @@ FPubnubChannelMembersResult UPubnubClient::SetChannelMembers_priv(FString Channe
 	}
 	if (!Parsed.UnknownFields.IsEmpty())
 	{
-		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring member JSON fields the new C-Core set API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
+		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring member JSON fields this call does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
 	}
 
 	FMemberInputBatch Inputs;
@@ -4162,7 +4272,7 @@ FPubnubChannelMembersResult UPubnubClient::RemoveChannelMembers_priv(FString Cha
 	}
 	if (!Parsed.UnknownFields.IsEmpty())
 	{
-		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring member JSON fields the new C-Core remove API does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
+		PUBNUB_LOG_FUNCTION_WARNING(FString::Printf(TEXT("Ignoring member JSON fields this call does not send: %s"), *FString::Join(Parsed.UnknownFields, TEXT(", "))));
 	}
 
 	FMemberInputBatch Inputs;
@@ -4618,7 +4728,7 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscription(UPubnubSubscript
 	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription, TEXT("Subscription is invalid."));
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->CCoreSubscription, TEXT("CCoreSubscription is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->CCoreSubscription, TEXT("Subscription is not initialized."));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(!Subscription->bIsSubscribed, TEXT("Subscription is already subscribed."));
 
 	FScopeLock SubscriptionsLock(&SubscriptionsMutex);
@@ -4668,7 +4778,7 @@ FPubnubOperationResult UPubnubClient::SubscribeWithSubscriptionSet(UPubnubSubscr
 	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet, TEXT("SubscriptionSet is invalid."));
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->CCoreSubscriptionSet, TEXT("CCoreSubscriptionSet is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->CCoreSubscriptionSet, TEXT("Subscription set is not initialized."));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(!SubscriptionSet->bIsSubscribed, TEXT("SubscriptionSet is already subscribed."));
 
 	FScopeLock SubscriptionsLock(&SubscriptionsMutex);
@@ -4717,7 +4827,7 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscription(UPubnubSubscri
 	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription, TEXT("Subscription is invalid."));
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->CCoreSubscription, TEXT("Subscription CCoreSubscription is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->CCoreSubscription, TEXT("Subscription is not initialized."));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(Subscription->bIsSubscribed, TEXT("Subscription is not subscribed."));
 
 	FScopeLock SubscriptionsLock(&SubscriptionsMutex);
@@ -4759,7 +4869,7 @@ FPubnubOperationResult UPubnubClient::UnsubscribeWithSubscriptionSet(UPubnubSubs
 	);
 	PUBNUB_RETURN_OPERATION_RESULT_IF_NOT_INITIALIZED();
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet, TEXT("SubscriptionSet is invalid."));
-	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->CCoreSubscriptionSet, TEXT("SubscriptionSet CCoreSubscriptionSet is invalid."));
+	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->CCoreSubscriptionSet, TEXT("Subscription set is not initialized."));
 	PUBNUB_RETURN_OPERATION_RESULT_IF_CONDITION_FAILS(SubscriptionSet->bIsSubscribed, TEXT("SubscriptionSet is not subscribed."));
 
 	FScopeLock SubscriptionsLock(&SubscriptionsMutex);

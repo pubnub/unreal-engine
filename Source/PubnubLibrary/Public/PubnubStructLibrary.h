@@ -20,7 +20,7 @@ struct FPubnubLoggerConfig
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
 	EPubnubLogLevel DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Warning;
 
-	/** Minimum level for the built-in default logger for C-Core log source. */
+	/** Minimum level for logs that come from the PubNub library itself. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
 	EPubnubLogLevel DefaultLoggerMinCCoreLevel = EPubnubLogLevel::PLL_None;
 
@@ -52,9 +52,9 @@ struct FPubnubConfig
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SubscribeKey = "";
 	/**
 	 * Secret Key from the Admin Portal. Grants unrestricted root permissions on the keyset.
-	 * Server/admin use only — never ship this value in client builds. Provide it when creating a
-	 * dedicated-server or backend client via FPubnubConfig, not via global plugin settings.
-	 * Set SetSecretKeyAutomatically to true or call SetSecretKey after initialization.
+	 * Server/admin use only — never ship this value in client builds. Provide it in FPubnubConfig
+	 * when creating a dedicated-server or backend client. It is applied only at creation and
+	 * cannot be changed after the client exists.
 	 * For client apps, use PAM v3 tokens minted server-side and SetAuthToken instead.
 	 * See https://www.pubnub.com/docs/general/setup/access-manager
 	 */
@@ -70,7 +70,8 @@ struct FPubnubConfig
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Origin = "";
 	/**
 	 * Payload crypto module. Call InitCryptoModule on it before creating the client.
-	 * Null leaves payload encryption off. C-Core borrows this for the life of the client.
+	 * Leave unset to publish and subscribe without payload encryption.
+	 * The module must stay alive for the life of the client.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Crypto")
 	TObjectPtr<UPubnubCryptoModule> CryptoModule = nullptr;
@@ -109,7 +110,7 @@ struct FPubnubPublishSettings
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishMethod PublishMethod = EPubnubPublishMethod::PPM_SendViaGET;
 	/**
 	 * Gzip preference for the request body. No sends the body uncompressed. Yes asks for gzip.
-	 * C-Core applies this only when PublishMethod is POST. Yes does not switch a GET publish to POST.
+	 * Applied only when PublishMethod is POST. Yes does not switch a GET publish to POST.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishCompress Compress = EPubnubPublishCompress::PPC_No;
 	//For how many hours message should be kept and available with history API. If 0, server default will be used.

@@ -126,9 +126,9 @@ public:
 	static bool AddEntityToCCoreSubscriptionSet(pubnub_context_t* Context, pubnub_subscription_set_t SubscriptionSet, const FString& EntityID, EPubnubEntityType EntityType, FPubnubSubscribeSettings Options);
 
 	/**
-	 * Activates a subscription. A non-empty cursor timetoken is stored with pubnub_subscribe_restore
-	 * after subscribe succeeds. Cursor.Region is ignored; the new C-Core cursor is a timetoken only.
-	 * On restore failure the subscription is unsubscribed again.
+	 * Activates a subscription. A timetoken is applied before the loop starts, or after subscribe
+	 * when the loop is already running. Cursor.Region is ignored. Resume uses the timetoken only.
+	 * If applying the timetoken fails after subscribe, the subscription is unsubscribed again.
 	 */
 	static int32 ActivateCCoreSubscription(pubnub_context_t* Context, pubnub_subscription_t Subscription, const FPubnubSubscriptionCursor& Cursor);
 
@@ -181,6 +181,15 @@ public:
 	static void* CreateEntityListenerUserData(UPubnubSubscriptionBase* Subscription, pubnub_context_t* Context);
 
 	static void DestroyEntityListenerUserData(void* UserData);
+
+	/**
+	 * Keeps listener user_data alive until ReleaseRetiredEntityListenerUserData.
+	 * remove_listener can return while a callback is still using the block.
+	 */
+	static void RetireEntityListenerUserData(pubnub_context_t* Context, void* UserData);
+
+	/** Frees listener blocks retired for Context. Call only after that context is destroyed. */
+	static void ReleaseRetiredEntityListenerUserData(pubnub_context_t* Context);
 
 	static void ClearSubscriptionDelegates(UPubnubSubscriptionBase* Subscription);
 

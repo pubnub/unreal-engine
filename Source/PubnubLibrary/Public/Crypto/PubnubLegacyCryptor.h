@@ -11,7 +11,7 @@ struct pubnub_crypto_provider;
 /**
  * Legacy AES-256-CBC cryptor (identifier {0,0,0,0}).
  *
- * Wraps pubnub_cryptor_legacy_create. The key is the first 32 hex characters of SHA-256(cipher key).
+ * The key is the first 32 hex characters of SHA-256(cipher key).
  * UseRandomIV true prepends a random IV to the ciphertext. False uses the static IV "0123456789012345".
  * Legacy ciphertext has no separate metadata field.
  * Set the cipher key and UseRandomIV before UPubnubCryptoModule::InitCryptoModule.
@@ -39,7 +39,7 @@ public:
 
 	virtual void BeginDestroy() override;
 
-	/** Borrowed C-Core cryptor. Null until the key has been applied. */
+	/** Native cryptor. Null until the key has been applied. */
 	pubnub_crypto_provider* GetNativeCryptor();
 
 	/** Stops further key or IV-mode changes. Called when a crypto module takes this cryptor. */

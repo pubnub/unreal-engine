@@ -25,7 +25,7 @@ namespace
 			return Legacy->GetNativeCryptor();
 		}
 
-		UE_LOG(PubnubLog, Error, TEXT("Crypto module accepts only UPubnubAesCryptor and UPubnubLegacyCryptor. Custom cryptors are not registered until C-Core uses the cryptor metadata length."));
+		UE_LOG(PubnubLog, Error, TEXT("Crypto module accepts only UPubnubAesCryptor and UPubnubLegacyCryptor."));
 		return nullptr;
 	}
 }
@@ -79,7 +79,7 @@ bool UPubnubCryptoModule::InitCryptoModule(const TScriptInterface<IPubnubCryptor
 
 	if (CCoreModule)
 	{
-		UE_LOG(PubnubLog, Warning, TEXT("InitCryptoModule replaced an existing C-Core module. Create the client after this call."));
+		UE_LOG(PubnubLog, Warning, TEXT("InitCryptoModule replaced an existing crypto module. Create the client after this call."));
 	}
 	DestroyCCoreModule();
 	CCoreModule = NewModule;

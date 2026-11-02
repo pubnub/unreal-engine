@@ -866,11 +866,12 @@ public:
 
 	
 	/**
-	 * Sets the PAM v3 access token for this client on the calling thread. The underlying update is
-	 * immediate (no network call). The new C-Core copies the token into the context.
+	 * Sets the PAM v3 access token for this client on the calling thread.
+	 * The update is immediate and does not call the network.
+	 * Pass an empty string to clear the token.
 	 * Use this in shipped game clients after your backend mints a scoped token.
 	 * 
-	 * @param Token PAM v3 access token with embedded permissions, minted server-side.
+	 * @param Token PAM v3 access token with embedded permissions, minted server-side. Empty clears the token.
 	 * @see https://www.pubnub.com/docs/general/setup/access-manager
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Access Manager")
@@ -890,12 +891,10 @@ public:
 
 	/**
 	 * Sets the origin hostname for subsequent PubNub requests.
-	 * An empty Origin resets the client to the compile-time default origin.
-	 * The new C-Core copies the hostname and reports success or failure as pubnub_res_t,
-	 * so this returns FPubnubOperationResult instead of the old 0 / 1 / -1 codes.
+	 * An empty Origin resets the client to the default origin.
 	 * 
 	 * @param Origin The origin hostname to set. Empty resets to the default origin.
-	 * @return FPubnubOperationResult. Status 200 and Error false on success.
+	 * @return Success or failure of the update. Status 200 and Error false on success.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Config")
 	FPubnubOperationResult SetOrigin(FString Origin);
@@ -2574,7 +2573,7 @@ private:
 	FPubnubOperationResult RemoveMessageAction_priv(FString Channel, FString MessageTimetoken, FString ActionTimetoken);
 	FPubnubGetMessageActionsResult GetMessageActions_priv(FString Channel, FString Start, FString End, int Limit);
 
-	/** Maps a C-Core subscription handle to the UE wrapper returned by GetActiveSubscriptions. */
+	/** Maps a subscription handle to the UE wrapper returned by GetActiveSubscriptions. */
 	void RegisterManagedSubscription(pubnub_subscription_t CCorePtr, UPubnubSubscription* Wrapper);
 	void RegisterManagedSubscriptionSet(pubnub_subscription_set_t CCorePtr, UPubnubSubscriptionSet* Wrapper);
 	void UnregisterManagedSubscription(pubnub_subscription_t CCorePtr);
@@ -2633,6 +2632,9 @@ private:
 	FString DebugName = "";
 	// Generic check if this client is valid and initialized
 	std::atomic<bool> IsInitialized{false};
+
+	/** True while OnClientDeinitializeStart is running. Handle teardown waits until the calls thread stops. */
+	bool bDeferSubscriptionCleanup = false;
 	
 	UPROPERTY()
 	TObjectPtr<UPubnubLogManager> LoggerManager = nullptr;

@@ -5,6 +5,9 @@
 #include "PubnubStructLibrary.h"
 #include "PubnubEnumLibrary.h"
 #include "FunctionLibraries/PubnubJsonUtilities.h"
+#include "Entities/PubnubChannelEntity.h"
+#include "Entities/PubnubSubscription.h"
+#include "UObject/StrongObjectPtr.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -237,6 +240,10 @@ IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAll_SubscribedThen
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAll_ChannelsAndGroup_UnsubscribeFromAll_NoneReceive, FPubnubAutomationTestBase,
 	"Pubnub.Integration.PubSub.UnsubscribeFromAll.4Advanced.ChannelsAndGroup_NoneReceiveAfter",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(FPubnubUnsubscribeFromAll_EntityAndSet_ResubscribeReceives, FPubnubAutomationTestBase,
+	"Pubnub.Integration.PubSub.UnsubscribeFromAll.4Advanced.EntityAndSet_ResubscribeReceives",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 // ---------------------------------------------------------------------------
@@ -2276,6 +2283,120 @@ bool FPubnubUnsubscribeFromAll_ChannelsAndGroup_UnsubscribeFromAll_NoneReceive::
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestGroup]()
 	{
 		PubnubClient->RemoveChannelGroup(TestGroup);
+	}, 0.1f));
+
+	CleanUp();
+	return true;
+}
+
+bool FPubnubUnsubscribeFromAll_EntityAndSet_ResubscribeReceives::RunTest(const FString& Parameters)
+{
+	const FString EntityChannel = SDK_PREFIX + TEXT("unsub_all_entity_ch");
+	const FString SetChannel = SDK_PREFIX + TEXT("unsub_all_set_ch");
+	const FString EntityMessage = TEXT("\"entity after unsubscribe all\"");
+	const FString SetMessage = TEXT("\"set after unsubscribe all\"");
+	const FString TestUser = SDK_PREFIX + TEXT("unsub_all_entity_user");
+
+	struct FHeldSubscriptions
+	{
+		TStrongObjectPtr<UPubnubChannelEntity> Entity;
+		TStrongObjectPtr<UPubnubSubscription> EntitySubscription;
+		TStrongObjectPtr<UPubnubSubscriptionSet> SubscriptionSet;
+	};
+	TSharedPtr<FHeldSubscriptions> Held = MakeShared<FHeldSubscriptions>();
+	TSharedPtr<bool> bEntityReceived = MakeShared<bool>(false);
+	TSharedPtr<bool> bSetReceived = MakeShared<bool>(false);
+
+	if (!InitTest())
+	{
+		AddError(TEXT("InitTest failed"));
+		return false;
+	}
+
+	PubnubClient->SetUserID(TestUser);
+	FPubnubHandshakeTracker Handshake;
+	TrackHandshake(PubnubClient, Handshake);
+	TSharedPtr<int32> HandshakeBaseline = SnapshotHandshakeEpoch(Handshake);
+
+	UPubnubChannelEntity* Entity = PubnubClient->CreateChannelEntity(EntityChannel);
+	TestNotNull(TEXT("Channel entity should exist"), Entity);
+	UPubnubSubscription* EntitySubscription = Entity ? Entity->CreateSubscription(FPubnubSubscribeSettings()) : nullptr;
+	TestNotNull(TEXT("Entity subscription should exist"), EntitySubscription);
+
+	TArray<FString> SetChannels;
+	SetChannels.Add(SetChannel);
+	UPubnubSubscriptionSet* SubscriptionSet = PubnubClient->CreateSubscriptionSet(SetChannels, {}, FPubnubSubscribeSettings());
+	TestNotNull(TEXT("Subscription set should exist"), SubscriptionSet);
+	if (!EntitySubscription || !SubscriptionSet)
+	{
+		CleanUp();
+		return false;
+	}
+
+	Held->Entity.Reset(Entity);
+	Held->EntitySubscription.Reset(EntitySubscription);
+	Held->SubscriptionSet.Reset(SubscriptionSet);
+
+	EntitySubscription->OnPubnubMessageNative.AddLambda(
+		[EntityChannel, EntityMessage, bEntityReceived](const FPubnubMessageData& Msg)
+		{
+			if (Msg.Channel == EntityChannel && Msg.Message == EntityMessage)
+			{
+				*bEntityReceived = true;
+			}
+		});
+	SubscriptionSet->OnPubnubMessageNative.AddLambda(
+		[SetChannel, SetMessage, bSetReceived](const FPubnubMessageData& Msg)
+		{
+			if (Msg.Channel == SetChannel && Msg.Message == SetMessage)
+			{
+				*bSetReceived = true;
+			}
+		});
+
+	const FPubnubOperationResult EntitySub = EntitySubscription->Subscribe();
+	TestFalse(TEXT("Entity subscribe should succeed"), EntitySub.Error);
+	TestEqual(TEXT("Entity subscribe status"), EntitySub.Status, 200);
+	const FPubnubOperationResult SetSub = SubscriptionSet->Subscribe();
+	TestFalse(TEXT("Subscription set subscribe should succeed"), SetSub.Error);
+	TestEqual(TEXT("Subscription set subscribe status"), SetSub.Status, 200);
+
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { EntityChannel, SetChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, HandshakeBaseline, EntityChannel, SetChannel, Held]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake before UnsubscribeFromAll failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue(TEXT("Handshake should include the entity channel"), Handshake.Channels->Contains(EntityChannel));
+		TestTrue(TEXT("Handshake should include the set channel"), Handshake.Channels->Contains(SetChannel));
+		*HandshakeBaseline = *Handshake.Epoch;
+		const FPubnubOperationResult UnsubResult = PubnubClient->UnsubscribeFromAll();
+		TestFalse(TEXT("UnsubscribeFromAll should succeed"), UnsubResult.Error);
+		TestEqual(TEXT("UnsubscribeFromAll status"), UnsubResult.Status, 200);
+		const FPubnubOperationResult EntityAgain = Held->EntitySubscription->Subscribe();
+		TestFalse(TEXT("Entity subscribe after UnsubscribeFromAll should succeed"), EntityAgain.Error);
+		TestEqual(TEXT("Entity resubscribe status"), EntityAgain.Status, 200);
+		const FPubnubOperationResult SetAgain = Held->SubscriptionSet->Subscribe();
+		TestFalse(TEXT("Set subscribe after UnsubscribeFromAll should succeed"), SetAgain.Error);
+		TestEqual(TEXT("Set resubscribe status"), SetAgain.Status, 200);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitForPubnubHandshakeCommand(Handshake, HandshakeBaseline, { EntityChannel, SetChannel }, {}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Handshake, EntityChannel, SetChannel, EntityMessage, SetMessage, Held]()
+	{
+		TestFalse(FString::Printf(TEXT("Handshake after resubscribe failed: %s"), **Handshake.FailureReason), *Handshake.bFailed);
+		TestTrue(TEXT("Handshake should include the resubscribed entity channel"), Handshake.Channels->Contains(EntityChannel));
+		TestTrue(TEXT("Handshake should include the resubscribed set channel"), Handshake.Channels->Contains(SetChannel));
+		const FPubnubPublishMessageResult EntityPublish = PubnubClient->PublishMessage(EntityChannel, EntityMessage);
+		const FPubnubPublishMessageResult SetPublish = PubnubClient->PublishMessage(SetChannel, SetMessage);
+		TestFalse(TEXT("Publish to entity channel should succeed"), EntityPublish.Result.Error);
+		TestFalse(TEXT("Publish to set channel should succeed"), SetPublish.Result.Error);
+	}, 0.1f));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitUntilLatentCommand([bEntityReceived, bSetReceived]()
+	{
+		return *bEntityReceived && *bSetReceived;
+	}, MAX_WAIT_TIME));
+	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, bEntityReceived, bSetReceived, Held]()
+	{
+		TestTrue(TEXT("Entity subscription should receive a message after UnsubscribeFromAll and subscribe again"), *bEntityReceived);
+		TestTrue(TEXT("Subscription set should receive a message after UnsubscribeFromAll and subscribe again"), *bSetReceived);
 	}, 0.1f));
 
 	CleanUp();

@@ -7,7 +7,7 @@
 #include "Interfaces/PubnubLoggerInterface.h"
 #include "PubnubLogManager.generated.h"
 
-// New C-Core logger provider types (borrowed, no ownership).
+// Library logger provider types. The bridge does not own them.
 struct pubnub_logger_provider;
 typedef struct pubnub_logger_provider pubnub_logger_provider_t;
 struct pubnub_log_entry;
@@ -22,7 +22,7 @@ class PUBNUBLIBRARY_API UPubnubLogManager : public UObject
 public:
 	virtual void BeginDestroy() override;
 
-	/** Frees the C-Core logger bridge. Call only after pubnub_destroy, which logs through it. */
+	/** Frees the logger bridge. Call only after the client context is destroyed, because teardown still logs through it. */
 	void ReleaseCCoreLoggerBridge();
 
 	void AddLogger(const TScriptInterface<IPubnubLoggerInterface>& Logger);
@@ -34,9 +34,9 @@ public:
 	void Log(EPubnubLogLevel Level, EPubnubLogSource Source, const FString& Message, const FString& Callsite = TEXT(""));
 
 	/**
-	 * Copies a C-Core log entry and dispatches it on the game thread.
+	 * Copies a library log entry and dispatches it on the game thread.
 	 * The entry and every pointer it borrows are valid only for this call.
-	 * Logger UObjects are not touched until the game thread runs.
+	 * Logger objects are not touched until the game thread runs.
 	 */
 	void HandleCCoreLog(const pubnub_log_entry_t* Entry);
 
@@ -45,6 +45,8 @@ public:
 private:
 	static bool IsLevelEnabled(EPubnubLogLevel MessageLevel, EPubnubLogLevel MinimumLevel);
 	static void DispatchLevelSpecific(UObject* LoggerObject, EPubnubLogLevel Level, const FPubnubLogMessage& Message);
+	static void EnqueueLogDispatch(TWeakObjectPtr<UPubnubLogManager> Manager, FPubnubLogMessage&& Message);
+	static void ForwardCCoreLog(pubnub_logger_provider_t* Self, const pubnub_log_entry_t* Entry);
 	void DispatchMessage(const FPubnubLogMessage& Message);
 
 	UPROPERTY()

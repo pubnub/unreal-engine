@@ -101,7 +101,7 @@ public:
 
 protected:
 
-	/** Opaque heap block passed to C-Core as listener user_data; holds internal routing state for native callbacks. Freed when the subscription is cleaned up. */
+	/** Routing state for native callbacks. Kept until the client that owns this subscription is destroyed. */
 	void* ListenerUserData = nullptr;
 
 	UPROPERTY()
@@ -223,9 +223,8 @@ private:
 	void InternalInit();
 
 	/**
-	 * Unregisters the C-Core listener attached to this subscription.
-	 * Must run before ListenerUserData is freed so PubNub cannot invoke the callback
-	 * with a dangling user_data pointer.
+	 * Unregisters the listener attached to this subscription.
+	 * Must run before ListenerUserData is released so a callback cannot use a freed block.
 	 */
 	void RemoveRegisteredListeners();
 
@@ -382,9 +381,8 @@ private:
 	void InternalInit();
 
 	/**
-	 * Unregisters the C-Core listener attached to this set.
-	 * Must run before ListenerUserData is freed so PubNub cannot invoke the callback
-	 * with a dangling user_data pointer.
+	 * Unregisters the listener attached to this set.
+	 * Must run before ListenerUserData is released so a callback cannot use a freed block.
 	 */
 	void RemoveRegisteredListeners();
 

@@ -301,7 +301,7 @@ pubnub_subscription_t UPubnubInternalUtilities::CreateCCoreSubscription(pubnub_c
 
 	if (!Entity)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to create C-Core entity for '%s'."), *EntityID);
+		UE_LOG(PubnubLog, Error, TEXT("Failed to create entity for '%s'."), *EntityID);
 		return nullptr;
 	}
 
@@ -313,7 +313,7 @@ pubnub_subscription_t UPubnubInternalUtilities::CreateCCoreSubscription(pubnub_c
 
 	if (!Subscription)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to create C-Core subscription for '%s'."), *EntityID);
+		UE_LOG(PubnubLog, Error, TEXT("Failed to create subscription for '%s'."), *EntityID);
 	}
 
 	return Subscription;
@@ -930,7 +930,7 @@ bool UPubnubInternalUtilities::ParseRelationSetList(const FString& Json, const T
 	}
 	if (Items.Num() == 0)
 	{
-		Out.Error = FString::Printf(TEXT("%s must contain at least one item. The new C-Core rejects an empty set or remove list."), JsonName);
+		Out.Error = FString::Printf(TEXT("%s must contain at least one item."), JsonName);
 		return false;
 	}
 
@@ -990,7 +990,7 @@ bool UPubnubInternalUtilities::ParseRelationRemoveList(const FString& Json, cons
 	}
 	if (Items.Num() == 0)
 	{
-		Out.Error = FString::Printf(TEXT("%s must contain at least one item. The new C-Core rejects an empty set or remove list."), JsonName);
+		Out.Error = FString::Printf(TEXT("%s must contain at least one item."), JsonName);
 		return false;
 	}
 
@@ -1112,7 +1112,7 @@ void UPubnubInternalUtilities::ListCCoreHandles(QueryType Query, TArray<HandleTy
 	}
 	if (Result != PUBNUB_OK)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to list C-Core subscriptions. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(Result)));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to list subscriptions. Error: %s"), UTF8_TO_TCHAR(pubnub_res_str(Result)));
 		Out.Reset();
 		return;
 	}
@@ -1174,7 +1174,7 @@ pubnub_subscription_set_t UPubnubInternalUtilities::CreateCCoreSubscriptionSet(p
 	pubnub_subscription_set_t SubscriptionSet = pubnub_subscription_set_create(Context);
 	if (!SubscriptionSet)
 	{
-		UE_LOG(PubnubLog, Error, TEXT("Failed to create C-Core subscription set."));
+		UE_LOG(PubnubLog, Error, TEXT("Failed to create subscription set."));
 	}
 	return SubscriptionSet;
 }
@@ -1202,19 +1202,50 @@ bool UPubnubInternalUtilities::AddEntityToCCoreSubscriptionSet(pubnub_context_t*
 	return true;
 }
 
+namespace
+{
+	bool SubscribeLoopIsLive(pubnub_context_t* Context)
+	{
+		const pubnub_subscribe_connection_state_t State = pubnub_subscribe_state(Context);
+		return State == PUBNUB_SUBSCRIBE_CONNECTING
+			|| State == PUBNUB_SUBSCRIBE_CONNECTED
+			|| State == PUBNUB_SUBSCRIBE_RECONNECTING;
+	}
+
+	void LogIgnoredCursorRegion(const FPubnubSubscriptionCursor& Cursor)
+	{
+		if (Cursor.Region != 0)
+		{
+			UE_LOG(PubnubLog, Warning, TEXT("Subscription cursor Region is ignored. Resume uses the timetoken only."));
+		}
+	}
+}
+
 int32 UPubnubInternalUtilities::ActivateCCoreSubscription(pubnub_context_t* Context, pubnub_subscription_t Subscription, const FPubnubSubscriptionCursor& Cursor)
 {
 	if (!Context || !Subscription)
 	{
 		return PUBNUB_ERR_INVALID_ARGUMENT;
 	}
-	if (Cursor.Region != 0)
+	LogIgnoredCursorRegion(Cursor);
+
+	// Creating this handle already created subscribe state, so Idle means the loop
+	// has not started. Storing the timetoken first lets that first handshake keep it.
+	// Restore fails only when that state was never created. A live loop subscribes
+	// first so the new channel is included in the resume.
+	const bool bHasTimetoken = !Cursor.Timetoken.IsEmpty();
+	const bool bLive = SubscribeLoopIsLive(Context);
+	if (bHasTimetoken && !bLive)
 	{
-		UE_LOG(PubnubLog, Warning, TEXT("Subscription cursor Region is ignored. The new C-Core resume cursor is a timetoken only."));
+		const int32 RestoreResult = RestoreSubscribeTimetoken(Context, Cursor.Timetoken);
+		if (RestoreResult != PUBNUB_OK)
+		{
+			return RestoreResult;
+		}
 	}
 
 	const pubnub_res_t SubscribeResult = pubnub_subscription_subscribe(Subscription);
-	if (SubscribeResult != PUBNUB_OK || Cursor.Timetoken.IsEmpty())
+	if (SubscribeResult != PUBNUB_OK || !bHasTimetoken || !bLive)
 	{
 		return SubscribeResult;
 	}
@@ -1233,13 +1264,21 @@ int32 UPubnubInternalUtilities::ActivateCCoreSubscriptionSet(pubnub_context_t* C
 	{
 		return PUBNUB_ERR_INVALID_ARGUMENT;
 	}
-	if (Cursor.Region != 0)
+	LogIgnoredCursorRegion(Cursor);
+
+	const bool bHasTimetoken = !Cursor.Timetoken.IsEmpty();
+	const bool bLive = SubscribeLoopIsLive(Context);
+	if (bHasTimetoken && !bLive)
 	{
-		UE_LOG(PubnubLog, Warning, TEXT("Subscription cursor Region is ignored. The new C-Core resume cursor is a timetoken only."));
+		const int32 RestoreResult = RestoreSubscribeTimetoken(Context, Cursor.Timetoken);
+		if (RestoreResult != PUBNUB_OK)
+		{
+			return RestoreResult;
+		}
 	}
 
 	const pubnub_res_t SubscribeResult = pubnub_subscription_set_subscribe(SubscriptionSet);
-	if (SubscribeResult != PUBNUB_OK || Cursor.Timetoken.IsEmpty())
+	if (SubscribeResult != PUBNUB_OK || !bHasTimetoken || !bLive)
 	{
 		return SubscribeResult;
 	}
@@ -1348,6 +1387,54 @@ void* UPubnubInternalUtilities::CreateEntityListenerUserData(UPubnubSubscription
 void UPubnubInternalUtilities::DestroyEntityListenerUserData(void* UserData)
 {
 	delete static_cast<FPubnubInternalEntityListenerUserData*>(UserData);
+}
+
+namespace
+{
+	struct FRetiredEntityListenerUserData
+	{
+		pubnub_context_t* Context = nullptr;
+		void* UserData = nullptr;
+	};
+
+	TArray<FRetiredEntityListenerUserData> RetiredEntityListenerUserData;
+}
+
+void UPubnubInternalUtilities::RetireEntityListenerUserData(pubnub_context_t* Context, void* UserData)
+{
+	if (!UserData)
+	{
+		return;
+	}
+	if (!Context)
+	{
+		DestroyEntityListenerUserData(UserData);
+		return;
+	}
+
+	FRetiredEntityListenerUserData Retired;
+	Retired.Context = Context;
+	Retired.UserData = UserData;
+	RetiredEntityListenerUserData.Add(Retired);
+}
+
+void UPubnubInternalUtilities::ReleaseRetiredEntityListenerUserData(pubnub_context_t* Context)
+{
+	if (!Context)
+	{
+		return;
+	}
+
+	for (int32 Index = RetiredEntityListenerUserData.Num() - 1; Index >= 0; --Index)
+	{
+		if (RetiredEntityListenerUserData[Index].Context != Context)
+		{
+			continue;
+		}
+
+		DestroyEntityListenerUserData(RetiredEntityListenerUserData[Index].UserData);
+		RetiredEntityListenerUserData.RemoveAtSwap(Index);
+	}
 }
 
 void UPubnubInternalUtilities::ClearSubscriptionDelegates(UPubnubSubscriptionBase* Subscription)

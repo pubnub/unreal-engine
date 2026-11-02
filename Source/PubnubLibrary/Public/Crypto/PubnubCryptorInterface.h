@@ -15,8 +15,7 @@
  * GetIdentifier must return a stable 4-byte id. AES-CBC uses "ACRH". Legacy uses {0,0,0,0}.
  *
  * UPubnubCryptoModule currently accepts only UPubnubAesCryptor and UPubnubLegacyCryptor.
- * Custom implementations of this interface are kept source-compatible, but cannot be registered
- * until C-Core writes the cryptor's real metadata length into the PNED header.
+ * Custom implementations of this interface stay source-compatible, but cannot be registered.
  */
 UINTERFACE(Blueprintable)
 class PUBNUBLIBRARY_API UPubnubCryptorInterface : public UInterface
