@@ -24,6 +24,7 @@ void ASample_AppContext::RunSamples()
 	Super::RunSamples();
 	
 	SetUserMetadataSample();
+	SetUserMetadataWithSettingsSample();
 	SetUserMetadataWithResultSample();
 	SetUserMetadataWithLambdaSample();
 	SetUserMetadataRawSample();
@@ -41,6 +42,7 @@ void ASample_AppContext::RunSamples()
 	RemoveUserMetadataWithResultSample();
 	RemoveUserMetadataWithResultLambdaSample();
 	SetChannelMetadataSample();
+	SetChannelMetadataWithSettingsSample();
 	SetChannelMetadataWithResultSample();
 	SetChannelMetadataWithLambdaSample();
 	SetChannelMetadataRawSample();
@@ -87,6 +89,50 @@ void ASample_AppContext::SetUserMetadataSample()
 	FString UserID = TEXT("Player_001");
 	FPubnubUserInputData UserInputData = FPubnubUserInputData::FromPubnubUserData(UserMetadata);
 	PubnubClient->SetUserMetadataAsync(UserID, UserInputData);
+}
+
+// snippet.set_user_metadata_with_settings
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::SetUserMetadataWithSettingsSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnPubnubSetUserMetadataResponse OnSetUserMetadataResponse;
+	OnSetUserMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetUserMetadataWithSettingsResponse);
+
+	// Create user metadata object
+	FString UserID = TEXT("Player_005");
+	FPubnubUserData UserMetadata;
+	UserMetadata.UserName = "Player Five";
+	UserMetadata.Status = "active";
+	UserMetadata.Custom = "{\"rank\": \"silver\"}";
+
+	// Choose which fields are included in the response
+	FPubnubGetMetadataInclude Include;
+	Include.IncludeCustom = true;
+	Include.IncludeStatus = true;
+	
+	FPubnubUserInputData UserInputData = FPubnubUserInputData::FromPubnubUserData(UserMetadata);
+	PubnubClient->SetUserMetadataAsync(UserID, UserInputData, OnSetUserMetadataResponse, Include);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnSetUserMetadataWithSettingsResponse(FPubnubOperationResult Result, FPubnubUserData UserData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set user metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully set user metadata. UserID: %s, Name: %s, Custom: %s, Status: %s"), *UserData.UserID, *UserData.UserName, *UserData.Custom, *UserData.Status);
+	}
 }
 
 // snippet.set_user_metadata_with_result
@@ -716,6 +762,50 @@ void ASample_AppContext::SetChannelMetadataSample()
 	FString Channel = "general-chat-channel";
 	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData::FromPubnubChannelData(ChannelMetadata);
 	PubnubClient->SetChannelMetadataAsync(Channel, ChannelInputData);
+}
+
+// snippet.set_channel_metadata_with_settings
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::SetChannelMetadataWithSettingsSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and UserID is set
+
+	// Bind response delegate
+	// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+	FOnPubnubSetChannelMetadataResponse OnSetChannelMetadataResponse;
+	OnSetChannelMetadataResponse.BindDynamic(this, &ASample_AppContext::OnSetChannelMetadataWithSettingsResponse);
+
+	// Create channel metadata object
+	FPubnubChannelData ChannelMetadata;
+	ChannelMetadata.ChannelName = "Trading Chat";
+	ChannelMetadata.Description = "Channel for players to trade items.";
+	ChannelMetadata.Custom = "{\"topic\": \"trading\"}";
+
+	// Choose which fields are included in the response
+	FPubnubGetMetadataInclude Include;
+	Include.IncludeCustom = true;
+	Include.IncludeStatus = true;
+	
+	FString Channel = "trading-chat-channel";
+	FPubnubChannelInputData ChannelInputData = FPubnubChannelInputData::FromPubnubChannelData(ChannelMetadata);
+	PubnubClient->SetChannelMetadataAsync(Channel, ChannelInputData, OnSetChannelMetadataResponse, Include);
+}
+
+// ACTION REQUIRED: Replace ASample_AppContext with name of your Actor class
+void ASample_AppContext::OnSetChannelMetadataWithSettingsResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData)
+{
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set channel metadata. Status: %d, Reason: %s"), Result.Status, *Result.ErrorMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Successfully set channel metadata. ChannelID: %s, Name: %s, Custom: %s, Status: %s"), *ChannelData.ChannelID, *ChannelData.ChannelName, *ChannelData.Custom, *ChannelData.Status);
+	}
 }
 
 // snippet.set_channel_metadata_with_result

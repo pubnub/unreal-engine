@@ -31,6 +31,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void SetUserMetadataSample();
 
+	// snippet.set_user_metadata_with_settings
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
+	void SetUserMetadataWithSettingsSample();
+
+	UFUNCTION()
+	void OnSetUserMetadataWithSettingsResponse(FPubnubOperationResult Result, FPubnubUserData UserData);
+
 	// snippet.set_user_metadata_with_result
 	// blueprint.w9k9he3e
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -50,7 +57,7 @@ public:
 	UFUNCTION()
 	void OnSetUserMetadataRawResponse(FPubnubOperationResult Result, FPubnubUserData UserData);
 
-	//snippet.update_user_metadata_iteratively
+	// snippet.update_user_metadata_iteratively
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void UpdateUserMetadataIterativelySample();
 	
@@ -140,6 +147,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void SetChannelMetadataSample();
 
+	// snippet.set_channel_metadata_with_settings
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
+	void SetChannelMetadataWithSettingsSample();
+
+	UFUNCTION()
+	void OnSetChannelMetadataWithSettingsResponse(FPubnubOperationResult Result, FPubnubChannelData ChannelData);
+
 	// snippet.set_channel_metadata_with_result
 	// blueprint.fr0nokir
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
@@ -156,7 +170,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
 	void SetChannelMetadataRawSample();
 	
-    //snippet.update_channel_metadata_iteratively
+    // snippet.update_channel_metadata_iteratively
     UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|App Context")
     void UpdateChannelMetadataIterativelySample();
     
