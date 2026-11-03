@@ -33,7 +33,7 @@ FString UPubnubInternalUtilities::GetOperatingSystemString()
 FString UPubnubInternalUtilities::GetPubnubSdkVersionSuffix()
 {
 	return FString::Printf(
-		TEXT("%s-Pubnub-C-core/%s/Unreal/%d.%d.%d"),
+		TEXT("%s-Pubnub-C/%s/Unreal/%d.%d.%d"),
 		*GetOperatingSystemString(),
 		ANSI_TO_TCHAR(PUBNUB_C_CORE_VERSION),
 		PUBNUB_LIBRARY_VERSION_MAJOR,

@@ -359,10 +359,10 @@ void ASample_AccessManager::GrantTokenCategoriesSample()
 	
 	//Assumes PubnubClient is created and UserID is set
 
-	// SERVER ONLY: SetSecretKey and GrantToken require a Secret Key and must not be used in shipped game clients.
-	// Use only in dedicated servers or backend tooling. For client apps, mint Access Manager v3 tokens server-side and use SetAuthToken.
-	// Provide SecretKey in FPubnubConfig when creating the client, or set SetSecretKeyAutomatically to true in the config.
-	PubnubClient->SetSecretKey();
+	// SERVER ONLY: GrantToken requires SecretKey on the client config and must not be used in shipped game clients.
+	// Use only in dedicated servers or backend tooling. For client apps, mint PAM v3 tokens server-side and use SetAuthToken.
+	// Provide SecretKey in FPubnubConfig when creating the client. It cannot be changed after the client exists.
+
 
 	// Create the permissions structure
 	FPubnubGrantTokenPermissions Permissions;

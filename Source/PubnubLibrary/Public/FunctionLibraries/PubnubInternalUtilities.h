@@ -80,7 +80,7 @@ public:
 	/** e.g. "Windows" / "Android" / "iOS" / "MacOS" / "Linux" for the current build target platform. */
 	static FString GetOperatingSystemString();
 
-	/** e.g. "-Pubnub-C-core/7.1.3/Unreal/2.0.2" for runtime PNSDK suffix; uses PUBNUB_C_CORE_VERSION and PUBNUB_LIBRARY_VERSION_*. */
+	/** e.g. "-Pubnub-C/7.1.3/Unreal/2.0.2" for runtime PNSDK suffix; uses PUBNUB_C_CORE_VERSION and PUBNUB_LIBRARY_VERSION_*. */
 	static FString GetPubnubSdkVersionSuffix();
 	
 	static FString PubnubStringViewToString(pubnub_string_view_t StringView);
