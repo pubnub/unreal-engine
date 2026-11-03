@@ -7,7 +7,7 @@ public class PubnubLibraryTests : ModuleRules
 	public PubnubLibraryTests(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
+		bDisableStaticAnalysis = true;
 
 		
 		PublicDependencyModuleNames.AddRange(
