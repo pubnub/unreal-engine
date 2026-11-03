@@ -282,7 +282,7 @@ sdks:
                     minimum-ue-version:
                       - 5.0
                     maximum-ue-version:
-                      - 5.7
+                      - 5.8
   - 
       full-name: Unreal Engine SDK
       short-name: UnrealEngine
@@ -334,7 +334,7 @@ sdks:
                     minimum-ue-fab-version:
                       - 5.2
                     maximum-ue-fab-version:
-                      - 5.7
+                      - 5.8
 features:
   access:
     - ACCESS-GRANT

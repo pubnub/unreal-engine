@@ -1,6 +1,6 @@
 # PubNub Unreal Engine SDK
 
-[![PubNub Unreal SDK](https://img.shields.io/badge/PubNub_Unreal-2.2.0-blue)](https://www.fab.com/listings/9501a8d6-f9e6-4cf8-8b56-d173bdb71fc4)
+[![PubNub Unreal SDK](https://img.shields.io/badge/PubNub_Unreal-3.0.0-blue)](https://www.fab.com/listings/9501a8d6-f9e6-4cf8-8b56-d173bdb71fc4)
 
 PubNub provides global infrastructure for real-time, interactive applications.
 

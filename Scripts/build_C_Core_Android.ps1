@@ -9,6 +9,7 @@
 
     Feature flags match build_C_Core_Windows.ps1. The platform provider is posix,
     because the Android NDK is not the Windows provider. MSVC runtime is omitted.
+    PUBNUB_BUILD_PIC is ON so the archive can be linked into Unreal's Android .so.
     Headers are left alone; the Windows script owns the shared Include tree.
 
 .EXAMPLE
@@ -166,7 +167,7 @@ if ($Clean -and (Test-Path -LiteralPath $BuildDir)) {
     Remove-Item -LiteralPath $BuildDir -Recurse -Force
 }
 
-Write-Step "Configuring C-Core (static Android $AndroidAbi, socket + OpenSSL)"
+Write-Step "Configuring C-Core (static Android $AndroidAbi, socket + OpenSSL, PIC)"
 $CmakeOpenSslIncludeDir = Convert-ToCmakePath $OpenSslIncludeDir
 $CmakeOpenSslCryptoLib = Convert-ToCmakePath $OpenSslCryptoLib
 $CmakeOpenSslSslLib = Convert-ToCmakePath $OpenSslSslLib
@@ -197,6 +198,8 @@ $configureArgs = @(
     "-DOPENSSL_CRYPTO_LIBRARY=$CmakeOpenSslCryptoLib"
     "-DOPENSSL_SSL_LIBRARY=$CmakeOpenSslSslLib"
     "-DPUBNUB_BUILD_SHARED=OFF"
+    # Static lib is linked into Unreal's Android .so. PIC defaults off when the lib is static.
+    "-DPUBNUB_BUILD_PIC=ON"
     "-DPUBNUB_SOCKET_TLS_BACKEND=openssl"
     "-DPUBNUB_PROVIDER_CRYPTO=openssl"
     "-DPUBNUB_ENABLE_CUSTOM_DNS=ON"

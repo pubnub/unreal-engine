@@ -22,7 +22,9 @@ public class PubNubModule : ModuleRules
 			// pubnub.lib is a static archive of C-Core OBJECT libraries only.
 			// CMake usage requirements are not merged into the .lib, so consumers
 			// must link the same deps the Windows C-Core build used:
-			// socket + OpenSSL TLS, custom DNS, proxy WPAD, zlib compression.
+			// socket + OpenSSL TLS, custom DNS, and proxy WPAD.
+			// zlib is linked on every platform: compression middleware calls
+			// deflate/inflate/compressBound, and those objects are not in the archive.
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
 				"OpenSSL",
@@ -42,24 +44,35 @@ public class PubNubModule : ModuleRules
 		{
 			PublicAdditionalLibraries.Add(Path.Combine(SDKPath, "lib", "MacOS", "libpubnub.a"));
 			AddAppleCCoreSystemLibraries();
+			AddZlibDependency();
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Android)
 		{
 			PublicAdditionalLibraries.Add(Path.Combine(SDKPath, "lib", "arm64", "libpubnub.a"));
+			AddZlibDependency();
 		}
 		else if (Target.Platform == UnrealTargetPlatform.IOS)
 		{
 			PublicAdditionalLibraries.Add(Path.Combine(SDKPath, "lib", "ios", "libpubnub.a"));
 			AddAppleCCoreSystemLibraries();
+			AddZlibDependency();
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Linux)
 		{
 			PublicAdditionalLibraries.Add(Path.Combine(SDKPath, "lib", "linux", "libpubnub.a"));
+			AddZlibDependency();
 		}
 		else
 		{
 			System.Console.WriteLine("Error - this target platform is not supported");
 		}
+	}
+
+	// Compression middleware in every shipped archive calls zlib. Those objects
+	// are not archived into libpubnub, so each platform must link zlib itself.
+	private void AddZlibDependency()
+	{
+		PublicDependencyModuleNames.Add("zlib");
 	}
 
 	// libpubnub.a is a static archive of C-Core objects. CMake usage requirements
