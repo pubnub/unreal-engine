@@ -453,7 +453,7 @@ typedef struct pubnub_get_uuid_metadata_opts {
 
 /** @brief Zero-initializer for @c pubnub_get_uuid_metadata_opts_t. */
 #define PUBNUB_GET_UUID_METADATA_OPTS_INIT \
-    {NULL, PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM}
+    {NULL, PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM, 0}
 
 /**
  * @brief Options for @c pubnub_set_uuid_metadata.
@@ -595,7 +595,7 @@ typedef struct pubnub_set_uuid_metadata_opts {
 /** @brief Zero-initializer for @c pubnub_set_uuid_metadata_opts_t. */
 #define PUBNUB_SET_UUID_METADATA_OPTS_INIT \
     {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, \
-     PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM}
+     PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM, NULL, 0}
 
 /**
  * @brief Options for @c pubnub_remove_uuid_metadata.
@@ -715,7 +715,7 @@ typedef struct pubnub_get_channel_metadata_opts {
 
 /** @brief Zero-initializer for @c pubnub_get_channel_metadata_opts_t. */
 #define PUBNUB_GET_CHANNEL_METADATA_OPTS_INIT \
-    {NULL, PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM}
+    {NULL, PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM, 0}
 
 /**
  * @brief Options for @c pubnub_set_channel_metadata.
@@ -833,7 +833,7 @@ typedef struct pubnub_set_channel_metadata_opts {
 /** @brief Zero-initializer for @c pubnub_set_channel_metadata_opts_t. */
 #define PUBNUB_SET_CHANNEL_METADATA_OPTS_INIT \
     {NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, \
-     PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM}
+     PUBNUB_APP_CONTEXT_INCLUDE_CUSTOM, NULL, 0}
 
 /**
  * @brief Options for @c pubnub_remove_channel_metadata.
