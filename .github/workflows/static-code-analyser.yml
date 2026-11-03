@@ -22,6 +22,7 @@ jobs:
     name: Static code analyser
     runs-on:
       group: macos-gh
+    timeout-minutes: 180
     defaults:
       run:
         shell: bash

@@ -262,15 +262,25 @@ main() {
   write_host_project "${HOST_DIR}"
   clean_report_dirs
 
+  # -WaitMutex blocks inside UnrealBuildTool before it prints anything, so a
+  # second engine build on this runner looks like a hung job. Fail instead.
+  if pgrep -lf "UnrealBuildTool" >/dev/null 2>&1; then
+    echo "Another UnrealBuildTool is still running on this machine:" >&2
+    pgrep -lf "UnrealBuildTool" >&2 || true
+    die "Stop that process or wait for it to exit, then rerun this job. This check does not wait for the engine lock."
+  fi
+
   local build_sh="${UE_ROOT}/Engine/Build/BatchFiles/Mac/Build.sh"
-  "${build_sh}" AnalyzerHostEditor Mac Development \
+  echo "Starting UnrealBuildTool. Each PubnubLibrary .cpp file is analyzed on its own; a large file can take many minutes and the log names the file while it runs."
+  # A pseudo-terminal makes UBT flush each log line. Without it, GitHub Actions
+  # can hold the whole step output until the process exits.
+  script -eq /dev/null "${build_sh}" AnalyzerHostEditor Mac Development \
     -Project="${HOST_DIR}/AnalyzerHost.uproject" \
     -StaticAnalyzer=Clang \
     -StaticAnalyzerOutputType=html \
     -StaticAnalyzerProjectOnly \
     -DisableUnity \
-    -Module=PubnubLibrary \
-    -WaitMutex
+    -Module=PubnubLibrary
 
   collect_findings
 }
