@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 #
-# Run the UE 5.4 Clang static analyzer on PubnubLibrary and fail when it reports an issue.
+# Run the UE 5.5 Clang static analyzer on PubnubLibrary and fail when it reports an issue.
 #
 # The plugin repository has no .uproject, so this creates a temporary editor host,
 # links this checkout in as Plugins/PubnubLibrary, and analyzes only PubnubLibrary.
 # PubnubLibraryTests sets bDisableStaticAnalysis and is not passed to -Module.
 #
-# UE 5.4 on Mac uses the Clang shipped with Xcode 14.1 through 16.9 (see
-# Engine/Config/Apple/Apple_SDK.json). UnrealBuildTool does not look at a
-# separately installed LLVM, so this script does not download one.
+# The macos-gh runner has UE 5.5. That engine uses the Clang shipped with
+# Xcode 15.2 through 16.9 (see Engine/Config/Apple/Apple_SDK.json).
+# UnrealBuildTool does not look at a separately installed LLVM, so this script
+# does not download one.
 #
 # HTML reports are written under <UE>/Engine/Source/<File>.plist because that is
 # the analyzer process working directory. A report folder is created only for a
@@ -17,15 +18,15 @@
 #
 # Usage:
 #   ./run_static_analysis_mac.sh
-#   UE_ROOT="/Users/Shared/Epic Games/UE_5.4" ./run_static_analysis_mac.sh
+#   UE_ROOT="/Users/Shared/Epic Games/UE_5.5" ./run_static_analysis_mac.sh
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-UE_ROOT="${UE_ROOT:-/Users/Shared/Epic Games/UE_5.4}"
+UE_ROOT="${UE_ROOT:-/Users/Shared/Epic Games/UE_5.5}"
 REPORT_ROOT="${PLUGIN_ROOT}/clang-analysis-reports"
-XCODE_MIN="14.1.0"
+XCODE_MIN="15.2.0"
 XCODE_MAX="16.9.0"
 
 die() {
@@ -61,7 +62,7 @@ require_macos() {
 
 require_xcode() {
   if ! xcode-select -p >/dev/null 2>&1; then
-    die "Xcode is not selected. UE 5.4 analyzes with the Clang from Xcode ${XCODE_MIN} through ${XCODE_MAX}. Install that Xcode and run xcode-select -s. A separate LLVM install is not used."
+    die "Xcode is not selected. UE 5.5 analyzes with the Clang from Xcode ${XCODE_MIN} through ${XCODE_MAX}. Install that Xcode and run xcode-select -s. A separate LLVM install is not used."
   fi
   command -v xcodebuild >/dev/null 2>&1 || die "xcodebuild was not found. Install Xcode ${XCODE_MIN} through ${XCODE_MAX}."
 
@@ -72,7 +73,7 @@ require_xcode() {
   version="$(printf '%s\n' "${version_output}" | awk '/^Xcode / { print $2; exit }')"
   [[ -n "${version}" ]] || die "Could not read the Xcode version from: ${version_output}"
   if ! version_ge "${version}" "${XCODE_MIN}" || ! version_ge "${XCODE_MAX}" "${version}"; then
-    die "Xcode ${version} is outside UE 5.4's supported range ${XCODE_MIN}–${XCODE_MAX}. Select a supported Xcode with xcode-select. Do not install a separate LLVM; UnrealBuildTool uses Xcode's Clang."
+    die "Xcode ${version} is outside UE 5.5's supported range ${XCODE_MIN}–${XCODE_MAX}. Select a supported Xcode with xcode-select. Do not install a separate LLVM; UnrealBuildTool uses Xcode's Clang."
   fi
 
   local clang
@@ -85,7 +86,7 @@ require_xcode() {
 
 require_engine() {
   local build_sh="${UE_ROOT}/Engine/Build/BatchFiles/Mac/Build.sh"
-  [[ -x "${build_sh}" || -f "${build_sh}" ]] || die "UE 5.4 Mac Build.sh was not found at '${build_sh}'. Set UE_ROOT to the engine install (default: /Users/Shared/Epic Games/UE_5.4)."
+  [[ -x "${build_sh}" || -f "${build_sh}" ]] || die "UE 5.5 Mac Build.sh was not found at '${build_sh}'. Set UE_ROOT to the engine install (default: /Users/Shared/Epic Games/UE_5.5)."
   echo "Engine: ${UE_ROOT}"
 }
 
@@ -113,7 +114,7 @@ write_host_project() {
   cat > "${host}/AnalyzerHost.uproject" <<'EOF'
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.4",
+	"EngineAssociation": "5.5",
 	"Category": "",
 	"Description": "Temporary host used to run the PubnubLibrary Clang static analyzer.",
 	"Modules": [
@@ -142,7 +143,7 @@ public class AnalyzerHostEditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
-		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
+		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_5;
 		ExtraModuleNames.Add("AnalyzerHost");
 	}
 }
@@ -158,7 +159,7 @@ public class AnalyzerHostTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
-		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
+		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_5;
 		ExtraModuleNames.Add("AnalyzerHost");
 	}
 }

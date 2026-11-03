@@ -21,7 +21,7 @@ jobs:
   static-code-analyser:
     name: Static code analyser
     runs-on:
-      group: organization/Default
+      group: macos-gh
     defaults:
       run:
         shell: bash
@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Run static code analyser
         env:
-          UE_ROOT: ${{ vars.UE_ROOT || '/Users/Shared/Epic Games/UE_5.4' }}
+          UE_ROOT: ${{ vars.UE_ROOT || '/Users/Shared/Epic Games/UE_5.5' }}
         run: bash Scripts/run_static_analysis_mac.sh
       - name: Upload analyzer reports
         if: failure()
