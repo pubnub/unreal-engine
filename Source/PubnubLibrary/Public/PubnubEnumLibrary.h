@@ -6,15 +6,27 @@
 #include "Misc/EnumRange.h"
 #include "PubnubEnumLibrary.generated.h"
 
+/** HTTP method used by publish. Values match pubnub_publish_method_t. */
 UENUM(BlueprintType)
 enum class EPubnubPublishMethod : uint8
 {
+	/** Message is part of the URL path. There is no body, so compression does not apply. */
 	PPM_SendViaGET				UMETA(DisplayName="SendViaGET"),
-	PPM_SendViaPOST				UMETA(DisplayName="SendViaPOST"),
-	PPM_UsePATCH				UMETA(DisplayName="UsePATCH"),
-	PPM_SendViaPOSTwithGZIP		UMETA(DisplayName="SendViaPOSTwithGZIP"),
-	PPM_UsePATCHwithGZIP		UMETA(DisplayName="UsePATCHwithGZIP"),
-	PPM_UseDELETE				UMETA(DisplayName="UseDELETE")
+	/** Message is part of the request body. Required for compression. */
+	PPM_SendViaPOST				UMETA(DisplayName="SendViaPOST")
+};
+
+/**
+ * Request-body compression preference.
+ * Only POST publishes have a body, so this is ignored for GET.
+ */
+UENUM(BlueprintType)
+enum class EPubnubPublishCompress : uint8
+{
+	/** Send the request body uncompressed. */
+	PPC_No						UMETA(DisplayName="No"),
+	/** Gzip the request body and send Content-Encoding: gzip. Ignored unless PublishMethod is POST. */
+	PPC_Yes						UMETA(DisplayName="Yes")
 };
 
 UENUM(BlueprintType)

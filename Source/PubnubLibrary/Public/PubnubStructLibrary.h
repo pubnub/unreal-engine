@@ -20,7 +20,7 @@ struct FPubnubLoggerConfig
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
 	EPubnubLogLevel DefaultLoggerMinLevel = EPubnubLogLevel::PLL_Warning;
 
-	/** Minimum level for the built-in default logger for C-Core log source. */
+	/** Minimum level for logs that come from the PubNub library itself. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger")
 	EPubnubLogLevel DefaultLoggerMinCCoreLevel = EPubnubLogLevel::PLL_None;
 
@@ -39,20 +39,22 @@ struct FPubnubLoggerConfig
  * PAM v3 token minted by your backend. Do not ship a Secret Key in client builds.
  * See https://www.pubnub.com/docs/general/setup/access-manager
  */
+class UPubnubCryptoModule;
+
 USTRUCT(BlueprintType)
 struct FPubnubConfig
 {
 	GENERATED_BODY()
 
 	/** Specifies the Publish Key to be used for publishing messages to a channel. You can get one from the PubNub Admin Portal. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PublishKey = "demo";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PublishKey = "";
 	/** Specifies the Subscribe Key to be used for subscribing to a channel. You can get one from the PubNub Admin Portal. */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SubscribeKey = "demo";
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString SubscribeKey = "";
 	/**
 	 * Secret Key from the Admin Portal. Grants unrestricted root permissions on the keyset.
-	 * Server/admin use only — never ship this value in client builds. Provide it when creating a
-	 * dedicated-server or backend client via FPubnubConfig, not via global plugin settings.
-	 * Set SetSecretKeyAutomatically to true or call SetSecretKey after initialization.
+	 * Server/admin use only — never ship this value in client builds. Provide it in FPubnubConfig
+	 * when creating a dedicated-server or backend client. It is applied only at creation and
+	 * cannot be changed after the client exists.
 	 * For client apps, use PAM v3 tokens minted server-side and SetAuthToken instead.
 	 * See https://www.pubnub.com/docs/general/setup/access-manager
 	 */
@@ -62,14 +64,19 @@ struct FPubnubConfig
 	 * It's a UTF-8 encoded string of up to 92 alphanumeric characters.
 	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
-	/**
-	 * If true, SecretKey is applied during client initialization. Server/admin use only.
-	 * Do not enable this in shipped game clients.
-	 */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Server Only") bool SetSecretKeyAutomatically = false;
 	/** Logger setup used during client initialization. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Logger") FPubnubLoggerConfig LoggerConfig;
-	
+	/** PubNub origin host, leave empty to use default origin. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Origin = "";
+	/**
+	 * Payload crypto module. Call InitCryptoModule on it before creating the client.
+	 * Leave unset to publish and subscribe without payload encryption.
+	 * The module must stay alive for the life of the client.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub|Crypto")
+	TObjectPtr<UPubnubCryptoModule> CryptoModule = nullptr;
+	/** **Internal usage only**. Override for the base SDK identifier. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString PNSdkOverride = "";
 };
 
 /**
@@ -93,13 +100,19 @@ struct FPubnubPublishSettings
 
 	//If true, the message is stored in history. If false, the message is not stored in history.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool StoreInHistory = true;
-	//If true, the message is replicated, thus will be received by all subscribers. If false, the message is not replicated
-	//and will be delivered only to Function event handlers. Setting false here and false on store is referred to as a Fire (instead of a publish).
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool Replicate = true;
 	//An optional JSON object, used to send additional (meta) data about the message, which can be used for stream filtering.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString MetaData = "";
-	//Defines the method by which publish transaction will be performed. Can be HTTP GET or POST. If using POST, content can be GZIP compressed.
+	/**
+	 * HTTP method for this publish.
+	 * GET puts the message in the URL path and cannot be compressed.
+	 * POST puts the message in the request body. Set this to POST to compress.
+	 */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishMethod PublishMethod = EPubnubPublishMethod::PPM_SendViaGET;
+	/**
+	 * Gzip preference for the request body. No sends the body uncompressed. Yes asks for gzip.
+	 * Applied only when PublishMethod is POST. Yes does not switch a GET publish to POST.
+	 */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") EPubnubPublishCompress Compress = EPubnubPublishCompress::PPC_No;
 	//For how many hours message should be kept and available with history API. If 0, server default will be used.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Ttl = 0;
 	/** User-specified message type.
@@ -150,10 +163,6 @@ struct FPubnubSetStateSettings
 
 	//The string with the channel name (or comma-delimited list of channel group names) to set state for.
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString ChannelGroup = "";
-	//The user_id of the user for which to set state for. If NULL, the current user_id of the p context will be used.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID = "";
-	//If set to true, you can set the state and make a heartbeat call at the same time via the /heartbeat endpoint.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") bool HeartBeat = false;
 };
 
 USTRUCT(BlueprintType)
@@ -439,15 +448,30 @@ struct FPubnubGrantTokenPermissions
 	}
 };
 
+/** One user returned by ListUsersFromChannel for a single channel. */
 USTRUCT(BlueprintType)
-struct FPubnubListUsersFromChannelWrapper
+struct FPubnubUserFromChannel
 {
 	GENERATED_BODY()
 
-	//The number of users in a given channel.
+	/** User id present on the channel. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString UserID;
+	/** Raw state JSON. Empty when state was not requested or the user has none. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString State;
+};
+
+/** Users present on one channel, as returned by ListUsersFromChannel. */
+USTRUCT(BlueprintType)
+struct FPubnubUsersFromChannel
+{
+	GENERATED_BODY()
+
+	/** Channel these users were listed on. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Channel;
+	/** Server occupancy. Can be larger than Users.Num() when Limit/Offset paginate the list. */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Occupancy = 0;
-	//A map of user IDs and their respective state.
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FString> UsersState;
+	/** Users returned for this channel. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TArray<FPubnubUserFromChannel> Users;
 };
 
 USTRUCT(BlueprintType)
@@ -1070,7 +1094,7 @@ struct FPubnubSubscriptionCursor
 
 	/**Time from which messages should be retrieved */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString Timetoken = "";
-	/**Region of the messages */
+	/**Region of the messages. Ignored at the moment.*/
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int Region = 0;
 };
 
@@ -1125,8 +1149,12 @@ struct FPubnubListUsersFromChannelResult
 	
 	/** Status and error information for this operation */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
-	/** Occupancy and user state information for the channel */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubListUsersFromChannelWrapper Data;
+	/** Occupancy across all returned channels. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalOccupancy = 0;
+	/** Channels reported by the server. Channels.Num() is how many detailed entries were returned. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") int TotalChannels = 0;
+	/** Users present on each returned channel, keyed by channel name. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FPubnubUsersFromChannel> Channels;
 };
 
 USTRUCT(BlueprintType)
@@ -1147,8 +1175,8 @@ struct FPubnubGetStateResult
 	
 	/** Status and error information for this operation */
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FPubnubOperationResult Result;
-	/** The state data as JSON string */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") FString StateResponse;
+	/** Raw state JSON keyed by channel name. Empty when the user has no state on that channel. */
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Pubnub") TMap<FString, FString> States;
 };
 
 USTRUCT(BlueprintType)

@@ -3,98 +3,60 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PubNub.h"
-#include "PubnubCryptorInterface.h"
-#include "UObject/NoExportTypes.h"
+#include "Crypto/PubnubCryptorInterface.h"
 #include "PubnubCryptoModule.generated.h"
 
+struct pubnub_crypto_module;
+
+class UPubnubClient;
 
 /**
- * Crypto module implementation for PubNub message encryption and decryption.
- * 
- * This class provides a modular system for managing multiple encryption/decryption methods
- * within a single PubNub instance. It implements the IPubnubCryptoProviderInterface to
- * provide a unified interface for encrypting/decrypting messages using different cryptors.
- * 
- * Key Features:
- * - Supports multiple encryption/decryption methods (cryptors)
- * - Automatic routing based on cryptor identifier in header
- * - Blueprint-compatible interface for Unreal Engine projects
- * - Supports legacy encryption methods for backward compatibility
- * 
- * Usage:
- * 1. Create an instance of UPubnubCryptoModule
- * 2. Initialize it with a default cryptor and optional additional cryptors
- * 3. Use the module with PubNub's crypto module for message encryption/decryption
- * 
- * @note In Blueprints, the cryptors must be cast to IPubnubCryptorInterface before being
- *       provided to InitCryptoModule. Don't plug them directly as UObjects, as this will
- *       compile, but empty Crypto object will be provided.
- * @note The module stores strong UPROPERTY references to the cryptors to prevent GC during use.
- * @note The module is designed to be used with PubNub's crypto module for automatic message
- *       encryption/decryption.
+ * Holds the cryptors used for payload encryption.
+ *
+ * Assign an initialized module to FPubnubConfig::CryptoModule before UPubnubSubsystem::CreatePubnubClient.
+ * The client keeps that module for publish, subscribe, history, and files.
+ * InitCryptoModule refuses to replace it while any client still holds it.
+ *
+ * The default cryptor encrypts outbound payloads. Additional cryptors are used only when decrypting
+ * a payload whose 4-byte id matches them. At most 4 additional cryptors are accepted.
+ *
+ * Only UPubnubAesCryptor and UPubnubLegacyCryptor can be registered. Custom cryptors are rejected.
  */
 UCLASS(Blueprintable)
-class PUBNUBLIBRARY_API UPubnubCryptoModule : public UObject, public IPubnubCryptoProviderInterface
+class PUBNUBLIBRARY_API UPubnubCryptoModule : public UObject
 {
 	GENERATED_BODY()
 
-public:
+	friend class UPubnubClient;
 
-	/** Initializes this crypto module with a default cryptor and optional additional cryptors.
-	 *
-	 * Purpose:
-	 * - Registers the UE cryptors that this module will use to encrypt/decrypt data.
-	 * - The default cryptor is used for outbound encryption.
-	 * - On inbound decryption, the module routes to the correct cryptor by matching its 4‑byte identifier.
-	 *
-	 * Requirements:
-	 * - Each cryptor must implement IPubnubCryptorInterface and return a stable 4‑byte identifier
-	 *   from GetIdentifier() (first 4 bytes are used for routing).
-	 * - Call this before SetCryptoModule, so it's fully initialized on time.
-	 *
-	 * Lifetime/GC:
-	 * - The module stores strong UPROPERTY references to these cryptors to prevent GC during use.
-	 *
-	 * @param InDefaultCryptor: The primary cryptor used for encryption by default.
-	 * @param InAdditionalCryptors: Optional list of alternative cryptors; used only when their identifier
-	 *   appears in the incoming header (mixed/legacy + custom scenarios).
-	 *
-	 * @note: In Blueprints InAdditionalCryptors has to be Casted to IPubnubCryptoProviderInterface. Don't plug them directly as UObjects,
-	 *		  as this will compile, but empty Crypto object will be provided.
+public:
+	/**
+	 * Registers cryptors and prepares this module for client creation.
+	 * Each cryptor must already have its cipher key set.
+	 * Fails when a live client still holds this module.
+	 * @return true when the module is ready.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "PubNub|Crypto")
-	void InitCryptoModule(const TScriptInterface<IPubnubCryptorInterface>& InDefaultCryptor, const TArray<TScriptInterface<IPubnubCryptorInterface>>& InAdditionalCryptors);
+	bool InitCryptoModule(const TScriptInterface<IPubnubCryptorInterface>& InDefaultCryptor, const TArray<TScriptInterface<IPubnubCryptorInterface>>& InAdditionalCryptors);
+
+	virtual void BeginDestroy() override;
+
+	/** Null until InitCryptoModule succeeds. */
+	pubnub_crypto_module* GetCCoreModule() const { return CCoreModule; }
 
 private:
+	void AddClientBorrow();
+	void RemoveClientBorrow();
+	void DestroyCCoreModule();
 
-	//Constants
-	static constexpr char Sentinel[] = "PNED";
-	static constexpr size_t SentinelLen = 4;
-	static constexpr uint8  HeaderVer = 1;
-	static constexpr size_t IdentLen  = 4;
-	inline static const uint8 LegacyId[4] = {0,0,0,0};
-	
-	//IPubnubCryptoProviderInterface
-	virtual FString ProviderEncrypt_Implementation(const FString& Data) override;
-	virtual FString ProviderDecrypt_Implementation(const FString& Data) override;
+	UPROPERTY()
+	TScriptInterface<IPubnubCryptorInterface> DefaultCryptor;
 
-	//Cryptors provided during Init
-    UPROPERTY()
-    TScriptInterface<IPubnubCryptorInterface> DefaultCryptor;
-    UPROPERTY()
-    TArray<TScriptInterface<IPubnubCryptorInterface>> AdditionalCryptors;
-	
-	
-    // Utilities for header format compatible with C-Core provider
-    bool IdEquals(const uint8 a[4], const uint8 b[4]);
-    size_t ComputeHeaderSize(size_t metadataSize);
-    size_t WriteHeader(uint8* dst, size_t headerSize, const uint8 ident[4], size_t metadataSize);
-    bool ParseHeader(const uint8* buf, size_t bufSize, uint8 outIdent[4], size_t& outHeaderSize, size_t& outMetaSize, size_t& outMetaOffset);
-	
-	bool ProviderEncrypt_Internal(UPubnubCryptoModule* Self, const TArray<uint8>& PlainUTF8, TArray<uint8>& OutHeaderPlusCipher);
-	bool ProviderDecrypt_Internal(UPubnubCryptoModule* Self, const TArray<uint8>& InHeaderPlusCipher, TArray<uint8>& OutPlainUTF8);
-	
-    // Select Unreal cryptor by 4-byte identifier. Returns null interface if not found
-    TScriptInterface<IPubnubCryptorInterface> FindUECryptorById(const uint8 ident[4]) const;
+	UPROPERTY()
+	TArray<TScriptInterface<IPubnubCryptorInterface>> AdditionalCryptors;
+
+	pubnub_crypto_module* CCoreModule = nullptr;
+
+	/** Live contexts that borrowed CCoreModule. pubnub_create does not copy it. */
+	int32 ClientBorrowCount = 0;
 };

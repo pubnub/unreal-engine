@@ -207,10 +207,6 @@ bool FPubnubFetchHistory_HappyPath_DefaultSettings_FindsPublishedMessage::RunTes
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	FPubnubPublishMessageResult Pub = PubnubClient->PublishMessage(Channel, MessageJson, FPubnubPublishSettings());
@@ -245,10 +241,6 @@ bool FPubnubFetchHistory_FullSettings_AllIncludes_MaxPerChannel::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	FPubnubPublishSettings PubSettings;
@@ -295,10 +287,6 @@ bool FPubnubFetchHistory_MaxPerChannel_LimitsReturnedMessages::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	for (int32 i = 0; i < 3; ++i)
@@ -333,22 +321,23 @@ bool FPubnubFetchHistory_TimeWindow_StartNewerExclusive_EndOlderInclusive::RunTe
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	TestFalse(TEXT("Publish older"), PubnubClient->PublishMessage(Channel, TEXT("\"mp_win_old\""), FPubnubPublishSettings()).Result.Error);
 	FPlatformProcess::Sleep(0.05f);
 	TestFalse(TEXT("Publish newer"), PubnubClient->PublishMessage(Channel, TEXT("\"mp_win_new\""), FPubnubPublishSettings()).Result.Error);
 
-	FPubnubFetchHistoryResult All = PubnubClient->FetchHistory(Channel, FPubnubFetchHistorySettings());
+	FPubnubFetchHistorySettings AllSettings;
+	AllSettings.MaxPerChannel = 25;
+	FPubnubFetchHistoryResult All = PubnubClient->FetchHistory(Channel, AllSettings);
 	TestFalse(TEXT("Full fetch should succeed"), All.Result.Error);
 	const FPubnubHistoryMessageData* OldMsg = PubnubMessagePersistenceTestsHelper::FindMessageContaining(All.Messages, TEXT("mp_win_old"));
 	const FPubnubHistoryMessageData* NewMsg = PubnubMessagePersistenceTestsHelper::FindMessageContaining(All.Messages, TEXT("mp_win_new"));
-	TestNotNull(TEXT("Should find older message"), OldMsg);
-	TestNotNull(TEXT("Should find newer message"), NewMsg);
+	if (!TestNotNull(TEXT("Should find older message"), OldMsg) || !TestNotNull(TEXT("Should find newer message"), NewMsg))
+	{
+		CleanUp();
+		return false;
+	}
 
 	const FString TTOld = OldMsg->Timetoken;
 	const FString TTNew = NewMsg->Timetoken;
@@ -362,7 +351,10 @@ bool FPubnubFetchHistory_TimeWindow_StartNewerExclusive_EndOlderInclusive::RunTe
 	FPubnubFetchHistoryResult Win = PubnubClient->FetchHistory(Channel, Fs);
 	TestFalse(TEXT("Window fetch should succeed"), Win.Result.Error);
 	TestEqual(TEXT("Window should return exactly the older message"), Win.Messages.Num(), 1);
-	TestTrue(TEXT("Remaining message should be older payload"), Win.Messages[0].Message.Contains(TEXT("mp_win_old")));
+	if (Win.Messages.Num() == 1)
+	{
+		TestTrue(TEXT("Remaining message should be older payload"), Win.Messages[0].Message.Contains(TEXT("mp_win_old")));
+	}
 
 	CleanUp();
 	return true;
@@ -381,10 +373,6 @@ bool FPubnubFetchHistory_ConcurrentSyncWhileAsync_ReturnsMutexError::RunTest(con
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Channel]()
@@ -470,10 +458,6 @@ bool FPubnubDeleteMessages_HappyPath_DefaultSettings_ClearsHistory::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	TestFalse(TEXT("Publish"), PubnubClient->PublishMessage(Channel, TEXT("\"mp_del_happy\""), FPubnubPublishSettings()).Result.Error);
@@ -506,22 +490,23 @@ bool FPubnubDeleteMessages_FullParameters_TimeSlice_KeepsNewerMessage::RunTest(c
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	TestFalse(TEXT("Publish old"), PubnubClient->PublishMessage(Channel, TEXT("\"mp_slice_old\""), FPubnubPublishSettings()).Result.Error);
 	FPlatformProcess::Sleep(0.05f);
 	TestFalse(TEXT("Publish new"), PubnubClient->PublishMessage(Channel, TEXT("\"mp_slice_new\""), FPubnubPublishSettings()).Result.Error);
 
-	FPubnubFetchHistoryResult All = PubnubClient->FetchHistory(Channel, FPubnubFetchHistorySettings());
+	FPubnubFetchHistorySettings AllSettings;
+	AllSettings.MaxPerChannel = 25;
+	FPubnubFetchHistoryResult All = PubnubClient->FetchHistory(Channel, AllSettings);
 	TestFalse(TEXT("Fetch should succeed"), All.Result.Error);
 	const FPubnubHistoryMessageData* OldMsg = PubnubMessagePersistenceTestsHelper::FindMessageContaining(All.Messages, TEXT("mp_slice_old"));
 	const FPubnubHistoryMessageData* NewMsg = PubnubMessagePersistenceTestsHelper::FindMessageContaining(All.Messages, TEXT("mp_slice_new"));
-	TestNotNull(TEXT("Find old"), OldMsg);
-	TestNotNull(TEXT("Find new"), NewMsg);
+	if (!TestNotNull(TEXT("Find old"), OldMsg) || !TestNotNull(TEXT("Find new"), NewMsg))
+	{
+		CleanUp();
+		return false;
+	}
 
 	FPubnubDeleteMessagesSettings Ds;
 	Ds.Start = PubnubMessagePersistenceTestsHelper::NewerOfTwoTimetokens(OldMsg->Timetoken, NewMsg->Timetoken);
@@ -533,7 +518,10 @@ bool FPubnubDeleteMessages_FullParameters_TimeSlice_KeepsNewerMessage::RunTest(c
 	FPubnubFetchHistoryResult After = PubnubClient->FetchHistory(Channel, FPubnubFetchHistorySettings());
 	TestFalse(TEXT("Fetch after partial delete should succeed"), After.Result.Error);
 	TestEqual(TEXT("Only newer message should remain"), After.Messages.Num(), 1);
-	TestTrue(TEXT("Remaining should be newer payload"), After.Messages[0].Message.Contains(TEXT("mp_slice_new")));
+	if (After.Messages.Num() == 1)
+	{
+		TestTrue(TEXT("Remaining should be newer payload"), After.Messages[0].Message.Contains(TEXT("mp_slice_new")));
+	}
 
 	CleanUp();
 	return true;
@@ -552,10 +540,6 @@ bool FPubnubDeleteMessages_ConcurrentSyncWhileAsync_ReturnsMutexError::RunTest(c
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Channel]()
@@ -641,10 +625,6 @@ bool FPubnubMessageCounts_HappyPath_BaselineTimetoken_IncludesPublished::RunTest
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	TestFalse(TEXT("Publish"), PubnubClient->PublishMessage(Channel, TEXT("\"mp_mc_happy\""), FPubnubPublishSettings()).Result.Error);
@@ -671,10 +651,6 @@ bool FPubnubMessageCounts_UsingOlderPublishedTimetoken_CountsAtLeastOneNewer::Ru
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	FPubnubPublishMessageResult P1 = PubnubClient->PublishMessage(Channel, TEXT("\"mp_mc_1\""), FPubnubPublishSettings());
@@ -707,10 +683,6 @@ bool FPubnubMessageCounts_ConcurrentSyncWhileAsync_ReturnsMutexError::RunTest(co
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Channel, Tt]()
@@ -829,10 +801,6 @@ bool FPubnubMessageCountsMultiple_HappyPath_TwoChannels_IndependentCounts::RunTe
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	for (int32 i = 0; i < 3; ++i)
@@ -869,10 +837,6 @@ bool FPubnubMessageCountsMultiple_ConcurrentSyncWhileAsync_ReturnsMutexError::Ru
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, Ch, Tt]()

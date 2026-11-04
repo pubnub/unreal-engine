@@ -2,124 +2,8 @@
 
 
 #include "FunctionLibraries/PubnubUtilities.h"
-#include "Config/PubnubSettings.h"
-#include "Entities/PubnubSubscription.h"
-#include "FunctionLibraries/PubnubJsonUtilities.h"
 #include "Kismet/KismetMathLibrary.h"
 
-
-FPubnubConfig UPubnubUtilities::PubnubConfigFromPluginSettings(UPubnubSettings* PubnubSettings)
-{
-	FPubnubConfig Config;
-	Config.PublishKey = PubnubSettings->PublishKey;
-	Config.SubscribeKey = PubnubSettings->SubscribeKey;
-
-	return Config;
-}
-
-FString UPubnubUtilities::PubnubGetLastServerHttpResponse(pubnub_t* Context)
-{
-	pubnub_char_mem_block LastServerResponse;
-	pubnub_last_http_response_body(Context, &LastServerResponse);
-	return PubnubCharMemBlockToString(LastServerResponse);
-}
-
-int UPubnubUtilities::RoundLimitForPubnubFunctions(int ProvidedLimit)
-{
-	return UKismetMathLibrary::Clamp(ProvidedLimit, 0, PUBNUB_MAX_LIMIT);
-}
-
-FString UPubnubUtilities::AddQuotesToString(const FString InString, bool SkipIfHasQuotes)
-{
-	if(InString.Left(1) != "\"" || InString.Right(1) != "\"" || !SkipIfHasQuotes)
-	{
-		return "\"" + InString + "\"";
-	}
-
-	return InString;
-}
-
-FString UPubnubUtilities::RemoveOuterQuotesFromString(const FString InString)
-{
-	FString FinalString = InString;
-	if(FinalString.Left(1) == "\"")
-	{
-		FinalString.RightChopInline(1);
-	}
-	if(FinalString.Right(1) == "\"")
-	{
-		FinalString.LeftChopInline(1);
-	}
-
-	return FinalString;
-}
-
-FString UPubnubUtilities::PubnubCharMemBlockToString(const pubnub_char_mem_block PnChar)
-{
-	if (!PnChar.ptr || PnChar.size == 0)
-	{
-		return FString();
-	}
-	
-	FUTF8ToTCHAR Converter(reinterpret_cast<const ANSICHAR*>(PnChar.ptr), PnChar.size);
-	return FString(Converter.Length(), Converter.Get());
-}
-
-FString UPubnubUtilities::ArrayOfStringsToCommaSeparatedString(const TArray<FString> ArrayOfStrings)
-{
-	FString FinalString = "";
-
-	for(const FString& StringItem : ArrayOfStrings)
-	{
-		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
-		FinalString.Append(StringItem);
-	}
-
-	return FinalString;
-}
-
-bool UPubnubUtilities::SafeCopyFStringToCharBuffer(char* Destination, int DestSize, const FString& Source, const TCHAR* KeyName)
-{
-	if (!Destination || DestSize <= 0)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("SafeCopyFStringToCharBuffer: Invalid destination buffer for %s"), KeyName);
-		return false;
-	}
-
-	if (Source.IsEmpty())
-	{
-		Destination[0] = '\0';
-		return true;
-	}
-
-	// Use UTF8 conversion with proper lifetime management (same pattern as FUTF8StringHolder)
-	FTCHARToUTF8 Converter(*Source);
-	const char* Utf8Source = Converter.Get();
-	
-	if (!Utf8Source)
-	{
-		UE_LOG(PubnubLog, Error, TEXT("SafeCopyFStringToCharBuffer: Failed to convert %s to UTF8"), KeyName);
-		Destination[0] = '\0';
-		return false;
-	}
-
-	// Get source length
-	const int SourceLen = Converter.Length();
-	
-	// Check if source fits in destination (leaving space for null terminator)
-	if (SourceLen >= DestSize)
-	{
-		UE_LOG(PubnubLog, Warning, TEXT("SafeCopyFStringToCharBuffer: %s is too long (%d chars), truncating to %d chars"), 
-			KeyName, SourceLen, DestSize - 1);
-	}
-
-	// Copy with bounds checking - copy at most (DestSize - 1) characters
-	const int CopyLen = FMath::Min(SourceLen, DestSize - 1);
-	FMemory::Memcpy(Destination, Utf8Source, CopyLen);
-	Destination[CopyLen] = '\0';
-
-	return true;
-}
 
 FString UPubnubUtilities::GetNameFromFunctionMacro(FString FunctionName)
 {
@@ -132,28 +16,6 @@ FString UPubnubUtilities::GetNameFromFunctionMacro(FString FunctionName)
 	FinalFunctionName.ReplaceInline(TEXT("_priv"), TEXT(""));
 	return FinalFunctionName;
 }
-
-FPubnubMessageData UPubnubUtilities::UEMessageFromPubnubMessage(pubnub_v2_message PubnubMessage)
-{
-	FPubnubMessageData MessageData;
-	MessageData.Message = PubnubCharMemBlockToString(PubnubMessage.payload);
-
-	//If message was just a string, we need to deserialize it
-	if(!UPubnubJsonUtilities::IsCorrectJsonString(MessageData.Message, false))
-	{
-		MessageData.Message = UPubnubJsonUtilities::DeserializeString(MessageData.Message);
-	}
-	
-	MessageData.Channel = PubnubCharMemBlockToString(PubnubMessage.channel);
-	MessageData.UserID = PubnubCharMemBlockToString(PubnubMessage.publisher);
-	MessageData.Timetoken = PubnubCharMemBlockToString(PubnubMessage.tt);
-	MessageData.Metadata = PubnubCharMemBlockToString(PubnubMessage.metadata);
-	MessageData.MessageType = (EPubnubMessageType)(PubnubMessage.message_type);
-	MessageData.CustomMessageType = PubnubCharMemBlockToString(PubnubMessage.custom_message_type);
-	MessageData.MatchOrGroup = PubnubCharMemBlockToString(PubnubMessage.match_or_group);
-	return MessageData;
-}
-
 FString UPubnubUtilities::MembershipIncludeToString(const FPubnubMembershipInclude& MembershipInclude)
 {
 	FString FinalString = "";
@@ -195,35 +57,37 @@ FString UPubnubUtilities::MemberIncludeToString(const FPubnubMemberInclude& Memb
 
 	return FinalString;
 }
-
-FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude)
+FString UPubnubUtilities::MembershipSortToString(const FPubnubMembershipSort& MemberInclude)
 {
 	FString FinalString = "";
-	if(GetAllInclude.IncludeCustom)			{FinalString.Append("custom,");}
-	if(GetAllInclude.IncludeStatus)			{FinalString.Append("status,");}
-	if(GetAllInclude.IncludeType)			{FinalString.Append("type,");}
-	//Total count is passed as a separate parameter, so it's not included directly in the final string
-
-	//If there was any include remove the last comma
-	if(!FinalString.IsEmpty())
+	//Form comma separated string of sorts
+	for(auto SingleSort : MemberInclude.MembershipSort)
 	{
-		FinalString.RemoveAt(FinalString.Len() - 1);
+		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
+		FinalString.Append(MembershipSortTypeToString(SingleSort.SortType));
+		//Default sort is ascending, so we only specify order when it's descending
+		if(SingleSort.SortOrder)
+		{
+			FinalString.Append(":desc");
+		}
 	}
 
 	return FinalString;
 }
 
-FString UPubnubUtilities::GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude)
+FString UPubnubUtilities::MemberSortToString(const FPubnubMemberSort& MemberInclude)
 {
 	FString FinalString = "";
-	if(GetMetadataInclude.IncludeCustom)			{FinalString.Append("custom,");}
-	if(GetMetadataInclude.IncludeStatus)			{FinalString.Append("status,");}
-	if(GetMetadataInclude.IncludeType)			{FinalString.Append("type,");}
-
-	//If there was any include remove the last comma
-	if(!FinalString.IsEmpty())
+	//Form comma separated string of sorts
+	for(auto SingleSort : MemberInclude.MemberSort)
 	{
-		FinalString.RemoveAt(FinalString.Len() - 1);
+		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
+		FinalString.Append(MemberSortTypeToString(SingleSort.SortType));
+		//Default sort is ascending, so we only specify order when it's descending
+		if(SingleSort.SortOrder)
+		{
+			FinalString.Append(":desc");
+		}
 	}
 
 	return FinalString;
@@ -277,74 +141,76 @@ FString UPubnubUtilities::MemberSortTypeToString(const EPubnubMemberSortType Sor
 	return "";
 }
 
+int UPubnubUtilities::RoundLimitForPubnubFunctions(int ProvidedLimit)
+{
+	return UKismetMathLibrary::Clamp(ProvidedLimit, 0, PUBNUB_MAX_LIMIT);
+}
+
+FString UPubnubUtilities::GetAllIncludeToString(const FPubnubGetAllInclude& GetAllInclude)
+{
+	FString FinalString;
+	if (GetAllInclude.IncludeCustom) { FinalString.Append(TEXT("custom,")); }
+	if (GetAllInclude.IncludeStatus) { FinalString.Append(TEXT("status,")); }
+	if (GetAllInclude.IncludeType) { FinalString.Append(TEXT("type,")); }
+	// Total count is a separate tribool, so it is not part of the include string.
+
+	if (!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::GetMetadataIncludeToString(const FPubnubGetMetadataInclude& GetMetadataInclude)
+{
+	FString FinalString;
+	if (GetMetadataInclude.IncludeCustom) { FinalString.Append(TEXT("custom,")); }
+	if (GetMetadataInclude.IncludeStatus) { FinalString.Append(TEXT("status,")); }
+	if (GetMetadataInclude.IncludeType) { FinalString.Append(TEXT("type,")); }
+
+	if (!FinalString.IsEmpty())
+	{
+		FinalString.RemoveAt(FinalString.Len() - 1);
+	}
+
+	return FinalString;
+}
+
+FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllSort)
+{
+	FString FinalString;
+	for (const FPubnubGetAllSingleSort& SingleSort : GetAllSort.GetAllSort)
+	{
+		if (!FinalString.IsEmpty())
+		{
+			FinalString.Append(TEXT(","));
+		}
+		FinalString.Append(GetAllSortTypeToString(SingleSort.SortType));
+		// Ascending is the server default, so only descending is written out.
+		if (SingleSort.SortOrder)
+		{
+			FinalString.Append(TEXT(":desc"));
+		}
+	}
+
+	return FinalString;
+}
+
 FString UPubnubUtilities::GetAllSortTypeToString(const EPubnubGetAllSortType SortType)
 {
 	switch (SortType)
 	{
 	case EPubnubGetAllSortType::PGAST_ID:
-		return "id";
+		return TEXT("id");
 	case EPubnubGetAllSortType::PGAST_Name:
-		return "name";
+		return TEXT("name");
 	case EPubnubGetAllSortType::PGAST_Updated:
-		return "updated";
+		return TEXT("updated");
 	case EPubnubGetAllSortType::PGAST_Status:
-		return "status";
+		return TEXT("status");
 	case EPubnubGetAllSortType::PGAST_Type:
-		return "type";
+		return TEXT("type");
 	}
-	return "";
-}
-
-FString UPubnubUtilities::MembershipSortToString(const FPubnubMembershipSort& MemberInclude)
-{
-	FString FinalString = "";
-	//Form comma separated string of sorts
-	for(auto SingleSort : MemberInclude.MembershipSort)
-	{
-		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
-		FinalString.Append(MembershipSortTypeToString(SingleSort.SortType));
-		//Default sort is ascending, so we only specify order when it's descending
-		if(SingleSort.SortOrder)
-		{
-			FinalString.Append(":desc");
-		}
-	}
-
-	return FinalString;
-}
-
-FString UPubnubUtilities::MemberSortToString(const FPubnubMemberSort& MemberInclude)
-{
-	FString FinalString = "";
-	//Form comma separated string of sorts
-	for(auto SingleSort : MemberInclude.MemberSort)
-	{
-		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
-		FinalString.Append(MemberSortTypeToString(SingleSort.SortType));
-		//Default sort is ascending, so we only specify order when it's descending
-		if(SingleSort.SortOrder)
-		{
-			FinalString.Append(":desc");
-		}
-	}
-
-	return FinalString;
-}
-
-FString UPubnubUtilities::GetAllSortToString(const FPubnubGetAllSort& GetAllInclude)
-{
-	FString FinalString = "";
-	//Form comma separated string of sorts
-	for(auto SingleSort : GetAllInclude.GetAllSort)
-	{
-		if(!FinalString.IsEmpty()) {FinalString.Append(",");}
-		FinalString.Append(GetAllSortTypeToString(SingleSort.SortType));
-		//Default sort is ascending, so we only specify order when it's descending
-		if(SingleSort.SortOrder)
-		{
-			FinalString.Append(":desc");
-		}
-	}
-
-	return FinalString;
+	return TEXT("");
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "FunctionLibraries/PubnubLogUtilities.h"
+#include "FunctionLibraries/PubnubInternalUtilities.h"
 #include "PubnubInternalStructLibrary.h"
 
 /**
@@ -582,6 +583,101 @@
 		return Result; \
 	}
 
+/**
+ * Returns from a wrapper-result _priv function when C-Core rejected the request
+ * before it became in-flight (validation, queue full, missing keys, ...).
+ *
+ * Requires a local pubnub_future_t named operation_future in the calling function.
+ * Releases the future. Does not store it on InFlightFuture.
+ * Fills ReturnWrapper.Result as a local error (Error = true, Status = 0).
+ *
+ * Usage: Use immediately after issuing a C-Core call that returns a future.
+ *
+ * @param ReturnWrapper Wrapper struct with an FPubnubOperationResult Result member
+ */
+#define PUBNUB_RETURN_WRAPPER_IF_FUTURE_NOT_IN_PROGRESS(ReturnWrapper) \
+	do { \
+		if (operation_future.status != PUBNUB_IN_PROGRESS) \
+		{ \
+			PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("failed to start. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_str(operation_future.status)))); \
+			pubnub_future_release(operation_future); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = pubnub_res_str(operation_future.status); \
+			ReturnWrapper.Result = Result; \
+			return ReturnWrapper; \
+		} \
+	} while (false)
+
+/**
+ * Returns from an FPubnubOperationResult-returning _priv function when C-Core
+ * rejected the request before it became in-flight.
+ *
+ * Requires a local pubnub_future_t named operation_future in the calling function.
+ * Releases the future. Does not store it on InFlightFuture.
+ *
+ * Usage: Use immediately after issuing a C-Core call that returns a future.
+ */
+#define PUBNUB_RETURN_OPERATION_RESULT_IF_FUTURE_NOT_IN_PROGRESS() \
+	do { \
+		if (operation_future.status != PUBNUB_IN_PROGRESS) \
+		{ \
+			PUBNUB_LOG_FUNCTION_ERROR(FString::Printf(TEXT("failed to start. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_str(operation_future.status)))); \
+			pubnub_future_release(operation_future); \
+			FPubnubOperationResult Result; \
+			Result.Error = true; \
+			Result.ErrorMessage = pubnub_res_str(operation_future.status); \
+			return Result; \
+		} \
+	} while (false)
+
+/**
+ * Stores operation_future on InFlightFuture, blocks in pubnub_await, and writes
+ * the outcome into OperationResult.
+ *
+ * Requires locals/members in the calling function:
+ *   - pubnub_future_t operation_future
+ *   - pubnub_future_t* InFlightFuture
+ *
+ * Does not return and does not release the future. Result accessors remain valid
+ * until the caller calls pubnub_future_release.
+ *
+ * On success: Error = false, Status = 200.
+ * On failure: Error = true, Status = HTTP code (0 if none), ErrorMessage from
+ * the response body or pubnub_res_str.
+ *
+ * @param OperationResult FPubnubOperationResult lvalue to fill
+ */
+#define PUBNUB_OPERATION_RESULT_AWAIT_FOR_FUTURE(OperationResult) \
+	do { \
+		*InFlightFuture = operation_future; \
+		const pubnub_res_t PubnubAwaitResult = pubnub_await(operation_future); \
+		PUBNUB_LOG_FUNCTION_TRACE(FString::Printf(TEXT("await finished. ResultCode=%s"), UTF8_TO_TCHAR(pubnub_res_str(PubnubAwaitResult)))); \
+		if (PubnubAwaitResult != PUBNUB_OK) \
+		{ \
+			OperationResult.Status = pubnub_response_status_code(operation_future); \
+			OperationResult.ErrorMessage = UPubnubInternalUtilities::PubnubStringViewToString(pubnub_response_error_message(operation_future)); \
+			if (OperationResult.ErrorMessage.IsEmpty()) \
+			{ \
+				OperationResult.ErrorMessage = pubnub_res_str(PubnubAwaitResult); \
+			} \
+			OperationResult.Error = true; \
+		} \
+		else \
+		{ \
+			OperationResult.Status = 200; \
+			OperationResult.Error = false; \
+		} \
+	} while (false)
+
+/**
+ * Wrapper equivalent of PUBNUB_OPERATION_RESULT_AWAIT_FOR_FUTURE.
+ * Writes into ReturnWrapper.Result.
+ *
+ * @param ReturnWrapper Wrapper struct with an FPubnubOperationResult Result member
+ */
+#define PUBNUB_WRAPPER_AWAIT_FOR_FUTURE(ReturnWrapper) \
+	PUBNUB_OPERATION_RESULT_AWAIT_FOR_FUTURE(ReturnWrapper.Result)
 
 /**
  * Validates that the provided field (e.g., channel name, message, metadata) is not empty.

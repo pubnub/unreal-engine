@@ -35,11 +35,6 @@ public:
 	// snippet.set_crypto_module_with_legacy
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void SetCryptoModuleWithLegacySample();
-	
-	// snippet.get_crypto_module
-	// blueprint.wpnnrw6k
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void GetCryptoModuleSample();
 
 	// snippet.provider_encrypt
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
@@ -48,14 +43,6 @@ public:
 	// snippet.provider_decrypt
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
 	void ProviderDecryptSample();
-
-	// snippet.provider_encrypt_from_module
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void ProviderEncryptUsingAlreadySetModuleSample();
-
-	// snippet.provider_decrypt_from_module
-	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Crypto")
-	void ProviderDecryptUsingAlreadySetModuleSample();
 	
 	// snippet.end
 	

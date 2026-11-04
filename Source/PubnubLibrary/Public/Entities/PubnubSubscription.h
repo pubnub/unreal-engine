@@ -9,11 +9,7 @@
 
 
 class UPubnubClient;
-
-struct pubnub_subscription;
-typedef struct pubnub_subscription pubnub_subscription_t;
-struct pubnub_subscription_set;
-typedef struct pubnub_subscription_set pubnub_subscription_set_t;
+class UPubnubInternalUtilities;
 
 // Blueprint-compatible delegate for handling published messages
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPubnubMessage, FPubnubMessageData, Message);
@@ -55,6 +51,7 @@ class PUBNUBLIBRARY_API UPubnubSubscriptionBase : public UObject
 	GENERATED_BODY()
 	
 	friend class UPubnubBaseEntity;
+	friend class UPubnubInternalUtilities;
 	
 public:
 
@@ -104,7 +101,7 @@ public:
 
 protected:
 
-	/** Opaque heap block passed to C-Core as listener user_data; holds internal routing state for native callbacks. Freed when the subscription is cleaned up. */
+	/** Routing state for native callbacks. Kept until the client that owns this subscription is destroyed. */
 	void* ListenerUserData = nullptr;
 
 	UPROPERTY()
@@ -112,6 +109,9 @@ protected:
 
 	bool IsInitialized = false;
 	virtual void CleanUpSubscription(){};
+
+	/** Routes one already-copied subscribe event to the matching delegates. Safe to call on the game thread only. */
+	void DeliverSubscribeEvent(const FPubnubMessageData& MessageData);
 	
 };
 
@@ -214,18 +214,17 @@ public:
 
 private:
 
-	pubnub_subscription_t* CCoreSubscription = nullptr;
+	pubnub_subscription_t CCoreSubscription = nullptr;
+	pubnub_listener_handle_t ListenerHandle = UINT16_MAX;
 	bool bIsSubscribed = false;
 
 	void InitSubscription(UPubnubClient* InPubnubClient, UPubnubBaseEntity* Entity, FPubnubSubscribeSettings InSubscribeSettings);
-	void InitWithCCoreSubscription(UPubnubClient* InPubnubClient, pubnub_subscription_t* InCCoreSubscription);
+	void InitWithCCoreSubscription(UPubnubClient* InPubnubClient, pubnub_subscription_t InCCoreSubscription);
 	void InternalInit();
 
 	/**
-	 * Unregisters all C-Core listeners that were attached to this subscription's
-	 * CCoreSubscription. Must be invoked before ListenerUserData is freed so PubNub
-	 * cannot invoke the callback with a dangling user_data pointer during in-flight
-	 * unsubscribe / subscription free.
+	 * Unregisters the listener attached to this subscription.
+	 * Must run before ListenerUserData is released so a callback cannot use a freed block.
 	 */
 	void RemoveRegisteredListeners();
 
@@ -371,19 +370,19 @@ private:
 	TArray<UPubnubSubscription*> Subscriptions;
 	
 
-	pubnub_subscription_set_t* CCoreSubscriptionSet = nullptr;
+	pubnub_subscription_set_t CCoreSubscriptionSet = nullptr;
+	pubnub_listener_handle_t ListenerHandle = UINT16_MAX;
 	bool bIsSubscribed = false;
 
 	void InitSubscriptionSet(UPubnubClient* InPubnubClient, TArray<FString> Channels, TArray<FString> ChannelGroups, FPubnubSubscribeSettings InSubscribeSettings);
+	void InitSubscriptionSet(UPubnubClient* InPubnubClient, TArray<FString> Channels, TArray<FString> ChannelGroups, TArray<FString> ChannelMetadataIds, TArray<FString> UserMetadataIds, FPubnubSubscribeSettings InSubscribeSettings);
 	void InitWithSubscriptions(UPubnubClient* InPubnubClient, UPubnubSubscription* Subscription1, UPubnubSubscription* Subscription2);
-	void InitWithCCoreSubscriptionSet(UPubnubClient* InPubnubClient, pubnub_subscription_set_t* InCCoreSubscriptionSet);
+	void InitWithCCoreSubscriptionSet(UPubnubClient* InPubnubClient, pubnub_subscription_set_t InCCoreSubscriptionSet);
 	void InternalInit();
 
 	/**
-	 * Unregisters all C-Core listeners that were attached to this set's
-	 * CCoreSubscriptionSet. Must be invoked before ListenerUserData is freed so
-	 * PubNub cannot invoke the callback with a dangling user_data pointer during
-	 * in-flight unsubscribe / subscription_set free.
+	 * Unregisters the listener attached to this set.
+	 * Must run before ListenerUserData is released so a callback cannot use a freed block.
 	 */
 	void RemoveRegisteredListeners();
 

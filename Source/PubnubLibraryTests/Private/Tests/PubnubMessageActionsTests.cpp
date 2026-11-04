@@ -286,10 +286,6 @@ bool FPubnubAddMessageAction_HappyPath_RequiredParams_ReturnsActionData::RunTest
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	FPubnubPublishMessageResult Pub = PubnubClient->PublishMessage(Channel, MessageJson, FPubnubPublishSettings());
@@ -325,10 +321,6 @@ bool FPubnubAddMessageAction_TwoValuesOnSameMessage_BothRetrievable::RunTest(con
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	FPubnubPublishMessageResult Pub = PubnubClient->PublishMessage(Channel, MessageJson, FPubnubPublishSettings());
@@ -380,10 +372,6 @@ bool FPubnubAddMessageAction_ConcurrentSyncWhileAsync_ReturnsMutexError::RunTest
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	const FString MutexPayload = FString::Printf(TEXT("\"ma_mutex%s\""), *ChannelSuffix);
@@ -483,10 +471,6 @@ bool FPubnubGetMessageActions_HappyPath_RequiredStartEnd::RunTest(const FString&
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	const FString PublishPayload = FString::Printf(TEXT("\"ma_get_happy%s\""), *ChannelSuffix);
@@ -531,10 +515,6 @@ bool FPubnubGetMessageActions_FullParameters_StartEndLimit::RunTest(const FStrin
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	const FString PublishPayload = FString::Printf(TEXT("\"ma_get_full%s\""), *ChannelSuffix);
@@ -584,10 +564,6 @@ bool FPubnubGetMessageActions_LimitOne_AfterTwoAdds_ReturnsSingleAction::RunTest
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	const FString PublishPayload = FString::Printf(TEXT("\"ma_get_lim%s\""), *ChannelSuffix);
@@ -714,10 +690,6 @@ bool FPubnubRemoveMessageAction_HappyPath_RemovesThenMissingFromGet::RunTest(con
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	const FString PublishPayload = FString::Printf(TEXT("\"ma_rm_happy%s\""), *ChannelSuffix);
@@ -753,10 +725,6 @@ bool FPubnubRemoveMessageAction_InvalidActionTimetoken_ServerError::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	const FString PublishPayload = FString::Printf(TEXT("\"ma_rm_bad%s\""), *ChannelSuffix);
@@ -789,10 +757,6 @@ bool FPubnubFetchHistory_IncludeMessageActions_EmbedsActionsOnMessage::RunTest(c
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(User);
 
 	FPubnubPublishMessageResult Pub = PubnubClient->PublishMessage(Channel, MessageJson, FPubnubPublishSettings());

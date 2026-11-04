@@ -180,10 +180,6 @@ bool FPubnubEntities_ChannelEntity_EmptyChannel_ReturnsNull::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("ent_ch_empty_caller"));
 
 	UPubnubChannelEntity* const Ent = PubnubClient->CreateChannelEntity(TEXT(""));
@@ -203,10 +199,6 @@ bool FPubnubEntities_ChannelEntity_HappyPath_EntityIdAndType::RunTest(const FStr
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("ent_ch_happy_caller"));
 
 	UPubnubChannelEntity* const Ent = PubnubClient->CreateChannelEntity(Ch);
@@ -232,10 +224,6 @@ bool FPubnubEntities_ChannelEntity_SubscribeDefaults_ThenUnsubscribe::RunTest(co
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubChannelEntity* const Ent = PubnubClient->CreateChannelEntity(Ch);
@@ -271,10 +259,6 @@ bool FPubnubEntities_ChannelEntity_Subscribe_WithPresenceSettings::RunTest(const
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubChannelEntity* const Ent = PubnubClient->CreateChannelEntity(Ch);
@@ -315,10 +299,6 @@ bool FPubnubEntities_ChannelEntity_DoubleSubscribe_ReturnsError::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubChannelEntity* const Ent = PubnubClient->CreateChannelEntity(Ch);
@@ -351,10 +331,6 @@ bool FPubnubEntities_GroupEntity_EmptyGroup_ReturnsNull::RunTest(const FString& 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("ent_grp_empty_caller"));
 
 	UPubnubChannelGroupEntity* const Ent = PubnubClient->CreateChannelGroupEntity(TEXT(""));
@@ -376,10 +352,6 @@ bool FPubnubEntities_GroupEntity_AddListSubscribe_ThenCleanup::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubChannelGroupEntity* const Grp = PubnubClient->CreateChannelGroupEntity(GroupId);
@@ -427,10 +399,6 @@ bool FPubnubEntities_GroupEntity_Subscribe_WithPresenceSettings::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubChannelGroupEntity* const Grp = PubnubClient->CreateChannelGroupEntity(GroupId);
@@ -467,10 +435,6 @@ bool FPubnubEntities_ChannelMetadataEntity_EmptyId_ReturnsNull::RunTest(const FS
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("ent_chmeta_empty_caller"));
 
 	UPubnubChannelMetadataEntity* const Ent = PubnubClient->CreateChannelMetadataEntity(TEXT(""));
@@ -492,10 +456,6 @@ bool FPubnubEntities_ChannelMetadataEntity_SetGetSubscribeRemove::RunTest(const 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubChannelMetadataEntity* const Ent = PubnubClient->CreateChannelMetadataEntity(Ch);
@@ -545,10 +505,6 @@ bool FPubnubEntities_ChannelMetadataEntity_GetWithAllIncludes::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubChannelMetadataEntity* const Ent = PubnubClient->CreateChannelMetadataEntity(Ch);
@@ -589,10 +545,6 @@ bool FPubnubEntities_UserMetadataEntity_EmptyId_ReturnsNull::RunTest(const FStri
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(SDK_PREFIX + TEXT("ent_umeta_empty_caller"));
 
 	UPubnubUserMetadataEntity* const Ent = PubnubClient->CreateUserMetadataEntity(TEXT(""));
@@ -613,10 +565,6 @@ bool FPubnubEntities_UserMetadataEntity_SetGetSubscribeRemove::RunTest(const FSt
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubUserMetadataEntity* const Ent = PubnubClient->CreateUserMetadataEntity(UserId);
@@ -666,10 +614,6 @@ bool FPubnubEntities_UserMetadataEntity_SetWithIncludeAndFields::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubUserMetadataEntity* const Ent = PubnubClient->CreateUserMetadataEntity(UserId);
@@ -711,10 +655,6 @@ bool FPubnubEntities_SubscriptionSet_EmptyInputs_SubscribeFails::RunTest(const F
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubSubscriptionSet* const Set = PubnubClient->CreateSubscriptionSet({}, {}, FPubnubSubscribeSettings());
@@ -740,10 +680,6 @@ bool FPubnubEntities_SubscriptionSet_SingleChannel_SubscribeUnsubscribe::RunTest
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	TArray<FString> Chans;
@@ -779,10 +715,6 @@ bool FPubnubEntities_SubscriptionSet_MultiChannelGroupPresence::RunTest(const FS
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	TestFalse(TEXT("AddChannelToGroup setup"), PubnubClient->AddChannelToGroup(Member, Grp).Error);
@@ -819,10 +751,6 @@ bool FPubnubEntities_SubscriptionSetFromEntities_Empty_SubscribeFails::RunTest(c
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	UPubnubSubscriptionSet* const Set = PubnubClient->CreateSubscriptionSetFromEntities({}, FPubnubSubscribeSettings());
@@ -849,10 +777,6 @@ bool FPubnubEntities_SubscriptionSetFromEntities_ChannelAndGroup::RunTest(const 
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	TestFalse(TEXT("AddChannelToGroup setup"), PubnubClient->AddChannelToGroup(Member, Grp).Error);
@@ -898,10 +822,6 @@ bool FPubnubEntities_SubscriptionSet_AddSubscription_ThenSubscribe::RunTest(cons
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	TArray<FString> One;
@@ -946,10 +866,6 @@ bool FPubnubEntities_SubscriptionSet_AddSubscriptionSet_MergeBeforeSubscribe::Ru
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	TArray<FString> A;
@@ -988,10 +904,6 @@ bool FPubnubEntities_GetActiveLists_AfterSubscribe::RunTest(const FString& Param
 		return false;
 	}
 
-	PubnubSubsystem->OnPubnubErrorNative.AddLambda([this](FString ErrorMessage, EPubnubErrorType ErrorType)
-	{
-		AddError(ErrorMessage);
-	});
 	PubnubClient->SetUserID(Caller);
 
 	TestFalse(TEXT("AddChannelToGroup for active-list test"), PubnubClient->AddChannelToGroup(Member, Grp).Error);
