@@ -37,6 +37,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
 	void PublishWithSettingsSample();
 
+	// snippet.publish_with_compression
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")
+	void PublishWithCompressionSample();
+
 	// snippet.publish_with_result
 	// blueprint.et_v8xym
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|PubSub")

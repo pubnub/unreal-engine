@@ -78,6 +78,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void DestroyPubnubClient();
 
+	// snippet.set_user_id
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void SetUserIDSample();
+
+	// snippet.get_user_id
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void GetUserIDSample();
+
+	// snippet.set_origin
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void SetOriginSample();
+
+	// snippet.get_origin
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void GetOriginSample();
+
+	// snippet.disconnect_subscriptions
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void DisconnectSubscriptionsSample();
+
+	// snippet.reconnect_subscriptions
+	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
+	void ReconnectSubscriptionsSample();
+
 	// snippet.add_logger
 	UFUNCTION(BlueprintCallable, Category = "Pubnub|Samples|Configuration")
 	void AddLoggerSample();

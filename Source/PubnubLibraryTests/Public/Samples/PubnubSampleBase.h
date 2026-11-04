@@ -6,6 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "PubnubSampleBase.generated.h"
 
+class UPubnubClient;
+class UPubnubSubsystem;
+
 /**
  * Base class for all PubNub UE SDK Samples
  */
@@ -17,6 +20,9 @@ class PUBNUBLIBRARYTESTS_API APubnubSampleBase : public AActor
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	//Internal helper for the samples. Returns the client with ID 0, or creates it with demo keys.
+	UPubnubClient* GetOrCreateSampleClient(UPubnubSubsystem* PubnubSubsystem);
 
 public:
 

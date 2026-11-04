@@ -4,6 +4,9 @@
 #include "Samples/Sample_Configuration.h"
 #include "PubnubDefaultLogger.h"
 #include "Interfaces/PubnubLoggerInterface.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/GameInstance.h"
+#include "PubnubSubsystem.h"
 
 
 /**
@@ -11,8 +14,8 @@
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
- * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
+ * The samples create a PubnubClient with CreatePubnubClient and an FPubnubConfig that sets
+ * PublishKey, SubscribeKey, and UserID. Replace the demo keys with your keys from the Admin Portal.
  */
 
 // NOTE: Comments marked with `ACTION REQUIRED` indicate lines you must change/adjust.
@@ -22,6 +25,10 @@
 void ASample_Configuration::RunSamples()
 {
 	Super::RunSamples();
+
+	//Make sure the client with ID 0 exists before the samples call GetPubnubClient
+	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
+	GetOrCreateSampleClient(GameInstance->GetSubsystem<UPubnubSubsystem>());
 
 	MessageListenerSample();
 	MessageListenerLambdaSample();
@@ -34,7 +41,8 @@ void ASample_Configuration::RunSamples()
 	GetLoggersSample();
 	RemoveLoggerSample();
 	ClearLoggersSample();
-	
+	GetUserIDSample();
+	GetOriginSample();
 }
 //Internal function, don't copy it with the samples
 ASample_Configuration::ASample_Configuration()
@@ -228,10 +236,14 @@ UPubnubClient* ASample_Configuration::GetPubnubClient()
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	
-	//Get default PubnubClient - created automatically if PluginSettings are set to do so
+	//Get the client with ID 0. The first client you create with CreatePubnubClient has ID 0.
 	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
+	if(!PubnubClient)
+	{
+		//GetPubnubClient returns nullptr when no client with this ID exists
+		UE_LOG(LogTemp, Warning, TEXT("No Pubnub Client with ID 0. Call CreatePubnubClient first."));
+	}
 	
-	PubnubClient->SetUserID(TEXT("player_001"));
 	return PubnubClient;
 }
 
@@ -252,6 +264,106 @@ void ASample_Configuration::DestroyPubnubClient()
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	
 	PubnubSubsystem->DestroyPubnubClient(PubnubClient);
+}
+
+// snippet.set_user_id
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::SetUserIDSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created
+
+	//Change the User ID used by this client in later requests
+	FPubnubOperationResult Result = PubnubClient->SetUserID(TEXT("Player_002"));
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set User ID: %s"), *Result.ErrorMessage);
+	}
+}
+
+// snippet.get_user_id
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::GetUserIDSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created
+
+	FString UserID = PubnubClient->GetUserID();
+	UE_LOG(LogTemp, Log, TEXT("Current User ID: %s"), *UserID);
+}
+
+// snippet.set_origin
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::SetOriginSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created
+
+	//ACTION REQUIRED: Replace with your custom origin. An empty string resets the client to the default origin.
+	FPubnubOperationResult Result = PubnubClient->SetOrigin(TEXT("ps.pndsn.com"));
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set origin: %s"), *Result.ErrorMessage);
+	}
+}
+
+// snippet.get_origin
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::GetOriginSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created
+
+	FString Origin = PubnubClient->GetOrigin();
+	UE_LOG(LogTemp, Log, TEXT("Current origin: %s"), *Origin);
+}
+
+// snippet.disconnect_subscriptions
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::DisconnectSubscriptionsSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and subscribed to at least one channel
+
+	//Pause all active subscriptions. Call ReconnectSubscriptions to resume them.
+	FPubnubOperationResult Result = PubnubClient->DisconnectSubscriptions();
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to disconnect subscriptions: %s"), *Result.ErrorMessage);
+	}
+}
+
+// snippet.reconnect_subscriptions
+// ACTION REQUIRED: Replace ASample_Configuration with name of your Actor class
+void ASample_Configuration::ReconnectSubscriptionsSample()
+{
+	// snippet.hide
+	UPubnubClient* PubnubClient = GetPubnubClient();
+	// snippet.show
+	
+	//Assumes PubnubClient is created and its subscriptions were disconnected
+
+	//Reconnect all active subscriptions. Pass a timetoken to resume from a specific point.
+	FPubnubOperationResult Result = PubnubClient->ReconnectSubscriptions();
+	if(Result.Error)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to reconnect subscriptions: %s"), *Result.ErrorMessage);
+	}
 }
 
 // snippet.add_logger

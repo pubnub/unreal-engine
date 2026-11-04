@@ -10,8 +10,8 @@
  * You can copy-paste any individual sample into a new project, and it should compile and run without errors 
  * — as long as you also include the necessary `#include` statements.
  *
- * The samples assume that in Pubnub SDK settings sections in ProjectSettings following fields are set:
- * PublishKey and SubscribeKey have correct keys, InitializeAutomatically is true.
+ * The samples create a PubnubClient with CreatePubnubClient and an FPubnubConfig that sets
+ * PublishKey, SubscribeKey, and UserID. Replace the demo keys with your keys from the Admin Portal.
  * 
  * ENTITY SAMPLES demonstrate the new Entity-based approach to PubNub operations, which provides
  * a more object-oriented and intuitive way to work with PubNub channels, channel groups, and metadata.
@@ -576,9 +576,7 @@ UPubnubClient* ASample_ChannelEntity::GetPubnubClient()
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UPubnubSubsystem* PubnubSubsystem = GameInstance->GetSubsystem<UPubnubSubsystem>();
 	
-	//Get default PubnubClient - created automatically if PluginSettings are set to do so
-	UPubnubClient* PubnubClient = PubnubSubsystem->GetPubnubClient(0);
-	
-	PubnubClient->SetUserID(TEXT("player_001"));
+	//Get the client with ID 0, or create it with demo keys if it doesn't exist yet
+	UPubnubClient* PubnubClient = GetOrCreateSampleClient(PubnubSubsystem);
 	return PubnubClient;
 }

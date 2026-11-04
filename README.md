@@ -12,7 +12,7 @@ Publish and receive messages in Unreal Engine. Use this SDK for Unreal Engine ap
 
 | Requirement | Supported version or setup |
 | --- | --- |
-| Unreal Engine | [Unreal Engine 5.2–5.7 through FAB; 5.0–5.7 from source](https://www.pubnub.com/docs/sdks/unreal/platform-support) |
+| Unreal Engine | [Unreal Engine 5.2–5.8 through FAB; 5.0–5.8 from source](https://www.pubnub.com/docs/sdks/unreal/platform-support) |
 | Target platforms | [Windows, macOS, Linux/Unix, iOS, and Android](https://www.pubnub.com/docs/sdks/unreal/platform-support) |
 | C++ module | For C++ projects, add `"PubnubLibrary"` to `PrivateDependencyModuleNames` in the project's `.Build.cs` file. |
 
