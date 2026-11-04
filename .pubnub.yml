@@ -3,6 +3,23 @@ schema: 1
 version: 3.0.0
 scm: github.com/pubnub/unreal-engine
 changelog:
+  - date: 2026-11-04
+    version: 3.0.0
+    changes:
+      - type: improvement
+        text: "The Unreal SDK now uses the PubNub C SDK on Windows, Linux, macOS, iOS, and Android. Build, subscribe, crypto, and logging fixes from the C-Core migration are included."
+      - type: improvement
+        text: "Payload encryption is set with `FPubnubConfig::CryptoModule` before `CreatePubnubClient`. `SetCryptoModule`, `GetCryptoModule`, and `IPubnubCryptoProviderInterface` are removed, and `UPubnubCryptoModule` accepts `UPubnubAesCryptor` and `UPubnubLegacyCryptor`. **BREAKING CHANGE**."
+      - type: improvement
+        text: "`FPubnubPublishSettings::Replicate` is removed, and `EPubnubPublishMethod` is limited to GET and POST. Body gzip is the new `FPubnubPublishSettings::Compress` field and applies when `PublishMethod` is POST. **BREAKING CHANGE**."
+      - type: improvement
+        text: "`ListUsersFromChannel` returns users grouped by channel on `FPubnubListUsersFromChannelResult`, and `GetState` returns per-channel state on `FPubnubGetStateResult`. `Heartbeat` and `HeartbeatAsync` are removed, along with the user id and heartbeat fields on `FPubnubSetStateSettings`. **BREAKING CHANGE**."
+      - type: improvement
+        text: "`CreatePubnubClient` requires `PublishKey`, `SubscribeKey`, and `UserID` on `FPubnubConfig`, and empty keys are rejected. `SecretKey` and `Origin` apply only at creation, `SetSecretKey` is removed, and `SetUserID` and `SetOrigin` return `FPubnubOperationResult`. **BREAKING CHANGE**."
+      - type: improvement
+        text: "`UPubnubSettings` and the deprecated `UPubnubSubsystem` listeners and operation calls are removed. Client access stays on `CreatePubnubClient`, `GetPubnubClient`, and `DestroyPubnubClient`. **BREAKING CHANGE**."
+      - type: improvement
+        text: "`SubscribeToChannel` and `SubscribeToGroup` succeed when the subscription is registered, and the connection outcome arrives on `OnSubscriptionStatusChanged`. `FPubnubSubscriptionCursor::Region` is ignored, and `FPubnubMessageData::region` is left at 0. **BREAKING CHANGE**."
   - date: 2026-10-08
     version: 2.2.0
     changes:
