@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "python .cursor/hooks/ue_plugin_compile_wrap.py --hook",
+        "matcher": "Shell",
+        "timeout": 20
+      },
+      {
+        "command": "python .cursor/hooks/ue_compile_wrap.py --hook",
+        "matcher": "Shell",
+        "timeout": 20
+      },
+      {
+        "command": "python .cursor/hooks/ue_test_wrap.py --hook",
+        "matcher": "Shell",
+        "timeout": 20
+      }
+    ]
+  }
+}
